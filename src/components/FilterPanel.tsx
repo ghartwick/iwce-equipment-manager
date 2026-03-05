@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Filter, Plus, Trash2, Edit2 } from 'lucide-react';
 import { Category } from '../types';
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plus, Bell, User, LogOut, ChevronDown } from 'lucide-react';
 
 interface User {

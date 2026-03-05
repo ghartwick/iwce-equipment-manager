@@ -1,4 +1,4 @@
-import { Product, Category, StockAlert } from '../types';
+import { Equipment, Category, StockAlert } from '../types';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'inventory-products',
@@ -7,12 +7,12 @@ const STORAGE_KEYS = {
 } as const;
 
 export class LocalStorage {
-  static getProducts(): Product[] {
+  static getProducts(): Equipment[] {
     const data = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
     return data ? JSON.parse(data) : [];
   }
 
-  static saveProducts(products: Product[]): void {
+  static saveProducts(products: Equipment[]): void {
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
   }
 

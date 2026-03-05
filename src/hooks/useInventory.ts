@@ -50,7 +50,7 @@ export function useInventory() {
     }
   };
 
-  const generateRepairAlerts = (products: Equipment[], existingAlerts: StockAlert[]) => {
+  const generateRepairAlerts = (products: Equipment[], existingAlerts: StockAlert[]): StockAlert[] => {
     const repairAlerts = products
       .filter(product => product.repair)
       .map(product => {
@@ -64,13 +64,14 @@ export function useInventory() {
         }
         
         // Create new repair alert
-        return {
+        const newAlert: StockAlert = {
           id: `repair-${product.id}-${Date.now()}`,
           productId: product.id,
           type: 'repair',
           message: `${product.name} needs repair${product.repairDescription ? ': ' + product.repairDescription : ''}`,
           createdAt: new Date().toISOString(),
         };
+        return newAlert;
       });
     
     // Remove repair alerts for products that no longer need repair

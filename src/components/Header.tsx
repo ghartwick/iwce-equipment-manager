@@ -84,10 +84,10 @@ export function Header({ onAddProduct, alertCount, onToggleAlerts, user, onLogou
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors"
+                  className="flex items-center space-x-2 p-2 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors"
+                  title="User Menu"
                 >
                   <User className="h-4 w-4 text-yellow-400" />
-                  <span className="text-yellow-300 text-sm font-medium">{user.name}</span>
                   <ChevronDown className="h-3 w-3 text-yellow-400" />
                 </button>
 

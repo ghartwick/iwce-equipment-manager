@@ -52,6 +52,21 @@ function App() {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
+  }).sort((a, b) => {
+    // Sort by equipment name alphabetically and numerically
+    const nameA = a.name.toLowerCase();
+    const nameB = b.name.toLowerCase();
+    
+    // Try numeric comparison first
+    const numA = parseFloat(nameA);
+    const numB = parseFloat(nameB);
+    
+    if (!isNaN(numA) && !isNaN(numB)) {
+      return numA - numB;
+    }
+    
+    // Fall back to alphabetical comparison
+    return nameA.localeCompare(nameB);
   });
 
   const handleAddProduct = (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {

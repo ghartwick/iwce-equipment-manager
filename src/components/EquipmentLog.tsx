@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, User, Edit3, Package, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Clock, User, X } from 'lucide-react';
 import { Equipment } from '../types';
 import { equipmentHistoryService, EditHistory } from '../services/equipmentHistoryService';
 
@@ -36,19 +36,6 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
       hour: '2-digit',
       minute: '2-digit'
     }).format(date);
-  };
-
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case 'created':
-        return <Package className="h-4 w-4 text-green-400" />;
-      case 'updated':
-        return <Edit3 className="h-4 w-4 text-yellow-400" />;
-      case 'deleted':
-        return <X className="h-4 w-4 text-red-400" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
-    }
   };
 
   const getActionColor = (action: string) => {

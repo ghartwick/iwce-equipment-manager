@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useInventory } from './hooks/useInventory';
 import { useAuth } from './hooks/useAuth';
 import { Header } from './components/Header';
@@ -19,7 +19,6 @@ function App() {
     error: authError,
     login,
     logout,
-    clearError,
   } = useAuth();
 
   const {

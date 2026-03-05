@@ -1,4 +1,3 @@
-import React from 'react';
 import { AlertTriangle, X, Package, Wrench } from 'lucide-react';
 import { StockAlert, Equipment } from '../types';
 

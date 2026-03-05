@@ -23,6 +23,23 @@ export function FilterPanel({
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
 
+  // Sort categories alphabetically and numerically
+  const sortedCategories = [...categories].sort((a, b) => {
+    const nameA = a.name.toLowerCase();
+    const nameB = b.name.toLowerCase();
+    
+    // Try numeric comparison first
+    const numA = parseFloat(nameA);
+    const numB = parseFloat(nameB);
+    
+    if (!isNaN(numA) && !isNaN(numB)) {
+      return numA - numB;
+    }
+    
+    // Fall back to alphabetical comparison
+    return nameA.localeCompare(nameB);
+  });
+
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
       onAddCategory({
@@ -140,7 +157,7 @@ export function FilterPanel({
         >
           All Categories
         </button>
-        {categories.map((category) => (
+        {sortedCategories.map((category) => (
           <div
             key={category.id}
             className={`w-full px-3 py-2 rounded-md transition-colors flex items-center justify-between group ${

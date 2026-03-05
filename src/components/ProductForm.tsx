@@ -25,6 +25,23 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
 
   const [showLog, setShowLog] = useState(false);
 
+  // Sort categories alphabetically and numerically
+  const sortedCategories = [...categories].sort((a, b) => {
+    const nameA = a.name.toLowerCase();
+    const nameB = b.name.toLowerCase();
+    
+    // Try numeric comparison first
+    const numA = parseFloat(nameA);
+    const numB = parseFloat(nameB);
+    
+    if (!isNaN(numA) && !isNaN(numB)) {
+      return numA - numB;
+    }
+    
+    // Fall back to alphabetical comparison
+    return nameA.localeCompare(nameB);
+  });
+
   const isEditing = !!product;
   const formTitle = isEditing ? 'Edit Equipment' : 'Add Equipment';
   const isAdmin = userRole === 'admin';
@@ -154,7 +171,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               }`}
             >
               <option value="">Select a category</option>
-              {categories.map((category) => (
+              {sortedCategories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>

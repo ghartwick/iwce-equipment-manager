@@ -61,10 +61,10 @@ export function Header({ onAddProduct, alertCount, onToggleAlerts, user, onLogou
           <div className="flex items-center space-x-4">
             <button
               onClick={onAddProduct}
-              className="flex items-center space-x-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors"
+              className="p-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors"
+              title="Add Equipment"
             >
               <Plus className="h-4 w-4" />
-              <span>Add Equipment</span>
             </button>
             
             <button

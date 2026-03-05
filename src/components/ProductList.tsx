@@ -25,11 +25,6 @@ export function ProductList({
   onCancelEdit,
   userRole,
 }: ProductListProps) {
-  const getCategoryName = (categoryId: string) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    return category ? category.name : 'Unknown';
-  };
-
   const selectedProduct = products.find(p => p.id === selectedEquipmentId);
 
   if (products.length === 0) {
@@ -60,14 +55,8 @@ export function ProductList({
         <table className="min-w-full divide-y divide-yellow-800">
           <thead className="bg-yellow-900">
             <tr>
-              <th className="w-1/2 px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
+              <th className="w-full px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
                 Equipment
-              </th>
-              <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
-                Serial Number
               </th>
             </tr>
           </thead>
@@ -112,24 +101,12 @@ export function ProductList({
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs">
-                      <div className="flex items-start">
-                        <span className="text-sm text-yellow-100 break-words">{getCategoryName(product.category)}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs">
-                      <div className="text-sm text-yellow-100 break-words">{product.serialNumber}</div>
-                    </div>
-                  </td>
                 </tr>
                 
                 {/* Inline Edit Form - Appears directly below selected equipment */}
                 {selectedEquipmentId === product.id && (
                   <tr>
-                    <td colSpan={3} className="px-0 py-0 border-t border-yellow-800">
+                    <td colSpan={1} className="px-0 py-0 border-t border-yellow-800">
                       <div className="bg-yellow-900">
                         <ProductForm
                           categories={categories}

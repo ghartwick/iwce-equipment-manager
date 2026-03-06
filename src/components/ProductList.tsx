@@ -73,30 +73,12 @@ export function ProductList({
                       ? (product.repair ? "bg-red-900 ring-2 ring-yellow-400 ring-opacity-50" : "bg-yellow-900 ring-2 ring-yellow-400 ring-opacity-50") 
                       : (product.repair ? "bg-red-950" : "bg-black")
                     } 
-                    lg:cursor-pointer
                     transition-colors duration-200
                     ${selectedEquipmentId === product.id
                       ? 'bg-yellow-900 bg-opacity-50'
-                      : 'lg:hover:bg-yellow-900 lg:hover:bg-opacity-20'
+                      : ''
                     }
                   `}
-                  onClick={(e: React.MouseEvent) => {
-                    // Only handle click on desktop (non-touch devices)
-                    // Also prevent handling if click came from edit button
-                    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-                    const clickedButton = (e.target as HTMLElement).closest('button');
-                    
-                    if (!isTouchDevice && !clickedButton) {
-                      if (selectedEquipmentId === product.id) {
-                        // If already selected, toggle off (hide form)
-                        onCancelEdit();
-                      } else {
-                        // If different equipment, select it (show form)
-                        onEdit(product);
-                      }
-                    }
-                  }}
-                  title={!('ontouchstart' in window) ? (selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment") : ""}
                 >
                   <td className="px-6 py-4">
                     <div className="max-w-xs">
@@ -117,8 +99,7 @@ export function ProductList({
                   </td>
                   <td className="px-6 py-4 text-right lg:hidden">
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent event bubbling to row
+                      onClick={() => {
                         if (selectedEquipmentId === product.id) {
                           // If already selected, toggle off (hide form)
                           onCancelEdit();

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Package, Download } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { exportToExcel } from '../utils/exportToExcel';
@@ -25,6 +25,8 @@ export function ProductList({
   onCancelEdit,
   userRole,
 }: ProductListProps) {
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const selectedProduct = products.find(p => p.id === selectedEquipmentId);
 
   if (products.length === 0) {
@@ -77,16 +79,38 @@ export function ProductList({
                       : 'hover:bg-yellow-900 hover:bg-opacity-20'
                     }
                   `}
+                  onTouchStart={(e) => {
+                    // Record touch start position
+                    setTouchStartY(e.touches[0].clientY);
+                    setTouchStartX(e.touches[0].clientX);
+                  }}
                   onTouchEnd={(e) => {
-                    e.preventDefault(); // Prevent click event from firing
-                    // Add touch feedback for mobile
-                    if (selectedEquipmentId === product.id) {
-                      // If already selected, toggle off (hide form)
-                      onCancelEdit();
-                    } else {
-                      // If different equipment, select it (show form)
-                      onEdit(product);
+                    // Calculate touch movement
+                    const touchEndY = e.changedTouches[0].clientY;
+                    const touchEndX = e.changedTouches[0].clientX;
+                    
+                    if (touchStartY !== null && touchStartX !== null) {
+                      const deltaY = Math.abs(touchEndY - touchStartY);
+                      const deltaX = Math.abs(touchEndX - touchStartX);
+                      
+                      // Only trigger edit if it's a tap (minimal movement)
+                      // Threshold: 10 pixels movement max for tap
+                      if (deltaY < 10 && deltaX < 10) {
+                        e.preventDefault(); // Prevent click event from firing
+                        // Add touch feedback for mobile
+                        if (selectedEquipmentId === product.id) {
+                          // If already selected, toggle off (hide form)
+                          onCancelEdit();
+                        } else {
+                          // If different equipment, select it (show form)
+                          onEdit(product);
+                        }
+                      }
                     }
+                    
+                    // Reset touch positions
+                    setTouchStartY(null);
+                    setTouchStartX(null);
                   }}
                   onClick={(_) => {
                     // Only handle click on desktop (non-touch devices)

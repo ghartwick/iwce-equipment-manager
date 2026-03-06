@@ -109,7 +109,7 @@ export function ProductList({
                         }
                       }}
                       className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-yellow-400 bg-yellow-900 bg-opacity-30 border border-yellow-600 rounded-md hover:bg-yellow-800 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-colors"
-                      title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
+                      title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment item"}
                     >
                       <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                       <span className="hidden sm:inline">Edit</span>

@@ -16,6 +16,10 @@ export function MobileProductList({
   onDelete, 
   userRole 
 }: MobileProductListProps) {
+  const getCategoryName = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : 'Unknown';
+  };
 
   if (products.length === 0) {
     return (
@@ -84,6 +88,20 @@ export function MobileProductList({
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4 text-yellow-600" />
                 <span className="text-yellow-300 text-sm">{product.site}</span>
+              </div>
+            )}
+
+            {/* Category */}
+            <div className="flex items-center space-x-2">
+              <Package className="h-4 w-4 text-yellow-600" />
+              <span className="text-yellow-300 text-sm">{getCategoryName(product.category)}</span>
+            </div>
+
+            {/* Serial Number */}
+            {product.serialNumber && (
+              <div className="flex items-center space-x-2">
+                <span className="text-yellow-600 text-sm">SN:</span>
+                <span className="text-yellow-300 text-sm">{product.serialNumber}</span>
               </div>
             )}
 

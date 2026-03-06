@@ -184,10 +184,11 @@ function App() {
           </button>
         </div>
 
-        <div className="space-y-4 sm:space-y-6">
-          {/* Alerts Section - Mobile Collapsible */}
+        {/* Desktop Layout - Original Design */}
+        <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Desktop Alerts - Always Visible */}
           {showAlerts && (
-            <div className="lg:hidden">
+            <div className="mb-6">
               <AlertPanel 
                 alerts={alerts} 
                 products={products} 
@@ -196,103 +197,138 @@ function App() {
             </div>
           )}
 
-          {/* Desktop Alerts - Always Visible */}
-          <div className="hidden lg:block">
-            <AlertPanel 
-              alerts={alerts} 
-              products={products} 
-              onClearAlert={clearAlert} 
-            />
-          </div>
-
-          {/* Forms Section */}
+          {/* Desktop Forms Section */}
           {(showAddForm || editingProduct) && (
-            <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-4 sm:p-6">
-              <ProductForm
-                categories={categories}
-                product={editingProduct}
-                onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
-                onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
-                onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
-                userRole={user?.role || 'technician'}
-              />
+            <div className="mb-6">
+              <div className="max-w-4xl mx-auto">
+                <ProductForm
+                  categories={categories}
+                  product={editingProduct}
+                  onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
+                  onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
+                  onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
+                  userRole={user?.role || 'technician'}
+                />
+              </div>
             </div>
           )}
 
-          {/* Equipment Table - Mobile Optimized */}
-          <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
-            <div className="p-4 sm:p-6">
-              {/* Mobile Filter Toggle */}
-              <div className="lg:hidden mb-4">
-                <button
-                  onClick={() => setShowMobileFilters(!showMobileFilters)}
-                  className="w-full p-3 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
-                >
-                  <span className="text-yellow-300">Filters</span>
-                  <span className="text-yellow-400 transform transition-transform">
-                    {showMobileFilters ? '▼' : '▶'}
-                  </span>
-                </button>
-              </div>
+          {/* Desktop Equipment Table - Original Design */}
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+              <div className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+                  <div className="flex-1 lg:max-w-md">
+                    <SearchBar 
+                      searchTerm={searchTerm} 
+                      onSearchChange={setSearchTerm} 
+                    />
+                  </div>
 
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-                {/* Search - Mobile Full Width */}
-                <div className="flex-1 lg:max-w-md">
-                  <SearchBar 
-                    searchTerm={searchTerm} 
-                    onSearchChange={setSearchTerm} 
-                  />
-                </div>
-
-                {/* Desktop Filters - Always Visible */}
-                <div className="hidden lg:block">
-                  <FilterPanel
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onCategoryChange={setSelectedCategory}
-                    onAddCategory={addCategory}
-                    onDeleteCategory={deleteCategory}
-                    onEditCategory={editCategory}
-                  />
+                  <div className="hidden lg:block">
+                    <FilterPanel
+                      categories={categories}
+                      selectedCategory={selectedCategory}
+                      onCategoryChange={setSelectedCategory}
+                      onAddCategory={addCategory}
+                      onDeleteCategory={deleteCategory}
+                      onEditCategory={editCategory}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Mobile Filters - Collapsible */}
-              {showMobileFilters && (
-                <div className="lg:hidden mt-4">
-                  <FilterPanel
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onCategoryChange={setSelectedCategory}
-                    onAddCategory={addCategory}
-                    onDeleteCategory={deleteCategory}
-                    onEditCategory={editCategory}
-                  />
-                </div>
-              )}
+              <div className="overflow-x-auto">
+                <ProductList
+                  products={filteredProducts}
+                  categories={categories}
+                  onEdit={handleEditClick}
+                  onDelete={deleteProduct}
+                  selectedEquipmentId={editingProduct?.id}
+                  onEditProduct={handleEditProduct}
+                  onCancelEdit={() => setEditingProduct(null)}
+                  userRole={user?.role || 'technician'}
+                />
+              </div>
             </div>
+          </div>
+        </div>
 
-            {/* Mobile Equipment List */}
-            <div className="block lg:hidden">
+        {/* Mobile Layout - Optimized */}
+        <div className="lg:hidden">
+          <div className="space-y-4 sm:space-y-6">
+            {/* Mobile Alerts - Collapsible */}
+            {showAlerts && (
+              <div>
+                <AlertPanel 
+                  alerts={alerts} 
+                  products={products} 
+                  onClearAlert={clearAlert} 
+                />
+              </div>
+            )}
+
+            {/* Mobile Forms Section */}
+            {(showAddForm || editingProduct) && (
+              <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-4 sm:p-6">
+                <ProductForm
+                  categories={categories}
+                  product={editingProduct}
+                  onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
+                  onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
+                  onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
+                  userRole={user?.role || 'technician'}
+                />
+              </div>
+            )}
+
+            {/* Mobile Equipment Table - Optimized */}
+            <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+              <div className="p-4 sm:p-6">
+                {/* Mobile Filter Toggle */}
+                <div className="mb-4">
+                  <button
+                    onClick={() => setShowMobileFilters(!showMobileFilters)}
+                    className="w-full p-3 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
+                  >
+                    <span className="text-yellow-300">Filters</span>
+                    <span className="text-yellow-400 transform transition-transform">
+                      {showMobileFilters ? '▼' : '▶'}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="flex flex-col space-y-4">
+                  {/* Search - Mobile Full Width */}
+                  <div className="flex-1">
+                    <SearchBar 
+                      searchTerm={searchTerm} 
+                      onSearchChange={setSearchTerm} 
+                    />
+                  </div>
+
+                  {/* Mobile Filters - Collapsible */}
+                  {showMobileFilters && (
+                    <div className="mt-4">
+                      <FilterPanel
+                        categories={categories}
+                        selectedCategory={selectedCategory}
+                        onCategoryChange={setSelectedCategory}
+                        onAddCategory={addCategory}
+                        onDeleteCategory={deleteCategory}
+                        onEditCategory={editCategory}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile Equipment List */}
               <MobileProductList
                 products={filteredProducts}
                 categories={categories}
                 onEdit={handleEditClick}
                 onDelete={deleteProduct}
-                userRole={user?.role || 'technician'}
-              />
-            </div>
-
-            {/* Desktop Equipment Table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <ProductList
-                products={filteredProducts}
-                categories={categories}
-                onEdit={handleEditClick}
-                onDelete={deleteProduct}
-                selectedEquipmentId={editingProduct?.id}
-                onEditProduct={handleEditProduct}
-                onCancelEdit={() => setEditingProduct(null)}
                 userRole={user?.role || 'technician'}
               />
             </div>

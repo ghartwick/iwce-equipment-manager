@@ -170,14 +170,14 @@ function App() {
         onLogout={logout}
       />
       
-      <main className="px-2 sm:px-4 lg:px-6 py-4 sm:py-6">
+      <main className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3">
         {/* Mobile Alert Toggle */}
-        <div className="lg:hidden mb-4">
+        <div className="lg:hidden mb-3">
           <button
             onClick={() => setShowAlerts(!showAlerts)}
-            className="w-full p-3 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
+            className="w-full p-2 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
           >
-            <span className="text-yellow-300">Equipment Alerts ({alerts.length})</span>
+            <span className="text-yellow-300 text-sm">Equipment Alerts ({alerts.length})</span>
             <span className="text-yellow-400 transform transition-transform">
               {showAlerts ? '▼' : '▶'}
             </span>
@@ -185,10 +185,10 @@ function App() {
         </div>
 
         {/* Desktop Layout - Original Design */}
-        <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Desktop Alerts - Always Visible */}
           {showAlerts && (
-            <div className="mb-6">
+            <div className="mb-3">
               <div className="max-w-4xl mx-auto">
                 <AlertPanel 
                   alerts={alerts} 
@@ -201,7 +201,7 @@ function App() {
 
           {/* Desktop Forms Section */}
           {(showAddForm || editingProduct) && (
-            <div className="mb-6">
+            <div className="mb-3">
               <div className="max-w-4xl mx-auto">
                 <ProductForm
                   categories={categories}
@@ -258,7 +258,7 @@ function App() {
 
         {/* Mobile Layout - Optimized */}
         <div className="lg:hidden">
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-3 sm:space-y-4">
             {/* Mobile Alerts - Collapsible */}
             {showAlerts && (
               <div>
@@ -270,9 +270,18 @@ function App() {
               </div>
             )}
 
-            {/* Mobile Forms Section */}
+            {/* Desktop Alerts - Always Visible */}
+            <div className="hidden lg:block">
+              <AlertPanel 
+                alerts={alerts} 
+                products={products} 
+                onClearAlert={clearAlert} 
+              />
+            </div>
+
+            {/* Forms Section */}
             {(showAddForm || editingProduct) && (
-              <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-4 sm:p-6">
+              <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-3 sm:p-4">
                 <ProductForm
                   categories={categories}
                   product={editingProduct}
@@ -286,21 +295,21 @@ function App() {
 
             {/* Mobile Equipment Table - Optimized */}
             <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
-              <div className="p-4 sm:p-6">
+              <div className="p-3 sm:p-4">
                 {/* Mobile Filter Toggle */}
-                <div className="mb-4">
+                <div className="mb-3">
                   <button
                     onClick={() => setShowMobileFilters(!showMobileFilters)}
-                    className="w-full p-3 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
+                    className="w-full p-2 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
                   >
-                    <span className="text-yellow-300">Filters</span>
+                    <span className="text-yellow-300 text-sm">Filters</span>
                     <span className="text-yellow-400 transform transition-transform">
                       {showMobileFilters ? '▼' : '▶'}
                     </span>
                   </button>
                 </div>
 
-                <div className="flex flex-col space-y-4">
+                <div className="flex flex-col space-y-3">
                   {/* Search - Mobile Full Width */}
                   <div className="flex-1">
                     <SearchBar 
@@ -311,7 +320,7 @@ function App() {
 
                   {/* Mobile Filters - Collapsible */}
                   {showMobileFilters && (
-                    <div className="mt-4">
+                    <div className="mt-3">
                       <FilterPanel
                         categories={categories}
                         selectedCategory={selectedCategory}

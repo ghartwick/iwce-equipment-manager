@@ -77,7 +77,8 @@ export function ProductList({
                       : 'hover:bg-yellow-900 hover:bg-opacity-20'
                     }
                   `}
-                  onTouchStart={() => {
+                  onTouchEnd={(e) => {
+                    e.preventDefault(); // Prevent click event from firing
                     // Add touch feedback for mobile
                     if (selectedEquipmentId === product.id) {
                       // If already selected, toggle off (hide form)
@@ -87,13 +88,16 @@ export function ProductList({
                       onEdit(product);
                     }
                   }}
-                  onClick={() => {
-                    if (selectedEquipmentId === product.id) {
-                      // If already selected, toggle off (hide form)
-                      onCancelEdit();
-                    } else {
-                      // If different equipment, select it (show form)
-                      onEdit(product);
+                  onClick={(_) => {
+                    // Only handle click on desktop (non-touch devices)
+                    if (!('ontouchstart' in window)) {
+                      if (selectedEquipmentId === product.id) {
+                        // If already selected, toggle off (hide form)
+                        onCancelEdit();
+                      } else {
+                        // If different equipment, select it (show form)
+                        onEdit(product);
+                      }
                     }
                   }}
                   title={selectedEquipmentId === product.id ? "Tap to close edit form" : "Tap to edit equipment"}

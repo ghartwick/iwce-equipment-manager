@@ -79,6 +79,8 @@ export function ProductList({
                       ? 'bg-yellow-900 bg-opacity-50'
                       : 'hover:bg-yellow-900 hover:bg-opacity-20'
                     }
+                    lg:pointer-events-auto
+                    pointer-events-none
                   `}
                   style={{ touchAction: 'pan-y' }}
                   onTouchStart={(e) => {
@@ -114,8 +116,6 @@ export function ProductList({
                       // Industry standard: 5px threshold
                       if (deltaY < 5 && deltaX < 5 && !isTouchInteraction) {
                         // Mobile: Edit on touch end
-                        e.preventDefault(); // Prevent click event from firing
-                        
                         if (selectedEquipmentId === product.id) {
                           onCancelEdit();
                         } else {
@@ -139,7 +139,7 @@ export function ProductList({
                         onEdit(product);
                       }
                     }
-                    // On touch devices, do absolutely nothing
+                    // On touch devices, completely ignore click events
                   }}
                   title={selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment"}
                 >

@@ -40,19 +40,20 @@ export function ProductList({
   return (
     <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
       {/* Header with export button */}
-      <div className="bg-yellow-900 px-6 py-4 flex justify-between items-center">
+      <div className="bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
         <h2 className="text-lg font-semibold text-yellow-300">Equipment Inventory</h2>
         <button
           onClick={() => exportToExcel(products, 'equipment-inventory')}
-          className="flex items-center space-x-2 px-4 py-2 bg-yellow-500 text-black rounded-md hover:bg-yellow-400 transition-colors"
+          className="flex items-center space-x-1 px-2 py-1 text-xs bg-yellow-500 text-black rounded hover:bg-yellow-400 transition-colors sm:flex sm:items-center sm:space-x-2 sm:px-4 sm:py-2 sm:text-sm"
         >
-          <Download className="h-4 w-4" />
-          <span className="text-sm font-medium">Export to Excel</span>
+          <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline sm:text-sm sm:font-medium">Export to Excel</span>
+          <span className="sm:hidden">Export</span>
         </button>
       </div>
       
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-yellow-800">
+        <table className="min-w-full divide-y divide-yellow-800 border-b-2 border-white">
           <thead className="bg-yellow-900">
             <tr>
               <th className="w-full px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">

@@ -189,11 +189,13 @@ function App() {
           {/* Desktop Alerts - Always Visible */}
           {showAlerts && (
             <div className="mb-6">
-              <AlertPanel 
-                alerts={alerts} 
-                products={products} 
-                onClearAlert={clearAlert} 
-              />
+              <div className="max-w-4xl mx-auto">
+                <AlertPanel 
+                  alerts={alerts} 
+                  products={products} 
+                  onClearAlert={clearAlert} 
+                />
+              </div>
             </div>
           )}
 
@@ -217,24 +219,24 @@ function App() {
           <div className="max-w-4xl mx-auto">
             <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
               <div className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-                  <div className="flex-1 lg:max-w-md">
-                    <SearchBar 
-                      searchTerm={searchTerm} 
-                      onSearchChange={setSearchTerm} 
-                    />
-                  </div>
+                {/* Search Field - Above */}
+                <div className="mb-4">
+                  <SearchBar 
+                    searchTerm={searchTerm} 
+                    onSearchChange={setSearchTerm} 
+                  />
+                </div>
 
-                  <div className="hidden lg:block">
-                    <FilterPanel
-                      categories={categories}
-                      selectedCategory={selectedCategory}
-                      onCategoryChange={setSelectedCategory}
-                      onAddCategory={addCategory}
-                      onDeleteCategory={deleteCategory}
-                      onEditCategory={editCategory}
-                    />
-                  </div>
+                {/* Category Filter - Below */}
+                <div className="hidden lg:block">
+                  <FilterPanel
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
+                    onAddCategory={addCategory}
+                    onDeleteCategory={deleteCategory}
+                    onEditCategory={editCategory}
+                  />
                 </div>
               </div>
 

@@ -59,7 +59,7 @@ export function ProductList({
               <th className="px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
                 Equipment
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-yellow-200 uppercase tracking-wider">
+              <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-yellow-200 uppercase tracking-wider whitespace-nowrap">
                 Actions
               </th>
             </tr>
@@ -93,7 +93,7 @@ export function ProductList({
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-3 sm:px-6 py-4 text-right whitespace-nowrap">
                     <button
                       onClick={() => {
                         if (selectedEquipmentId === product.id) {

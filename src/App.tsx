@@ -163,7 +163,10 @@ function App() {
   return (
     <div className="min-h-screen bg-black">
       <Header 
-        onAddProduct={() => setShowAddForm(!showAddForm)}
+        onAddProduct={() => {
+          setShowAddForm(!showAddForm);
+          setEditingProduct(null); // Clear any selected equipment when adding
+        }}
         alertCount={alerts.length}
         onToggleAlerts={() => setShowAlerts(!showAlerts)}
         user={user}

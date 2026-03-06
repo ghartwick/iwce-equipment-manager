@@ -82,7 +82,12 @@ export function ProductList({
                   `}
                   onClick={() => {
                     // Only handle click on desktop (non-touch devices)
-                    if (!('ontouchstart' in window)) {
+                    // More comprehensive device detection
+                    const isTouchDevice = 'ontouchstart' in window || 
+                                        navigator.maxTouchPoints > 0 ||
+                                        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+                    
+                    if (!isTouchDevice) {
                       if (selectedEquipmentId === product.id) {
                         // If already selected, toggle off (hide form)
                         onCancelEdit();
@@ -92,7 +97,7 @@ export function ProductList({
                       }
                     }
                   }}
-                  title={!('ontouchstart' in window) ? (selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment") : ""}
+                  title={!('ontouchstart' in window || navigator.maxTouchPoints > 0 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) ? (selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment") : ""}
                 >
                   <td className="px-6 py-4">
                     <div className="max-w-xs">
@@ -134,7 +139,7 @@ export function ProductList({
                 {/* Inline Edit Form - Appears directly below selected equipment */}
                 {selectedEquipmentId === product.id && (
                   <tr>
-                    <td colSpan={2} className="lg:col-span-1 px-0 py-0 border-t border-yellow-800">
+                    <td colSpan={1} className="px-0 py-0 border-t border-yellow-800">
                       <div className="bg-yellow-900">
                         <ProductForm
                           categories={categories}
@@ -146,7 +151,7 @@ export function ProductList({
                         />
                       </div>
                     </td>
-                    <td className="lg:hidden px-0 py-0"></td>
+                    <td className="px-0 py-0 lg:hidden"></td>
                   </tr>
                 )}
               </React.Fragment>

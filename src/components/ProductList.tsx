@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Package, Download } from 'lucide-react';
+import React from 'react';
+import { Package, Download, Edit } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { exportToExcel } from '../utils/exportToExcel';
 import { ProductForm } from './ProductForm';
@@ -25,8 +25,6 @@ export function ProductList({
   onCancelEdit,
   userRole,
 }: ProductListProps) {
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const selectedProduct = products.find(p => p.id === selectedEquipmentId);
 
   if (products.length === 0) {
@@ -72,50 +70,14 @@ export function ProductList({
                       ? (product.repair ? "bg-red-900 ring-2 ring-yellow-400 ring-opacity-50" : "bg-yellow-900 ring-2 ring-yellow-400 ring-opacity-50") 
                       : (product.repair ? "bg-red-950" : "bg-black")
                     } 
-                    cursor-pointer
+                    lg:cursor-pointer
                     transition-colors duration-200
                     ${selectedEquipmentId === product.id
                       ? 'bg-yellow-900 bg-opacity-50'
-                      : 'hover:bg-yellow-900 hover:bg-opacity-20'
+                      : 'lg:hover:bg-yellow-900 lg:hover:bg-opacity-20'
                     }
                   `}
-                  onTouchStart={(e) => {
-                    // Record touch start position only
-                    setTouchStartY(e.touches[0].clientY);
-                    setTouchStartX(e.touches[0].clientX);
-                  }}
-                  onTouchEnd={(e) => {
-                    // Calculate touch movement
-                    const touchEndY = e.changedTouches[0].clientY;
-                    const touchEndX = e.changedTouches[0].clientX;
-                    
-                    if (touchStartY !== null && touchStartX !== null) {
-                      const deltaY = Math.abs(touchEndY - touchStartY);
-                      const deltaX = Math.abs(touchEndX - touchStartX);
-                      
-                      // Only trigger edit if it's a tap (minimal movement)
-                      // Threshold: 15 pixels movement max for tap
-                      if (deltaY < 15 && deltaX < 15) {
-                        e.preventDefault(); // Prevent click event from firing
-                        // Add delay to ensure it's not a scroll
-                        setTimeout(() => {
-                          // Add touch feedback for mobile
-                          if (selectedEquipmentId === product.id) {
-                            // If already selected, toggle off (hide form)
-                            onCancelEdit();
-                          } else {
-                            // If different equipment, select it (show form)
-                            onEdit(product);
-                          }
-                        }, 100);
-                      }
-                    }
-                    
-                    // Reset touch positions
-                    setTouchStartY(null);
-                    setTouchStartX(null);
-                  }}
-                  onClick={(_) => {
+                  onClick={() => {
                     // Only handle click on desktop (non-touch devices)
                     if (!('ontouchstart' in window)) {
                       if (selectedEquipmentId === product.id) {
@@ -127,7 +89,7 @@ export function ProductList({
                       }
                     }
                   }}
-                  title={selectedEquipmentId === product.id ? "Tap to close edit form" : "Tap to edit equipment"}
+                  title={!('ontouchstart' in window) ? (selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment") : ""}
                 >
                   <td className="px-6 py-4">
                     <div className="max-w-xs">
@@ -145,6 +107,24 @@ export function ProductList({
                         )}
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 text-right lg:hidden">
+                    <button
+                      onClick={() => {
+                        if (selectedEquipmentId === product.id) {
+                          // If already selected, toggle off (hide form)
+                          onCancelEdit();
+                        } else {
+                          // If different equipment, select it (show form)
+                          onEdit(product);
+                        }
+                      }}
+                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-yellow-400 bg-yellow-900 bg-opacity-30 border border-yellow-600 rounded-md hover:bg-yellow-800 hover:bg-opacity-40 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-colors"
+                      title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
+                    >
+                      <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Edit</span>
+                    </button>
                   </td>
                 </tr>
                 

@@ -80,11 +80,26 @@ export function ProductList({
                       : 'hover:bg-yellow-900 hover:bg-opacity-20'
                     }
                   `}
+                  style={{ touchAction: 'pan-y' }}
                   onTouchStart={(e) => {
-                    // Record touch start position and mark as touch interaction
+                    // Record touch start position
                     setTouchStartY(e.touches[0].clientY);
                     setTouchStartX(e.touches[0].clientX);
-                    setIsTouchInteraction(true);
+                    setIsTouchInteraction(false); // Start as not scrolling
+                  }}
+                  onTouchMove={(e) => {
+                    // If there's significant movement, mark as scrolling
+                    if (touchStartY !== null && touchStartX !== null) {
+                      const currentY = e.touches[0].clientY;
+                      const currentX = e.touches[0].clientX;
+                      const deltaY = Math.abs(currentY - touchStartY);
+                      const deltaX = Math.abs(currentX - touchStartX);
+                      
+                      // Industry standard: 5px threshold for scroll detection
+                      if (deltaY > 5 || deltaX > 5) {
+                        setIsTouchInteraction(true); // Mark as scrolling
+                      }
+                    }
                   }}
                   onTouchEnd={(e) => {
                     // Calculate touch movement
@@ -95,10 +110,12 @@ export function ProductList({
                       const deltaY = Math.abs(touchEndY - touchStartY);
                       const deltaX = Math.abs(touchEndX - touchStartX);
                       
-                      // Only trigger edit if it's a tap (minimal movement)
-                      // Threshold: 15 pixels movement max for tap
-                      if (deltaY < 15 && deltaX < 15) {
+                      // Only trigger edit if it's a tap (minimal movement) and not scrolling
+                      // Industry standard: 5px threshold
+                      if (deltaY < 5 && deltaX < 5 && !isTouchInteraction) {
                         // Mobile: Edit on touch end
+                        e.preventDefault(); // Prevent click event from firing
+                        
                         if (selectedEquipmentId === product.id) {
                           onCancelEdit();
                         } else {
@@ -110,20 +127,19 @@ export function ProductList({
                     // Reset touch positions and interaction flag
                     setTouchStartY(null);
                     setTouchStartX(null);
-                    setTimeout(() => setIsTouchInteraction(false), 100);
+                    setIsTouchInteraction(false);
                   }}
                   onClick={(_) => {
-                    // Only handle click on desktop (non-touch devices) or when not a touch interaction
+                    // Desktop only: Edit on click (non-touch devices)
                     const isTouchDevice = 'ontouchstart' in window;
-                    if (!isTouchDevice || !isTouchInteraction) {
+                    if (!isTouchDevice) {
                       if (selectedEquipmentId === product.id) {
                         onCancelEdit();
                       } else {
                         onEdit(product);
                       }
                     }
-                    // Reset interaction flag
-                    setIsTouchInteraction(false);
+                    // On touch devices, do absolutely nothing
                   }}
                   title={selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment"}
                 >

@@ -1,4 +1,3 @@
-import React from 'react';
 import { User, MapPin, AlertTriangle, Wrench } from 'lucide-react';
 import { Equipment } from '../types';
 

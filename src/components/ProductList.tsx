@@ -53,7 +53,7 @@ export function ProductList({
       </div>
       
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-yellow-800 border-b-2 border-white">
+        <table className="min-w-full divide-y divide-yellow-800">
           <thead className="bg-yellow-900">
             <tr>
               <th className="w-full px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">

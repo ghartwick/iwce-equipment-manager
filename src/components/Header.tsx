@@ -67,6 +67,19 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
             <Menu className="h-5 w-5" />
           </button>
 
+          {/* Mobile Alert Icon */}
+          <button
+            onClick={onToggleAlerts}
+            className="relative p-2 text-yellow-400 hover:text-yellow-300 lg:hidden"
+          >
+            <Bell className="h-5 w-5" />
+            {alertCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                {alertCount}
+              </span>
+            )}
+          </button>
+
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center space-x-2">
             <button
@@ -140,22 +153,15 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
             <div className="px-4 py-4 space-y-3">
               <button
                 onClick={() => { onAddProduct(); setShowMobileMenu(false); }}
-                className="flex items-center space-x-3 w-full p-3 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors"
+                className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
               >
                 <Plus className="h-5 w-5" />
                 <span>Add Equipment</span>
               </button>
-              <button
-                onClick={() => { onToggleAlerts(); setShowMobileMenu(false); }}
-                className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors"
-              >
-                <Bell className="h-5 w-5" />
-                <span>Alerts {alertCount > 0 && `(${alertCount})`}</span>
-              </button>
               {user && (
                 <button
                   onClick={() => { onLogout(); setShowMobileMenu(false); }}
-                  className="flex items-center space-x-3 w-full p-3 bg-red-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors"
+                  className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
                 >
                   <LogOut className="h-5 w-5" />
                   <span>Logout</span>

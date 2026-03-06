@@ -93,9 +93,9 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   };
 
   return (
-    <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-yellow-400">
+    <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <h2 className="text-base sm:text-lg font-semibold text-yellow-400">
           {formTitle}
         </h2>
         <div className="flex items-center space-x-2">
@@ -105,22 +105,22 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               className="p-1 text-yellow-400 hover:text-yellow-300"
               title="View edit history"
             >
-              <Clock className="h-5 w-5" />
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           )}
           <button
             onClick={onCancel}
             className="p-1 text-yellow-400 hover:text-yellow-300"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label className="block text-sm font-medium text-yellow-300 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-yellow-300 mb-1">
               Equipment Name *
             </label>
             <input

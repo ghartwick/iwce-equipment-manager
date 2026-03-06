@@ -172,12 +172,12 @@ function App() {
       
       <main className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3">
         {/* Mobile Alert Toggle */}
-        <div className="lg:hidden mb-3">
+        <div className="lg:hidden mb-2">
           <button
             onClick={() => setShowAlerts(!showAlerts)}
-            className="w-full p-2 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
+            className="w-full p-1 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
           >
-            <span className="text-yellow-300 text-sm">Equipment Alerts ({alerts.length})</span>
+            <span className="text-yellow-300 text-xs">Equipment Alerts ({alerts.length})</span>
             <span className="text-yellow-400 transform transition-transform">
               {showAlerts ? '▼' : '▶'}
             </span>
@@ -281,7 +281,7 @@ function App() {
 
             {/* Forms Section */}
             {(showAddForm || editingProduct) && (
-              <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-3 sm:p-4">
+              <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-2 sm:p-3">
                 <ProductForm
                   categories={categories}
                   product={editingProduct}
@@ -295,21 +295,21 @@ function App() {
 
             {/* Mobile Equipment Table - Optimized */}
             <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
-              <div className="p-3 sm:p-4">
+              <div className="p-2 sm:p-3">
                 {/* Mobile Filter Toggle */}
-                <div className="mb-3">
+                <div className="mb-2">
                   <button
                     onClick={() => setShowMobileFilters(!showMobileFilters)}
-                    className="w-full p-2 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
+                    className="w-full p-1 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
                   >
-                    <span className="text-yellow-300 text-sm">Filters</span>
+                    <span className="text-yellow-300 text-xs">Filters</span>
                     <span className="text-yellow-400 transform transition-transform">
                       {showMobileFilters ? '▼' : '▶'}
                     </span>
                   </button>
                 </div>
 
-                <div className="flex flex-col space-y-3">
+                <div className="flex flex-col space-y-2">
                   {/* Search - Mobile Full Width */}
                   <div className="flex-1">
                     <SearchBar 
@@ -320,7 +320,7 @@ function App() {
 
                   {/* Mobile Filters - Collapsible */}
                   {showMobileFilters && (
-                    <div className="mt-3">
+                    <div className="mt-2">
                       <FilterPanel
                         categories={categories}
                         selectedCategory={selectedCategory}

@@ -79,39 +79,39 @@ export function FilterPanel({
   };
 
   return (
-    <div className="bg-black border border-yellow-600 rounded-lg shadow p-4">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-black border border-yellow-600 rounded-lg shadow p-2 sm:p-4">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center space-x-2">
-          <Filter className="h-4 w-4 text-yellow-400" />
-          <h3 className="font-medium text-yellow-400">Categories</h3>
+          <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400" />
+          <h3 className="text-xs sm:text-sm font-medium text-yellow-400">Categories</h3>
         </div>
         <button
           onClick={() => setShowAddCategory(!showAddCategory)}
           className="p-1 text-yellow-400 hover:text-yellow-300"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
         </button>
       </div>
 
       {showAddCategory && (
-        <div className="mb-4 p-3 bg-yellow-900 rounded-lg space-y-3">
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
           <input
             type="text"
             placeholder="Category name"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
-            className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+            className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
           />
           <div className="flex space-x-2">
             <button
               onClick={handleAddCategory}
-              className="px-3 py-1 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600"
+              className="px-2 py-1 sm:px-3 sm:py-1 bg-yellow-500 text-black text-xs sm:text-sm rounded hover:bg-yellow-600"
             >
               Add
             </button>
             <button
               onClick={() => setShowAddCategory(false)}
-              className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400"
+              className="px-2 py-1 sm:px-3 sm:py-1 bg-gray-300 text-gray-700 text-xs sm:text-sm rounded hover:bg-gray-400"
             >
               Cancel
             </button>
@@ -120,25 +120,25 @@ export function FilterPanel({
       )}
 
       {editingCategoryId && (
-        <div className="mb-4 p-3 bg-yellow-900 rounded-lg space-y-3">
-          <h4 className="text-sm font-medium text-yellow-200">Edit Category</h4>
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
+          <h4 className="text-xs sm:text-sm font-medium text-yellow-200">Edit Category</h4>
           <input
             type="text"
             placeholder="Category name"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
-            className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+            className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
           />
           <div className="flex space-x-2">
             <button
               onClick={handleUpdateCategory}
-              className="px-3 py-1 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600"
+              className="px-2 py-1 sm:px-3 sm:py-1 bg-yellow-500 text-black text-xs sm:text-sm rounded hover:bg-yellow-600"
             >
               Update
             </button>
             <button
               onClick={handleCancelEdit}
-              className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400"
+              className="px-2 py-1 sm:px-3 sm:py-1 bg-gray-300 text-gray-700 text-xs sm:text-sm rounded hover:bg-gray-400"
             >
               Cancel
             </button>
@@ -146,10 +146,10 @@ export function FilterPanel({
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-1 sm:space-y-2">
         <button
           onClick={() => onCategoryChange('all')}
-          className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+          className={`w-full text-left px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm ${
             selectedCategory === 'all'
               ? 'bg-yellow-600 text-black'
               : 'hover:bg-yellow-900 text-yellow-200'
@@ -160,7 +160,7 @@ export function FilterPanel({
         {sortedCategories.map((category) => (
           <div
             key={category.id}
-            className={`w-full px-3 py-2 rounded-md transition-colors flex items-center justify-between group ${
+            className={`w-full px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors flex items-center justify-between group text-xs sm:text-sm ${
               selectedCategory === category.id
                 ? 'bg-yellow-600 text-black'
                 : 'hover:bg-yellow-900 text-yellow-200'
@@ -178,18 +178,18 @@ export function FilterPanel({
                 className="p-1 text-yellow-500 hover:text-yellow-300"
                 title="Edit category"
               >
-                <Edit2 className="h-3 w-3" />
+                <Edit2 className="h-2 w-2 sm:h-3 sm:w-3" />
               </button>
               <button
                 onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete the "${category.name}" category? All products in this category will be permanently deleted.`)) {
+                  if (window.confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
                     onDeleteCategory(category.id);
                   }
                 }}
-                className="p-1 text-red-500 hover:text-red-700"
+                className="p-1 text-red-500 hover:text-red-300"
                 title="Delete category"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
               </button>
             </div>
           </div>

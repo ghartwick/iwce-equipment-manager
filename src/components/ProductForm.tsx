@@ -9,7 +9,7 @@ interface ProductFormProps {
   onSubmit: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
   onDelete?: () => void;
-  userRole?: 'admin' | 'manager' | 'technician';
+  userRole?: 'admin' | 'technician';
 }
 
 export function ProductForm({ categories, product, onSubmit, onCancel, onDelete, userRole }: ProductFormProps) {
@@ -241,7 +241,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
       </div>
 
       <div className="flex justify-end space-x-2 pt-4">
-        {onDelete && product && (
+        {onDelete && product && userRole === 'admin' && (
           <button
             type="button"
             onClick={() => {

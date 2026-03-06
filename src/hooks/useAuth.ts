@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'manager' | 'technician';
+  role: 'admin' | 'technician';
   name: string;
 }
 
@@ -82,29 +82,20 @@ export function useAuth() {
         try {
           // Demo users - in production, this would be an API call
           const demoUsers: Record<string, { password: string; user: User }> = {
-            admin: {
-              password: 'admin123',
+            Admin: {
+              password: 'Admin123',
               user: {
                 id: '1',
-                username: 'admin',
+                username: 'Admin',
                 role: 'admin',
                 name: 'System Administrator',
               },
             },
-            manager: {
-              password: 'manager123',
+            Field: {
+              password: 'Field123',
               user: {
                 id: '2',
-                username: 'manager',
-                role: 'manager',
-                name: 'Equipment Manager',
-              },
-            },
-            tech: {
-              password: 'tech123',
-              user: {
-                id: '3',
-                username: 'tech',
+                username: 'Field',
                 role: 'technician',
                 name: 'Field Technician',
               },

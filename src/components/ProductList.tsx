@@ -12,7 +12,7 @@ interface ProductListProps {
   selectedEquipmentId?: string;
   onEditProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancelEdit: () => void;
-  userRole?: 'admin' | 'manager' | 'technician';
+  userRole?: 'admin' | 'technician';
 }
 
 export function ProductList({

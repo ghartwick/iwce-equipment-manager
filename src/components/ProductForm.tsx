@@ -164,7 +164,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               value={formData.category}
               onChange={(e) => handleInputChange('category', e.target.value)}
               disabled={isEditing && !canEditRestrictedFields}
-              className={`w-full px-3 py-2 border rounded-md outline-none ${
+              className={`w-full px-3 py-3 border rounded-md outline-none text-lg ${
                 isEditing && !canEditRestrictedFields
                   ? 'border-gray-600 bg-gray-900 text-gray-400 cursor-not-allowed'
                   : 'border-yellow-600 bg-black text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
@@ -248,7 +248,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
                   onDelete();
                 }
               }}
-              className="px-3 py-2 border border-red-600 rounded-md text-red-300 hover:bg-red-900 text-sm"
+              className="px-4 py-3 border border-red-600 rounded-md text-red-300 hover:bg-red-900 text-sm font-medium"
             >
               Delete
             </button>
@@ -256,13 +256,13 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-2 border border-yellow-600 rounded-md text-yellow-300 hover:bg-yellow-900 text-sm"
+            className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-300 hover:bg-yellow-900 text-sm font-medium"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-yellow-500 text-black rounded-md hover:bg-yellow-400 text-sm"
+            className="px-4 py-3 bg-yellow-500 text-black rounded-md hover:bg-yellow-400 text-sm font-medium"
           >
             {isEditing ? 'Update Equipment' : 'Add Equipment'}
           </button>

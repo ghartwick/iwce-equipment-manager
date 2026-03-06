@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Bell, User, LogOut, ChevronDown } from 'lucide-react';
+import { Plus, Bell, User, LogOut, ChevronDown, Menu } from 'lucide-react';
 
 interface User {
   id: string;
@@ -16,8 +16,9 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
-export function Header({ onAddProduct, alertCount, onToggleAlerts, user, onLogout }: HeaderProps) {
+export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogout }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const getRoleDisplay = (role: string) => {
     switch (role) {
@@ -53,12 +54,21 @@ export function Header({ onAddProduct, alertCount, onToggleAlerts, user, onLogou
             <img 
               src="/top-left-logo.png" 
               alt="IWCE Logo" 
-              className="h-8 w-8"
+              className="h-6 w-6 sm:h-8 sm:w-8"
             />
-            <h1 className="text-xl font-semibold text-yellow-400">IWCE Equipment</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-yellow-400">IWCE Equipment</h1>
           </div>
           
-          <div className="flex items-center space-x-4">
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="p-2 text-yellow-400 hover:text-yellow-300 lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          {/* Desktop Actions */}
+          <div className="hidden lg:flex items-center space-x-2">
             <button
               onClick={onAddProduct}
               className="p-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors"
@@ -123,6 +133,37 @@ export function Header({ onAddProduct, alertCount, onToggleAlerts, user, onLogou
             )}
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {showMobileMenu && (
+          <div className="lg:hidden border-t border-yellow-800">
+            <div className="px-4 py-4 space-y-3">
+              <button
+                onClick={() => { onAddProduct(); setShowMobileMenu(false); }}
+                className="flex items-center space-x-3 w-full p-3 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Add Equipment</span>
+              </button>
+              <button
+                onClick={() => { onToggleAlerts(); setShowMobileMenu(false); }}
+                className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors"
+              >
+                <Bell className="h-5 w-5" />
+                <span>Alerts {alertCount > 0 && `(${alertCount})`}</span>
+              </button>
+              {user && (
+                <button
+                  onClick={() => { onLogout(); setShowMobileMenu(false); }}
+                  className="flex items-center space-x-3 w-full p-3 bg-red-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Click outside to close menu */}

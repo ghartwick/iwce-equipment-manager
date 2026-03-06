@@ -80,9 +80,13 @@ export function ProductList({
                       : 'lg:hover:bg-yellow-900 lg:hover:bg-opacity-20'
                     }
                   `}
-                  onClick={() => {
+                  onClick={(e: React.MouseEvent) => {
                     // Only handle click on desktop (non-touch devices)
-                    if (!('ontouchstart' in window)) {
+                    // Also prevent handling if click came from edit button
+                    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                    const clickedButton = (e.target as HTMLElement).closest('button');
+                    
+                    if (!isTouchDevice && !clickedButton) {
                       if (selectedEquipmentId === product.id) {
                         // If already selected, toggle off (hide form)
                         onCancelEdit();
@@ -113,7 +117,8 @@ export function ProductList({
                   </td>
                   <td className="px-6 py-4 text-right lg:hidden">
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent event bubbling to row
                         if (selectedEquipmentId === product.id) {
                           // If already selected, toggle off (hide form)
                           onCancelEdit();
@@ -134,7 +139,7 @@ export function ProductList({
                 {/* Inline Edit Form - Appears directly below selected equipment */}
                 {selectedEquipmentId === product.id && (
                   <tr>
-                    <td colSpan={2} className="px-0 py-0 border-t border-yellow-800">
+                    <td colSpan={2} className="lg:col-span-1 px-0 py-0 border-t border-yellow-800">
                       <div className="bg-yellow-900">
                         <ProductForm
                           categories={categories}
@@ -146,6 +151,7 @@ export function ProductList({
                         />
                       </div>
                     </td>
+                    <td className="lg:hidden px-0 py-0"></td>
                   </tr>
                 )}
               </React.Fragment>

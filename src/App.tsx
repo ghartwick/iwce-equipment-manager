@@ -40,7 +40,7 @@ function App() {
   const [editingProduct, setEditingProduct] = useState<Equipment | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [showAlerts, setShowAlerts] = useState(true);
+  const [showAlerts, setShowAlerts] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const filteredProducts = products.filter(product => {
@@ -171,19 +171,6 @@ function App() {
       />
       
       <main className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3">
-        {/* Mobile Alert Toggle */}
-        <div className="lg:hidden mb-2">
-          <button
-            onClick={() => setShowAlerts(!showAlerts)}
-            className="w-full p-1 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
-          >
-            <span className="text-yellow-300 text-xs">Equipment Alerts ({alerts.length})</span>
-            <span className="text-yellow-400 transform transition-transform">
-              {showAlerts ? '▼' : '▶'}
-            </span>
-          </button>
-        </div>
-
         {/* Desktop Layout - Original Design */}
         <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Desktop Alerts - Always Visible */}

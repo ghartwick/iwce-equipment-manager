@@ -80,7 +80,7 @@ export function ProductList({
                     }
                   `}
                   onTouchStart={(e) => {
-                    // Record touch start position
+                    // Record touch start position only
                     setTouchStartY(e.touches[0].clientY);
                     setTouchStartX(e.touches[0].clientX);
                   }}
@@ -94,17 +94,20 @@ export function ProductList({
                       const deltaX = Math.abs(touchEndX - touchStartX);
                       
                       // Only trigger edit if it's a tap (minimal movement)
-                      // Threshold: 10 pixels movement max for tap
-                      if (deltaY < 10 && deltaX < 10) {
+                      // Threshold: 15 pixels movement max for tap
+                      if (deltaY < 15 && deltaX < 15) {
                         e.preventDefault(); // Prevent click event from firing
-                        // Add touch feedback for mobile
-                        if (selectedEquipmentId === product.id) {
-                          // If already selected, toggle off (hide form)
-                          onCancelEdit();
-                        } else {
-                          // If different equipment, select it (show form)
-                          onEdit(product);
-                        }
+                        // Add delay to ensure it's not a scroll
+                        setTimeout(() => {
+                          // Add touch feedback for mobile
+                          if (selectedEquipmentId === product.id) {
+                            // If already selected, toggle off (hide form)
+                            onCancelEdit();
+                          } else {
+                            // If different equipment, select it (show form)
+                            onEdit(product);
+                          }
+                        }, 100);
                       }
                     }
                     

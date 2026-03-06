@@ -70,22 +70,26 @@ export function ProductList({
                       ? (product.repair ? "bg-red-900 ring-2 ring-yellow-400 ring-opacity-50" : "bg-yellow-900 ring-2 ring-yellow-400 ring-opacity-50") 
                       : (product.repair ? "bg-red-950" : "bg-black")
                     } 
-                    cursor-pointer
+                    lg:cursor-pointer
                     transition-all duration-200
                     ${selectedEquipmentId === product.id
                       ? 'bg-yellow-900 bg-opacity-50'
-                      : 'hover:bg-yellow-900 hover:bg-opacity-20'
+                      : 'lg:hover:bg-yellow-900 lg:hover:bg-opacity-20'
                     }
                   `}
                   onClick={() => {
-                    // Simple onClick like Add Equipment button
-                    if (selectedEquipmentId === product.id) {
-                      onCancelEdit();
-                    } else {
-                      onEdit(product);
+                    // Only allow click-to-edit on desktop (non-touch devices)
+                    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+                    if (!isTouchDevice) {
+                      if (selectedEquipmentId === product.id) {
+                        onCancelEdit();
+                      } else {
+                        onEdit(product);
+                      }
                     }
+                    // On mobile devices, do nothing - no click-to-edit
                   }}
-                  title={selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment"}
+                  title={!('ontouchstart' in window || navigator.maxTouchPoints > 0) ? (selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment") : ""}
                 >
                   <td className="px-6 py-4">
                     <div className="max-w-xs">

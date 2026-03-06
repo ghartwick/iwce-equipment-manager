@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Download, Edit } from 'lucide-react';
+import { Package, Download } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { exportToExcel } from '../utils/exportToExcel';
 import { ProductForm } from './ProductForm';
@@ -56,11 +56,8 @@ export function ProductList({
         <table className="min-w-full divide-y divide-yellow-800">
           <thead className="bg-yellow-900">
             <tr>
-              <th className="w-full px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
                 Equipment
-              </th>
-              <th className="px-6 py-3 text-right">
-                <span className="text-xs font-medium text-yellow-200 uppercase tracking-wider">Actions</span>
               </th>
             </tr>
           </thead>
@@ -73,12 +70,23 @@ export function ProductList({
                       ? (product.repair ? "bg-red-900 ring-2 ring-yellow-400 ring-opacity-50" : "bg-yellow-900 ring-2 ring-yellow-400 ring-opacity-50") 
                       : (product.repair ? "bg-red-950" : "bg-black")
                     } 
-                    transition-colors duration-200
+                    cursor-pointer
+                    transition-all duration-200
                     ${selectedEquipmentId === product.id
                       ? 'bg-yellow-900 bg-opacity-50'
-                      : ''
+                      : 'hover:bg-yellow-900 hover:bg-opacity-20'
                     }
                   `}
+                  onClick={() => {
+                    if (selectedEquipmentId === product.id) {
+                      // If already selected, toggle off (hide form)
+                      onCancelEdit();
+                    } else {
+                      // If different equipment, select it (show form)
+                      onEdit(product);
+                    }
+                  }}
+                  title={selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment"}
                 >
                   <td className="px-6 py-4">
                     <div className="max-w-xs">
@@ -97,29 +105,12 @@ export function ProductList({
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => {
-                        if (selectedEquipmentId === product.id) {
-                          // If already selected, toggle off (hide form)
-                          onCancelEdit();
-                        } else {
-                          // If different equipment, select it (show form)
-                          onEdit(product);
-                        }
-                      }}
-                      className="inline-flex items-center justify-center p-2 text-yellow-400 bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded-lg hover:bg-yellow-800 hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
-                      title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment item"}
-                    >
-                      <Edit className="h-5 w-5" />
-                    </button>
-                  </td>
                 </tr>
                 
                 {/* Inline Edit Form - Appears directly below selected equipment */}
                 {selectedEquipmentId === product.id && (
                   <tr>
-                    <td colSpan={2} className="px-0 py-0 border-t border-yellow-800">
+                    <td colSpan={1} className="px-0 py-0 border-t border-yellow-800">
                       <div className="bg-yellow-900">
                         <ProductForm
                           categories={categories}

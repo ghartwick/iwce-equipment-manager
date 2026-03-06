@@ -25,9 +25,7 @@ export function ProductList({
   onCancelEdit,
   userRole,
 }: ProductListProps) {
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [isTouchInteraction, setIsTouchInteraction] = useState(false);
+  const [touchStartTime, setTouchStartTime] = useState<number | null>(null);
   const selectedProduct = products.find(p => p.id === selectedEquipmentId);
 
   if (products.length === 0) {
@@ -79,57 +77,27 @@ export function ProductList({
                       ? 'bg-yellow-900 bg-opacity-50'
                       : 'hover:bg-yellow-900 hover:bg-opacity-20'
                     }
-                    lg:pointer-events-auto
-                    pointer-events-none
                   `}
-                  style={{ touchAction: 'pan-y' }}
-                  onTouchStart={(e) => {
-                    // Record touch start position
-                    setTouchStartY(e.touches[0].clientY);
-                    setTouchStartX(e.touches[0].clientX);
-                    setIsTouchInteraction(false); // Start as not scrolling
+                  onTouchStart={() => {
+                    // Record when touch starts (no action yet)
+                    setTouchStartTime(Date.now());
                   }}
-                  onTouchMove={(e) => {
-                    // If there's significant movement, mark as scrolling
-                    if (touchStartY !== null && touchStartX !== null) {
-                      const currentY = e.touches[0].clientY;
-                      const currentX = e.touches[0].clientX;
-                      const deltaY = Math.abs(currentY - touchStartY);
-                      const deltaX = Math.abs(currentX - touchStartX);
-                      
-                      // Industry standard: 5px threshold for scroll detection
-                      if (deltaY > 5 || deltaX > 5) {
-                        setIsTouchInteraction(true); // Mark as scrolling
-                      }
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    // Calculate touch movement
-                    const touchEndY = e.changedTouches[0].clientY;
-                    const touchEndX = e.changedTouches[0].clientX;
+                  onTouchEnd={() => {
+                    // Only trigger edit on touch end
+                    const touchDuration = touchStartTime ? Date.now() - touchStartTime : 0;
                     
-                    if (touchStartY !== null && touchStartX !== null) {
-                      const deltaY = Math.abs(touchEndY - touchStartY);
-                      const deltaX = Math.abs(touchEndX - touchStartX);
-                      
-                      // Only trigger edit if it's a tap (minimal movement) and not scrolling
-                      // Industry standard: 5px threshold
-                      if (deltaY < 5 && deltaX < 5 && !isTouchInteraction) {
-                        // Mobile: Edit on touch end
-                        if (selectedEquipmentId === product.id) {
-                          onCancelEdit();
-                        } else {
-                          onEdit(product);
-                        }
+                    // Only trigger if it was a quick tap (less than 200ms)
+                    if (touchDuration < 200) {
+                      if (selectedEquipmentId === product.id) {
+                        onCancelEdit();
+                      } else {
+                        onEdit(product);
                       }
                     }
                     
-                    // Reset touch positions and interaction flag
-                    setTouchStartY(null);
-                    setTouchStartX(null);
-                    setIsTouchInteraction(false);
+                    setTouchStartTime(null);
                   }}
-                  onClick={(_) => {
+                  onClick={(e) => {
                     // Desktop only: Edit on click (non-touch devices)
                     const isTouchDevice = 'ontouchstart' in window;
                     if (!isTouchDevice) {
@@ -139,7 +107,8 @@ export function ProductList({
                         onEdit(product);
                       }
                     }
-                    // On touch devices, completely ignore click events
+                    // On touch devices, ignore click events
+                    e.preventDefault();
                   }}
                   title={selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment"}
                 >

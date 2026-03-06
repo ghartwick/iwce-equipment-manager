@@ -1,9 +1,8 @@
-import { Equipment, Category } from '../types';
+import { Equipment } from '../types';
 import { Edit, Trash2, Package, AlertTriangle, MapPin, User, Wrench } from 'lucide-react';
 
 interface MobileProductListProps {
   products: Equipment[];
-  categories: Category[];
   onEdit: (product: Equipment) => void;
   onDelete: (id: string) => void;
   userRole: string;
@@ -11,7 +10,6 @@ interface MobileProductListProps {
 
 export function MobileProductList({ 
   products, 
-  categories, 
   onEdit, 
   onDelete, 
   userRole 

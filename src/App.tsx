@@ -328,7 +328,6 @@ function App() {
               {/* Mobile Equipment List */}
               <MobileProductList
                 products={filteredProducts}
-                categories={categories}
                 onEdit={handleEditClick}
                 onDelete={deleteProduct}
                 userRole={user?.role || 'technician'}

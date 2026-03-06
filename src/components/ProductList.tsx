@@ -27,6 +27,7 @@ export function ProductList({
 }: ProductListProps) {
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [isTouchInteraction, setIsTouchInteraction] = useState(false);
   const selectedProduct = products.find(p => p.id === selectedEquipmentId);
 
   if (products.length === 0) {
@@ -80,14 +81,12 @@ export function ProductList({
                     }
                   `}
                   onTouchStart={(e) => {
-                    // Record touch start position
+                    // Record touch start position and mark as touch interaction
                     setTouchStartY(e.touches[0].clientY);
                     setTouchStartX(e.touches[0].clientX);
+                    setIsTouchInteraction(true);
                   }}
                   onTouchEnd={(e) => {
-                    // Prevent click event from firing on mobile
-                    e.preventDefault();
-                    
                     // Calculate touch movement
                     const touchEndY = e.changedTouches[0].clientY;
                     const touchEndX = e.changedTouches[0].clientX;
@@ -108,21 +107,23 @@ export function ProductList({
                       }
                     }
                     
-                    // Reset touch positions
+                    // Reset touch positions and interaction flag
                     setTouchStartY(null);
                     setTouchStartX(null);
+                    setTimeout(() => setIsTouchInteraction(false), 100);
                   }}
                   onClick={(_) => {
-                    // Desktop: Edit on click (non-touch devices)
+                    // Only handle click on desktop (non-touch devices) or when not a touch interaction
                     const isTouchDevice = 'ontouchstart' in window;
-                    if (!isTouchDevice) {
+                    if (!isTouchDevice || !isTouchInteraction) {
                       if (selectedEquipmentId === product.id) {
                         onCancelEdit();
                       } else {
                         onEdit(product);
                       }
                     }
-                    // On touch devices, do nothing - let onTouchEnd handle it
+                    // Reset interaction flag
+                    setIsTouchInteraction(false);
                   }}
                   title={selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment"}
                 >

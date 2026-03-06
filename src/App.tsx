@@ -338,8 +338,6 @@ function App() {
               <MobileProductList
                 products={filteredProducts}
                 onEdit={handleEditClick}
-                onDelete={deleteProduct}
-                userRole={user?.role || 'technician'}
               />
             </div>
           </div>

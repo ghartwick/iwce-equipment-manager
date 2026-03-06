@@ -1,24 +1,23 @@
+import React from 'react';
+import { User, MapPin, AlertTriangle, Wrench } from 'lucide-react';
 import { Equipment } from '../types';
-import { Edit, Trash2, Package, AlertTriangle, MapPin, User, Wrench } from 'lucide-react';
 
 interface MobileProductListProps {
   products: Equipment[];
   onEdit: (product: Equipment) => void;
-  onDelete: (id: string) => void;
-  userRole: string;
 }
 
 export function MobileProductList({ 
   products, 
-  onEdit, 
-  onDelete, 
-  userRole 
+  onEdit
 }: MobileProductListProps) {
 
   if (products.length === 0) {
     return (
       <div className="p-8 text-center">
-        <Package className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+        <div className="h-12 w-12 bg-yellow-400 rounded-full mx-auto mb-4 flex items-center justify-center">
+          <span className="text-black text-xl font-bold">!</span>
+        </div>
         <h3 className="text-lg font-medium text-yellow-300 mb-2">No equipment found</h3>
         <p className="text-yellow-600">Get started by adding your first equipment to the inventory.</p>
       </div>
@@ -38,7 +37,7 @@ export function MobileProductList({
           {/* Equipment Name - Primary */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1">
-              <h3 className={`text-base font-medium ${product.repair ? 'text-red-400' : 'text-yellow-100'} break-words`}>
+              <h3 className={`text-sm font-medium ${product.repair ? 'text-red-400' : 'text-yellow-100'} break-words`}>
                 {product.name}
               </h3>
               {product.repair && (
@@ -46,26 +45,6 @@ export function MobileProductList({
                   <AlertTriangle className="h-3 w-3 text-red-500" />
                   <span className="text-red-500 text-xs font-medium">Needs Repair</span>
                 </div>
-              )}
-            </div>
-            
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-2 ml-4">
-              <button
-                onClick={() => onEdit(product)}
-                className="p-2 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
-                title="Edit Equipment"
-              >
-                <Edit className="h-3 w-3" />
-              </button>
-              {(userRole === 'admin' || userRole === 'manager') && (
-                <button
-                  onClick={() => onDelete(product.id)}
-                  className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900 hover:bg-opacity-30 rounded-lg transition-colors"
-                  title="Delete Equipment"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
               )}
             </div>
           </div>

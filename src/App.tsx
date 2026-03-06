@@ -187,7 +187,7 @@ function App() {
           )}
 
           {/* Desktop Forms Section */}
-          {(showAddForm || editingProduct) && (
+          {showAddForm && (
             <div className="mb-3">
               <div className="max-w-4xl mx-auto">
                 <ProductForm
@@ -267,7 +267,7 @@ function App() {
             </div>
 
             {/* Forms Section */}
-            {(showAddForm || editingProduct) && (
+            {showAddForm && (
               <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-2 sm:p-3">
                 <ProductForm
                   categories={categories}

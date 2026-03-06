@@ -59,6 +59,9 @@ export function ProductList({
               <th className="w-full px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
                 Equipment
               </th>
+              <th className="px-6 py-3 text-right lg:hidden">
+                <span className="text-xs font-medium text-yellow-200 uppercase tracking-wider">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody className="bg-black divide-y divide-yellow-800">
@@ -131,7 +134,7 @@ export function ProductList({
                 {/* Inline Edit Form - Appears directly below selected equipment */}
                 {selectedEquipmentId === product.id && (
                   <tr>
-                    <td colSpan={1} className="px-0 py-0 border-t border-yellow-800">
+                    <td colSpan={2} className="px-0 py-0 border-t border-yellow-800">
                       <div className="bg-yellow-900">
                         <ProductForm
                           categories={categories}

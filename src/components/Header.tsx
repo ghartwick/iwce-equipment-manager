@@ -84,7 +84,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
           <div className="hidden lg:flex items-center space-x-2">
             <button
               onClick={onAddProduct}
-              className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-400 transition-colors"
+              className="p-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors"
               title="Add Equipment"
             >
               <Plus className="h-4 w-4" />
@@ -153,7 +153,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
             <div className="px-4 py-4 space-y-3">
               <button
                 onClick={() => { onAddProduct(); setShowMobileMenu(false); }}
-                className="flex items-center space-x-3 w-full p-3 bg-red-500 text-white rounded-lg hover:bg-red-400 transition-colors"
+                className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
               >
                 <Plus className="h-5 w-5" />
                 <span>Add Equipment</span>

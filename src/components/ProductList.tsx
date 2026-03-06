@@ -59,7 +59,7 @@ export function ProductList({
               <th className="w-full px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
                 Equipment
               </th>
-              <th className="px-6 py-3 text-right block lg:hidden">
+              <th className="px-6 py-3 text-right">
                 <span className="text-xs font-medium text-yellow-200 uppercase tracking-wider">Actions</span>
               </th>
             </tr>
@@ -73,31 +73,12 @@ export function ProductList({
                       ? (product.repair ? "bg-red-900 ring-2 ring-yellow-400 ring-opacity-50" : "bg-yellow-900 ring-2 ring-yellow-400 ring-opacity-50") 
                       : (product.repair ? "bg-red-950" : "bg-black")
                     } 
-                    lg:cursor-pointer
                     transition-colors duration-200
                     ${selectedEquipmentId === product.id
                       ? 'bg-yellow-900 bg-opacity-50'
-                      : 'lg:hover:bg-yellow-900 lg:hover:bg-opacity-20'
+                      : ''
                     }
                   `}
-                  onClick={() => {
-                    // Only handle click on desktop (non-touch devices)
-                    // More comprehensive device detection
-                    const isTouchDevice = 'ontouchstart' in window || 
-                                        navigator.maxTouchPoints > 0 ||
-                                        (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-                    
-                    if (!isTouchDevice) {
-                      if (selectedEquipmentId === product.id) {
-                        // If already selected, toggle off (hide form)
-                        onCancelEdit();
-                      } else {
-                        // If different equipment, select it (show form)
-                        onEdit(product);
-                      }
-                    }
-                  }}
-                  title={!('ontouchstart' in window || navigator.maxTouchPoints > 0 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) ? (selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment") : ""}
                 >
                   <td className="px-6 py-4">
                     <div className="max-w-xs">
@@ -116,7 +97,7 @@ export function ProductList({
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right block lg:hidden">
+                  <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => {
                         if (selectedEquipmentId === product.id) {
@@ -139,7 +120,7 @@ export function ProductList({
                 {/* Inline Edit Form - Appears directly below selected equipment */}
                 {selectedEquipmentId === product.id && (
                   <tr>
-                    <td colSpan={1} className="px-0 py-0 border-t border-yellow-800">
+                    <td colSpan={2} className="px-0 py-0 border-t border-yellow-800">
                       <div className="bg-yellow-900">
                         <ProductForm
                           categories={categories}
@@ -151,7 +132,6 @@ export function ProductList({
                         />
                       </div>
                     </td>
-                    <td className="px-0 py-0 lg:hidden"></td>
                   </tr>
                 )}
               </React.Fragment>

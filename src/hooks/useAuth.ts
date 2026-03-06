@@ -102,7 +102,12 @@ export function useAuth() {
             },
           };
 
-          const userData = demoUsers[username.toLowerCase()];
+          // Find user case-insensitively
+          const userData = Object.keys(demoUsers).find(key => 
+            key.toLowerCase() === username.toLowerCase()
+          ) ? demoUsers[Object.keys(demoUsers).find(key => 
+            key.toLowerCase() === username.toLowerCase()
+          )!] : undefined;
           
           if (!userData || userData.password !== password) {
             const error = 'Invalid username or password';

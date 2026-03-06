@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Package, Download } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { exportToExcel } from '../utils/exportToExcel';
@@ -25,7 +25,6 @@ export function ProductList({
   onCancelEdit,
   userRole,
 }: ProductListProps) {
-  const [touchStartTime, setTouchStartTime] = useState<number | null>(null);
   const selectedProduct = products.find(p => p.id === selectedEquipmentId);
 
   if (products.length === 0) {
@@ -78,37 +77,13 @@ export function ProductList({
                       : 'hover:bg-yellow-900 hover:bg-opacity-20'
                     }
                   `}
-                  onTouchStart={() => {
-                    // Record when touch starts (no action yet)
-                    setTouchStartTime(Date.now());
-                  }}
-                  onTouchEnd={() => {
-                    // Only trigger edit on touch end
-                    const touchDuration = touchStartTime ? Date.now() - touchStartTime : 0;
-                    
-                    // Only trigger if it was a quick tap (less than 200ms)
-                    if (touchDuration < 200) {
-                      if (selectedEquipmentId === product.id) {
-                        onCancelEdit();
-                      } else {
-                        onEdit(product);
-                      }
+                  onClick={() => {
+                    // Simple onClick like Add Equipment button
+                    if (selectedEquipmentId === product.id) {
+                      onCancelEdit();
+                    } else {
+                      onEdit(product);
                     }
-                    
-                    setTouchStartTime(null);
-                  }}
-                  onClick={(e) => {
-                    // Desktop only: Edit on click (non-touch devices)
-                    const isTouchDevice = 'ontouchstart' in window;
-                    if (!isTouchDevice) {
-                      if (selectedEquipmentId === product.id) {
-                        onCancelEdit();
-                      } else {
-                        onEdit(product);
-                      }
-                    }
-                    // On touch devices, ignore click events
-                    e.preventDefault();
                   }}
                   title={selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment"}
                 >

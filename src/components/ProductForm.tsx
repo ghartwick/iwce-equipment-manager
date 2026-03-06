@@ -181,31 +181,31 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-yellow-300 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-yellow-300 mb-1">
               Employee
             </label>
             <input
               type="text"
               value={formData.employee}
               onChange={(e) => handleInputChange('employee', e.target.value)}
-              className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-yellow-300 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-yellow-300 mb-1">
               Site
             </label>
             <input
               type="text"
               value={formData.site}
               onChange={(e) => handleInputChange('site', e.target.value)}
-              className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-yellow-300 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-yellow-300 mb-1">
               Repair
             </label>
             <div className="flex items-center space-x-3">
@@ -217,57 +217,57 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-black border border-yellow-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
-                <span className="ml-3 text-sm font-medium text-yellow-300">
+                <span className="ml-3 text-xs sm:text-sm font-medium text-yellow-300">
                   {formData.repair ? 'Yes' : 'No'}
                 </span>
               </label>
             </div>
           </div>
 
-          {formData.repair && (
-            <div>
-              <label className="block text-sm font-medium text-yellow-300 mb-1">
-                Repair Description
-              </label>
-              <textarea
-                rows={3}
-                value={formData.repairDescription}
-                onChange={(e) => handleInputChange('repairDescription', e.target.value)}
-                placeholder="Describe the repair needed or repair details..."
-                className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
-              />
-            </div>
-          )}
-        </div>
+        {formData.repair && (
+          <div className="mt-2 sm:mt-3">
+            <label className="block text-xs sm:text-sm font-medium text-yellow-300 mb-1">
+              Repair Description
+            </label>
+            <textarea
+              rows={3}
+              value={formData.repairDescription}
+              onChange={(e) => handleInputChange('repairDescription', e.target.value)}
+              placeholder="Describe the repair needed or repair details..."
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+            />
+          </div>
+        )}
+      </div>
 
-        <div className="flex justify-end space-x-2 pt-4">
-          {onDelete && product && (
-            <button
-              type="button"
-              onClick={() => {
-                if (window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
-                  onDelete();
-                }
-              }}
-              className="px-4 py-3 border border-red-600 rounded-md text-red-300 hover:bg-red-900 text-sm font-medium"
-            >
-              Delete
-            </button>
-          )}
+      <div className="flex justify-end space-x-2 pt-4">
+        {onDelete && product && (
           <button
             type="button"
-            onClick={onCancel}
-            className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-300 hover:bg-yellow-900 text-sm font-medium"
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
+                onDelete();
+              }
+            }}
+            className="px-4 py-3 border border-red-600 rounded-md text-red-300 hover:bg-red-900 text-sm font-medium"
           >
-            Cancel
+            Delete
           </button>
-          <button
-            type="submit"
-            className="px-4 py-3 bg-yellow-500 text-black rounded-md hover:bg-yellow-400 text-sm font-medium"
-          >
-            {isEditing ? 'Update Equipment' : 'Add Equipment'}
-          </button>
-        </div>
+        )}
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-300 hover:bg-yellow-900 text-sm font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="px-4 py-3 bg-yellow-500 text-black rounded-md hover:bg-yellow-600 text-sm font-medium"
+        >
+          {isEditing ? 'Update' : 'Add'} Equipment
+        </button>
+      </div>
       </form>
       
       {/* Equipment Log - Shows when log button is clicked */}

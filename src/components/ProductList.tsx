@@ -87,13 +87,13 @@ export function ProductList({
                 >
                   <td className="px-6 py-4">
                     <div className="max-w-xs">
-                      <div className={`text-sm font-medium ${product.repair ? "text-red-400" : "text-yellow-100"} break-words`}>{product.name}</div>
-                      <div className="text-sm text-yellow-600">
+                      <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-400" : "text-yellow-100"} break-words`}>{product.name}</div>
+                      <div className="text-xs sm:text-sm text-yellow-600">
                         {product.employee && <div className="break-words">{product.employee}</div>}
                         {product.site && <div className="break-words">{product.site}</div>}
                         {product.repair && (
                           <>
-                            <div className="text-red-500 font-medium break-words">Repair: Yes</div>
+                            <div className="text-xs sm:text-sm text-red-500 font-medium break-words">Repair: Yes</div>
                             {product.repairDescription && (
                               <div className="text-xs text-red-400 mt-1 italic break-words">Repair: {product.repairDescription}</div>
                             )}

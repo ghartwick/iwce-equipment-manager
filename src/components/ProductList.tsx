@@ -102,10 +102,10 @@ export function ProductList({
                           onEdit(product);
                         }
                       }}
-                      className="inline-flex items-center justify-center p-2 sm:p-1 text-yellow-400 bg-yellow-900 bg-opacity-20 rounded-lg hover:bg-yellow-800 hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                      className="inline-flex items-center justify-center p-4 sm:p-1 text-white bg-red-500 border-2 border-red-400 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-red-500/50"
                       title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
                     >
-                      <Edit className="h-4 w-4 sm:h-3 sm:w-3" />
+                      <Edit className="h-6 w-6 sm:h-3 sm:w-3" />
                     </button>
                   </td>
                 </tr>

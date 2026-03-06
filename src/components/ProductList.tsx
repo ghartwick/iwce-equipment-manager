@@ -85,6 +85,9 @@ export function ProductList({
                     setTouchStartX(e.touches[0].clientX);
                   }}
                   onTouchEnd={(e) => {
+                    // Prevent click event from firing on mobile
+                    e.preventDefault();
+                    
                     // Calculate touch movement
                     const touchEndY = e.changedTouches[0].clientY;
                     const touchEndX = e.changedTouches[0].clientX;
@@ -119,6 +122,7 @@ export function ProductList({
                         onEdit(product);
                       }
                     }
+                    // On touch devices, do nothing - let onTouchEnd handle it
                   }}
                   title={selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment"}
                 >

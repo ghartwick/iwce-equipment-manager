@@ -139,7 +139,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-yellow-300 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-yellow-300 mb-1">
               Serial Number *
             </label>
             <input
@@ -148,7 +148,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               value={formData.serialNumber}
               onChange={(e) => handleInputChange('serialNumber', e.target.value)}
               disabled={isEditing && !canEditRestrictedFields}
-              className={`w-full px-3 py-2 border rounded-md outline-none ${
+              className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
                 isEditing && !canEditRestrictedFields
                   ? 'border-gray-600 bg-gray-900 text-gray-400 cursor-not-allowed'
                   : 'border-yellow-600 bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
@@ -157,7 +157,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-yellow-300 mb-1">
+            <label className="block text-xs sm:text-sm font-medium text-yellow-300 mb-1">
               Category *
             </label>
             <select
@@ -165,7 +165,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               value={formData.category}
               onChange={(e) => handleInputChange('category', e.target.value)}
               disabled={isEditing && !canEditRestrictedFields}
-              className={`w-full px-3 py-3 border rounded-md outline-none text-lg ${
+              className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
                 isEditing && !canEditRestrictedFields
                   ? 'border-gray-600 bg-gray-900 text-gray-400 cursor-not-allowed'
                   : 'border-yellow-600 bg-black text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'

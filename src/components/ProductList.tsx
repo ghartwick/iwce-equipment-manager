@@ -70,20 +70,33 @@ export function ProductList({
                       ? (product.repair ? "bg-red-900 ring-2 ring-yellow-400 ring-opacity-50" : "bg-yellow-900 ring-2 ring-yellow-400 ring-opacity-50") 
                       : (product.repair ? "bg-red-950" : "bg-black")
                     } 
-                    ${product.repair ? "hover:bg-red-900" : "hover:bg-yellow-950"} 
                     cursor-pointer
                     transition-colors duration-200
+                    ${selectedEquipmentId === product.id
+                      ? 'bg-yellow-900 bg-opacity-50'
+                      : 'hover:bg-yellow-900 hover:bg-opacity-20'
+                    }
                   `}
+                  onTouchStart={() => {
+                    // Add touch feedback for mobile
+                    if (selectedEquipmentId === product.id) {
+                      // If already selected, toggle off (hide form)
+                      onCancelEdit();
+                    } else {
+                      // If different equipment, select it (show form)
+                      onEdit(product);
+                    }
+                  }}
                   onClick={() => {
-  if (selectedEquipmentId === product.id) {
-    // If already selected, toggle off (hide form)
-    onCancelEdit();
-  } else {
-    // If different equipment, select it (show form)
-    onEdit(product);
-  }
-}}
-                  title={selectedEquipmentId === product.id ? "Click to close edit form" : "Click to edit equipment"}
+                    if (selectedEquipmentId === product.id) {
+                      // If already selected, toggle off (hide form)
+                      onCancelEdit();
+                    } else {
+                      // If different equipment, select it (show form)
+                      onEdit(product);
+                    }
+                  }}
+                  title={selectedEquipmentId === product.id ? "Tap to close edit form" : "Tap to edit equipment"}
                 >
                   <td className="px-6 py-4">
                     <div className="max-w-xs">

@@ -30,7 +30,10 @@ export function MobileProductList({
       {products.map((product) => (
         <div 
           key={product.id}
-          className={`p-3 ${product.repair ? 'bg-red-950' : 'bg-black'} hover:bg-yellow-900 hover:bg-opacity-20 transition-colors`}
+          className={`p-3 ${product.repair ? 'bg-red-950' : 'bg-black'} hover:bg-yellow-900 hover:bg-opacity-20 transition-colors cursor-pointer`}
+          onTouchStart={() => onEdit(product)}
+          onClick={() => onEdit(product)}
+          title="Tap to edit equipment"
         >
           {/* Equipment Name - Primary */}
           <div className="flex items-start justify-between mb-3">

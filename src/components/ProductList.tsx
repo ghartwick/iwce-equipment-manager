@@ -53,13 +53,13 @@ export function ProductList({
       </div>
       
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-yellow-800">
+        <table className="w-full divide-y divide-yellow-800">
           <thead className="bg-yellow-900">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
                 Equipment
               </th>
-              <th className="px-3 sm:px-6 py-3 text-right text-xs font-medium text-yellow-200 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-2 sm:px-6 py-3 text-right text-xs font-medium text-yellow-200 uppercase tracking-wider whitespace-nowrap min-w-[80px]">
                 Actions
               </th>
             </tr>
@@ -76,7 +76,7 @@ export function ProductList({
                     transition-all duration-200
                   `}
                 >
-                  <td className="px-6 py-4">
+                  <td className="px-4 sm:px-6 py-4">
                     <div className="max-w-xs">
                       <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-400" : "text-yellow-100"} break-words`}>{product.name}</div>
                       <div className="text-xs sm:text-sm text-yellow-600">
@@ -93,7 +93,7 @@ export function ProductList({
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 sm:px-6 py-4 text-right whitespace-nowrap">
+                  <td className="px-2 sm:px-6 py-4 text-right whitespace-nowrap min-w-[80px]">
                     <button
                       onClick={() => {
                         if (selectedEquipmentId === product.id) {

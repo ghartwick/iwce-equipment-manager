@@ -9,6 +9,9 @@ interface User {
   name: string;
 }
 
+// Form data type that accepts both roles for conversion
+type FormDataRole = 'admin' | 'field';
+
 interface UserManagementProps {
   onClose: () => void;
   currentUser: User | null;
@@ -23,11 +26,17 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
   const [success, setSuccess] = useState<string | null>(null);
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    username: string;
+    password: string;
+    name: string;
+    role: FormDataRole;
+    isActive: boolean;
+  }>({
     username: '',
     password: '',
     name: '',
-    role: 'field' as 'admin' | 'field',
+    role: 'field',
     isActive: true
   });
 
@@ -56,18 +65,13 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
     try {
       if (editingUser) {
         // Update user
-        await userManagementService.updateUser(editingUser.id, {
-          ...formData,
-          role: (formData.role === 'field' ? 'technician' : formData.role) as 'admin' | 'technician',
-          password: formData.password || undefined // Only update password if provided
-        });
+        await userManagementService.updateUser(editingUser.id, formData);
         setSuccess('User updated successfully');
         setEditingUser(null);
       } else {
         // Add new user
         await userManagementService.addUser({
           ...formData,
-          role: (formData.role === 'field' ? 'technician' : formData.role) as 'admin' | 'technician',
           createdBy: currentUser?.username
         });
         setSuccess('User added successfully');
@@ -79,7 +83,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
         username: '',
         password: '',
         name: '',
-        role: 'technician',
+        role: 'field',
         isActive: true
       });
 
@@ -97,7 +101,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
       username: user.username,
       password: '', // Don't pre-fill password for security
       name: user.name,
-      role: (user.role === 'technician' ? 'field' : user.role) as 'admin' | 'field',
+      role: user.role, // AppUser already has converted role
       isActive: user.isActive
     });
     setShowAddForm(false);
@@ -248,7 +252,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                     <label className="block text-sm font-medium text-yellow-300 mb-1">Role</label>
                     <select
                       value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'field' })}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as FormDataRole })}
                       className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
                       <option value="field">Field</option>
@@ -309,7 +313,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                         </span>
                       </div>
                       <div className="text-sm text-yellow-600">@{user.username}</div>
-                      <div className="text-xs text-yellow-700 capitalize">{user.role === 'technician' ? 'field' : user.role}</div>
+                      <div className="text-xs text-yellow-700 capitalize">{user.role}</div>
                     </div>
                   </div>
 

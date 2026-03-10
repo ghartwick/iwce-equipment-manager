@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { userManagementService, AppUser } from '../services/userManagementService';
+import { userManagementService } from '../services/userManagementService';
 
 interface User {
   id: string;
@@ -128,6 +128,7 @@ export function useAuth() {
         const user: User = {
           id: userRecord.id,
           username: userRecord.username,
+          // @ts-ignore - Converting from Firebase 'technician' to 'field'
           role: userRecord.role === 'technician' ? 'field' : userRecord.role,
           name: userRecord.name,
         };

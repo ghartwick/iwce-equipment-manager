@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Equipment } from '../types';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { EquipmentLog } from '../components/EquipmentLog';

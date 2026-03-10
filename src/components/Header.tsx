@@ -4,7 +4,7 @@ import { Plus, Bell, User, LogOut, ChevronDown, Menu } from 'lucide-react';
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'manager' | 'technician';
+  role: 'admin' | 'field';
   name: string;
 }
 
@@ -24,10 +24,8 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
     switch (role) {
       case 'admin':
         return 'Administrator';
-      case 'manager':
-        return 'Manager';
-      case 'technician':
-        return 'Technician';
+      case 'field':
+        return 'Field';
       default:
         return role;
     }
@@ -37,9 +35,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
     switch (role) {
       case 'admin':
         return 'text-red-400';
-      case 'manager':
-        return 'text-yellow-400';
-      case 'technician':
+      case 'field':
         return 'text-green-400';
       default:
         return 'text-yellow-400';

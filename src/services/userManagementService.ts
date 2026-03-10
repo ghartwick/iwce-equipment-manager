@@ -23,10 +23,14 @@ export class UserManagementService {
       const q = query(usersCollection, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
       
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as AppUser[];
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          role: data.role === 'technician' ? 'field' : data.role, // Convert for display
+        };
+      }) as AppUser[];
     } catch (error) {
       console.error('Failed to get users:', error);
       throw error;
@@ -46,8 +50,9 @@ export class UserManagementService {
         throw new Error('Username already exists');
       }
 
-      const newUser: Omit<AppUser, 'id'> = {
+      const newUser = {
         ...userData,
+        role: userData.role === 'field' ? 'technician' : userData.role, // Convert for Firebase
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -62,13 +67,15 @@ export class UserManagementService {
   }
 
   // Update user
-  async updateUser(id: string, updates: Partial<AppUser>): Promise<void> {
+  async updateUser(id: string, updates: Partial<Omit<AppUser, 'id' | 'createdAt' | 'updatedAt'>>): Promise<void> {
     try {
       const docRef = doc(db, this.COLLECTION_NAME, id);
-      await updateDoc(docRef, {
+      const firebaseUpdates = {
         ...updates,
+        role: updates.role === 'field' ? 'technician' : updates.role, // Convert for Firebase
         updatedAt: new Date().toISOString()
-      });
+      };
+      await updateDoc(docRef, firebaseUpdates);
       console.log('User updated successfully');
     } catch (error) {
       console.error('Failed to update user:', error);

@@ -199,7 +199,7 @@ function App() {
                   onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
                   onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
                   onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
-                  userRole={user?.role || 'technician'}
+                  userRole={user?.role || 'field'}
                 />
               </div>
             </div>
@@ -239,7 +239,7 @@ function App() {
                   selectedEquipmentId={editingProduct?.id}
                   onEditProduct={handleEditProduct}
                   onCancelEdit={() => setEditingProduct(null)}
-                  userRole={user?.role || 'technician'}
+                  userRole={user?.role || 'field'}
                 />
               </div>
             </div>
@@ -278,7 +278,7 @@ function App() {
                   onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
                   onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
                   onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
-                  userRole={user?.role || 'technician'}
+                  userRole={user?.role || 'field'}
                 />
               </div>
             )}
@@ -332,7 +332,7 @@ function App() {
                 onEditProduct={handleEditProduct}
                 onCancelEdit={() => setEditingProduct(null)}
                 categories={categories}
-                userRole={user?.role || 'technician'}
+                userRole={user?.role || 'field'}
               />
             </div>
           </div>

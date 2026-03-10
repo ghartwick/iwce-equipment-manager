@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Settings, Users } from 'lucide-react';
 import { UserManagement } from './UserManagement';
-import { AppUser } from '../services/userManagementService';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,7 +11,6 @@ interface LayoutProps {
 function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);

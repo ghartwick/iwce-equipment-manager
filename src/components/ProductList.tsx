@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Download, Edit } from 'lucide-react';
+import { Package, Download, Pencil } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { exportToExcel } from '../utils/exportToExcel';
 import { ProductForm } from './ProductForm';
@@ -53,14 +53,13 @@ export function ProductList({
       </div>
       
       <div className="overflow-x-auto">
-        <table className="w-full divide-y divide-yellow-800">
+        <table className="w-full max-w-[100vw] divide-y divide-yellow-800">
           <thead className="bg-yellow-900">
             <tr>
-              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
+              <th className="w-[70%] px-2 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
                 Equipment
               </th>
-              <th className="px-2 sm:px-6 py-3 text-right text-xs font-medium text-yellow-200 uppercase tracking-wider whitespace-nowrap min-w-[80px]">
-                Actions
+              <th className="w-[30%] px-1 py-3 text-center text-xs font-medium text-yellow-200 uppercase tracking-wider">
               </th>
             </tr>
           </thead>
@@ -70,13 +69,13 @@ export function ProductList({
                 <tr 
                   className={`
                     ${selectedEquipmentId === product.id 
-                      ? (product.repair ? "bg-red-900 ring-2 ring-yellow-400 ring-opacity-50" : "bg-yellow-900 ring-2 ring-yellow-400 ring-opacity-50") 
+                      ? (product.repair ? "bg-red-900" : "bg-yellow-900") 
                       : (product.repair ? "bg-red-950" : "bg-black")
                     } 
                     transition-all duration-200
                   `}
                 >
-                  <td className="px-4 sm:px-6 py-4">
+                  <td className="w-[70%] px-2 py-4">
                     <div className="max-w-xs">
                       <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-400" : "text-yellow-100"} break-words`}>{product.name}</div>
                       <div className="text-xs sm:text-sm text-yellow-600">
@@ -93,8 +92,10 @@ export function ProductList({
                       </div>
                     </div>
                   </td>
-                  <td className="px-2 sm:px-6 py-4 text-right whitespace-nowrap min-w-[80px]">
-                    <button
+                  <td className="w-[30%] px-1 py-4">
+                    <div className="flex justify-center">
+                      <div className="flex justify-end w-3/4">
+                        <button
                       onClick={() => {
                         if (selectedEquipmentId === product.id) {
                           onCancelEdit();
@@ -102,11 +103,13 @@ export function ProductList({
                           onEdit(product);
                         }
                       }}
-                      className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-300 bg-yellow-900 bg-opacity-40 border border-yellow-500 rounded-lg hover:bg-yellow-800 hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                      className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-300 bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-800 hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
                       title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
                     >
-                      <Edit className="h-6 w-6 sm:h-3 sm:w-3" />
+                      <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
                     </button>
+                      </div>
+                    </div>
                   </td>
                 </tr>
                 

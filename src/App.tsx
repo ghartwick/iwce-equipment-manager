@@ -328,6 +328,11 @@ function App() {
               <MobileProductList
                 products={filteredProducts}
                 onEdit={handleEditClick}
+                selectedEquipmentId={editingProduct?.id}
+                onEditProduct={handleEditProduct}
+                onCancelEdit={() => setEditingProduct(null)}
+                categories={categories}
+                userRole={user?.role || 'technician'}
               />
             </div>
           </div>

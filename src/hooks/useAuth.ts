@@ -26,6 +26,11 @@ export function useAuth() {
   useEffect(() => {
     const checkAuth = () => {
       try {
+        // TEMPORARY: Clear any existing auth state to force login
+        console.log('Clearing existing auth state...');
+        localStorage.removeItem('iwce_user');
+        localStorage.removeItem('iwce_session');
+        
         const savedUser = localStorage.getItem('iwce_user');
         const savedSession = localStorage.getItem('iwce_session');
         

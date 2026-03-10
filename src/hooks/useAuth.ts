@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { userManagementService, AppUser } from '../services/userManagementService';
 
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'technician';
+  role: 'admin' | 'field';
   name: string;
 }
 
@@ -24,7 +25,7 @@ export function useAuth() {
 
   // Check for existing session on mount
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       try {
         const savedUser = localStorage.getItem('iwce_user');
         const savedSession = localStorage.getItem('iwce_session');
@@ -36,12 +37,26 @@ export function useAuth() {
           // Check if session is still valid (24 hours)
           const sessionAge = Date.now() - session.createdAt;
           if (sessionAge < 24 * 60 * 60 * 1000) {
-            setAuthState({
-              user,
-              isAuthenticated: true,
-              isLoading: false,
-              error: null,
-            });
+            // Verify user still exists and is active
+            const currentUser = await userManagementService.getUserByUsername(user.username);
+            if (currentUser && currentUser.isActive) {
+              setAuthState({
+                user,
+                isAuthenticated: true,
+                isLoading: false,
+                error: null,
+              });
+            } else {
+              // User no longer exists or is inactive
+              localStorage.removeItem('iwce_user');
+              localStorage.removeItem('iwce_session');
+              setAuthState({
+                user: null,
+                isAuthenticated: false,
+                isLoading: false,
+                error: null,
+              });
+            }
           } else {
             // Session expired
             localStorage.removeItem('iwce_user');
@@ -76,77 +91,72 @@ export function useAuth() {
   }, []);
 
   const login = async (username: string, password: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      // Simulate API call delay
-      setTimeout(() => {
-        try {
-          // Demo users - in production, this would be an API call
-          const demoUsers: Record<string, { password: string; user: User }> = {
-            Admin: {
-              password: 'Admin123',
-              user: {
-                id: '1',
-                username: 'Admin',
-                role: 'admin',
-                name: 'System Administrator',
-              },
-            },
-            Field: {
-              password: 'Field123',
-              user: {
-                id: '2',
-                username: 'Field',
-                role: 'technician',
-                name: 'Field Technician',
-              },
-            },
-          };
-
-          // Find user case-insensitively
-          const userKey = Object.keys(demoUsers).find(key => 
-            key.toLowerCase() === username.toLowerCase()
-          );
-          const userData = userKey ? demoUsers[userKey] : undefined;
-          
-          if (!userData || userData.password !== password) {
-            const error = 'Invalid username or password';
-            setAuthState(prev => ({ ...prev, error }));
-            reject(new Error(error));
-            return;
-          }
-
-          // Create session
-          const session = {
-            createdAt: Date.now(),
-          };
-
-          // Save to localStorage
-          localStorage.setItem('iwce_user', JSON.stringify(userData.user));
-          localStorage.setItem('iwce_session', JSON.stringify(session));
-
-          // Update state
-          setAuthState({
-            user: userData.user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
-
-          resolve();
-        } catch (error) {
-          const errorMessage = 'Login failed. Please try again.';
-          setAuthState(prev => ({ ...prev, error: errorMessage }));
-          reject(new Error(errorMessage));
+    return new Promise(async (resolve, reject) => {
+      try {
+        // Get user from Firebase
+        const userRecord = await userManagementService.getUserByUsername(username);
+        
+        if (!userRecord) {
+          const error = 'Invalid username or password';
+          setAuthState(prev => ({ ...prev, error }));
+          reject(new Error(error));
+          return;
         }
-      }, 1000); // Simulate network delay
+
+        // Check password (in production, use proper password hashing)
+        if (userRecord.password !== password) {
+          const error = 'Invalid username or password';
+          setAuthState(prev => ({ ...prev, error }));
+          reject(new Error(error));
+          return;
+        }
+
+        // Check if user is active
+        if (!userRecord.isActive) {
+          const error = 'Account has been deactivated';
+          setAuthState(prev => ({ ...prev, error }));
+          reject(new Error(error));
+          return;
+        }
+
+        // Create session
+        const session = {
+          createdAt: Date.now(),
+        };
+
+        // Save to localStorage
+        const user: User = {
+          id: userRecord.id,
+          username: userRecord.username,
+          role: userRecord.role === 'technician' ? 'field' : userRecord.role,
+          name: userRecord.name,
+        };
+
+        localStorage.setItem('iwce_user', JSON.stringify(user));
+        localStorage.setItem('iwce_session', JSON.stringify(session));
+
+        // Update state
+        setAuthState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+
+        resolve();
+      } catch (error) {
+        console.error('Login failed:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Login failed';
+        setAuthState(prev => ({ ...prev, error: errorMessage }));
+        reject(new Error(errorMessage));
+      }
     });
   };
 
-  const logout = (): void => {
+  const logout = () => {
     try {
       localStorage.removeItem('iwce_user');
       localStorage.removeItem('iwce_session');
-      
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -158,12 +168,28 @@ export function useAuth() {
     }
   };
 
+  // Initialize default users if needed (only for initial setup)
+  useEffect(() => {
+    const initializeUsers = async () => {
+      try {
+        await userManagementService.initializeDefaultUsers();
+      } catch (error) {
+        console.error('Failed to initialize default users:', error);
+      }
+    };
+
+    initializeUsers();
+  }, []);
+
   const clearError = (): void => {
     setAuthState(prev => ({ ...prev, error: null }));
   };
 
   return {
-    ...authState,
+    user: authState.user,
+    isAuthenticated: authState.isAuthenticated,
+    isLoading: authState.isLoading,
+    error: authState.error,
     login,
     logout,
     clearError,

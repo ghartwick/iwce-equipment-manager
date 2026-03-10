@@ -10,7 +10,7 @@ interface MobileProductListProps {
   onEditProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancelEdit: () => void;
   categories: Category[];
-  userRole?: 'admin' | 'technician';
+  userRole?: 'admin' | 'field';
 }
 
 export function MobileProductList({ 

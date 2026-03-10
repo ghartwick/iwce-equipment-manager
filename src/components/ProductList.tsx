@@ -12,7 +12,7 @@ interface ProductListProps {
   selectedEquipmentId?: string;
   onEditProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancelEdit: () => void;
-  userRole?: 'admin' | 'technician';
+  userRole?: 'admin' | 'field';
   showCategoryHeadings?: boolean; // New prop for category headings
 }
 

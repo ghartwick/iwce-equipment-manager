@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Settings } from 'lucide-react';
+import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Settings, Users } from 'lucide-react';
+import { UserManagement } from './UserManagement';
+import { AppUser } from '../services/userManagementService';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +15,7 @@ function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
 
   const navigation = [
     { name: 'Inventory', href: '/inventory', icon: Package },
@@ -27,8 +30,8 @@ function Layout({ children }: LayoutProps) {
         return 'Administrator';
       case 'manager':
         return 'Manager';
-      case 'technician':
-        return 'Technician';
+      case 'field':
+        return 'Field';
       default:
         return role;
     }
@@ -40,7 +43,7 @@ function Layout({ children }: LayoutProps) {
         return 'text-red-400';
       case 'manager':
         return 'text-yellow-400';
-      case 'technician':
+      case 'field':
         return 'text-green-400';
       default:
         return 'text-yellow-400';
@@ -141,6 +144,17 @@ function Layout({ children }: LayoutProps) {
               >
                 <Bell className="h-5 w-5" />
               </button>
+
+              {/* User Management - Admin Only */}
+              {user && user.role === 'admin' && (
+                <button
+                  onClick={() => setShowUserManagement(true)}
+                  className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors"
+                  title="User Management"
+                >
+                  <Users className="h-5 w-5" />
+                </button>
+              )}
 
               {/* User Menu */}
               {user && (
@@ -257,6 +271,14 @@ function Layout({ children }: LayoutProps) {
 
       {/* Main Content */}
       {children}
+
+      {/* User Management Modal */}
+      {showUserManagement && user && (
+        <UserManagement
+          currentUser={user}
+          onClose={() => setShowUserManagement(false)}
+        />
+      )}
     </div>
   );
 }

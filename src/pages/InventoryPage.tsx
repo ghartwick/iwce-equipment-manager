@@ -203,7 +203,7 @@ function InventoryPage() {
                 onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
                 onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
                 onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
-                userRole={user?.role || 'technician'}
+                userRole={user?.role || 'field'}
               />
             </div>
           </div>
@@ -243,7 +243,7 @@ function InventoryPage() {
                 selectedEquipmentId={editingProduct?.id}
                 onEditProduct={handleEditProduct}
                 onCancelEdit={() => setEditingProduct(null)}
-                userRole={user?.role || 'technician'}
+                userRole={user?.role || 'field'}
                 showCategoryHeadings={true}
               />
             </div>
@@ -283,7 +283,7 @@ function InventoryPage() {
                 onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
                 onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
                 onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
-                userRole={user?.role || 'technician'}
+                userRole={user?.role || 'field'}
               />
             </div>
           )}
@@ -337,7 +337,7 @@ function InventoryPage() {
               onEditProduct={handleEditProduct}
               onCancelEdit={() => setEditingProduct(null)}
               categories={categories}
-              userRole={user?.role || 'technician'}
+              userRole={user?.role || 'field'}
             />
           </div>
         </div>

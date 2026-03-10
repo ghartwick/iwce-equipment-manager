@@ -148,6 +148,7 @@ export function useAuth() {
     try {
       localStorage.removeItem('iwce_user');
       localStorage.removeItem('iwce_session');
+      
       setAuthState({
         user: null,
         isAuthenticated: false,

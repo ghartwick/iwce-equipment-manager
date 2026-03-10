@@ -47,6 +47,17 @@ function Layout({ children }: LayoutProps) {
     }
   };
 
+  const handleLogout = () => {
+    try {
+      logout();
+      setShowUserMenu(false);
+      // Force immediate redirect to login
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   const handleAddProduct = () => {
     // Navigate to inventory and trigger add product
     navigate('/inventory');
@@ -171,7 +182,7 @@ function Layout({ children }: LayoutProps) {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            logout();
+                            handleLogout();
                           }}
                           className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
                         >
@@ -211,7 +222,11 @@ function Layout({ children }: LayoutProps) {
                 })}
                 
                 <button
-                  onClick={() => { handleAddProduct(); setShowMobileMenu(false); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddProduct(); 
+                    setShowMobileMenu(false);
+                  }}
                   className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
                 >
                   <Plus className="h-5 w-5" />
@@ -220,7 +235,10 @@ function Layout({ children }: LayoutProps) {
                 
                 {user && (
                   <button
-                    onClick={() => { logout(); setShowMobileMenu(false); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLogout(); 
+                    }}
                     className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
                   >
                     <LogOut className="h-5 w-5" />

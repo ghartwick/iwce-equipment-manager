@@ -4,7 +4,7 @@ import { userManagementService } from '../services/userManagementService';
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'field';
+  role: 'admin' | 'supervisor' | 'field';
   name: string;
 }
 

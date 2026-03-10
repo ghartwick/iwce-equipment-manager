@@ -9,7 +9,7 @@ interface ProductFormProps {
   onSubmit: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
   onDelete?: () => void;
-  userRole?: 'admin' | 'field';
+  userRole?: 'admin' | 'supervisor' | 'field';
 }
 
 export function ProductForm({ categories, product, onSubmit, onCancel, onDelete, userRole }: ProductFormProps) {

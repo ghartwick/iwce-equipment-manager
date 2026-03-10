@@ -4,7 +4,7 @@ import { Plus, Bell, User, LogOut, ChevronDown, Menu } from 'lucide-react';
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'field';
+  role: 'admin' | 'supervisor' | 'field';
   name: string;
 }
 

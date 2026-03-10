@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Edit2, Trash2, X, Shield, Wrench, Check, X as XIcon } from 'lucide-react';
+import { UserPlus, Edit2, Trash2, X, Shield, Wrench, Check, X as XIcon, Users, Eye, EyeOff } from 'lucide-react';
 import { AppUser, userManagementService } from '../services/userManagementService';
 
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'field';
+  role: 'admin' | 'supervisor' | 'field';
   name: string;
 }
 
-// Form data type that accepts both roles for conversion
-type FormDataRole = 'admin' | 'field';
+// Form data type that accepts all roles for conversion
+type FormDataRole = 'admin' | 'supervisor' | 'field';
 
 interface UserManagementProps {
   onClose: () => void;
@@ -24,6 +24,8 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<{
@@ -108,6 +110,13 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
   };
 
   const handleDelete = async (user: AppUser) => {
+    console.log('🗑️ Delete user attempted:', { 
+      userToDelete: user, 
+      currentUser: currentUser,
+      isSameUser: user.id === currentUser?.id,
+      currentUserRole: currentUser?.role
+    });
+
     if (user.id === currentUser?.id) {
       setError('You cannot delete your own account');
       return;
@@ -118,9 +127,11 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
     }
 
     try {
+      console.log('🗑️ Attempting to delete user from service...');
       await userManagementService.deleteUser(user.id);
       setSuccess('User deleted successfully');
       await loadUsers();
+      console.log('✅ User deleted successfully');
     } catch (error) {
       console.error('Failed to delete user:', error);
       setError('Failed to delete user');
@@ -141,20 +152,6 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
       console.error('Failed to toggle user status:', error);
       setError('Failed to update user status');
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      username: '',
-      password: '',
-      name: '',
-      role: 'field',
-      isActive: true
-    });
-    setEditingUser(null);
-    setShowAddForm(false);
-    setError(null);
-    setSuccess(null);
   };
 
   if (loading) {
@@ -208,12 +205,10 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
             </div>
           )}
 
-          {/* User Form */}
-          {(showAddForm || editingUser) && (
+          {/* Add User Form */}
+          {showAddForm && (
             <div className="mb-6 p-4 bg-yellow-900 bg-opacity-20 border border-yellow-700 rounded-lg">
-              <h3 className="text-lg font-medium text-yellow-300 mb-4">
-                {editingUser ? 'Edit User' : 'Add New User'}
-              </h3>
+              <h3 className="text-lg font-medium text-yellow-300 mb-4">Add New User</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -224,8 +219,27 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                       className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                       required
-                      disabled={!!editingUser} // Don't allow username change for existing users
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-300 mb-1">Password</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        className="w-full px-3 py-2 pr-10 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 transition-colors"
+                        title={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-yellow-300 mb-1">Full Name</label>
@@ -238,17 +252,6 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-yellow-300 mb-1">Password</label>
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder={editingUser ? "Leave blank to keep current password" : "Enter password"}
-                      className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                      required={!editingUser}
-                    />
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-yellow-300 mb-1">Role</label>
                     <select
                       value={formData.role}
@@ -256,6 +259,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                       className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
                       <option value="field">Field</option>
+                      <option value="supervisor">Supervisor</option>
                       <option value="admin">Administrator</option>
                     </select>
                   </div>
@@ -275,11 +279,15 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                     type="submit"
                     className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
                   >
-                    {editingUser ? 'Update User' : 'Add User'}
+                    Add User
                   </button>
                   <button
                     type="button"
-                    onClick={resetForm}
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setError(null);
+                      setSuccess(null);
+                    }}
                     className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                   >
                     Cancel
@@ -289,62 +297,208 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
             </div>
           )}
 
-          {/* Users List */}
-          <div className="space-y-3">
-            {users.map((user) => (
-              <div key={user.id} className="bg-yellow-900 bg-opacity-10 border border-yellow-700 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    {/* Role Icon */}
-                    <div className={`p-2 rounded-lg ${user.role === 'admin' ? 'bg-red-900 bg-opacity-30' : 'bg-blue-900 bg-opacity-30'}`}>
-                      {user.role === 'admin' ? (
-                        <Shield className="h-5 w-5 text-red-400" />
-                      ) : (
-                        <Wrench className="h-5 w-5 text-blue-400" />
-                      )}
-                    </div>
-                    
-                    {/* User Info */}
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-medium text-yellow-100">{user.name}</h3>
-                        <span className={`px-2 py-1 text-xs rounded-full ${user.isActive ? 'bg-green-900 bg-opacity-30 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
-                          {user.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                      <div className="text-sm text-yellow-600">@{user.username}</div>
-                      <div className="text-xs text-yellow-700 capitalize">{user.role}</div>
-                    </div>
+          {/* Users List - Grouped by Role */}
+          <div className="space-y-6">
+            {['admin', 'supervisor', 'field'].map((role) => {
+              const roleUsers = users
+                .filter(user => user.role === role)
+                .sort((a, b) => a.name.localeCompare(b.name));
+              
+              if (roleUsers.length === 0) return null;
+              
+              return (
+                <div key={role}>
+                  {/* Role Header */}
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-yellow-300 flex items-center space-x-2">
+                      {role === 'admin' && <Shield className="h-5 w-5 text-red-400" />}
+                      {role === 'supervisor' && <Users className="h-5 w-5 text-purple-400" />}
+                      {role === 'field' && <Wrench className="h-5 w-5 text-blue-400" />}
+                      <span className="capitalize">{role}s ({roleUsers.length})</span>
+                    </h3>
+                    <div className="h-px bg-yellow-700 mt-2"></div>
                   </div>
+                  
+                  {/* Users in this role */}
+                  <div className="space-y-3">
+                    {roleUsers.map((user) => (
+                      <React.Fragment key={user.id}>
+                        <div className="bg-yellow-900 bg-opacity-10 border border-yellow-700 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              {/* Role Icon */}
+                              <div className={`p-2 rounded-lg ${
+                                user.role === 'admin' ? 'bg-red-900 bg-opacity-30' : 
+                                user.role === 'supervisor' ? 'bg-purple-900 bg-opacity-30' : 
+                                'bg-blue-900 bg-opacity-30'
+                              }`}>
+                                {user.role === 'admin' ? (
+                                  <Shield className="h-5 w-5 text-red-400" />
+                                ) : user.role === 'supervisor' ? (
+                                  <Users className="h-5 w-5 text-purple-400" />
+                                ) : (
+                                  <Wrench className="h-5 w-5 text-blue-400" />
+                                )}
+                              </div>
+                              
+                              {/* User Info */}
+                              <div>
+                                <div className="flex items-center space-x-2">
+                                  <h3 className="font-medium text-yellow-100">{user.name}</h3>
+                                  <span className={`px-2 py-1 text-xs rounded-full ${user.isActive ? 'bg-green-900 bg-opacity-30 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
+                                    {user.isActive ? 'Active' : 'Inactive'}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-yellow-600">@{user.username}</div>
+                                <div className="text-xs text-yellow-700 capitalize">{user.role}</div>
+                              </div>
+                            </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleToggleActive(user)}
-                      className={`p-2 rounded-lg transition-colors ${user.isActive ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-500 hover:text-gray-400'}`}
-                      title={user.isActive ? 'Deactivate User' : 'Activate User'}
-                    >
-                      {user.isActive ? <Check className="h-4 w-4" /> : <XIcon className="h-4 w-4" />}
-                    </button>
-                    <button
-                      onClick={() => handleEdit(user)}
-                      className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors"
-                      title="Edit User"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(user)}
-                      className="p-2 text-red-400 hover:text-red-300 transition-colors"
-                      title="Delete User"
-                      disabled={user.id === currentUser?.id}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                            {/* Actions */}
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleToggleActive(user)}
+                                className={`p-2 rounded-lg transition-colors ${user.isActive ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-500 hover:text-gray-400'}`}
+                                title={user.isActive ? 'Deactivate User' : 'Activate User'}
+                              >
+                                {user.isActive ? <Check className="h-4 w-4" /> : <XIcon className="h-4 w-4" />}
+                              </button>
+                              <button
+                                onClick={() => handleEdit(user)}
+                                className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors"
+                                title="Edit User"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(user)}
+                                className="p-2 text-red-400 hover:text-red-300 transition-colors"
+                                title="Delete User"
+                                disabled={user.id === currentUser?.id}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Inline Edit Form - Shows below selected user */}
+                        {editingUser && editingUser.id === user.id && (
+                          <div className="bg-yellow-900 bg-opacity-20 border border-yellow-700 rounded-lg p-4 mt-2">
+                            <h3 className="text-lg font-medium text-yellow-300 mb-4">Edit User</h3>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-yellow-300 mb-1">Username</label>
+                                  <input
+                                    type="text"
+                                    value={formData.username}
+                                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                    className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-yellow-300 mb-1">Name</label>
+                                  <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-yellow-300 mb-1">Current Password</label>
+                                  <div className="relative">
+                                    <input
+                                      type={showCurrentPassword ? "text" : "password"}
+                                      value={editingUser?.password || ""}
+                                      readOnly
+                                      className="w-full px-3 py-2 pr-10 bg-gray-800 border border-gray-600 rounded-lg text-gray-400"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 transition-colors"
+                                      title={showCurrentPassword ? "Hide password" : "Show password"}
+                                    >
+                                      {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                  </div>
+                                  <p className="text-xs text-yellow-600 mt-1">Current password is shown for reference</p>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-yellow-300 mb-1">New Password</label>
+                                  <div className="relative">
+                                    <input
+                                      type={showPassword ? "text" : "password"}
+                                      value={formData.password}
+                                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                      placeholder="Leave blank to keep current password"
+                                      className="w-full px-3 py-2 pr-10 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowPassword(!showPassword)}
+                                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 transition-colors"
+                                      title={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-yellow-300 mb-1">Role</label>
+                                  <select
+                                    value={formData.role}
+                                    onChange={(e) => setFormData({ ...formData, role: e.target.value as FormDataRole })}
+                                    className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                  >
+                                    <option value="field">Field</option>
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="admin">Administrator</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id="isActive"
+                                  checked={formData.isActive}
+                                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                                  className="w-4 h-4 text-yellow-500 bg-black border-yellow-600 rounded focus:ring-yellow-500"
+                                />
+                                <label htmlFor="isActive" className="text-sm text-yellow-300">Active User</label>
+                              </div>
+                              <div className="flex space-x-3">
+                                <button
+                                  type="submit"
+                                  className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
+                                >
+                                  Update User
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingUser(null);
+                                    setError(null);
+                                    setSuccess(null);
+                                  }}
+                                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </form>
+                          </div>
+                        )}
+                      </React.Fragment>
+                    ))}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

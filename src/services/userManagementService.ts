@@ -5,7 +5,7 @@ export interface AppUser {
   id: string;
   username: string;
   password: string; // In production, this should be hashed
-  role: 'admin' | 'field';
+  role: 'admin' | 'supervisor' | 'field';
   name: string;
   createdAt: string;
   updatedAt: string;
@@ -122,6 +122,13 @@ export class UserManagementService {
             password: 'Admin123', // In production, hash this
             role: 'admin',
             name: 'System Administrator',
+            isActive: true,
+          },
+          {
+            username: 'Supervisor',
+            password: 'Supervisor123', // In production, hash this
+            role: 'supervisor',
+            name: 'System Supervisor',
             isActive: true,
           },
           {

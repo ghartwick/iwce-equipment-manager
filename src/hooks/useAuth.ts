@@ -26,11 +26,6 @@ export function useAuth() {
   useEffect(() => {
     const checkAuth = () => {
       try {
-        // TEMPORARY: Clear any existing auth state to force login
-        console.log('Clearing existing auth state...');
-        localStorage.removeItem('iwce_user');
-        localStorage.removeItem('iwce_session');
-        
         const savedUser = localStorage.getItem('iwce_user');
         const savedSession = localStorage.getItem('iwce_session');
         
@@ -108,11 +103,10 @@ export function useAuth() {
           };
 
           // Find user case-insensitively
-          const userData = Object.keys(demoUsers).find(key => 
+          const userKey = Object.keys(demoUsers).find(key => 
             key.toLowerCase() === username.toLowerCase()
-          ) ? demoUsers[Object.keys(demoUsers).find(key => 
-            key.toLowerCase() === username.toLowerCase()
-          )!] : undefined;
+          );
+          const userData = userKey ? demoUsers[userKey] : undefined;
           
           if (!userData || userData.password !== password) {
             const error = 'Invalid username or password';
@@ -123,7 +117,6 @@ export function useAuth() {
 
           // Create session
           const session = {
-            token: btoa(`${userData.user.id}:${Date.now()}`),
             createdAt: Date.now(),
           };
 

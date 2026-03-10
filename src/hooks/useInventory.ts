@@ -12,7 +12,7 @@ import {
   getAlerts,
   addAlert as _addAlert,
   deleteAlert as _deleteAlert
-} from '../services/mockService';
+} from '../services/firebaseService';
 
 export function useInventory() {
   const [products, setProducts] = useState<Equipment[]>([]);

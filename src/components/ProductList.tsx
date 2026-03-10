@@ -13,6 +13,7 @@ interface ProductListProps {
   onEditProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancelEdit: () => void;
   userRole?: 'admin' | 'technician';
+  showCategoryHeadings?: boolean; // New prop for category headings
 }
 
 export function ProductList({
@@ -24,6 +25,7 @@ export function ProductList({
   onEditProduct,
   onCancelEdit,
   userRole,
+  showCategoryHeadings = false,
 }: ProductListProps) {
   const selectedProduct = products.find(p => p.id === selectedEquipmentId);
 
@@ -64,74 +66,193 @@ export function ProductList({
             </tr>
           </thead>
           <tbody className="bg-black divide-y divide-yellow-800">
-            {products.map((product) => (
-              <React.Fragment key={product.id}>
-                <tr 
-                  className={`
-                    ${selectedEquipmentId === product.id 
-                      ? (product.repair ? "bg-red-900" : "bg-yellow-900") 
-                      : (product.repair ? "bg-red-950" : "bg-black")
-                    } 
-                    transition-all duration-200
-                  `}
-                >
-                  <td className="w-[70%] px-2 py-4">
-                    <div className="max-w-xs">
-                      <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-400" : "text-yellow-100"} break-words`}>{product.name}</div>
-                      <div className="text-xs sm:text-sm text-yellow-600">
-                        {product.employee && <div className="break-words">{product.employee}</div>}
-                        {product.site && <div className="break-words">{product.site}</div>}
-                        {product.repair && (
-                          <>
-                            <div className="text-xs sm:text-sm text-red-500 font-medium break-words">Repair: Yes</div>
-                            {product.repairDescription && (
-                              <div className="text-xs text-red-400 mt-1 italic break-words">Repair: {product.repairDescription}</div>
-                            )}
-                          </>
+            {showCategoryHeadings ? (
+              // Group by category with headings
+              (() => {
+                const groupedProducts = products.reduce((groups, product) => {
+                  const category = categories.find(cat => cat.id === product.category)?.name || product.category;
+                  if (!groups[category]) {
+                    groups[category] = [];
+                  }
+                  groups[category].push(product);
+                  return groups;
+                }, {} as Record<string, Equipment[]>);
+
+                return Object.entries(groupedProducts).map(([categoryName, categoryProducts]) => (
+                  <React.Fragment key={categoryName}>
+                    {/* Category Heading */}
+                    <tr>
+                      <td colSpan={2} className="px-4 py-2 bg-yellow-900 bg-opacity-30 border-b border-yellow-700">
+                        <h3 className="text-sm font-semibold text-yellow-300 uppercase tracking-wide">
+                          {categoryName}
+                        </h3>
+                      </td>
+                    </tr>
+                    
+                    {/* Products in this category */}
+                    {categoryProducts.map((product) => (
+                      <React.Fragment key={product.id}>
+                        <tr 
+                          className={`
+                            ${selectedEquipmentId === product.id 
+                              ? (product.repair ? "bg-red-900" : "bg-yellow-900") 
+                              : (product.repair ? "bg-red-950" : "bg-black")
+                            } 
+                            transition-all duration-200
+                          `}
+                        >
+                          <td className="w-[70%] px-2 py-4">
+                            <div className="max-w-xs">
+                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-400" : "text-yellow-100"} break-words`}>{product.name}</div>
+                              <div className="text-xs sm:text-sm text-yellow-600">
+                                {product.employee && <div className="break-words">{product.employee}</div>}
+                                {product.site && <div className="break-words">{product.site}</div>}
+                                {product.repair && (
+                                  <>
+                                    <div className="text-xs sm:text-sm text-red-500 font-medium break-words">Repair: Yes</div>
+                                    {product.repairDescription && (
+                                      <div className="text-xs text-red-400 mt-1 italic break-words">Repair: {product.repairDescription}</div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="w-[30%] px-1 py-4">
+                            <div className="flex justify-center">
+                              <div className="flex justify-end w-3/4">
+                                <button
+                                  onClick={() => {
+                                    if (selectedEquipmentId === product.id) {
+                                      onCancelEdit();
+                                    } else {
+                                      onEdit(product);
+                                    }
+                                  }}
+                                  className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-300 bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-800 hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                                  title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
+                                >
+                                  <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        
+                        {/* Inline Edit Form */}
+                        {selectedEquipmentId === product.id && (
+                          <tr>
+                            <td colSpan={2} className="px-0 py-0 border-t border-yellow-800">
+                              <div className="bg-yellow-900">
+                                <ProductForm
+                                  categories={categories}
+                                  product={selectedProduct}
+                                  onSubmit={onEditProduct}
+                                  onCancel={onCancelEdit}
+                                  onDelete={() => onDelete(product.id)}
+                                  userRole={userRole}
+                                />
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="w-[30%] px-1 py-4">
-                    <div className="flex justify-center">
-                      <div className="flex justify-end w-3/4">
-                        <button
-                      onClick={() => {
-                        if (selectedEquipmentId === product.id) {
-                          onCancelEdit();
-                        } else {
-                          onEdit(product);
-                        }
-                      }}
-                      className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-300 bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-800 hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
-                      title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
-                    >
-                      <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
-                    </button>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-                
-                {/* Inline Edit Form - Appears directly below selected equipment */}
-                {selectedEquipmentId === product.id && (
-                  <tr>
-                    <td colSpan={2} className="px-0 py-0 border-t border-yellow-800">
-                      <div className="bg-yellow-900">
-                        <ProductForm
-                          categories={categories}
-                          product={selectedProduct}
-                          onSubmit={onEditProduct}
-                          onCancel={onCancelEdit}
-                          onDelete={() => onDelete(product.id)}
-                          userRole={userRole}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
-            ))}
+                      </React.Fragment>
+                    ))}
+                  </React.Fragment>
+                ));
+              })()
+            ) : (
+              // Single category with heading
+              (() => {
+                // Get the category name for the current selection
+                const categoryName = products.length > 0 
+                  ? categories.find(cat => cat.id === products[0].category)?.name || products[0].category
+                  : 'Unknown Category';
+
+                return (
+                  <React.Fragment>
+                    {/* Single Category Heading */}
+                    <tr>
+                      <td colSpan={2} className="px-4 py-2 bg-yellow-900 bg-opacity-30 border-b border-yellow-700">
+                        <h3 className="text-sm font-semibold text-yellow-300 uppercase tracking-wide">
+                          {categoryName}
+                        </h3>
+                      </td>
+                    </tr>
+                    
+                    {/* Products */}
+                    {products.map((product) => (
+                      <React.Fragment key={product.id}>
+                        <tr 
+                          className={`
+                            ${selectedEquipmentId === product.id 
+                              ? (product.repair ? "bg-red-900" : "bg-yellow-900") 
+                              : (product.repair ? "bg-red-950" : "bg-black")
+                            } 
+                            transition-all duration-200
+                          `}
+                        >
+                          <td className="w-[70%] px-2 py-4">
+                            <div className="max-w-xs">
+                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-400" : "text-yellow-100"} break-words`}>{product.name}</div>
+                              <div className="text-xs sm:text-sm text-yellow-600">
+                                {product.employee && <div className="break-words">{product.employee}</div>}
+                                {product.site && <div className="break-words">{product.site}</div>}
+                                {product.repair && (
+                                  <>
+                                    <div className="text-xs sm:text-sm text-red-500 font-medium break-words">Repair: Yes</div>
+                                    {product.repairDescription && (
+                                      <div className="text-xs text-red-400 mt-1 italic break-words">Repair: {product.repairDescription}</div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="w-[30%] px-1 py-4">
+                            <div className="flex justify-center">
+                              <div className="flex justify-end w-3/4">
+                                <button
+                                  onClick={() => {
+                                    if (selectedEquipmentId === product.id) {
+                                      onCancelEdit();
+                                    } else {
+                                      onEdit(product);
+                                    }
+                                  }}
+                                  className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-300 bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-800 hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                                  title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
+                                >
+                                  <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        
+                        {/* Inline Edit Form */}
+                        {selectedEquipmentId === product.id && (
+                          <tr>
+                            <td colSpan={2} className="px-0 py-0 border-t border-yellow-800">
+                              <div className="bg-yellow-900">
+                                <ProductForm
+                                  categories={categories}
+                                  product={selectedProduct}
+                                  onSubmit={onEditProduct}
+                                  onCancel={onCancelEdit}
+                                  onDelete={() => onDelete(product.id)}
+                                  userRole={userRole}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </React.Fragment>
+                );
+              })()
+            )}
           </tbody>
         </table>
       </div>

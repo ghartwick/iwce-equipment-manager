@@ -64,10 +64,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log('Form submitted - repair:', formData.repair);
-      console.log('Complete formData:', formData);
       onSubmit(formData);
-      console.log('onSubmit called successfully');
     } catch (error) {
       console.error('Error in form submission:', error);
       alert('Error submitting form: ' + (error as Error).message);
@@ -75,10 +72,6 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   };
 
   const handleInputChange = (field: string, value: string | number | boolean) => {
-    console.log(`Field changed: ${field}, New value:`, value);
-    console.log('Current formData before change:', formData);
-    
-    // If repair is set to false, clear repair description
     if (field === 'repair' && value === false) {
       setFormData(prev => ({ 
         ...prev, 

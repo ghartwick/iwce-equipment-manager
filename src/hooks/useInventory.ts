@@ -99,10 +99,20 @@ export function useInventory() {
 
   const addProduct = async (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      console.log('=== USEINVENTORY ADD PRODUCT DEBUG ===');
+      console.log('Adding product:', product);
+      console.log('Current products before add:', products.length);
+      
       await addEquipment(product);
+      console.log('addEquipment completed successfully');
+      
       await loadData(); // Refresh data from Firebase
+      console.log('loadData completed');
+      console.log('Products after loadData:', products.length);
+      console.log('=============================');
     } catch (error) {
       console.error('Error adding product:', error);
+      throw error;
     }
   };
 

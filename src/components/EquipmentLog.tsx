@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Clock, User, X } from 'lucide-react';
 import { Equipment } from '../types';
-import { equipmentHistoryService, EditHistory } from '../services/equipmentHistoryService';
+import { equipmentHistoryFirebaseService, EditHistory } from '../services/equipmentHistoryFirebaseService';
 
 interface EquipmentLogProps {
   equipment: Equipment | null;
@@ -14,15 +14,32 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
   // Update history whenever equipment changes or component mounts
   useEffect(() => {
     if (equipment) {
-      const updateHistory = () => {
-        setHistory(equipmentHistoryService.getEquipmentHistory(equipment.id));
+      const updateHistory = async () => {
+        if (!equipment) return;
+        
+        console.log('=== EQUIPMENT LOG DEBUG ===');
+        console.log('Equipment ID:', equipment.id);
+        console.log('Equipment Name:', equipment.name);
+        
+        try {
+          const historyData = await equipmentHistoryFirebaseService.getEquipmentHistory(equipment.id);
+          console.log('History retrieved from Firebase:', historyData);
+          console.log('History length:', historyData.length);
+          console.log('=============================');
+          setHistory(historyData);
+        } catch (error) {
+          console.error('Failed to load equipment history:', error);
+          console.log('Error details:', error);
+          console.log('=============================');
+          setHistory([]);
+        }
       };
       
       // Initial load
       updateHistory();
       
       // Set up a timer to check for updates (simple polling approach)
-      const interval = setInterval(updateHistory, 1000);
+      const interval = setInterval(updateHistory, 5000); // Increased to 5 seconds for Firebase
       
       return () => clearInterval(interval);
     }

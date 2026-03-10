@@ -18,12 +18,44 @@ export interface EditHistory {
 class EquipmentHistoryService {
   private static instance: EquipmentHistoryService;
   private history: EditHistory[] = [];
+  private readonly STORAGE_KEY = 'iwce_equipment_history';
 
   static getInstance(): EquipmentHistoryService {
     if (!EquipmentHistoryService.instance) {
       EquipmentHistoryService.instance = new EquipmentHistoryService();
     }
     return EquipmentHistoryService.instance;
+  }
+
+  constructor() {
+    this.loadHistoryFromStorage();
+  }
+
+  // Load history from localStorage
+  private loadHistoryFromStorage(): void {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        this.history = parsed.map((entry: any) => ({
+          ...entry,
+          timestamp: new Date(entry.timestamp)
+        }));
+        console.log('Loaded history from storage:', this.history.length, 'entries');
+      }
+    } catch (error) {
+      console.error('Failed to load history from storage:', error);
+      this.history = [];
+    }
+  }
+
+  // Save history to localStorage
+  private saveHistoryToStorage(): void {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.history));
+    } catch (error) {
+      console.error('Failed to save history to storage:', error);
+    }
   }
 
   // Add history entry
@@ -34,6 +66,15 @@ class EquipmentHistoryService {
       timestamp: new Date(),
     };
     this.history.unshift(historyEntry); // Add to beginning (most recent first)
+    
+    // Save to localStorage for persistence
+    this.saveHistoryToStorage();
+    
+    console.log('=== HISTORY DEBUG ===');
+    console.log('Added history entry:', historyEntry);
+    console.log('Total history count:', this.history.length);
+    console.log('Current history:', this.history);
+    console.log('==================');
   }
 
   // Get history for specific equipment
@@ -49,6 +90,8 @@ class EquipmentHistoryService {
   // Clear all history (for testing)
   clearHistory(): void {
     this.history = [];
+    localStorage.removeItem(this.STORAGE_KEY);
+    console.log('History cleared from memory and storage');
   }
 
   // Track equipment changes

@@ -8,7 +8,7 @@ import { AlertPanel } from '../components/AlertPanel';
 import { SearchBar } from '../components/SearchBar';
 import { FilterPanel } from '../components/FilterPanel';
 import { Equipment } from '../types';
-import { equipmentHistoryService } from '../services/equipmentHistoryService';
+import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 
 function InventoryPage() {
   const {
@@ -65,23 +65,52 @@ function InventoryPage() {
     
     return matchesSearch && matchesCategory;
   }).sort((a, b) => {
-    // Sort by equipment name alphabetically and numerically
+    // If "All Categories" is selected, sort by category first, then by name
+    if (selectedCategory === 'all') {
+      // Get category names for sorting
+      const getCategoryName = (categoryId: string) => {
+        const category = categories.find(cat => cat.id === categoryId);
+        return category ? category.name.toLowerCase() : categoryId.toLowerCase();
+      };
+      
+      const categoryA = getCategoryName(a.category);
+      const categoryB = getCategoryName(b.category);
+      
+      // First sort by category
+      if (categoryA < categoryB) return -1;
+      if (categoryA > categoryB) return 1;
+      
+      // Then sort by equipment name within each category
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+      
+      // Extract numeric parts for better sorting
+      const numA = parseInt(nameA.match(/\d+/)?.[0] || '0');
+      const numB = parseInt(nameB.match(/\d+/)?.[0] || '0');
+      
+      if (numA !== numB) {
+        return numA - numB;
+      }
+      
+      return nameA.localeCompare(nameB);
+    }
+    
+    // Original sorting for specific categories
     const nameA = a.name.toLowerCase();
     const nameB = b.name.toLowerCase();
     
-    // Try numeric comparison first
-    const numA = parseFloat(nameA);
-    const numB = parseFloat(nameB);
+    // Extract numeric parts for better sorting
+    const numA = parseInt(nameA.match(/\d+/)?.[0] || '0');
+    const numB = parseInt(nameB.match(/\d+/)?.[0] || '0');
     
-    if (!isNaN(numA) && !isNaN(numB)) {
+    if (numA !== numB) {
       return numA - numB;
     }
     
-    // Fall back to alphabetical comparison
     return nameA.localeCompare(nameB);
   });
 
-  const handleAddProduct = (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleAddProduct = async (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (user) {
       // Create new equipment object
       const newEquipment: Equipment = {
@@ -91,20 +120,23 @@ function InventoryPage() {
         updatedAt: new Date().toISOString()
       };
       
-      // Track the creation in history
-      equipmentHistoryService.trackEquipmentChange(
-        'created',
-        newEquipment,
-        { username: user.username, role: user.role }
-      );
+      try {
+        // Track the creation in Firebase history
+        await equipmentHistoryFirebaseService.trackEquipmentChange(
+          'created',
+          newEquipment,
+          { username: user.username, role: user.role }
+        );
+      } catch (error) {
+        console.error('Failed to track history:', error);
+      }
       
-      addProduct(productData);
+      await addProduct(productData);
       setShowAddForm(false);
     }
   };
 
-  const handleEditProduct = (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
-    console.log('handleEditProduct called - repair:', productData.repair);
+  const handleEditProduct = async (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingProduct && user) {
       // Create updated equipment object
       const updatedEquipment: Equipment = {
@@ -113,15 +145,19 @@ function InventoryPage() {
         updatedAt: new Date().toISOString()
       };
       
-      // Track the change in history
-      equipmentHistoryService.trackEquipmentChange(
-        'updated',
-        updatedEquipment,
-        { username: user.username, role: user.role },
-        editingProduct
-      );
+      try {
+        // Track the change in Firebase history
+        await equipmentHistoryFirebaseService.trackEquipmentChange(
+          'updated',
+          updatedEquipment,
+          { username: user.username, role: user.role },
+          editingProduct
+        );
+      } catch (error) {
+        console.error('Failed to track Firebase history:', error);
+      }
       
-      updateProduct(editingProduct.id, productData);
+      await updateProduct(editingProduct.id, productData);
       setEditingProduct(null);
     }
   };
@@ -208,6 +244,7 @@ function InventoryPage() {
                 onEditProduct={handleEditProduct}
                 onCancelEdit={() => setEditingProduct(null)}
                 userRole={user?.role || 'technician'}
+                showCategoryHeadings={true}
               />
             </div>
           </div>

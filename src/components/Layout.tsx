@@ -59,13 +59,9 @@ function Layout({ children }: LayoutProps) {
   };
 
   const handleAddProduct = () => {
-    // Navigate to inventory and trigger add product
-    navigate('/inventory');
-    // This will be handled by the InventoryPage component
-    setTimeout(() => {
-      const event = new CustomEvent('addProduct');
-      window.dispatchEvent(event);
-    }, 100);
+    // Dispatch global event for InventoryPage to handle
+    window.dispatchEvent(new CustomEvent('addProduct'));
+    console.log('Add equipment event dispatched');
   };
 
   const handleToggleAlerts = () => {

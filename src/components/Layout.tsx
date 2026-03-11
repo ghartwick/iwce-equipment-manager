@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Settings, Users } from 'lucide-react';
+import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock } from 'lucide-react';
 import { UserManagement } from './UserManagement';
 
 interface LayoutProps {
@@ -17,7 +17,7 @@ function Layout({ children }: LayoutProps) {
 
   const navigation = [
     { name: 'Inventory', href: '/inventory', icon: Package },
-    { name: 'Time Cards', href: '/new-feature', icon: Settings },
+    { name: 'Timecard', href: '/timecard', icon: Clock },
   ];
 
   const isActive = (href: string) => location.pathname === href;
@@ -77,15 +77,8 @@ function Layout({ children }: LayoutProps) {
       <header className="bg-black border-b border-yellow-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Left Side - Hamburger Menu + Logo + Title */}
+            {/* Left Side - Logo + Title */}
             <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="p-2 text-yellow-400 hover:text-yellow-300 lg:hidden"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-              
               <div className="flex items-center space-x-3">
                 <img 
                   src="/top-left-logo.png" 
@@ -96,13 +89,24 @@ function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            {/* Mobile Alert Icon */}
-            <button
-              onClick={handleToggleAlerts}
-              className="relative p-2 text-yellow-400 hover:text-yellow-300 lg:hidden"
-            >
-              <Bell className="h-5 w-5" />
-            </button>
+            {/* Right Side - Mobile Icons */}
+            <div className="flex items-center space-x-2">
+              {/* Mobile Alert Icon */}
+              <button
+                onClick={handleToggleAlerts}
+                className="relative p-2 text-yellow-400 hover:text-yellow-300 lg:hidden"
+              >
+                <Bell className="h-5 w-5" />
+              </button>
+
+              {/* Hamburger Menu - Moved to Right */}
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="p-2 text-yellow-400 hover:text-yellow-300 lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </div>
 
             {/* Desktop Actions */}
             <div className="hidden lg:flex items-center space-x-2">
@@ -145,8 +149,8 @@ function Layout({ children }: LayoutProps) {
                 <Bell className="h-5 w-5" />
               </button>
 
-              {/* User Management - Admin Only */}
-              {user && user.role === 'admin' && (
+              {/* User Management - Admin, Supervisor, and Field Users */}
+              {user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'field') && (
                 <button
                   onClick={() => setShowUserManagement(true)}
                   className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors"
@@ -243,6 +247,41 @@ function Layout({ children }: LayoutProps) {
                     <Plus className="h-5 w-5" />
                     <span>Add Equipment</span>
                   </button>
+                )}
+                
+                {/* User Management - Admin, Supervisor, and Field Users */}
+                {user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'field') && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowUserManagement(true);
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
+                  >
+                    <Users className="h-5 w-5" />
+                    <span>User Management</span>
+                  </button>
+                )}
+                
+                {/* Mobile User Identification Section */}
+                {user && (
+                  <div className="border-t border-yellow-800 pt-3">
+                    <div className="p-3 bg-yellow-900 bg-opacity-30 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-10 w-10 bg-yellow-600 rounded-full flex items-center justify-center">
+                          <User className="h-5 w-5 text-black" />
+                        </div>
+                        <div>
+                          <p className="text-yellow-100 font-medium">{user.name}</p>
+                          <p className={`text-xs ${getRoleColor(user.role)}`}>
+                            {getRoleDisplay(user.role)}
+                          </p>
+                          <p className="text-xs text-yellow-600">@{user.username}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
                 
                 {user && (

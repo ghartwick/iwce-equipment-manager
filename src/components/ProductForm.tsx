@@ -133,11 +133,10 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
 
           <div>
             <label className="block text-xs sm:text-sm font-medium text-yellow-300 mb-1">
-              Serial Number *
+              Serial Number
             </label>
             <input
               type="text"
-              required
               value={formData.serialNumber}
               onChange={(e) => handleInputChange('serialNumber', e.target.value)}
               disabled={isEditing && !canEditRestrictedFields}
@@ -146,6 +145,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
                   ? 'border-gray-600 bg-gray-900 text-gray-400 cursor-not-allowed'
                   : 'border-yellow-600 bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
               }`}
+              placeholder="Optional serial number"
             />
           </div>
 

@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuth } from './hooks/useAuth';
 import { LoginPage } from './components/LoginPage';
 import InventoryPage from './pages/InventoryPage';
+import TimecardPage from './pages/TimecardPage';
 import Layout from './components/Layout';
 
 function AppRouter() {
@@ -38,16 +39,10 @@ function AppRouter() {
             </Layout>
           ) : <Navigate to="/login" replace />
         } />
-        {/* Placeholder for Time Cards - we'll add this soon */}
-        <Route path="/new-feature" element={
+        <Route path="/timecard" element={
           isAuthenticated ? (
             <Layout>
-              <div className="min-h-screen bg-black flex items-center justify-center">
-                <div className="text-center">
-                  <h1 className="text-2xl font-bold text-yellow-400 mb-4">Time Cards Coming Soon</h1>
-                  <p className="text-yellow-300">This page will be implemented next</p>
-                </div>
-              </div>
+              <TimecardPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

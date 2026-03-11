@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, MapPin, AlertTriangle, Wrench, Pencil } from 'lucide-react';
+import { User, MapPin, Wrench, Pencil } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { ProductForm } from './ProductForm';
 
@@ -55,16 +55,10 @@ export function MobileProductList({
         return (
           <div key={category.id}>
             {/* Category Header */}
-            <div className="sticky top-0 bg-black z-10 p-3 border-b border-yellow-800">
-              <div className="flex items-center space-x-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: category.color }}
-                />
-                <h3 className="text-sm font-semibold text-yellow-300">
-                  {category.name} ({categoryProducts.length})
-                </h3>
-              </div>
+            <div className="sticky top-0 bg-yellow-900 bg-opacity-30 z-10 p-3 border-b border-yellow-700">
+              <h3 className="text-sm font-semibold text-yellow-300">
+                {category.name} ({categoryProducts.length})
+              </h3>
             </div>
             
             {/* Products in this category */}
@@ -74,20 +68,14 @@ export function MobileProductList({
               return (
                 <React.Fragment key={product.id}>
                   <div 
-                    className={`p-3 ${product.repair ? 'bg-red-950' : 'bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                    className={`p-3 border-b border-yellow-800 ${product.repair ? 'bg-red-950' : 'bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                   >
                     {/* Equipment Name - Primary */}
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h3 className={`text-sm font-medium ${product.repair ? 'text-red-400' : 'text-yellow-100'} break-words`}>
                           {product.name}
                         </h3>
-                        {product.repair && (
-                          <div className="flex items-center space-x-2 mt-1">
-                            <AlertTriangle className="h-3 w-3 text-red-500" />
-                            <span className="text-red-500 text-xs font-medium">Needs Repair</span>
-                          </div>
-                        )}
                       </div>
                       {/* Edit Button */}
                       <button
@@ -224,16 +212,10 @@ export function MobileProductList({
             
             return (
               <div key={categoryName}>
-                <div className="sticky top-0 bg-black z-10 p-3 border-b border-yellow-800">
-                  <div className="flex items-center space-x-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: categoryColor }}
-                    />
-                    <h3 className="text-sm font-semibold text-yellow-300">
-                      {displayCategoryName} ({categoryProducts.length})
-                    </h3>
-                  </div>
+                <div className="sticky top-0 bg-yellow-900 bg-opacity-30 z-10 p-3 border-b border-yellow-700">
+                  <h3 className="text-sm font-semibold text-yellow-300">
+                    {displayCategoryName} ({categoryProducts.length})
+                  </h3>
                 </div>
                 {categoryProducts.map((product) => {
                   const selectedProduct = products.find(p => p.id === selectedEquipmentId);
@@ -241,20 +223,14 @@ export function MobileProductList({
                   return (
                     <React.Fragment key={product.id}>
                       <div 
-                        className={`p-3 ${product.repair ? 'bg-red-950' : 'bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                        className={`p-3 border-b border-yellow-800 ${product.repair ? 'bg-red-950' : 'bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                       >
                         {/* Equipment Name - Primary */}
-                        <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <h3 className={`text-sm font-medium ${product.repair ? 'text-red-400' : 'text-yellow-100'} break-words`}>
                               {product.name}
                             </h3>
-                            {product.repair && (
-                              <div className="flex items-center space-x-2 mt-1">
-                                <AlertTriangle className="h-3 w-3 text-red-500" />
-                                <span className="text-red-500 text-xs font-medium">Needs Repair</span>
-                              </div>
-                            )}
                           </div>
                           {/* Edit Button */}
                           <button

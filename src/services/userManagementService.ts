@@ -70,11 +70,16 @@ export class UserManagementService {
   async updateUser(id: string, updates: Partial<Omit<AppUser, 'id' | 'createdAt' | 'updatedAt'>>): Promise<void> {
     try {
       const docRef = doc(db, this.COLLECTION_NAME, id);
-      const firebaseUpdates = {
+      const firebaseUpdates: any = {
         ...updates,
-        role: updates.role === 'field' ? 'technician' : updates.role, // Convert for Firebase
         updatedAt: new Date().toISOString()
       };
+      
+      // Only include role if it's provided in updates
+      if (updates.role) {
+        firebaseUpdates.role = updates.role === 'field' ? 'technician' : updates.role;
+      }
+      
       await updateDoc(docRef, firebaseUpdates);
       console.log('User updated successfully');
     } catch (error) {

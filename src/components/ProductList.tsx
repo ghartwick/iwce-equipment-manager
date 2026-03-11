@@ -1,7 +1,7 @@
-import React from 'react';
-import { Package, Download, Pencil } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Package, Download, Upload, Pencil } from 'lucide-react';
 import { Equipment, Category } from '../types';
-import { exportToExcel } from '../utils/exportToExcel';
+import { exportToExcel, importFromExcel } from '../utils/exportToExcel';
 import { ProductForm } from './ProductForm';
 
 interface ProductListProps {
@@ -11,9 +11,12 @@ interface ProductListProps {
   onDelete: (id: string) => void;
   selectedEquipmentId?: string;
   onEditProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onAddProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancelEdit: () => void;
   userRole?: 'admin' | 'supervisor' | 'field';
   showCategoryHeadings?: boolean; // New prop for category headings
+  refreshData?: () => void; // Add refresh function
+  onImportComplete?: () => void; // Add callback for import completion
 }
 
 export function ProductList({
@@ -23,11 +26,84 @@ export function ProductList({
   onDelete,
   selectedEquipmentId,
   onEditProduct,
+  onAddProduct,
   onCancelEdit,
   userRole,
   showCategoryHeadings = false,
+  refreshData,
+  onImportComplete,
 }: ProductListProps) {
   const selectedProduct = products.find(p => p.id === selectedEquipmentId);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Debug: Log products and categories when they change
+  React.useEffect(() => {
+    console.log('ProductList Debug - Current products:', products.map(p => ({
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      categoryName: categories.find(c => c.id === p.category)?.name || 'Unknown'
+    })));
+    console.log('ProductList Debug - Current categories:', categories.map(c => ({ id: c.id, name: c.name })));
+  }, [products, categories]);
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      console.log('Import Debug - Starting import process...');
+      const importedEquipment = await importFromExcel(file, categories);
+      console.log('Import Debug - Received imported equipment:', importedEquipment);
+      
+      // Create new equipment items
+      for (let i = 0; i < importedEquipment.length; i++) {
+        const equipment = importedEquipment[i];
+        console.log(`Import Debug - Creating equipment item ${i + 1}/${importedEquipment.length}:`, equipment);
+        
+        try {
+          await onAddProduct(equipment as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>);
+          console.log(`Import Debug - Successfully created equipment item ${i + 1}:`, equipment.name);
+        } catch (error) {
+          console.error(`Import Debug - Failed to create equipment item ${i + 1}:`, error);
+        }
+      }
+      
+      // Refresh data to show new categories and equipment
+      if (refreshData) {
+        console.log('Import Debug - Refreshing data...');
+        await refreshData();
+        console.log('Import Debug - Data refresh completed');
+        
+        // Add a small delay to ensure Firebase sync is complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('Import Debug - Firebase sync delay completed');
+        
+        // Refresh one more time to ensure latest data
+        await refreshData();
+        console.log('Import Debug - Second data refresh completed');
+      }
+      
+      // Reset category filter to show all items
+      if (onImportComplete) {
+        console.log('Import Debug - Calling onImportComplete callback...');
+        onImportComplete();
+        console.log('Import Debug - onImportComplete callback completed');
+      } else {
+        console.log('Import Debug - No onImportComplete callback provided');
+      }
+      
+      alert(`Successfully imported ${importedEquipment.length} equipment items!`);
+    } catch (error) {
+      console.error('Import failed:', error);
+      alert('Failed to import Excel file. Please check the file format and try again.');
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   if (products.length === 0) {
     return (
@@ -44,14 +120,33 @@ export function ProductList({
       {/* Header with export button */}
       <div className="bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
         <h2 className="text-lg font-semibold text-yellow-300">Equipment Inventory</h2>
-        <button
-          onClick={() => exportToExcel(products, 'equipment-inventory')}
-          className="flex items-center space-x-1 px-2 py-1 text-xs bg-yellow-500 text-black rounded hover:bg-yellow-400 transition-colors sm:flex sm:items-center sm:space-x-2 sm:px-4 sm:py-2 sm:text-sm"
-        >
-          <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline sm:text-sm sm:font-medium">Export to Excel</span>
-          <span className="sm:hidden">Export</span>
-        </button>
+        {userRole === 'admin' && (
+          <div className="flex items-center space-x-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleImport}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center space-x-1 px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-500 transition-colors sm:flex sm:items-center sm:space-x-2 sm:px-4 sm:py-2 sm:text-sm"
+            >
+              <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline sm:text-sm sm:font-medium">Import Excel</span>
+              <span className="sm:hidden">Import</span>
+            </button>
+            <button
+              onClick={() => exportToExcel(products, 'equipment-inventory', categories)}
+              className="flex items-center space-x-1 px-2 py-1 text-xs bg-yellow-500 text-black rounded hover:bg-yellow-400 transition-colors sm:flex sm:items-center sm:space-x-2 sm:px-4 sm:py-2 sm:text-sm"
+            >
+              <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline sm:text-sm sm:font-medium">Export to Excel</span>
+              <span className="sm:hidden">Export</span>
+            </button>
+          </div>
+        )}
       </div>
       
       <div className="overflow-x-auto">

@@ -23,6 +23,7 @@ function InventoryPage() {
     addCategory,
     editCategory,
     deleteCategory,
+    refreshData,
   } = useInventory();
 
   const { user } = useAuth();
@@ -61,7 +62,12 @@ function InventoryPage() {
                          (product.repair ? 'yes' : 'no').includes(searchTerm.toLowerCase()) ||
                          (product.repair && product.repairDescription.toLowerCase().includes(searchTerm.toLowerCase()));
     
+    // Debug: Log filtering logic
+    console.log('Filter Debug - Product:', product.name, 'Category ID:', product.category, 'Selected Category:', selectedCategory);
+    
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    
+    console.log('Filter Debug - Matches Category:', matchesCategory);
     
     return matchesSearch && matchesCategory;
   }).sort((a, b) => {
@@ -76,39 +82,19 @@ function InventoryPage() {
       const categoryA = getCategoryName(a.category);
       const categoryB = getCategoryName(b.category);
       
-      // First sort by category
-      if (categoryA < categoryB) return -1;
-      if (categoryA > categoryB) return 1;
-      
-      // Then sort by equipment name within each category
-      const nameA = a.name.toLowerCase();
-      const nameB = b.name.toLowerCase();
-      
-      // Extract numeric parts for better sorting
-      const numA = parseInt(nameA.match(/\d+/)?.[0] || '0');
-      const numB = parseInt(nameB.match(/\d+/)?.[0] || '0');
-      
-      if (numA !== numB) {
-        return numA - numB;
+      if (categoryA !== categoryB) {
+        return categoryA.localeCompare(categoryB);
       }
-      
-      return nameA.localeCompare(nameB);
     }
     
-    // Original sorting for specific categories
-    const nameA = a.name.toLowerCase();
-    const nameB = b.name.toLowerCase();
-    
-    // Extract numeric parts for better sorting
-    const numA = parseInt(nameA.match(/\d+/)?.[0] || '0');
-    const numB = parseInt(nameB.match(/\d+/)?.[0] || '0');
-    
-    if (numA !== numB) {
-      return numA - numB;
-    }
-    
-    return nameA.localeCompare(nameB);
+    // Sort by name
+    return a.name.localeCompare(b.name);
   });
+
+  // Debug: Log total products and filtered products count (moved outside sort)
+  console.log('Filter Debug - Total products loaded:', products.length);
+  console.log('Filter Debug - Products after filtering:', filteredProducts.length);
+  console.log('Filter Debug - Selected category:', selectedCategory);
 
   const handleAddProduct = async (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (user) {
@@ -242,9 +228,12 @@ function InventoryPage() {
                 onDelete={deleteProduct}
                 selectedEquipmentId={editingProduct?.id}
                 onEditProduct={handleEditProduct}
+                onAddProduct={handleAddProduct}
                 onCancelEdit={() => setEditingProduct(null)}
                 userRole={user?.role || 'field'}
                 showCategoryHeadings={true}
+                refreshData={refreshData}
+                onImportComplete={() => setSelectedCategory('all')}
               />
             </div>
           </div>

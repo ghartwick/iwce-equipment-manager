@@ -238,6 +238,7 @@ function App() {
                   onDelete={deleteProduct}
                   selectedEquipmentId={editingProduct?.id}
                   onEditProduct={handleEditProduct}
+                  onAddProduct={handleAddProduct}
                   onCancelEdit={() => setEditingProduct(null)}
                   userRole={user?.role || 'field'}
                 />

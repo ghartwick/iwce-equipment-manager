@@ -37,17 +37,32 @@ export function useInventory() {
       
       // Clean up products with invalid category references
       const validCategoryIds = new Set(loadedCategories.map(cat => cat.id));
+      console.log('LoadData Debug - Valid category IDs:', Array.from(validCategoryIds));
+      console.log('LoadData Debug - Raw equipment count:', loadedProducts.length);
+      
       const cleanedProducts = loadedProducts.map(product => {
         const { supplier, minStockLevel, quantity, price, location, tags, description, ...cleanedProduct } = product as any;
+        const hasValidCategory = validCategoryIds.has(product.category);
+        
+        if (!hasValidCategory) {
+          console.log('LoadData Debug - Product with invalid category filtered out:', {
+            id: product.id,
+            name: product.name,
+            category: product.category
+          });
+        }
+        
         return {
           ...cleanedProduct,
           employee: (product as any).employee || '',
           site: (product as any).site || '',
           repair: (product as any).repair || false,
           repairDescription: (product as any).repairDescription || '',
-          category: validCategoryIds.has(product.category) ? product.category : ''
+          category: hasValidCategory ? product.category : ''
         };
       });
+      
+      console.log('LoadData Debug - Cleaned equipment count:', cleanedProducts.length);
       
       // Generate repair alerts for equipment that needs repair
       const repairAlerts = generateRepairAlerts(cleanedProducts, loadedAlerts);

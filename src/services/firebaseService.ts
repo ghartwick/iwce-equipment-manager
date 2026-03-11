@@ -6,19 +6,30 @@ import { Equipment, Category, StockAlert } from '../types';
 export const getEquipment = async (): Promise<Equipment[]> => {
   const q = query(collection(db, 'equipment'), orderBy('createdAt', 'desc'));
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({
+  const equipment = querySnapshot.docs.map(doc => ({
     id: doc.id,
     ...doc.data()
   })) as Equipment[];
+  
+  console.log('Firebase Debug - Total equipment loaded from Firebase:', equipment.length);
+  console.log('Firebase Debug - Equipment items:', equipment.map(item => ({
+    id: item.id,
+    name: item.name,
+    category: item.category
+  })));
+  
+  return equipment;
 };
 
 export const addEquipment = async (equipment: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+  console.log('Firebase Debug - Adding equipment to Firebase:', equipment);
   const docRef = await addDoc(collection(db, 'equipment'), {
     ...equipment,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
-  console.log('Equipment added with ID:', docRef.id);
+  console.log('Firebase Debug - Equipment added with ID:', docRef.id);
+  console.log('Firebase Debug - Equipment saved successfully to Firebase');
 };
 
 export const updateEquipment = async (id: string, equipment: Partial<Equipment>): Promise<void> => {

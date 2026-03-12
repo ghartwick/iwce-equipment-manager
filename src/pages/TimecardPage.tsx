@@ -46,9 +46,9 @@ export default function TimecardPage() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [userManagementService] = useState(() => new UserManagementService());
   
-  // Collapsible states - removed to always show both sections
-  // const [yourCardsCollapsed, setYourCardsCollapsed] = useState(false);
-  // const [otherCardsCollapsed, setOtherCardsCollapsed] = useState(false);
+  // Collapsible states
+  const [yourCardsCollapsed, setYourCardsCollapsed] = useState(false);
+  const [otherCardsCollapsed, setOtherCardsCollapsed] = useState(false);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -202,26 +202,6 @@ export default function TimecardPage() {
     }
   };
 
-  // Temporary: Delete all entries for selected date
-  const handleDeleteAllEntries = async () => {
-    if (window.confirm('Are you sure you want to delete ALL time entries for this date? This cannot be undone.')) {
-      try {
-        const entries = getEntriesForDate(selectedDate!);
-        for (const entry of entries) {
-          if (entry.id) {
-            await deleteTimeEntry(entry.id);
-          }
-        }
-        setSelectedEntryId(null);
-        setRefreshKey(prev => prev + 1);
-        alert('All entries deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting all entries:', error);
-        alert('Error deleting entries: ' + error);
-      }
-    }
-  };
-
   return (
     <div className="min-h-screen bg-black text-yellow-100 p-4">
       <div className="max-w-6xl mx-auto">
@@ -314,23 +294,15 @@ export default function TimecardPage() {
                 <h3 className="text-lg font-semibold text-yellow-300">
                   Time Entries for {format(selectedDate, 'MMM d, yyyy')}
                 </h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleDeleteAllEntries}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors"
-                  >
-                    Delete All Entries
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedEntryId(null);
-                      setShowEntryForm(true);
-                    }}
-                    className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors"
-                  >
-                    Add Time Entry
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    setSelectedEntryId(null);
+                    setShowEntryForm(true);
+                  }}
+                  className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors"
+                >
+                  Add Time Entry
+                </button>
               </div>
 
               {/* Filters for Admins and Supervisors */}
@@ -381,18 +353,11 @@ export default function TimecardPage() {
                   // Force re-render when refreshKey changes
                   void refreshKey;
                   
-                  // Debug: Log user info and entries
-                  console.log('Current user:', { id: user?.id, role: user?.role, name: user?.name });
-                  console.log('All entries for date:', allEntries);
-                  
                   const filteredEntries = allEntries.filter(entry => 
                     entry.userId === user?.id || canSeeEntry(entry, user!)
                   );
                   
-                  console.log('Filtered entries:', filteredEntries);
-                  
                   const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'supervisor';
-                  console.log('Is admin or supervisor:', isAdminOrSupervisor);
                   
                   // Apply filters
                   let entries = filteredEntries;
@@ -404,8 +369,6 @@ export default function TimecardPage() {
                       entries = entries.filter(entry => entry.userId === employeeFilter);
                     }
                   }
-                  
-                  console.log('Final entries after filters:', entries);
 
                   if (entries.length === 0) {
                     return (
@@ -464,42 +427,25 @@ export default function TimecardPage() {
                     <div>
                       {/* Your Time Cards Section */}
                       {yourEntries.length > 0 && (
-                        <div className="mb-6">
-                          <div className="flex justify-between items-center mb-3">
-                            <h4 className="text-md font-semibold text-yellow-400">Your Time Cards</h4>
+                        <div>
+                          <div 
+                            className="flex justify-between items-center cursor-pointer mb-3"
+                            onClick={() => setYourCardsCollapsed(!yourCardsCollapsed)}
+                          >
+                            <h4 className="text-yellow-300 font-semibold text-lg">Your Time Cards</h4>
+                            <button className="text-yellow-300 hover:text-yellow-200 transition-colors">
+                              {yourCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                            </button>
                           </div>
-                          <div className="space-y-3">
-                            {yourEntries.map((entry, index) => {
-                              const canAccess = canViewEntry(entry, user!);
-                              const isSelected = selectedEntryId === entry.id;
-                              return (
-                                <div key={entry.id || `your-${index}`}>
-                                  <div
-                                    className={`bg-yellow-900 bg-opacity-10 border rounded-lg p-3 transition-colors ${
-                                      isSelected 
-                                        ? 'border-yellow-400 bg-opacity-30 ring-2 ring-yellow-400 ring-opacity-50' 
-                                        : canAccess 
-                                          ? 'border-yellow-700 hover:border-yellow-600' 
-                                          : 'border-gray-600 opacity-75'
-                                    }`}
-                                    onClick={() => canAccess && handleEntrySelect(entry.id!)}
-                                  >
-                                    <div className="flex justify-between items-center">
-                                      <div>
-                                        <span className="text-yellow-100 font-medium">
-                                          Time Card {entry.entryNumber}
-                                        </span>
-                                        <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                                          entry.status === 'draft' ? 'bg-gray-600' :
-                                          entry.status === 'submitted' ? 'bg-yellow-600' :
-                                          entry.status === 'approved' ? 'bg-green-600' :
-                                          'bg-blue-600'
-                                        } text-white`}>
-                                          {getStatusDisplay(entry.status)}
-                                        </span>
-                                        {isSelected && (
-                                          <span className="ml-2 px-2 py-1 rounded text-xs bg-blue-600 text-white">
-                                            Selected
+                          {!yourCardsCollapsed && (
+                            <div className="space-y-3">
+                              {yourEntries.map((entry, index) => {
+                                const canAccess = canViewEntry(entry, user!);
+                                const isSelected = selectedEntryId === entry.id;
+                                return (
+                                  <div key={entry.id || `your-${index}`}>
+                                    <div
+                                      className={`bg-yellow-900 bg-opacity-10 border rounded-lg p-3 transition-colors ${
                                         isSelected 
                                           ? 'border-yellow-400 bg-opacity-30 ring-2 ring-yellow-400 ring-opacity-50' 
                                           : canAccess 
@@ -566,11 +512,35 @@ export default function TimecardPage() {
                       {/* Other Time Cards Section (Admins/Supervisors only) */}
                       {otherEntries.length > 0 && (
                         <div>
-                          <div className="flex justify-between items-center mb-3">
-                            <h4 className="text-yellow-300 font-semibold text-lg">Other Time Cards</h4>
+                          <div 
+                            className="flex justify-between items-center cursor-pointer mb-3"
+                            onClick={() => setOtherCardsCollapsed(!otherCardsCollapsed)}
+                          >
+                            <h4 className="text-yellow-300 font-semibold text-lg">
+                              {(() => {
+                                if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
+                                  // Both filters selected
+                                  const employeeName = getBestDisplayName(users.find(u => u.id === employeeFilter));
+                                  return `${siteFilter} - ${employeeName}'s Time Cards`;
+                                } else if (siteFilter && siteFilter !== 'all') {
+                                  // Only site filter selected
+                                  return `${siteFilter} Time Cards`;
+                                } else if (employeeFilter && employeeFilter !== 'all') {
+                                  // Only employee filter selected
+                                  return `${getBestDisplayName(users.find(u => u.id === employeeFilter))}'s Time Cards`;
+                                } else {
+                                  // No filters selected
+                                  return 'Other Time Cards';
+                                }
+                              })()}
+                            </h4>
+                            <button className="text-yellow-300 hover:text-yellow-200 transition-colors">
+                              {otherCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                            </button>
                           </div>
-                          <div className="space-y-3">
-                            {otherEntries.map((entry, index) => {
+                          {!otherCardsCollapsed && (
+                            <div className="space-y-3">
+                              {otherEntries.map((entry, index) => {
                                 const canAccess = canViewEntry(entry, user!);
                                 const isSelected = selectedEntryId === entry.id;
                                 const employeeUser = users.find(u => u.id === entry.userId);
@@ -642,6 +612,7 @@ export default function TimecardPage() {
                                 );
                               })}
                             </div>
+                          )}
                         </div>
                       )}
                     </div>

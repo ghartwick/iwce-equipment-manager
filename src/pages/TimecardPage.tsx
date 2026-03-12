@@ -149,11 +149,30 @@ export default function TimecardPage() {
     return user.name || 'Unknown User';
   };
 
+  // Helper function to get display text for status
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'draft': return 'Saved';
+      default: return status;
+    }
+  };
+
   // Get unique sites from entries for the selected date
   const getUniqueSites = () => {
     if (!selectedDate || !user) return [];
-    const entries = getEntriesForDate(selectedDate).filter(entry => canSeeEntry(entry, user!));
-    const sites = [...new Set(entries.map(entry => entry.job).filter(Boolean))];
+    const allEntries = getEntriesForDate(selectedDate).filter(entry => canSeeEntry(entry, user!));
+    
+    // For admins/supervisors, only show sites from submitted entries of other users
+    if (user?.role === 'admin' || user?.role === 'supervisor') {
+      const submittedOtherEntries = allEntries.filter(entry => 
+        entry.userId !== user?.id && entry.status === 'submitted'
+      );
+      const sites = [...new Set(submittedOtherEntries.map(entry => entry.job).filter(Boolean))];
+      return sites.sort();
+    }
+    
+    // For field users, show all their sites
+    const sites = [...new Set(allEntries.map(entry => entry.job).filter(Boolean))];
     return sites.sort();
   };
 
@@ -363,16 +382,46 @@ export default function TimecardPage() {
                   const yourEntries = entries
                     .filter(entry => entry.userId === user?.id)
                     .sort((a, b) => {
-                      // Sort by creation time (oldest first)
-                      const aTime = a.createdAt?.getTime() || a.date?.getTime() || 0;
-                      const bTime = b.createdAt?.getTime() || b.date?.getTime() || 0;
+                      // Sort by creation time (oldest first) - handle Firestore Timestamp
+                      const getTimestamp = (entry: any) => {
+                        if (!entry.createdAt) return entry.date?.getTime() || 0;
+                        // Check if it's a Firestore Timestamp (has toDate method)
+                        if (typeof (entry.createdAt as any).toDate === 'function') {
+                          return (entry.createdAt as any).toDate().getTime();
+                        }
+                        // Handle as regular Date
+                        return new Date(entry.createdAt).getTime();
+                      };
+                      
+                      const aTime = getTimestamp(a);
+                      const bTime = getTimestamp(b);
                       return aTime - bTime;
                     })
                     .map((entry, index) => ({
                       ...entry,
                       entryNumber: entry.entryNumber || (index + 1) // Use existing or assign sequential number
                     }));
-                  const otherEntries = isAdminOrSupervisor ? entries.filter(entry => entry.userId !== user?.id) : [];
+                  const otherEntries = isAdminOrSupervisor ? (() => {
+                    // Only show other entries if at least one filter is set
+                    const hasActiveFilter = (siteFilter && siteFilter !== 'all') || (employeeFilter && employeeFilter !== 'all');
+                    if (!hasActiveFilter) return [];
+                    
+                    // Filter for submitted entries from other users that match the criteria
+                    const submittedOtherEntries = entries.filter(entry => 
+                      entry.userId !== user?.id && entry.status === 'submitted'
+                    );
+                    
+                    // Apply additional filters
+                    let filteredEntries = submittedOtherEntries;
+                    if (siteFilter && siteFilter !== 'all') {
+                      filteredEntries = filteredEntries.filter(entry => entry.job === siteFilter);
+                    }
+                    if (employeeFilter && employeeFilter !== 'all') {
+                      filteredEntries = filteredEntries.filter(entry => entry.userId === employeeFilter);
+                    }
+                    
+                    return filteredEntries;
+                  })() : [];
 
                   return (
                     <div>
@@ -416,7 +465,7 @@ export default function TimecardPage() {
                                             entry.status === 'approved' ? 'bg-green-600' :
                                             'bg-blue-600'
                                           } text-white`}>
-                                            {entry.status}
+                                            {getStatusDisplay(entry.status)}
                                           </span>
                                           {isSelected && (
                                             <span className="ml-2 px-2 py-1 rounded text-xs bg-blue-600 text-white">
@@ -501,7 +550,7 @@ export default function TimecardPage() {
                                             entry.status === 'approved' ? 'bg-green-600' :
                                             'bg-blue-600'
                                           } text-white`}>
-                                            {entry.status}
+                                            {getStatusDisplay(entry.status)}
                                           </span>
                                           {isSelected && (
                                             <span className="ml-2 px-2 py-1 rounded text-xs bg-blue-600 text-white">

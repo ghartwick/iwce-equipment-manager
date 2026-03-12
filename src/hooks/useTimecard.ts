@@ -20,7 +20,7 @@ export const useTimecard = () => {
         if (user.role === 'admin') {
           entries = await timecardService.getAllTimeEntries();
         } else if (user.role === 'supervisor') {
-          entries = await timecardService.getSupervisorTimeEntries(user.id);
+          entries = await timecardService.getSupervisorTimeEntries();
         } else {
           entries = await timecardService.getUserTimeEntries(user.id);
         }
@@ -42,15 +42,28 @@ export const useTimecard = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
+      console.log('Hook Debug - Creating time entry:', { entryData });
       const id = await timecardService.createTimeEntry(entryData);
+      console.log('Hook Debug - Entry created with ID:', id);
       
       // Refresh entries
-      const entries = user.role === 'admin' 
-        ? await timecardService.getAllTimeEntries()
-        : user.role === 'supervisor'
-        ? await timecardService.getSupervisorTimeEntries(user.id)
-        : await timecardService.getUserTimeEntries(user.id);
+      console.log('Hook Debug - Refreshing entries from Firebase...');
+      console.log('Hook Debug - User role:', user.role);
+      console.log('Hook Debug - User ID:', user.id);
       
+      let entries;
+      if (user.role === 'admin') {
+        console.log('Hook Debug - Getting all entries (admin)');
+        entries = await timecardService.getAllTimeEntries();
+      } else if (user.role === 'supervisor') {
+        console.log('Hook Debug - Getting supervisor entries');
+        entries = await timecardService.getSupervisorTimeEntries();
+      } else {
+        console.log('Hook Debug - Getting user entries (field role)');
+        entries = await timecardService.getUserTimeEntries(user.id);
+      }
+      
+      console.log('Hook Debug - Refreshed entries count:', entries.length);
       setTimeEntries(entries);
       return id;
     } catch (err) {
@@ -161,12 +174,41 @@ export const useTimecard = () => {
     });
   };
 
-  // Get entry for a specific date
-  const getEntryForDate = (date: Date) => {
-    return timeEntries.find(entry => {
-      const entryDate = new Date(entry.date);
-      return entryDate.toDateString() === date.toDateString();
+  // Get all entries for a specific date
+  const getEntriesForDate = (date: Date) => {
+    const filtered = timeEntries.filter(entry => {
+      try {
+        // Handle Firestore Timestamp properly
+        let entryDate;
+        if (entry.date && 'toDate' in entry.date && typeof (entry.date as any).toDate === 'function') {
+          entryDate = (entry.date as any).toDate();
+        } else if (entry.date instanceof Date) {
+          entryDate = entry.date;
+        } else {
+          entryDate = new Date(entry.date);
+        }
+        
+        // Check if the date is valid
+        if (isNaN(entryDate.getTime())) {
+          return false;
+        }
+        
+        // Use timezone-agnostic comparison: compare year, month, and day
+        return entryDate.getFullYear() === date.getFullYear() &&
+               entryDate.getMonth() === date.getMonth() &&
+               entryDate.getDate() === date.getDate();
+      } catch (error) {
+        // Skip entries with invalid dates
+        return false;
+      }
     });
+    
+    return filtered;
+  };
+
+  // Get the first entry for a specific date (for backward compatibility)
+  const getEntryForDate = (date: Date) => {
+    return getEntriesForDate(date)[0];
   };
 
   // Calculate monthly statistics
@@ -195,9 +237,12 @@ export const useTimecard = () => {
     approveTimeEntry,
     rejectTimeEntry,
     getEntriesForMonth,
+    getEntriesForDate,
     getEntryForDate,
     getMonthlyStats,
     canEditEntry: timecardService.canEditEntry,
+    canViewEntry: timecardService.canViewEntry,
+    canSeeEntry: timecardService.canSeeEntry,
     canApproveEntry: timecardService.canApproveEntry,
     getStatusColor: timecardService.getStatusColor,
     getStatusText: timecardService.getStatusText,

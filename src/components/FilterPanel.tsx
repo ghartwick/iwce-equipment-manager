@@ -22,7 +22,7 @@ export function FilterPanel({
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [isCategoryFormCollapsed, setIsCategoryFormCollapsed] = useState(false);
+  const [isCategoryFormCollapsed, setIsCategoryFormCollapsed] = useState(true);
 
   // Sort categories alphabetically and numerically
   const sortedCategories = [...categories].sort((a, b) => {

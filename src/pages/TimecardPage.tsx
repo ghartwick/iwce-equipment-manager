@@ -78,7 +78,12 @@ export default function TimecardPage() {
       const existingEntry = entries.find(entry => entry.job === entryData.job);
       
       if (existingEntry) {
-        await updateTimeEntry(existingEntry.id!, entryData);
+        // Preserve the entryNumber when updating
+        const entryDataWithNumber = {
+          ...entryData,
+          entryNumber: existingEntry.entryNumber || 1
+        };
+        await updateTimeEntry(existingEntry.id!, entryDataWithNumber);
       } else {
         // Calculate the next entry number for this date
         const userEntries = entries
@@ -365,7 +370,7 @@ export default function TimecardPage() {
                     })
                     .map((entry, index) => ({
                       ...entry,
-                      entryNumber: index + 1 // Add sequential numbering
+                      entryNumber: entry.entryNumber || (index + 1) // Use existing or assign sequential number
                     }));
                   const otherEntries = isAdminOrSupervisor ? entries.filter(entry => entry.userId !== user?.id) : [];
 

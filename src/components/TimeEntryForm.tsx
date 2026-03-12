@@ -10,7 +10,6 @@ interface TimeEntryFormProps {
   onCancel: () => void;
   canEdit: boolean;
   selectedEntryId?: string | null;
-  entryNumber?: number;
 }
 
 // Define the structure for a single work entry
@@ -288,16 +287,15 @@ const WorkEntrySection = ({
   );
 };
 
-export function TimeEntryForm({ 
-  selectedDate, 
-  entry, 
-  user, 
+export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
+  selectedDate,
+  entry,
+  user,
   onSubmit, 
   onCancel, 
   canEdit,
-  selectedEntryId,
-  entryNumber
-}: TimeEntryFormProps) {
+  selectedEntryId
+}: TimeEntryFormProps) => {
   const [clockIn, setClockIn] = useState('');
   const [clockOut, setClockOut] = useState('');
   const [job, setJob] = useState('');
@@ -864,7 +862,7 @@ export function TimeEntryForm({
       </button>
       
       <h3 className="text-lg font-semibold text-yellow-300 mb-4 pr-8">
-        {entry ? `Time Card ${entryNumber}` : 'New Time Card'} - {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
+        {entry ? `Time Card ${entry.entryNumber || 'New'}` : 'New Time Card'} - {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
       </h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">

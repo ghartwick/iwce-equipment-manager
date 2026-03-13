@@ -224,6 +224,10 @@ export default function TimecardPage() {
   const handleEntrySelect = (entryId: string) => {
     setSelectedEntryId(entryId);
     setShowEntryForm(true); // Show the form when an entry is selected
+    // Scroll to form after a short delay to ensure it's rendered
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   // Handle entry deletion
@@ -416,8 +420,6 @@ export default function TimecardPage() {
               <div className="space-y-4">
                 {(() => {
                   const allEntries = getEntriesForDate(selectedDate);
-                  // Force re-render when refreshKey changes
-                  void refreshKey;
                   
                   const filteredEntries = allEntries.filter(entry => 
                     entry.userId === user?.id || canSeeEntry(entry, user!)
@@ -467,19 +469,21 @@ export default function TimecardPage() {
                       ...entry,
                       entryNumber: entry.entryNumber || (index + 1) // Use existing or assign sequential number
                     }));
+                  
                   const otherEntries = isAdminOrSupervisor ? (() => {
-                    // Only show other entries if at least one filter is set (not empty)
+                    // Show all other users' entries for supervisors/admins (including drafts)
+                    const otherUsersEntries = entries.filter(entry => entry.userId !== user?.id);
+                    
+                    // Only apply filters if they are set
                     const hasActiveFilter = (siteFilter && siteFilter !== '') || 
                                           (employeeFilter && employeeFilter !== '');
-                    if (!hasActiveFilter) return [];
-                    
-                    // Filter for submitted/approved entries from other users
-                    const submittedOtherEntries = entries.filter(entry => 
-                      entry.userId !== user?.id && (entry.status === 'submitted' || entry.status === 'approved')
-                    );
+                    if (!hasActiveFilter) {
+                      // No filters - show all other users' entries
+                      return otherUsersEntries;
+                    }
                     
                     // Apply additional filters
-                    let filteredEntries = submittedOtherEntries;
+                    let filteredEntries = otherUsersEntries;
                     // Only apply site filter if it's not "all" and not empty
                     if (siteFilter && siteFilter !== 'all' && siteFilter !== '') {
                       filteredEntries = filteredEntries.filter(entry => entry.job === siteFilter);

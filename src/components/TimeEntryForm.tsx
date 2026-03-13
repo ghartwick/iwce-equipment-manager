@@ -732,8 +732,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
     // Show confirmation dialog
     const confirmSubmit = window.confirm(
-      'Are you sure you want to submit this time card?\n\n' +
-      'Once submitted, the time card will be locked and cannot be edited.'
+      'By submitting this form, I confirm that, to the best of my knowledge, all assigned work has been completed and that I departed the worksite without injury, illness, or incident at the time of departure.\n\n' +
+      'Once submitted the card is locked.'
     );
 
     if (!confirmSubmit) {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
 import { TimeEntryForm } from '../components/TimeEntryForm';
@@ -180,26 +180,45 @@ export default function TimecardPage() {
     if (!selectedDate || !user) return [];
     const allEntries = getEntriesForDate(selectedDate).filter(entry => canSeeEntry(entry, user!));
     
-    // For admins/supervisors, only show sites from submitted entries of other users
+    // For admins/supervisors, only show sites from submitted/approved entries of other users
     if (user?.role === 'admin' || user?.role === 'supervisor') {
       const submittedOtherEntries = allEntries.filter(entry => 
-        entry.userId !== user?.id && entry.status === 'submitted'
+        entry.userId !== user?.id && (entry.status === 'submitted' || entry.status === 'approved')
       );
       const sites = [...new Set(submittedOtherEntries.map(entry => entry.job).filter(Boolean))];
       return sites.sort();
     }
     
-    // For field users, show all their sites
-    const sites = [...new Set(allEntries.map(entry => entry.job).filter(Boolean))];
+    // For field users, show sites from their submitted/approved entries only
+    const submittedEntries = allEntries.filter(entry => 
+      entry.status === 'submitted' || entry.status === 'approved'
+    );
+    const sites = [...new Set(submittedEntries.map(entry => entry.job).filter(Boolean))];
     return sites.sort();
   };
 
   // Get unique employees from entries for the selected date
   const getUniqueEmployees = () => {
     if (!selectedDate || !user) return [];
-    const entries = getEntriesForDate(selectedDate).filter(entry => canSeeEntry(entry, user!));
-    const employeeIds = [...new Set(entries.map(entry => entry.userId).filter(Boolean))];
-    return employeeIds.map(id => users.find(u => u.id === id)).filter(Boolean) as AppUser[];
+    const allEntries = getEntriesForDate(selectedDate).filter(entry => canSeeEntry(entry, user!));
+    
+    // For admins/supervisors, only show employees from submitted/approved entries of other users
+    if (user?.role === 'admin' || user?.role === 'supervisor') {
+      const submittedOtherEntries = allEntries.filter(entry => 
+        entry.userId !== user?.id && (entry.status === 'submitted' || entry.status === 'approved')
+      );
+      const employeeIds = [...new Set(submittedOtherEntries.map(entry => entry.userId).filter(Boolean))];
+      return employeeIds.map(id => users.find(u => u.id === id)).filter(Boolean) as AppUser[];
+    }
+    
+    // For field users, show only themselves if they have submitted entries
+    const submittedEntries = allEntries.filter(entry => 
+      entry.status === 'submitted' || entry.status === 'approved'
+    );
+    if (submittedEntries.length === 0) return [];
+    
+    // Only return the current user for field users
+    return user ? [user] : [];
   };
 
   // Handle entry selection
@@ -237,7 +256,6 @@ export default function TimecardPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-yellow-400 mb-2">Timecard</h1>
-          <p className="text-yellow-600">Track your work hours and manage timesheets</p>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
@@ -300,8 +318,9 @@ export default function TimecardPage() {
                     <div className="text-center relative">
                       {format(day, 'd')}
                       {(() => {
-                        const submittedCount = timeEntries.filter(entry => entry.status === 'submitted').length;
-                        const draftCount = timeEntries.filter(entry => entry.status === 'draft').length;
+                        const dayEntries = getEntriesForDate(day);
+                        const submittedCount = dayEntries.filter(entry => entry.status === 'submitted' || entry.status === 'approved').length;
+                        const draftCount = dayEntries.filter(entry => entry.status === 'draft').length;
                         
                         return (
                           <>
@@ -315,20 +334,20 @@ export default function TimecardPage() {
                                 {submittedCount}
                               </div>
                             )}
+                            {dayEntries.length > 0 && (
+                              <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
+                                {dayEntries.slice(0, 3).map((entry, i) => (
+                                  <div
+                                    key={entry.id || i}
+                                    className={`w-1 h-1 rounded-full ${getStatusColor(entry.status)}`}
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </>
                         );
                       })()}
                     </div>
-                    {timeEntries.length > 0 && (
-                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
-                        {timeEntries.slice(0, 3).map((entry, i) => (
-                          <div
-                            key={entry.id || i}
-                            className={`w-1 h-1 rounded-full ${getStatusColor(entry.status)}`}
-                          />
-                        ))}
-                      </div>
-                    )}
                   </button>
                 );
               })}
@@ -454,16 +473,12 @@ export default function TimecardPage() {
                       entryNumber: entry.entryNumber || (index + 1) // Use existing or assign sequential number
                     }));
                   const otherEntries = isAdminOrSupervisor ? (() => {
-                    // Only show other entries if at least one filter is set
-                    const hasActiveFilter = (siteFilter && siteFilter !== '') || (employeeFilter && employeeFilter !== '');
-                    if (!hasActiveFilter) return [];
-                    
-                    // Filter for submitted entries from other users that match the criteria
+                    // For admins/supervisors, always show submitted/approved entries from other users
                     const submittedOtherEntries = entries.filter(entry => 
-                      entry.userId !== user?.id && entry.status === 'submitted'
+                      entry.userId !== user?.id && (entry.status === 'submitted' || entry.status === 'approved')
                     );
                     
-                    // Apply additional filters
+                    // Apply additional filters if set
                     let filteredEntries = submittedOtherEntries;
                     if (siteFilter && siteFilter !== 'all' && siteFilter !== '') {
                       filteredEntries = filteredEntries.filter(entry => entry.job === siteFilter);
@@ -477,21 +492,21 @@ export default function TimecardPage() {
 
                   return (
                     <div>
-                      {/* Your Time Cards Section */}
-                      {yourEntries.length > 0 && (
-                        <div>
-                          <div 
-                            className="flex justify-between items-center cursor-pointer mb-3"
-                            onClick={() => setYourCardsCollapsed(!yourCardsCollapsed)}
-                          >
-                            <h4 className="text-yellow-300 font-semibold text-lg">Your Time Cards</h4>
-                            <button className="text-yellow-300 hover:text-yellow-200 transition-colors">
-                              {yourCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-                            </button>
-                          </div>
-                          {!yourCardsCollapsed && (
-                            <div className="space-y-3">
-                              {yourEntries.map((entry, index) => {
+                      {/* Your Time Cards Section - Always visible */}
+                      <div>
+                        <div 
+                          className="flex justify-between items-center cursor-pointer mb-3"
+                          onClick={() => setYourCardsCollapsed(!yourCardsCollapsed)}
+                        >
+                          <h4 className="text-yellow-300 font-semibold text-lg">Your Time Cards</h4>
+                          <button className="text-yellow-300 hover:text-yellow-200 transition-colors">
+                            {yourCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                          </button>
+                        </div>
+                        {!yourCardsCollapsed && (
+                          <div className="space-y-3">
+                            {yourEntries.length > 0 ? (
+                              yourEntries.map((entry, index) => {
                                 const canAccess = canViewEntry(entry, user!);
                                 const isSelected = selectedEntryId === entry.id;
                                 return (
@@ -513,10 +528,13 @@ export default function TimecardPage() {
                                           </span>
                                           <span className={`ml-2 px-2 py-1 rounded text-xs ${
                                             entry.status === 'draft' ? 'bg-gray-600' :
-                                            entry.status === 'submitted' || entry.status === 'approved' ? 'bg-yellow-600' :
+                                            entry.status === 'submitted' || entry.status === 'approved' ? 'bg-green-600' :
                                             entry.status === 'rejected' ? 'bg-red-600' :
                                             'bg-blue-600'
                                           } text-white`}>
+                                            {(entry.status === 'submitted' || entry.status === 'approved') && (
+                                              <Check className="w-3 h-3 inline mr-1" />
+                                            )}
                                             {getStatusDisplay(entry.status)}
                                           </span>
                                           {isSelected && (
@@ -572,11 +590,15 @@ export default function TimecardPage() {
                                     </div>
                                   </div>
                                 );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                              })
+                            ) : (
+                              <div className="text-center py-8 text-yellow-600">
+                                No time entries found for this date
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Other Time Cards Section (Admins/Supervisors only) */}
                       {otherEntries.length > 0 && (
@@ -632,10 +654,13 @@ export default function TimecardPage() {
                                           </span>
                                           <span className={`ml-2 px-2 py-1 rounded text-xs ${
                                             entry.status === 'draft' ? 'bg-gray-600' :
-                                            entry.status === 'submitted' || entry.status === 'approved' ? 'bg-yellow-600' :
+                                            entry.status === 'submitted' || entry.status === 'approved' ? 'bg-green-600' :
                                             entry.status === 'rejected' ? 'bg-red-600' :
                                             'bg-blue-600'
                                           } text-white`}>
+                                            {(entry.status === 'submitted' || entry.status === 'approved') && (
+                                              <Check className="w-3 h-3 inline mr-1" />
+                                            )}
                                             {getStatusDisplay(entry.status)}
                                           </span>
                                           {isSelected && (

@@ -40,8 +40,6 @@ const WorkEntrySection = ({
   toggleCollapse,
   isLocked,
   hoursMatch,
-  totalMachineHours,
-  totalLabourHours,
   codeOptions,
   equipmentOptions,
   smallToolsOptions,
@@ -56,8 +54,6 @@ const WorkEntrySection = ({
   toggleCollapse: (entryId: string) => void;
   isLocked: boolean;
   hoursMatch: boolean;
-  totalMachineHours: number;
-  totalLabourHours: number;
   codeOptions: string[];
   equipmentOptions: string[];
   smallToolsOptions: string[];
@@ -913,8 +909,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               toggleCollapse={toggleCollapse}
               isLocked={isLocked || false}
               hoursMatch={hoursMatch}
-              totalMachineHours={totalMachineHours}
-              totalLabourHours={totalLabourHours}
               codeOptions={codeOptions}
               equipmentOptions={equipmentOptions}
               smallToolsOptions={smallToolsOptions}

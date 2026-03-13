@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { User } from '../services/timecardService';

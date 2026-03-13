@@ -169,8 +169,7 @@ export default function TimecardPage() {
       case 'draft': return 'Saved';
       case 'submitted': return 'Submitted';
       case 'rejected': return 'Rejected';
-      case 'approved': return 'Submitted'; // Treat approved as submitted
-      default: return status;
+            default: return status;
     }
   };
 
@@ -199,7 +198,7 @@ export default function TimecardPage() {
     // For admins/supervisors, only show employees from submitted/approved entries of other users
     if (user?.role === 'admin' || user?.role === 'supervisor') {
       const submittedOtherEntries = allEntries.filter(entry => 
-        entry.userId !== user?.id && (entry.status === 'submitted' || entry.status === 'approved')
+        entry.userId !== user?.id && entry.status === 'submitted'
       );
       const employeeIds = [...new Set(submittedOtherEntries.map(entry => entry.userId).filter(Boolean))];
       return employeeIds.map(id => users.find(u => u.id === id)).filter(Boolean) as AppUser[];
@@ -207,7 +206,7 @@ export default function TimecardPage() {
     
     // For field users, show only themselves if they have submitted entries
     const submittedEntries = allEntries.filter(entry => 
-      entry.status === 'submitted' || entry.status === 'approved'
+      entry.status === 'submitted'
     );
     if (submittedEntries.length === 0) return [];
     
@@ -313,7 +312,7 @@ export default function TimecardPage() {
                       {format(day, 'd')}
                       {(() => {
                         const dayEntries = getEntriesForDate(day);
-                        const submittedCount = dayEntries.filter(entry => entry.status === 'submitted' || entry.status === 'approved').length;
+                        const submittedCount = dayEntries.filter(entry => entry.status === 'submitted').length;
                         const draftCount = dayEntries.filter(entry => entry.status === 'draft').length;
                         
                         return (
@@ -403,7 +402,7 @@ export default function TimecardPage() {
                       <option value="all">All</option>
                       {getUniqueEmployees().map(employee => (
                         <option key={employee.id} value={employee.id}>
-                          {getBestDisplayName(employee)}
+                          {employee.name || employee.username}
                         </option>
                       ))}
                     </select>
@@ -528,11 +527,11 @@ export default function TimecardPage() {
                                           {user?.role === 'field' && (
                                             <span className={`ml-2 px-2 py-1 rounded text-xs ${
                                               entry.status === 'draft' ? 'bg-gray-600' :
-                                              entry.status === 'submitted' || entry.status === 'approved' ? 'bg-green-600' :
+                                              entry.status === 'submitted' ? 'bg-green-600' :
                                               entry.status === 'rejected' ? 'bg-red-600' :
                                               'bg-blue-600'
                                             } text-white`}>
-                                              {(entry.status === 'submitted' || entry.status === 'approved') && (
+                                              {(entry.status === 'submitted') && (
                                                 <Check className="w-3 h-3 inline mr-1" />
                                               )}
                                               {getStatusDisplay(entry.status)}
@@ -556,7 +555,7 @@ export default function TimecardPage() {
                                               Delete
                                             </button>
                                           )}
-                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (entry.status === 'submitted' || entry.status === 'approved') && (
+                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (entry.status === 'submitted') && (
                                             <>
                                               <button
                                                 onClick={(e) => {
@@ -661,11 +660,11 @@ export default function TimecardPage() {
                                           {user?.role === 'field' && (
                                             <span className={`ml-2 px-2 py-1 rounded text-xs ${
                                               entry.status === 'draft' ? 'bg-gray-600' :
-                                              entry.status === 'submitted' || entry.status === 'approved' ? 'bg-green-600' :
+                                              entry.status === 'submitted' ? 'bg-green-600' :
                                               entry.status === 'rejected' ? 'bg-red-600' :
                                               'bg-blue-600'
                                             } text-white`}>
-                                              {(entry.status === 'submitted' || entry.status === 'approved') && (
+                                              {(entry.status === 'submitted') && (
                                                 <Check className="w-3 h-3 inline mr-1" />
                                               )}
                                               {getStatusDisplay(entry.status)}
@@ -689,7 +688,7 @@ export default function TimecardPage() {
                                               Delete
                                             </button>
                                           )}
-                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (entry.status === 'submitted' || entry.status === 'approved') && (
+                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (entry.status === 'submitted') && (
                                             <>
                                               <button
                                                 onClick={(e) => {

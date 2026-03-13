@@ -178,8 +178,7 @@ export function MobileProductList({
             // Try multiple matching approaches
             let categoryInfo = categories.find(c => c.name === categoryName);
             let displayCategoryName = categoryName;
-            let categoryColor = '#6B7280';
-            
+                                    
             // If exact match fails, try case-insensitive match
             if (!categoryInfo) {
               categoryInfo = categories.find(c => 
@@ -192,10 +191,9 @@ export function MobileProductList({
               categoryInfo = categories.find(c => c.id === categoryName);
             }
             
-            // If we found a category, use its proper name and color
+            // If we found a category, use its proper name
             if (categoryInfo) {
               displayCategoryName = categoryInfo.name;
-              categoryColor = categoryInfo.color;
             }
             
             return (

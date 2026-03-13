@@ -74,18 +74,22 @@ export default function TimecardPage() {
 
   const handleEntrySubmit = async (entryData: any) => {
     try {
+      console.log('Submitting entry with data:', entryData);
+      console.log('Entry status:', entryData.status);
+      
       // Check for existing entry on the same date AND site
       const entries = getEntriesForDate(entryData.date);
       const existingEntry = entries.find(entry => entry.job === entryData.job);
       
       if (existingEntry) {
+        console.log('Updating existing entry:', existingEntry.id);
         // Preserve the original entry details when updating
         const preservedFields = {
           entryNumber: existingEntry.entryNumber || 1,
           userId: existingEntry.userId, // Preserve original owner
           createdAt: existingEntry.createdAt, // Preserve creation time
-          status: existingEntry.status, // Preserve status unless explicitly changed
-          submittedAt: existingEntry.submittedAt, // Preserve submission time
+          status: entryData.status || existingEntry.status, // Use new status if provided
+          submittedAt: entryData.submittedAt || existingEntry.submittedAt, // Use new submission time if provided
         };
 
         // Filter out undefined values to prevent Firebase errors
@@ -123,7 +127,11 @@ export default function TimecardPage() {
         setSelectedEntryId(id);
       }
       
-      setRefreshKey(prev => prev + 1);
+      console.log('About to increment refreshKey from:', refreshKey);
+      setRefreshKey(prev => {
+        console.log('Incrementing refreshKey to:', prev + 1);
+        return prev + 1;
+      });
       setShowEntryForm(false);
     } catch (error) {
       console.error('Error saving time entry:', error);
@@ -227,6 +235,49 @@ export default function TimecardPage() {
     setShowEntryForm(true); // Show the form when an entry is selected
   };
 
+  // Temporary function to fix Time Card 2 on March 13th
+  const fixTimeCard2 = async () => {
+    if (!user) return;
+    
+    // Find March 13th entries
+    const march13 = new Date(2026, 2, 13); // Month is 0-indexed (2 = March)
+    const entries = getEntriesForDate(march13);
+    
+    // Find Time Card 2 (entryNumber === 2)
+    const timeCard2 = entries.find(entry => 
+      entry.entryNumber === 2 ||
+      (entry.job === 'Excavation' && entry.userId === '7hDkNSNdXyyG8YAeNYIU')
+    );
+    
+    if (timeCard2 && timeCard2.id) {
+      try {
+        console.log('Fixing Time Card 2:', timeCard2);
+        
+        // Force update to submitted status
+        await updateTimeEntry(timeCard2.id, {
+          status: 'submitted',
+          isLocked: true,
+          submittedAt: new Date(),
+          updatedAt: new Date()
+        });
+        
+        console.log('Time Card 2 fixed successfully!');
+        alert('Time Card 2 has been fixed and submitted!');
+        
+        // Force refresh
+        setRefreshKey(prev => prev + 1);
+        
+        // Reload the page to ensure fresh state
+        window.location.reload();
+      } catch (error) {
+        console.error('Error fixing Time Card 2:', error);
+        alert('Error fixing Time Card 2: ' + (error as Error).message);
+      }
+    } else {
+      alert('Time Card 2 not found on March 13th');
+    }
+  };
+
   // Handle entry deletion
   const handleDeleteEntry = async (entryId: string) => {
     if (window.confirm('Are you sure you want to delete this time entry?')) {
@@ -256,6 +307,13 @@ export default function TimecardPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-yellow-400 mb-2">Timecard</h1>
+          {/* Temporary fix button */}
+          <button
+            onClick={fixTimeCard2}
+            className="mt-2 px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700"
+          >
+            Fix Time Card 2 (March 13th)
+          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
@@ -297,15 +355,13 @@ export default function TimecardPage() {
             <div className="grid grid-cols-7 gap-2">
               {days.map((day, index) => {
                 const timeEntries = getEntriesForDate(day);
-                // Force re-render when refreshKey changes
-                void refreshKey;
                 const isCurrentMonth = isSameMonth(day, currentMonth);
                 const isSelected = selectedDate && isSameDay(day, selectedDate);
                 const isTodayDate = isToday(day);
 
                 return (
                   <button
-                    key={index}
+                    key={`${index}-${refreshKey}`}
                     onClick={() => handleDateClick(day)}
                     className={`
                       relative p-2 text-sm rounded-lg border transition-all
@@ -555,7 +611,7 @@ export default function TimecardPage() {
                                               Delete
                                             </button>
                                           )}
-                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (
+                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (entry.status === 'submitted' || entry.status === 'approved') && (
                                             <>
                                               <button
                                                 onClick={(e) => {
@@ -681,7 +737,7 @@ export default function TimecardPage() {
                                               Delete
                                             </button>
                                           )}
-                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (
+                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (entry.status === 'submitted' || entry.status === 'approved') && (
                                             <>
                                               <button
                                                 onClick={(e) => {

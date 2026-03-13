@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mobile Test</title>
+    <style>
+        .mobile-only { 
+            display: block; 
+            background: red; 
+            color: white; 
+            padding: 20px; 
+            font-size: 20px; 
+            font-weight: bold;
+        }
+        .desktop-only { 
+            display: none; 
+            background: blue; 
+            color: white; 
+            padding: 20px; 
+            font-size: 20px; 
+            font-weight: bold;
+        }
+        @media (min-width: 1024px) {
+            .mobile-only { display: none; }
+            .desktop-only { display: block; }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-only">🚨 MOBILE LAYOUT IS ACTIVE! 🚨</div>
+    <div class="desktop-only">🖥️ DESKTOP LAYOUT IS ACTIVE! 🖥️</div>
+    
+    <p>Resize your browser window to test:</p>
+    <ul>
+        <li>Width &lt; 1024px = Red mobile message</li>
+        <li>Width ≥ 1024px = Blue desktop message</li>
+    </ul>
+</body>
+</html>

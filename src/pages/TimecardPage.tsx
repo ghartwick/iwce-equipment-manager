@@ -403,7 +403,7 @@ export default function TimecardPage() {
                     }));
                   const otherEntries = isAdminOrSupervisor ? (() => {
                     // Only show other entries if at least one filter is set
-                    const hasActiveFilter = (siteFilter && siteFilter !== 'all') || (employeeFilter && employeeFilter !== 'all');
+                    const hasActiveFilter = (siteFilter && siteFilter !== '') || (employeeFilter && employeeFilter !== '');
                     if (!hasActiveFilter) return [];
                     
                     // Filter for submitted entries from other users that match the criteria
@@ -413,10 +413,10 @@ export default function TimecardPage() {
                     
                     // Apply additional filters
                     let filteredEntries = submittedOtherEntries;
-                    if (siteFilter && siteFilter !== 'all') {
+                    if (siteFilter && siteFilter !== 'all' && siteFilter !== '') {
                       filteredEntries = filteredEntries.filter(entry => entry.job === siteFilter);
                     }
-                    if (employeeFilter && employeeFilter !== 'all') {
+                    if (employeeFilter && employeeFilter !== 'all' && employeeFilter !== '') {
                       filteredEntries = filteredEntries.filter(entry => entry.userId === employeeFilter);
                     }
                     

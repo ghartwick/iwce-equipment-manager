@@ -235,49 +235,6 @@ export default function TimecardPage() {
     setShowEntryForm(true); // Show the form when an entry is selected
   };
 
-  // Temporary function to fix Time Card 2 on March 13th
-  const fixTimeCard2 = async () => {
-    if (!user) return;
-    
-    // Find March 13th entries
-    const march13 = new Date(2026, 2, 13); // Month is 0-indexed (2 = March)
-    const entries = getEntriesForDate(march13);
-    
-    // Find Time Card 2 (entryNumber === 2)
-    const timeCard2 = entries.find(entry => 
-      entry.entryNumber === 2 ||
-      (entry.job === 'Excavation' && entry.userId === '7hDkNSNdXyyG8YAeNYIU')
-    );
-    
-    if (timeCard2 && timeCard2.id) {
-      try {
-        console.log('Fixing Time Card 2:', timeCard2);
-        
-        // Force update to submitted status
-        await updateTimeEntry(timeCard2.id, {
-          status: 'submitted',
-          isLocked: true,
-          submittedAt: new Date(),
-          updatedAt: new Date()
-        });
-        
-        console.log('Time Card 2 fixed successfully!');
-        alert('Time Card 2 has been fixed and submitted!');
-        
-        // Force refresh
-        setRefreshKey(prev => prev + 1);
-        
-        // Reload the page to ensure fresh state
-        window.location.reload();
-      } catch (error) {
-        console.error('Error fixing Time Card 2:', error);
-        alert('Error fixing Time Card 2: ' + (error as Error).message);
-      }
-    } else {
-      alert('Time Card 2 not found on March 13th');
-    }
-  };
-
   // Handle entry deletion
   const handleDeleteEntry = async (entryId: string) => {
     if (window.confirm('Are you sure you want to delete this time entry?')) {
@@ -307,13 +264,6 @@ export default function TimecardPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-yellow-400 mb-2">Timecard</h1>
-          {/* Temporary fix button */}
-          <button
-            onClick={fixTimeCard2}
-            className="mt-2 px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700"
-          >
-            Fix Time Card 2 (March 13th)
-          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
@@ -428,7 +378,7 @@ export default function TimecardPage() {
                   }}
                   className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors"
                 >
-                  Add Time Entry
+                  Add Time Card
                 </button>
               </div>
 
@@ -529,16 +479,23 @@ export default function TimecardPage() {
                       entryNumber: entry.entryNumber || (index + 1) // Use existing or assign sequential number
                     }));
                   const otherEntries = isAdminOrSupervisor ? (() => {
-                    // For admins/supervisors, always show submitted/approved entries from other users
+                    // Only show other entries if at least one filter is set (not empty)
+                    const hasActiveFilter = (siteFilter && siteFilter !== '') || 
+                                          (employeeFilter && employeeFilter !== '');
+                    if (!hasActiveFilter) return [];
+                    
+                    // Filter for submitted/approved entries from other users
                     const submittedOtherEntries = entries.filter(entry => 
                       entry.userId !== user?.id && (entry.status === 'submitted' || entry.status === 'approved')
                     );
                     
-                    // Apply additional filters if set
+                    // Apply additional filters
                     let filteredEntries = submittedOtherEntries;
+                    // Only apply site filter if it's not "all" and not empty
                     if (siteFilter && siteFilter !== 'all' && siteFilter !== '') {
                       filteredEntries = filteredEntries.filter(entry => entry.job === siteFilter);
                     }
+                    // Only apply employee filter if it's not "all" and not empty
                     if (employeeFilter && employeeFilter !== 'all' && employeeFilter !== '') {
                       filteredEntries = filteredEntries.filter(entry => entry.userId === employeeFilter);
                     }

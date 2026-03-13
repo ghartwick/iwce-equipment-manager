@@ -830,9 +830,13 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         ×
       </button>
       
-      <h3 className="text-lg font-semibold text-yellow-300 mb-4 pr-8">
+      <h3 className="text-lg font-semibold text-yellow-300 mb-1 pr-8">
         {entry ? `Time Card ${entry.entryNumber || 'New'}` : 'New Time Card'} - {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
       </h3>
+      
+      <div className="text-yellow-600 text-sm mb-4">
+        {user.name || user.username}
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Site Dropdown */}

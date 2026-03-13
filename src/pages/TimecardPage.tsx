@@ -179,20 +179,15 @@ export default function TimecardPage() {
     if (!selectedDate || !user) return [];
     const allEntries = getEntriesForDate(selectedDate).filter(entry => canSeeEntry(entry, user!));
     
-    // For admins/supervisors, only show sites from submitted/approved entries of other users
+    // For admins/supervisors, show sites from all entries of other users (including drafts)
     if (user?.role === 'admin' || user?.role === 'supervisor') {
-      const submittedOtherEntries = allEntries.filter(entry => 
-        entry.userId !== user?.id && (entry.status === 'submitted' || entry.status === 'approved')
-      );
-      const sites = [...new Set(submittedOtherEntries.map(entry => entry.job).filter(Boolean))];
+      const otherEntries = allEntries.filter(entry => entry.userId !== user?.id);
+      const sites = [...new Set(otherEntries.map(entry => entry.job).filter(Boolean))];
       return sites.sort();
     }
     
-    // For field users, show sites from their submitted/approved entries only
-    const submittedEntries = allEntries.filter(entry => 
-      entry.status === 'submitted' || entry.status === 'approved'
-    );
-    const sites = [...new Set(submittedEntries.map(entry => entry.job).filter(Boolean))];
+    // For field users, show sites from all their entries (including drafts)
+    const sites = [...new Set(allEntries.map(entry => entry.job).filter(Boolean))];
     return sites.sort();
   };
 
@@ -426,19 +421,8 @@ export default function TimecardPage() {
                   );
                   
                   const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'supervisor';
-                  
-                  // Apply filters
-                  let entries = filteredEntries;
-                  if (isAdminOrSupervisor) {
-                    if (siteFilter && siteFilter !== 'all') {
-                      entries = entries.filter(entry => entry.job === siteFilter);
-                    }
-                    if (employeeFilter && employeeFilter !== 'all') {
-                      entries = entries.filter(entry => entry.userId === employeeFilter);
-                    }
-                  }
 
-                  if (entries.length === 0) {
+                  if (filteredEntries.length === 0) {
                     return (
                       <div className="text-center py-8 text-yellow-600">
                         No time entries found for this date
@@ -447,7 +431,7 @@ export default function TimecardPage() {
                   }
 
                   // Separate entries into your cards and other cards
-                  const yourEntries = entries
+                  const yourEntries = filteredEntries
                     .filter(entry => entry.userId === user?.id)
                     .sort((a, b) => {
                       // Sort by creation time (oldest first) - handle Firestore Timestamp
@@ -472,34 +456,43 @@ export default function TimecardPage() {
                   
                   const otherEntries = isAdminOrSupervisor ? (() => {
                     // Show all other users' entries for supervisors/admins (including drafts)
-                    const otherUsersEntries = entries.filter(entry => entry.userId !== user?.id);
+                    const otherUsersEntries = filteredEntries.filter(entry => entry.userId !== user?.id);
                     
-                    // Only apply filters if they are set
-                    const hasActiveFilter = (siteFilter && siteFilter !== '') || 
-                                          (employeeFilter && employeeFilter !== '');
-                    if (!hasActiveFilter) {
-                      // No filters - show all other users' entries
+                    // Check if "all" is explicitly selected for either filter
+                    const showAll = (siteFilter === 'all') || (employeeFilter === 'all');
+                    
+                    // Check if a specific filter is set (not empty and not 'all')
+                    const hasSpecificFilter = (siteFilter && siteFilter !== '' && siteFilter !== 'all') || 
+                                            (employeeFilter && employeeFilter !== '' && employeeFilter !== 'all');
+                    
+                    if (showAll) {
+                      // "All" selected - show all other users' entries
                       return otherUsersEntries;
                     }
                     
-                    // Apply additional filters
-                    let filteredEntries = otherUsersEntries;
+                    if (!hasSpecificFilter) {
+                      // No filters selected - don't show other users' entries
+                      return [];
+                    }
+                    
+                    // Apply specific filters
+                    let filtered = otherUsersEntries;
                     // Only apply site filter if it's not "all" and not empty
                     if (siteFilter && siteFilter !== 'all' && siteFilter !== '') {
-                      filteredEntries = filteredEntries.filter(entry => entry.job === siteFilter);
+                      filtered = filtered.filter(entry => entry.job === siteFilter);
                     }
                     // Only apply employee filter if it's not "all" and not empty
                     if (employeeFilter && employeeFilter !== 'all' && employeeFilter !== '') {
-                      filteredEntries = filteredEntries.filter(entry => entry.userId === employeeFilter);
+                      filtered = filtered.filter(entry => entry.userId === employeeFilter);
                     }
                     
-                    return filteredEntries;
+                    return filtered;
                   })() : [];
 
                   return (
                     <div>
                       {/* Your Time Cards Section - Always visible */}
-                      <div>
+                      <div className="border-t border-yellow-700 pt-4">
                         <div 
                           className="flex justify-between items-center cursor-pointer mb-3"
                           onClick={() => setYourCardsCollapsed(!yourCardsCollapsed)}
@@ -587,9 +580,12 @@ export default function TimecardPage() {
                                       </div>
                                       {entry.job && (
                                         <div className="text-yellow-600 text-sm mt-1">
-                                          Site: {entry.job}
+                                          {entry.job}
                                         </div>
                                       )}
+                                      <div className="text-yellow-600 text-sm mt-1">
+                                        {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                      </div>
                                       {!canAccess && (
                                         <div className="text-red-400 text-xs mt-2">
                                           This time card has been submitted and cannot be accessed.
@@ -610,15 +606,18 @@ export default function TimecardPage() {
 
                       {/* Other Time Cards Section (Admins/Supervisors only) */}
                       {otherEntries.length > 0 && (
-                        <div>
+                        <div className="border-t border-yellow-700 pt-4 mt-4">
                           <div 
                             className="flex justify-between items-center cursor-pointer mb-3"
                             onClick={() => setOtherCardsCollapsed(!otherCardsCollapsed)}
                           >
                             <h4 className="text-yellow-300 font-semibold text-lg">
                               {(() => {
-                                if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
-                                  // Both filters selected
+                                // Check if "all" is selected for either filter
+                                if (siteFilter === 'all' || employeeFilter === 'all') {
+                                  return 'All Time Cards';
+                                } else if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
+                                  // Both specific filters selected
                                   const employeeName = getBestDisplayName(users.find(u => u.id === employeeFilter));
                                   return `${siteFilter} - ${employeeName}'s Time Cards`;
                                 } else if (siteFilter && siteFilter !== 'all') {
@@ -642,7 +641,6 @@ export default function TimecardPage() {
                               {otherEntries.map((entry, index) => {
                                 const canAccess = canViewEntry(entry, user!);
                                 const isSelected = selectedEntryId === entry.id;
-                                const employeeUser = users.find(u => u.id === entry.userId);
                                 return (
                                   <div key={entry.id || `other-${index}`}>
                                     <div
@@ -715,14 +713,12 @@ export default function TimecardPage() {
                                       </div>
                                       {entry.job && (
                                         <div className="text-yellow-600 text-sm mt-1">
-                                          Site: {entry.job}
+                                          {entry.job}
                                         </div>
                                       )}
-                                      {employeeUser && (
-                                        <div className="text-yellow-600 text-sm mt-1">
-                                          Employee: {getBestDisplayName(employeeUser)}
-                                        </div>
-                                      )}
+                                      <div className="text-yellow-600 text-sm mt-1">
+                                        {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                      </div>
                                       {!canAccess && (
                                         <div className="text-red-400 text-xs mt-2">
                                           This time card has been submitted and cannot be accessed.
@@ -745,7 +741,7 @@ export default function TimecardPage() {
 
           {/* Time Entry Form - Appears below the time cards */}
           {showEntryForm && selectedDate && user && (
-            <div ref={formRef} className="mt-6">
+            <div ref={formRef} className="mt-6 pt-6 border-t border-yellow-700">
               <TimeEntryForm
                 selectedDate={selectedDate}
                 entry={selectedEntryId ? getEntriesForDate(selectedDate).find(e => e.id === selectedEntryId) : undefined}

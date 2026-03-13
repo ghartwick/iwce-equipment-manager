@@ -696,8 +696,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
     // Add optional fields only if they exist
     if (entry?.submittedAt) cleanEntryData.submittedAt = entry.submittedAt;
-    if (entry?.approvedAt) cleanEntryData.approvedAt = entry.approvedAt;
-    if (entry?.approvedBy) cleanEntryData.approvedBy = entry.approvedBy;
 
     // Final cleanup - remove any remaining undefined/null values but keep Date objects
     const finalData = JSON.parse(JSON.stringify(cleanEntryData));
@@ -706,7 +704,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     finalData.clockIn = clockInDate;
     finalData.clockOut = clockOutDate;
     if (entry?.submittedAt) finalData.submittedAt = entry.submittedAt;
-    if (entry?.approvedAt) finalData.approvedAt = entry.approvedAt;
 
     onSubmit(finalData);
   };
@@ -804,8 +801,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     }
 
     // Add optional fields only if they exist
-    if (entry?.approvedAt) cleanEntryData.approvedAt = entry.approvedAt;
-    if (entry?.approvedBy) cleanEntryData.approvedBy = entry.approvedBy;
+    if (entry?.submittedAt) cleanEntryData.submittedAt = entry.submittedAt;
 
     // Final cleanup - remove any remaining undefined/null values but keep Date objects
     const finalData = JSON.parse(JSON.stringify(cleanEntryData));
@@ -814,7 +810,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     finalData.clockIn = clockInDate;
     finalData.clockOut = clockOutDate;
     finalData.submittedAt = new Date();
-    if (entry?.approvedAt) finalData.approvedAt = entry.approvedAt;
 
     onSubmit(finalData);
   };

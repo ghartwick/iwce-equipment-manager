@@ -19,10 +19,8 @@ export interface TimeEntry {
   notes?: string;
   supervisorId?: string;
   entryNumber?: number;
-  status: 'draft' | 'submitted' | 'approved' | 'rejected';
+  status: 'draft' | 'submitted' | 'rejected';
   submittedAt?: Date;
-  approvedAt?: Date;
-  approvedBy?: string;
   isLocked: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -58,7 +56,6 @@ class TimecardService {
       clockIn: Timestamp.fromDate(entry.clockIn),
       clockOut: Timestamp.fromDate(entry.clockOut),
       submittedAt: entry.submittedAt ? Timestamp.fromDate(entry.submittedAt) : null,
-      approvedAt: entry.approvedAt ? Timestamp.fromDate(entry.approvedAt) : null,
       createdAt: Timestamp.fromDate(new Date()),
       updatedAt: Timestamp.fromDate(new Date()),
     });
@@ -74,11 +71,22 @@ class TimecardService {
     };
 
     // Convert dates to timestamps only if they exist
-    if (updates.date) updateData.date = Timestamp.fromDate(updates.date);
-    if (updates.clockIn) updateData.clockIn = Timestamp.fromDate(updates.clockIn);
-    if (updates.clockOut) updateData.clockOut = Timestamp.fromDate(updates.clockOut);
-    if (updates.submittedAt) updateData.submittedAt = Timestamp.fromDate(updates.submittedAt);
-    if (updates.approvedAt) updateData.approvedAt = Timestamp.fromDate(updates.approvedAt);
+    if (updates.date) {
+      const date = (updates.date as any).toDate ? (updates.date as any).toDate() : updates.date;
+      updateData.date = Timestamp.fromDate(date as Date);
+    }
+    if (updates.clockIn) {
+      const clockIn = (updates.clockIn as any).toDate ? (updates.clockIn as any).toDate() : updates.clockIn;
+      updateData.clockIn = Timestamp.fromDate(clockIn as Date);
+    }
+    if (updates.clockOut) {
+      const clockOut = (updates.clockOut as any).toDate ? (updates.clockOut as any).toDate() : updates.clockOut;
+      updateData.clockOut = Timestamp.fromDate(clockOut as Date);
+    }
+    if (updates.submittedAt) {
+      const submittedAt = (updates.submittedAt as any).toDate ? (updates.submittedAt as any).toDate() : updates.submittedAt;
+      updateData.submittedAt = Timestamp.fromDate(submittedAt as Date);
+    }
 
     await updateDoc(docRef, updateData);
   }
@@ -106,7 +114,6 @@ class TimecardService {
         clockIn: data.clockIn.toDate(),
         clockOut: data.clockOut.toDate(),
         submittedAt: data.submittedAt?.toDate(),
-        approvedAt: data.approvedAt?.toDate(),
         createdAt: data.createdAt.toDate(),
         updatedAt: data.updatedAt.toDate(),
       } as TimeEntry;
@@ -149,7 +156,6 @@ class TimecardService {
         clockIn: data.clockIn?.toDate ? data.clockIn.toDate() : new Date(data.clockIn),
         clockOut: data.clockOut?.toDate ? data.clockOut.toDate() : new Date(data.clockOut),
         submittedAt: data.submittedAt?.toDate ? data.submittedAt.toDate() : (data.submittedAt ? new Date(data.submittedAt) : undefined),
-        approvedAt: data.approvedAt?.toDate ? data.approvedAt.toDate() : (data.approvedAt ? new Date(data.approvedAt) : undefined),
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
         updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt),
         ...data,
@@ -189,7 +195,6 @@ class TimecardService {
         clockIn: data.clockIn.toDate(),
         clockOut: data.clockOut.toDate(),
         submittedAt: data.submittedAt?.toDate(),
-        approvedAt: data.approvedAt?.toDate(),
         createdAt: data.createdAt.toDate(),
         updatedAt: data.updatedAt.toDate(),
       } as TimeEntry;
@@ -214,25 +219,6 @@ class TimecardService {
       status: 'submitted',
       isLocked: true,
       submittedAt: new Date(),
-    });
-  }
-
-  // Approve time entry
-  async approveTimeEntry(id: string, approvedBy: string): Promise<void> {
-    await this.updateTimeEntry(id, {
-      status: 'approved',
-      isLocked: true,
-      approvedAt: new Date(),
-      approvedBy,
-    });
-  }
-
-  // Reject time entry
-  async rejectTimeEntry(id: string, approvedBy: string): Promise<void> {
-    await this.updateTimeEntry(id, {
-      status: 'rejected',
-      isLocked: false,
-      approvedBy,
     });
   }
 
@@ -280,7 +266,6 @@ class TimecardService {
     switch (status) {
       case 'draft': return 'bg-gray-600';
       case 'submitted': return 'bg-yellow-600';
-      case 'approved': return 'bg-green-600';
       case 'rejected': return 'bg-red-600';
       default: return 'bg-gray-600';
     }
@@ -291,7 +276,6 @@ class TimecardService {
     switch (status) {
       case 'draft': return 'Draft';
       case 'submitted': return 'Submitted';
-      case 'approved': return 'Approved';
       case 'rejected': return 'Rejected';
       default: return 'Unknown';
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
@@ -37,6 +37,7 @@ export default function TimecardPage() {
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0); // Add refresh key
+  const formRef = useRef<HTMLDivElement>(null); // Ref for scrolling to form
   
   // Filter states for admins and supervisors
   const [siteFilter, setSiteFilter] = useState<string>('');
@@ -78,10 +79,23 @@ export default function TimecardPage() {
       const existingEntry = entries.find(entry => entry.job === entryData.job);
       
       if (existingEntry) {
-        // Preserve the entryNumber when updating
+        // Preserve the original entry details when updating
+        const preservedFields = {
+          entryNumber: existingEntry.entryNumber || 1,
+          userId: existingEntry.userId, // Preserve original owner
+          createdAt: existingEntry.createdAt, // Preserve creation time
+          status: existingEntry.status, // Preserve status unless explicitly changed
+          submittedAt: existingEntry.submittedAt, // Preserve submission time
+        };
+
+        // Filter out undefined values to prevent Firebase errors
+        const filteredPreservedFields = Object.fromEntries(
+          Object.entries(preservedFields).filter(([_, value]) => value !== undefined)
+        );
+
         const entryDataWithNumber = {
           ...entryData,
-          entryNumber: existingEntry.entryNumber || 1
+          ...filteredPreservedFields
         };
         await updateTimeEntry(existingEntry.id!, entryDataWithNumber);
       } else {
@@ -99,23 +113,24 @@ export default function TimecardPage() {
         // Add the entry number to the data being saved
         const entryDataWithNumber = {
           ...entryData,
-          entryNumber: nextEntryNumber
+          entryNumber: nextEntryNumber,
+          userId: user?.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
         
-        await createTimeEntry(entryDataWithNumber);
+        const id = await createTimeEntry(entryDataWithNumber);
+        setSelectedEntryId(id);
       }
       
-      setShowEntryForm(false);
-      // Force a refresh by incrementing the refresh key
       setRefreshKey(prev => prev + 1);
+      setShowEntryForm(false);
     } catch (error) {
       console.error('Error saving time entry:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert('Error saving: ' + errorMessage);
+      alert('Error saving time entry: ' + (error as Error).message);
     }
   };
 
-  
   // Load users for admin/supervisor functionality
   useEffect(() => {
     const loadUsers = async () => {
@@ -153,6 +168,9 @@ export default function TimecardPage() {
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case 'draft': return 'Saved';
+      case 'submitted': return 'Submitted';
+      case 'rejected': return 'Rejected';
+      case 'approved': return 'Submitted'; // Treat approved as submitted
       default: return status;
     }
   };
@@ -199,6 +217,17 @@ export default function TimecardPage() {
       } catch (error) {
         console.error('Error deleting time entry:', error);
       }
+    }
+  };
+
+  // Handle unlocking/locking time entries
+  const handleToggleLock = async (entryId: string, currentLocked: boolean) => {
+    try {
+      await updateTimeEntry(entryId, { isLocked: !currentLocked });
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('Error toggling lock:', error);
+      alert('Error toggling lock: ' + (error as Error).message);
     }
   };
 
@@ -268,8 +297,27 @@ export default function TimecardPage() {
                       ${!isCurrentMonth ? 'opacity-50' : ''}
                     `}
                   >
-                    <div className="text-center">
+                    <div className="text-center relative">
                       {format(day, 'd')}
+                      {(() => {
+                        const submittedCount = timeEntries.filter(entry => entry.status === 'submitted').length;
+                        const draftCount = timeEntries.filter(entry => entry.status === 'draft').length;
+                        
+                        return (
+                          <>
+                            {draftCount > 0 && (
+                              <div className="absolute -top-1 -left-1 bg-gray-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                                {draftCount}
+                              </div>
+                            )}
+                            {submittedCount > 0 && (
+                              <div className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                                {submittedCount}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                     {timeEntries.length > 0 && (
                       <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
@@ -298,6 +346,10 @@ export default function TimecardPage() {
                   onClick={() => {
                     setSelectedEntryId(null);
                     setShowEntryForm(true);
+                    // Scroll to form after a short delay to ensure it's rendered
+                    setTimeout(() => {
+                      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
                   }}
                   className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors"
                 >
@@ -461,8 +513,8 @@ export default function TimecardPage() {
                                           </span>
                                           <span className={`ml-2 px-2 py-1 rounded text-xs ${
                                             entry.status === 'draft' ? 'bg-gray-600' :
-                                            entry.status === 'submitted' ? 'bg-yellow-600' :
-                                            entry.status === 'approved' ? 'bg-green-600' :
+                                            entry.status === 'submitted' || entry.status === 'approved' ? 'bg-yellow-600' :
+                                            entry.status === 'rejected' ? 'bg-red-600' :
                                             'bg-blue-600'
                                           } text-white`}>
                                             {getStatusDisplay(entry.status)}
@@ -484,6 +536,23 @@ export default function TimecardPage() {
                                             >
                                               Delete
                                             </button>
+                                          )}
+                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (
+                                            <>
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (entry.id) handleToggleLock(entry.id, entry.isLocked || false);
+                                                }}
+                                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                                  (entry.isLocked || false)
+                                                    ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                                                    : 'bg-gray-600 text-white hover:bg-gray-700'
+                                                }`}
+                                              >
+                                                {entry.isLocked || false ? 'Unlock' : 'Lock'}
+                                              </button>
+                                            </>
                                           )}
                                         </div>
                                       </div>
@@ -563,8 +632,8 @@ export default function TimecardPage() {
                                           </span>
                                           <span className={`ml-2 px-2 py-1 rounded text-xs ${
                                             entry.status === 'draft' ? 'bg-gray-600' :
-                                            entry.status === 'submitted' ? 'bg-yellow-600' :
-                                            entry.status === 'approved' ? 'bg-green-600' :
+                                            entry.status === 'submitted' || entry.status === 'approved' ? 'bg-yellow-600' :
+                                            entry.status === 'rejected' ? 'bg-red-600' :
                                             'bg-blue-600'
                                           } text-white`}>
                                             {getStatusDisplay(entry.status)}
@@ -586,6 +655,23 @@ export default function TimecardPage() {
                                             >
                                               Delete
                                             </button>
+                                          )}
+                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (
+                                            <>
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (entry.id) handleToggleLock(entry.id, entry.isLocked || false);
+                                                }}
+                                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                                  (entry.isLocked || false)
+                                                    ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                                                    : 'bg-gray-600 text-white hover:bg-gray-700'
+                                                }`}
+                                              >
+                                                {entry.isLocked || false ? 'Unlock' : 'Lock'}
+                                              </button>
+                                            </>
                                           )}
                                         </div>
                                       </div>
@@ -624,7 +710,7 @@ export default function TimecardPage() {
 
           {/* Time Entry Form - Appears below the time cards */}
           {showEntryForm && selectedDate && user && (
-            <div className="mt-6">
+            <div ref={formRef} className="mt-6">
               <TimeEntryForm
                 selectedDate={selectedDate}
                 entry={selectedEntryId ? getEntriesForDate(selectedDate).find(e => e.id === selectedEntryId) : undefined}

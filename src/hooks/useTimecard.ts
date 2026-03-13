@@ -121,48 +121,6 @@ export const useTimecard = () => {
     }
   };
 
-  // Approve time entry
-  const approveTimeEntry = async (id: string) => {
-    if (!user) throw new Error('User not authenticated');
-
-    try {
-      await timecardService.approveTimeEntry(id, user.id);
-      
-      // Update local state
-      setTimeEntries(prev => 
-        prev.map(entry => 
-          entry.id === id 
-            ? { ...entry, status: 'approved', isLocked: true, approvedAt: new Date(), approvedBy: user.id, updatedAt: new Date() }
-            : entry
-        )
-      );
-    } catch (err) {
-      setError('Failed to approve time entry');
-      throw err;
-    }
-  };
-
-  // Reject time entry
-  const rejectTimeEntry = async (id: string) => {
-    if (!user) throw new Error('User not authenticated');
-
-    try {
-      await timecardService.rejectTimeEntry(id, user.id);
-      
-      // Update local state
-      setTimeEntries(prev => 
-        prev.map(entry => 
-          entry.id === id 
-            ? { ...entry, status: 'rejected', isLocked: false, approvedBy: user.id, updatedAt: new Date() }
-            : entry
-        )
-      );
-    } catch (err) {
-      setError('Failed to reject time entry');
-      throw err;
-    }
-  };
-
   // Get entries for a specific month
   const getEntriesForMonth = (date: Date) => {
     const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -216,7 +174,7 @@ export const useTimecard = () => {
     const entries = getEntriesForMonth(date);
     
     const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
-    const daysWorked = entries.filter(entry => entry.status === 'approved').length;
+    const daysWorked = entries.filter(entry => entry.status === 'submitted').length;
     const averageHours = daysWorked > 0 ? totalHours / daysWorked : 0;
     
     return {
@@ -234,8 +192,6 @@ export const useTimecard = () => {
     updateTimeEntry,
     deleteTimeEntry,
     submitTimeEntry,
-    approveTimeEntry,
-    rejectTimeEntry,
     getEntriesForMonth,
     getEntriesForDate,
     getEntryForDate,

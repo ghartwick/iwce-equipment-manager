@@ -528,17 +528,19 @@ export default function TimecardPage() {
                                           <span className="text-yellow-100 font-medium">
                                             Time Card {entry.entryNumber}
                                           </span>
-                                          <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                                            entry.status === 'draft' ? 'bg-gray-600' :
-                                            entry.status === 'submitted' || entry.status === 'approved' ? 'bg-green-600' :
-                                            entry.status === 'rejected' ? 'bg-red-600' :
-                                            'bg-blue-600'
-                                          } text-white`}>
-                                            {(entry.status === 'submitted' || entry.status === 'approved') && (
-                                              <Check className="w-3 h-3 inline mr-1" />
-                                            )}
-                                            {getStatusDisplay(entry.status)}
-                                          </span>
+                                          {user?.role === 'field' && (
+                                            <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                                              entry.status === 'draft' ? 'bg-gray-600' :
+                                              entry.status === 'submitted' || entry.status === 'approved' ? 'bg-green-600' :
+                                              entry.status === 'rejected' ? 'bg-red-600' :
+                                              'bg-blue-600'
+                                            } text-white`}>
+                                              {(entry.status === 'submitted' || entry.status === 'approved') && (
+                                                <Check className="w-3 h-3 inline mr-1" />
+                                              )}
+                                              {getStatusDisplay(entry.status)}
+                                            </span>
+                                          )}
                                           {isSelected && (
                                             <span className="ml-2 px-2 py-1 rounded text-xs bg-blue-600 text-white">
                                               Selected
@@ -654,17 +656,19 @@ export default function TimecardPage() {
                                           <span className="text-yellow-100 font-medium">
                                             Time Card {entry.entryNumber}
                                           </span>
-                                          <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                                            entry.status === 'draft' ? 'bg-gray-600' :
-                                            entry.status === 'submitted' || entry.status === 'approved' ? 'bg-green-600' :
-                                            entry.status === 'rejected' ? 'bg-red-600' :
-                                            'bg-blue-600'
-                                          } text-white`}>
-                                            {(entry.status === 'submitted' || entry.status === 'approved') && (
-                                              <Check className="w-3 h-3 inline mr-1" />
-                                            )}
-                                            {getStatusDisplay(entry.status)}
-                                          </span>
+                                          {user?.role === 'field' && (
+                                            <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                                              entry.status === 'draft' ? 'bg-gray-600' :
+                                              entry.status === 'submitted' || entry.status === 'approved' ? 'bg-green-600' :
+                                              entry.status === 'rejected' ? 'bg-red-600' :
+                                              'bg-blue-600'
+                                            } text-white`}>
+                                              {(entry.status === 'submitted' || entry.status === 'approved') && (
+                                                <Check className="w-3 h-3 inline mr-1" />
+                                              )}
+                                              {getStatusDisplay(entry.status)}
+                                            </span>
+                                          )}
                                           {isSelected && (
                                             <span className="ml-2 px-2 py-1 rounded text-xs bg-blue-600 text-white">
                                               Selected

@@ -40,7 +40,8 @@ const WorkEntrySection = ({
   totalLabourHours,
   codeOptions,
   equipmentOptions,
-  smallToolsOptions
+  smallToolsOptions,
+  user
 }: {
   entry: WorkEntry;
   entryIndex: number;
@@ -56,6 +57,7 @@ const WorkEntrySection = ({
   codeOptions: string[];
   equipmentOptions: string[];
   smallToolsOptions: string[];
+  user: User;
 }) => {
   // Create stable onChange handlers to prevent re-render issues
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -72,15 +74,25 @@ const WorkEntrySection = ({
   
   const handleMachineHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
-    if (value.length <= 3) {
-      updateEntryField(entry.id, 'machineHours', value);
+    // Allow up to 5 characters (e.g., "99.99") and validate decimal places
+    if (value.length <= 5) {
+      // Check if decimal format is valid (max 2 decimal places)
+      const parts = value.split('.');
+      if (parts.length <= 2 && (parts[1] === undefined || parts[1].length <= 2)) {
+        updateEntryField(entry.id, 'machineHours', value);
+      }
     }
   };
   
   const handleLabourHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9.]/g, '');
-    if (value.length <= 3) {
-      updateEntryField(entry.id, 'labourHours', value);
+    // Allow up to 5 characters (e.g., "99.99") and validate decimal places
+    if (value.length <= 5) {
+      // Check if decimal format is valid (max 2 decimal places)
+      const parts = value.split('.');
+      if (parts.length <= 2 && (parts[1] === undefined || parts[1].length <= 2)) {
+        updateEntryField(entry.id, 'labourHours', value);
+      }
     }
   };
   
@@ -94,8 +106,18 @@ const WorkEntrySection = ({
   return (
     <div className="border border-yellow-800 rounded-lg p-4 space-y-4">
       <div className="flex justify-between items-center">
+        <h3 className="text-yellow-400 font-medium">Entry {entryIndex + 1}</h3>
         <div className="flex items-center gap-2">
-          <h3 className="text-yellow-400 font-medium">Entry {entryIndex + 1}</h3>
+          {entryIndex > 0 && (
+            <button
+              type="button"
+              onClick={() => removeEntry(entry.id)}
+              disabled={isLocked}
+              className="text-red-400 hover:text-red-300 disabled:opacity-50"
+            >
+              Remove
+            </button>
+          )}
           <button
             type="button"
             onClick={() => toggleCollapse(entry.id)}
@@ -105,46 +127,18 @@ const WorkEntrySection = ({
             {entry.collapsed ? '▶ Expand' : '▼ Collapse'}
           </button>
         </div>
-        {entryIndex > 0 && (
-          <button
-            type="button"
-            onClick={() => removeEntry(entry.id)}
-            disabled={isLocked}
-            className="text-red-400 hover:text-red-300 disabled:opacity-50"
-          >
-            Remove
-          </button>
-        )}
       </div>
 
       {/* Show content only if not collapsed */}
       {!entry.collapsed && (
         <>
-        {/* Task Description */}
-        <div>
-          <label className="block text-sm font-medium text-yellow-600 mb-1">
-            Task Description
-          </label>
-          <textarea
-            value={entry.notes}
-            onChange={handleNotesChange}
-            disabled={isLocked}
-            rows={3}
-            className="w-full px-3 py-2 bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 resize-none"
-            placeholder="Add any notes about this time entry..."
-          />
-        </div>
-
       {/* Code Dropdown */}
       <div>
-        <label className="block text-sm font-medium text-yellow-600 mb-1">
-          Code
-        </label>
         <select
           value={entry.code}
           onChange={handleCodeChange}
-          disabled={isLocked}
-          className="w-full px-3 py-2 bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+          disabled={isLocked || user.role === 'field'}
+          className="w-full px-3 py-2 bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <option value="">Select Code</option>
           {codeOptions.map(codeOption => (
@@ -155,11 +149,20 @@ const WorkEntrySection = ({
         </select>
       </div>
 
+        {/* Task Description */}
+        <div>
+          <textarea
+            value={entry.notes}
+            onChange={handleNotesChange}
+            disabled={isLocked}
+            rows={3}
+            className="w-full px-3 py-2 bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 resize-none"
+            placeholder="Add any notes about this time entry..."
+          />
+        </div>
+
       {/* Equipment Dropdown */}
       <div>
-        <label className="block text-sm font-medium text-yellow-600 mb-1">
-          Equipment
-        </label>
         <select
           value={entry.equipment}
           onChange={handleEquipmentChange}
@@ -175,70 +178,8 @@ const WorkEntrySection = ({
         </select>
       </div>
 
-      {/* Machine, Labour & Production Hours */}
-      <div className="flex gap-4">
-        {/* Machine Hours */}
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-yellow-600 mb-1">
-            Machine Hrs
-          </label>
-          <input
-            type="text"
-            value={entry.machineHours}
-            onChange={handleMachineHoursChange}
-            disabled={isLocked}
-            className={`w-full px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
-              !hoursMatch && totalMachineHours > 0 && totalLabourHours > 0 ? 'border-red-500' : 'border-yellow-800'
-            }`}
-            maxLength={3}
-            inputMode="numeric"
-            placeholder="0"
-          />
-        </div>
-
-        {/* Labour Hours */}
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-yellow-600 mb-1">
-            Labour Hrs
-          </label>
-          <input
-            type="text"
-            value={entry.labourHours}
-            onChange={handleLabourHoursChange}
-            disabled={isLocked}
-            className={`w-full px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
-              !hoursMatch && totalMachineHours > 0 && totalLabourHours > 0 ? 'border-red-500' : 'border-yellow-800'
-            }`}
-            maxLength={3}
-            inputMode="numeric"
-            placeholder="0"
-          />
-        </div>
-
-        {/* Production Quantity */}
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-yellow-600 mb-1">
-            Quantity
-          </label>
-          <input
-            type="text"
-            value={entry.productionQuantity}
-            onChange={handleProductionChange}
-            disabled={isLocked}
-            className="w-full px-2 py-1.5 text-sm bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none"
-            maxLength={3}
-            inputMode="numeric"
-            placeholder="0"
-          />
-        </div>
-      </div>
-
       {/* Small Tools Dropdown */}
       <div>
-        <label className="block text-sm font-medium text-yellow-600 mb-1">
-          Small Tools
-        </label>
-        
         {/* Selected Tools Display */}
         {entry.smallTools.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
@@ -280,6 +221,64 @@ const WorkEntrySection = ({
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Machine, Labour & Production Hours */}
+      <div className="flex gap-4">
+        {/* Machine Hours */}
+        <div className="flex-1">
+          <label className="block text-xs font-medium text-yellow-600 mb-1">
+            Machine Hrs
+          </label>
+          <input
+            type="text"
+            value={entry.machineHours}
+            onChange={handleMachineHoursChange}
+            disabled={isLocked}
+            className={`w-full px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+              !hoursMatch ? 'border-red-500' : 'border-yellow-800'
+            }`}
+            maxLength={5}
+            inputMode="decimal"
+            placeholder="0"
+          />
+        </div>
+
+        {/* Labour Hours */}
+        <div className="flex-1">
+          <label className="block text-xs font-medium text-yellow-600 mb-1">
+            Labour Hrs
+          </label>
+          <input
+            type="text"
+            value={entry.labourHours}
+            onChange={handleLabourHoursChange}
+            disabled={isLocked}
+            className={`w-full px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+              !hoursMatch ? 'border-red-500' : 'border-yellow-800'
+            }`}
+            maxLength={5}
+            inputMode="decimal"
+            placeholder="0"
+          />
+        </div>
+
+        {/* Production Quantity */}
+        <div className="flex-1">
+          <label className="block text-xs font-medium text-yellow-600 mb-1">
+            Quantity
+          </label>
+          <input
+            type="text"
+            value={entry.productionQuantity}
+            onChange={handleProductionChange}
+            disabled={isLocked}
+            className="w-full px-2 py-1.5 text-sm bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none"
+            maxLength={3}
+            inputMode="numeric"
+            placeholder="0"
+          />
+        </div>
       </div>
         </>
       )}
@@ -913,7 +912,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
             </div>
 
             {/* Total Hours - Evenly spaced */}
-            <div className="flex flex-col flex-grow">
+            <div className="flex flex-col flex-shrink-0">
               <label className="block text-xs font-medium text-yellow-600 mb-1">
                 Total Hours
               </label>
@@ -921,12 +920,12 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 type="text"
                 value={hours}
                 readOnly
-                className={`w-full px-2 py-1.5 text-sm rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
+                className={`w-auto min-w-[90px] px-2 py-1.5 text-sm rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
                   isLocked 
                     ? 'bg-red-900 bg-opacity-20 border-red-600 text-red-300' 
                     : 'bg-yellow-900 bg-opacity-20 border rounded-lg'
                 } ${
-                  !isLocked && !hoursMatch && totalMachineHours > 0 && totalLabourHours > 0 ? 'border-red-500' : 
+                  !isLocked && !hoursMatch ? 'border-red-500' : 
                   !isLocked ? 'border-yellow-800' : ''
                 }`}
                 maxLength={3}
@@ -954,6 +953,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               codeOptions={codeOptions}
               equipmentOptions={equipmentOptions}
               smallToolsOptions={smallToolsOptions}
+              user={user}
             />
           ))}
         </div>

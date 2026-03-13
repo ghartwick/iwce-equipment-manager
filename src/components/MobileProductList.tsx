@@ -180,34 +180,22 @@ export function MobileProductList({
             let displayCategoryName = categoryName;
             let categoryColor = '#6B7280';
             
-            // Debug: Log the matching process
-            console.log(`📱 Matching category "${categoryName}":`, {
-              categoriesAvailable: categories.map(c => ({ id: c.id, name: c.name })),
-              exactMatch: !!categoryInfo
-            });
-            
             // If exact match fails, try case-insensitive match
             if (!categoryInfo) {
               categoryInfo = categories.find(c => 
                 c.name.toLowerCase() === categoryName.toLowerCase()
               );
-              console.log(`📱 Case-insensitive match for "${categoryName}":`, !!categoryInfo);
             }
             
             // If still no match, try to match by category ID if categoryName looks like an ID
             if (!categoryInfo && (categoryName.length > 5 && /^[a-zA-Z0-9]+$/.test(categoryName))) {
               categoryInfo = categories.find(c => c.id === categoryName);
-              console.log(`📱 ID match for "${categoryName}":`, !!categoryInfo);
-              if (categoryInfo) {
-                console.log(`📱 Found category by ID:`, categoryInfo);
-              }
             }
             
             // If we found a category, use its proper name and color
             if (categoryInfo) {
               displayCategoryName = categoryInfo.name;
               categoryColor = categoryInfo.color;
-              console.log(`📱 Using category info:`, { name: displayCategoryName, color: categoryColor });
             }
             
             return (

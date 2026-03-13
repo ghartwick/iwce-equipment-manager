@@ -10,15 +10,6 @@ export function exportToExcel(equipment: Equipment[], filename: string = 'equipm
     categoryMap.set(category.id, category.name);
   });
   
-  // Debug: Log equipment data to check categories
-  console.log('Export Debug - Equipment data:', equipment.map(item => ({
-    name: item.name,
-    category: item.category,
-    categoryName: categoryMap.get(item.category) || item.category, // Show resolved name
-    categoryType: typeof item.category,
-    categoryLength: item.category?.length
-  })));
-  
   // Prepare data for export
   const exportData = equipment.map(item => ({
     'Equipment Name': item.name,
@@ -83,9 +74,6 @@ export function importFromExcel(file: File, existingCategories: Category[]): Pro
         // Convert to JSON
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as ImportedEquipment[];
         
-        console.log('Import Debug - Raw Excel data:', jsonData);
-        console.log('Import Debug - Existing categories:', existingCategories.map(cat => ({ id: cat.id, name: cat.name })));
-        
         // Map to Equipment format and handle categories
         const equipmentData: Partial<Equipment>[] = [];
         const categoryNames = existingCategories.map(cat => cat.name.toLowerCase());
@@ -104,15 +92,12 @@ export function importFromExcel(file: File, existingCategories: Category[]): Pro
           }
           
           const categoryName = row['Category']?.trim();
-          console.log(`Import Debug - Processing category: "${categoryName}"`);
           
           let categoryId = '';
           
           // Create category if it doesn't exist
           if (categoryName && !categoryNames.includes(categoryName.toLowerCase())) {
             try {
-              console.log(`Import Debug - Creating new category: "${categoryName}"`);
-              
               // Create the category and get its ID
               const docRef = await addDoc(collection(db, 'categories'), {
                 name: categoryName,
@@ -123,13 +108,11 @@ export function importFromExcel(file: File, existingCategories: Category[]): Pro
               categoryId = docRef.id; // Get the ID of the newly created category
               categoryNames.push(categoryName.toLowerCase());
               categoryMap.set(categoryName.toLowerCase(), categoryId);
-              console.log(`Import Debug - Successfully created category: ${categoryName} with ID: ${categoryId}`);
             } catch (error) {
-              console.error(`Import Debug - Failed to create category ${categoryName}:`, error);
+              console.error(`Failed to create category ${categoryName}:`, error);
             }
           } else {
             categoryId = categoryMap.get(categoryName.toLowerCase()) || '';
-            console.log(`Import Debug - Category "${categoryName}" already exists with ID: ${categoryId}`);
           }
           
           equipmentData.push({
@@ -143,11 +126,7 @@ export function importFromExcel(file: File, existingCategories: Category[]): Pro
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           });
-          
-          console.log(`Import Debug - Created equipment item with category ID: ${categoryId}`);
         }
-        
-        console.log('Import Debug - Final equipment data:', equipmentData);
         resolve(equipmentData);
       } catch (error) {
         reject(new Error('Failed to parse Excel file: ' + error));

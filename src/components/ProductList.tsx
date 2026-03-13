@@ -36,61 +36,38 @@ export function ProductList({
   const selectedProduct = products.find(p => p.id === selectedEquipmentId);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Debug: Log products and categories when they change
-  React.useEffect(() => {
-    console.log('ProductList Debug - Current products:', products.map(p => ({
-      id: p.id,
-      name: p.name,
-      category: p.category,
-      categoryName: categories.find(c => c.id === p.category)?.name || 'Unknown'
-    })));
-    console.log('ProductList Debug - Current categories:', categories.map(c => ({ id: c.id, name: c.name })));
-  }, [products, categories]);
-
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
-      console.log('Import Debug - Starting import process...');
       const importedEquipment = await importFromExcel(file, categories);
-      console.log('Import Debug - Received imported equipment:', importedEquipment);
       
       // Create new equipment items
       for (let i = 0; i < importedEquipment.length; i++) {
         const equipment = importedEquipment[i];
-        console.log(`Import Debug - Creating equipment item ${i + 1}/${importedEquipment.length}:`, equipment);
         
         try {
           await onAddProduct(equipment as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>);
-          console.log(`Import Debug - Successfully created equipment item ${i + 1}:`, equipment.name);
         } catch (error) {
-          console.error(`Import Debug - Failed to create equipment item ${i + 1}:`, error);
+          console.error(`Failed to create equipment item ${i + 1}:`, error);
         }
       }
       
       // Refresh data to show new categories and equipment
       if (refreshData) {
-        console.log('Import Debug - Refreshing data...');
         await refreshData();
-        console.log('Import Debug - Data refresh completed');
         
         // Add a small delay to ensure Firebase sync is complete
         await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log('Import Debug - Firebase sync delay completed');
         
         // Refresh one more time to ensure latest data
         await refreshData();
-        console.log('Import Debug - Second data refresh completed');
       }
       
       // Reset category filter to show all items
       if (onImportComplete) {
-        console.log('Import Debug - Calling onImportComplete callback...');
         onImportComplete();
-        console.log('Import Debug - onImportComplete callback completed');
-      } else {
-        console.log('Import Debug - No onImportComplete callback provided');
       }
       
       alert(`Successfully imported ${importedEquipment.length} equipment items!`);

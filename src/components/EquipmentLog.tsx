@@ -17,20 +17,11 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
       const updateHistory = async () => {
         if (!equipment) return;
         
-        console.log('=== EQUIPMENT LOG DEBUG ===');
-        console.log('Equipment ID:', equipment.id);
-        console.log('Equipment Name:', equipment.name);
-        
         try {
           const historyData = await equipmentHistoryFirebaseService.getEquipmentHistory(equipment.id);
-          console.log('History retrieved from Firebase:', historyData);
-          console.log('History length:', historyData.length);
-          console.log('=============================');
           setHistory(historyData);
         } catch (error) {
           console.error('Failed to load equipment history:', error);
-          console.log('Error details:', error);
-          console.log('=============================');
           setHistory([]);
         }
       };

@@ -62,12 +62,7 @@ function InventoryPage() {
                          (product.repair ? 'yes' : 'no').includes(searchTerm.toLowerCase()) ||
                          (product.repair && product.repairDescription.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    // Debug: Log filtering logic
-    console.log('Filter Debug - Product:', product.name, 'Category ID:', product.category, 'Selected Category:', selectedCategory);
-    
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    
-    console.log('Filter Debug - Matches Category:', matchesCategory);
     
     return matchesSearch && matchesCategory;
   }).sort((a, b) => {
@@ -90,11 +85,6 @@ function InventoryPage() {
     // Sort by name
     return a.name.localeCompare(b.name);
   });
-
-  // Debug: Log total products and filtered products count (moved outside sort)
-  console.log('Filter Debug - Total products loaded:', products.length);
-  console.log('Filter Debug - Products after filtering:', filteredProducts.length);
-  console.log('Filter Debug - Selected category:', selectedCategory);
 
   const handleAddProduct = async (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (user) {

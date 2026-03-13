@@ -41,7 +41,6 @@ class EquipmentHistoryService {
           ...entry,
           timestamp: new Date(entry.timestamp)
         }));
-        console.log('Loaded history from storage:', this.history.length, 'entries');
       }
     } catch (error) {
       console.error('Failed to load history from storage:', error);
@@ -69,12 +68,6 @@ class EquipmentHistoryService {
     
     // Save to localStorage for persistence
     this.saveHistoryToStorage();
-    
-    console.log('=== HISTORY DEBUG ===');
-    console.log('Added history entry:', historyEntry);
-    console.log('Total history count:', this.history.length);
-    console.log('Current history:', this.history);
-    console.log('==================');
   }
 
   // Get history for specific equipment
@@ -91,7 +84,6 @@ class EquipmentHistoryService {
   clearHistory(): void {
     this.history = [];
     localStorage.removeItem(this.STORAGE_KEY);
-    console.log('History cleared from memory and storage');
   }
 
   // Track equipment changes

@@ -37,19 +37,12 @@ export function useInventory() {
       
       // Clean up products with invalid category references
       const validCategoryIds = new Set(loadedCategories.map(cat => cat.id));
-      console.log('LoadData Debug - Valid category IDs:', Array.from(validCategoryIds));
-      console.log('LoadData Debug - Raw equipment count:', loadedProducts.length);
       
       const cleanedProducts = loadedProducts.map(product => {
         const { supplier, minStockLevel, quantity, price, location, tags, description, ...cleanedProduct } = product as any;
         const hasValidCategory = validCategoryIds.has(product.category);
         
         if (!hasValidCategory) {
-          console.log('LoadData Debug - Product with invalid category filtered out:', {
-            id: product.id,
-            name: product.name,
-            category: product.category
-          });
         }
         
         return {
@@ -61,8 +54,6 @@ export function useInventory() {
           category: hasValidCategory ? product.category : ''
         };
       });
-      
-      console.log('LoadData Debug - Cleaned equipment count:', cleanedProducts.length);
       
       // Generate repair alerts for equipment that needs repair
       const repairAlerts = generateRepairAlerts(cleanedProducts, loadedAlerts);
@@ -114,17 +105,9 @@ export function useInventory() {
 
   const addProduct = async (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
-      console.log('=== USEINVENTORY ADD PRODUCT DEBUG ===');
-      console.log('Adding product:', product);
-      console.log('Current products before add:', products.length);
-      
       await addEquipment(product);
-      console.log('addEquipment completed successfully');
       
       await loadData(); // Refresh data from Firebase
-      console.log('loadData completed');
-      console.log('Products after loadData:', products.length);
-      console.log('=============================');
     } catch (error) {
       console.error('Error adding product:', error);
       throw error;

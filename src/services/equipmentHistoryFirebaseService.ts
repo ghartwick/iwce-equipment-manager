@@ -31,9 +31,6 @@ class EquipmentHistoryFirebaseService {
   // Add history entry to Firebase
   async addHistory(entry: Omit<EditHistory, 'id'>): Promise<void> {
     try {
-      console.log('=== FIREBASE SAVE DEBUG ===');
-      console.log('Attempting to save to Firebase:', entry);
-      console.log('Collection:', this.COLLECTION_NAME);
       
       const historyCollection = collection(db, this.COLLECTION_NAME);
       const docRef = await addDoc(historyCollection, {
@@ -56,9 +53,6 @@ class EquipmentHistoryFirebaseService {
   // Get history for specific equipment from Firebase
   async getEquipmentHistory(equipmentId: string): Promise<EditHistory[]> {
     try {
-      console.log('=== FIREBASE RETRIEVE DEBUG ===');
-      console.log('Retrieving history for equipment:', equipmentId);
-      console.log('Collection:', this.COLLECTION_NAME);
       
       const historyCollection = collection(db, this.COLLECTION_NAME);
       
@@ -88,8 +82,6 @@ class EquipmentHistoryFirebaseService {
           };
         });
         
-        console.log('History retrieved successfully:', history);
-        console.log('=============================');
         return history;
         
       } catch (indexError) {
@@ -120,8 +112,6 @@ class EquipmentHistoryFirebaseService {
           .filter(item => item.equipmentId === equipmentId)
           .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
         
-        console.log('Filtered history for equipment:', filteredHistory);
-        console.log('=============================');
         return filteredHistory;
       }
       
@@ -155,7 +145,6 @@ class EquipmentHistoryFirebaseService {
         };
       }) as EditHistory[];
 
-      console.log('Retrieved all history from Firebase:', history.length, 'entries');
       return history;
     } catch (error) {
       console.error('Failed to retrieve all history from Firebase:', error);

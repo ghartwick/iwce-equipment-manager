@@ -11,25 +11,15 @@ export const getEquipment = async (): Promise<Equipment[]> => {
     ...doc.data()
   })) as Equipment[];
   
-  console.log('Firebase Debug - Total equipment loaded from Firebase:', equipment.length);
-  console.log('Firebase Debug - Equipment items:', equipment.map(item => ({
-    id: item.id,
-    name: item.name,
-    category: item.category
-  })));
-  
   return equipment;
 };
 
 export const addEquipment = async (equipment: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
-  console.log('Firebase Debug - Adding equipment to Firebase:', equipment);
-  const docRef = await addDoc(collection(db, 'equipment'), {
+  await addDoc(collection(db, 'equipment'), {
     ...equipment,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
-  console.log('Firebase Debug - Equipment added with ID:', docRef.id);
-  console.log('Firebase Debug - Equipment saved successfully to Firebase');
 };
 
 export const updateEquipment = async (id: string, equipment: Partial<Equipment>): Promise<void> => {
@@ -54,8 +44,7 @@ export const getCategories = async (): Promise<Category[]> => {
 };
 
 export const addCategory = async (category: Omit<Category, 'id'>): Promise<void> => {
-  const docRef = await addDoc(collection(db, 'categories'), category);
-  console.log('Category added with ID:', docRef.id);
+  await addDoc(collection(db, 'categories'), category);
 };
 
 export const updateCategory = async (id: string, category: Partial<Category>): Promise<void> => {
@@ -77,8 +66,7 @@ export const getAlerts = async (): Promise<StockAlert[]> => {
 };
 
 export const addAlert = async (alert: Omit<StockAlert, 'id'>): Promise<void> => {
-  const docRef = await addDoc(collection(db, 'alerts'), alert);
-  console.log('Alert added with ID:', docRef.id);
+  await addDoc(collection(db, 'alerts'), alert);
 };
 
 export const deleteAlert = async (id: string): Promise<void> => {

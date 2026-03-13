@@ -43,6 +43,7 @@ export interface User {
   username: string;
   role: 'admin' | 'supervisor' | 'field';
   name: string;
+  theme?: 'light' | 'dark';
 }
 
 class TimecardService {

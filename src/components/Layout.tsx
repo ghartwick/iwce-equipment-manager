@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock } from 'lucide-react';
+import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock, MapPin, Code2, Wrench, Truck } from 'lucide-react';
 import { UserManagement } from './UserManagement';
+import { SiteManagement } from './SiteManagement';
+import { CodeManagement } from './CodeManagement';
+import { SmallToolsManagement } from './SmallToolsManagement';
+import { EquipmentManagement } from './EquipmentManagement';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,6 +18,10 @@ function Layout({ children }: LayoutProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showSiteManagement, setShowSiteManagement] = useState(false);
+  const [showCodeManagement, setShowCodeManagement] = useState(false);
+  const [showSmallToolsManagement, setShowSmallToolsManagement] = useState(false);
+  const [showEquipmentManagement, setShowEquipmentManagement] = useState(false);
 
   const navigation = [
     { name: 'Inventory', href: '/inventory', icon: Package },
@@ -193,6 +201,56 @@ function Layout({ children }: LayoutProps) {
                       </div>
                       
                       <div className="p-2">
+                        {/* Admin-only Site and Code Management */}
+                        {user.role === 'admin' && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowSiteManagement(true);
+                                setShowUserMenu(false);
+                              }}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                            >
+                              <MapPin className="h-4 w-4" />
+                              <span>Manage Sites</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowCodeManagement(true);
+                                setShowUserMenu(false);
+                              }}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                            >
+                              <Code2 className="h-4 w-4" />
+                              <span>Manage Codes</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowSmallToolsManagement(true);
+                                setShowUserMenu(false);
+                              }}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                            >
+                              <Wrench className="h-4 w-4" />
+                              <span>Manage Small Tools</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowEquipmentManagement(true);
+                                setShowUserMenu(false);
+                              }}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                            >
+                              <Truck className="h-4 w-4" />
+                              <span>Manage Equipment</span>
+                            </button>
+                          </>
+                        )}
+                        
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -318,6 +376,38 @@ function Layout({ children }: LayoutProps) {
         <UserManagement
           currentUser={user}
           onClose={() => setShowUserManagement(false)}
+        />
+      )}
+
+      {/* Site Management Modal */}
+      {showSiteManagement && user && (
+        <SiteManagement
+          currentUser={user}
+          onClose={() => setShowSiteManagement(false)}
+        />
+      )}
+
+      {/* Code Management Modal */}
+      {showCodeManagement && user && (
+        <CodeManagement
+          currentUser={user}
+          onClose={() => setShowCodeManagement(false)}
+        />
+      )}
+
+      {/* Small Tools Management Modal */}
+      {showSmallToolsManagement && user && (
+        <SmallToolsManagement
+          currentUser={user}
+          onClose={() => setShowSmallToolsManagement(false)}
+        />
+      )}
+
+      {/* Equipment Management Modal */}
+      {showEquipmentManagement && user && (
+        <EquipmentManagement
+          currentUser={user}
+          onClose={() => setShowEquipmentManagement(false)}
         />
       )}
     </div>

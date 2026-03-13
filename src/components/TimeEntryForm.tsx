@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { TimeEntry, User } from '../services/timecardService';
+import { siteManagementService } from '../services/siteManagementService';
+import { codeManagementService } from '../services/codeManagementService';
+import { smallToolsManagementService } from '../services/smallToolsManagementService';
+import { equipmentManagementService } from '../services/equipmentManagementService';
 
 interface TimeEntryFormProps {
   selectedDate: Date;
@@ -299,6 +303,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const [clockOut, setClockOut] = useState('');
   const [job, setJob] = useState('');
   const [hours, setHours] = useState(0);
+  const [jobOptions, setJobOptions] = useState<string[]>([]);
+  const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
+  const [smallToolsOptionsState, setSmallToolsOptionsState] = useState<string[]>([]);
+  const [equipmentOptionsState, setEquipmentOptionsState] = useState<string[]>([]);
   const [workEntries, setWorkEntries] = useState<WorkEntry[]>([
     {
       id: '1',
@@ -431,83 +439,36 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     return options;
   };
 
-  // Job options for dropdown
-  const jobOptions = [
-    'Installation',
-    'Maintenance',
-    'Repair',
-    'Inspection',
-    'Survey',
-    'Construction',
-    'Excavation',
-    'Concrete Work',
-    'Electrical',
-    'Plumbing',
-    'HVAC',
-    'Welding',
-    'Painting',
-    'Cleaning',
-    'Delivery',
-    'Other'
-  ];
+  // Load sites, codes, and small tools from database
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const sites = await siteManagementService.getActiveSites();
+        setJobOptions(sites.map(site => site.name));
+        
+        const codes = await codeManagementService.getActiveCodes();
+        setCodeOptionsState(codes.map(code => code.name));
+        
+        const smallTools = await smallToolsManagementService.getActiveSmallTools();
+        setSmallToolsOptionsState(smallTools.map(tool => tool.name));
+        
+        const equipment = await equipmentManagementService.getActiveEquipment();
+        setEquipmentOptionsState(equipment.map(item => item.name));
+      } catch (error) {
+        console.error('Failed to load dropdown options:', error);
+      }
+    };
+    loadOptions();
+  }, []);
 
-  // Code options for dropdown
-  const codeOptions = useMemo(() => [
-    'REG',
-    'OT',
-    'DT',
-    'HOL',
-    'VAC',
-    'SICK',
-    'TRNG',
-    'MEET',
-    'ADMIN',
-    'TRAVEL',
-    'OTHER'
-  ], []);
+  // Use state-based code options
+  const codeOptions = useMemo(() => codeOptionsState, [codeOptionsState]);
 
-  // Equipment options for dropdown
-  const equipmentOptions = useMemo(() => [
-    'Gas Monitor',
-    'Skidsteers',
-    'Pipe Laser',
-    'Line Locator',
-    'Excavator',
-    'Backhoe',
-    'Bulldozer',
-    'Crane',
-    'Forklift',
-    'Generator',
-    'Compressor',
-    'Welder',
-    'Concrete Mixer',
-    'Jackhammer',
-    'Truck',
-    'Van',
-    'Other'
-  ], []);
+  // Use state-based small tools options
+  const smallToolsOptions = useMemo(() => smallToolsOptionsState, [smallToolsOptionsState]);
 
-  // Small tools options for dropdown
-  const smallToolsOptions = useMemo(() => [
-    'Drill',
-    'Saw',
-    'Hammer',
-    'Wrench Set',
-    'Screwdriver Set',
-    'Pliers',
-    'Tape Measure',
-    'Level',
-    'Utility Knife',
-    'Socket Set',
-    'Pry Bar',
-    'Chisel',
-    'File',
-    'Grinder',
-    'Sander',
-    'Heat Gun',
-    'Multimeter',
-    'Other'
-  ], []);
+  // Use state-based equipment options
+  const equipmentOptions = useMemo(() => equipmentOptionsState, [equipmentOptionsState]);
 
   useEffect(() => {
     if (entry) {

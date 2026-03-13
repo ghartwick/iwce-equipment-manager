@@ -74,15 +74,11 @@ export default function TimecardPage() {
 
   const handleEntrySubmit = async (entryData: any) => {
     try {
-      console.log('Submitting entry with data:', entryData);
-      console.log('Entry status:', entryData.status);
-      
       // Check for existing entry on the same date AND site
       const entries = getEntriesForDate(entryData.date);
       const existingEntry = entries.find(entry => entry.job === entryData.job);
       
       if (existingEntry) {
-        console.log('Updating existing entry:', existingEntry.id);
         // Preserve the original entry details when updating
         const preservedFields = {
           entryNumber: existingEntry.entryNumber || 1,
@@ -127,14 +123,9 @@ export default function TimecardPage() {
         setSelectedEntryId(id);
       }
       
-      console.log('About to increment refreshKey from:', refreshKey);
-      setRefreshKey(prev => {
-        console.log('Incrementing refreshKey to:', prev + 1);
-        return prev + 1;
-      });
+      setRefreshKey(prev => prev + 1);
       setShowEntryForm(false);
     } catch (error) {
-      console.error('Error saving time entry:', error);
       alert('Error saving time entry: ' + (error as Error).message);
     }
   };
@@ -147,7 +138,7 @@ export default function TimecardPage() {
           const allUsers = await userManagementService.getAllUsers();
           setUsers(allUsers);
         } catch (error) {
-          console.error('Error loading users:', error);
+          // Error loading users
         }
       }
     };
@@ -242,7 +233,7 @@ export default function TimecardPage() {
         await deleteTimeEntry(entryId);
         setSelectedEntryId(null);
       } catch (error) {
-        console.error('Error deleting time entry:', error);
+        alert('Error deleting time entry');
       }
     }
   };
@@ -253,7 +244,6 @@ export default function TimecardPage() {
       await updateTimeEntry(entryId, { isLocked: !currentLocked });
       setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Error toggling lock:', error);
       alert('Error toggling lock: ' + (error as Error).message);
     }
   };
@@ -304,7 +294,6 @@ export default function TimecardPage() {
             {/* Calendar Days */}
             <div className="grid grid-cols-7 gap-2">
               {days.map((day, index) => {
-                const timeEntries = getEntriesForDate(day);
                 const isCurrentMonth = isSameMonth(day, currentMonth);
                 const isSelected = selectedDate && isSameDay(day, selectedDate);
                 const isTodayDate = isToday(day);
@@ -341,7 +330,7 @@ export default function TimecardPage() {
                               </div>
                             )}
                             {dayEntries.length > 0 && (
-                              <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
+                              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
                                 {dayEntries.slice(0, 3).map((entry, i) => (
                                   <div
                                     key={entry.id || i}

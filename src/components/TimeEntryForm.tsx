@@ -709,10 +709,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   };
 
   const handleSubmitSubmit = () => {
-    console.log('=== Submit button clicked ===');
-    console.log('Current entry status:', entry?.status);
-    console.log('Entry ID:', entry?.id);
-    
     if (!clockIn || !clockOut) {
       alert('Please select both clock in and clock out times before submitting');
       return;
@@ -815,7 +811,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     finalData.clockOut = clockOutDate;
     finalData.submittedAt = new Date();
 
-    console.log('handleSubmitSubmit - Final data being submitted:', finalData);
     onSubmit(finalData);
   };
 
@@ -824,31 +819,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   
   // Show buttons if: can edit and not locked, OR if creating new entry
   const showButtons = (canEdit && !isLocked) || (!entry && selectedEntryId === null);
-
-  // Debug: Log permission and lock state
-  useEffect(() => {
-    if (entry && user) {
-      console.log('TimeEntryForm Debug:', {
-        hasEntry: !!entry,
-        hasUser: !!user,
-        selectedDate: selectedDate?.toISOString(),
-        selectedEntryId,
-        entry: entry ? {
-          id: entry.id,
-          status: entry.status,
-          userId: entry.userId,
-          isLocked: entry.isLocked
-        } : null,
-        user: {
-          id: user.id,
-          role: user.role
-        },
-        canEdit,
-        isLocked,
-        showButtons: canEdit && !isLocked
-      });
-    }
-  }, [entry, user, canEdit, isLocked, selectedDate, selectedEntryId, showButtons]);
 
   return (
     <div className="bg-black border border-yellow-600 rounded-lg p-6 relative">

@@ -28,7 +28,6 @@ export const useTimecard = () => {
         setTimeEntries(entries);
       } catch (err) {
         setError('Failed to fetch time entries');
-        console.error('Error fetching time entries:', err);
       } finally {
         setLoading(false);
       }
@@ -42,28 +41,18 @@ export const useTimecard = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      console.log('Hook Debug - Creating time entry:', { entryData });
       const id = await timecardService.createTimeEntry(entryData);
-      console.log('Hook Debug - Entry created with ID:', id);
       
       // Refresh entries
-      console.log('Hook Debug - Refreshing entries from Firebase...');
-      console.log('Hook Debug - User role:', user.role);
-      console.log('Hook Debug - User ID:', user.id);
-      
       let entries;
       if (user.role === 'admin') {
-        console.log('Hook Debug - Getting all entries (admin)');
         entries = await timecardService.getAllTimeEntries();
       } else if (user.role === 'supervisor') {
-        console.log('Hook Debug - Getting supervisor entries');
         entries = await timecardService.getSupervisorTimeEntries();
       } else {
-        console.log('Hook Debug - Getting user entries (field role)');
         entries = await timecardService.getUserTimeEntries(user.id);
       }
       
-      console.log('Hook Debug - Refreshed entries count:', entries.length);
       setTimeEntries(entries);
       return id;
     } catch (err) {

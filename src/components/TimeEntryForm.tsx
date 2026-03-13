@@ -179,7 +179,7 @@ const WorkEntrySection = ({
       <div className="flex gap-4">
         {/* Machine Hours */}
         <div className="flex-1">
-          <label className="block text-sm font-medium text-yellow-600 mb-1">
+          <label className="block text-xs font-medium text-yellow-600 mb-1">
             Machine Hrs
           </label>
           <input
@@ -187,7 +187,7 @@ const WorkEntrySection = ({
             value={entry.machineHours}
             onChange={handleMachineHoursChange}
             disabled={isLocked}
-            className={`w-full px-3 py-2 bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+            className={`w-full px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
               !hoursMatch && totalMachineHours > 0 && totalLabourHours > 0 ? 'border-red-500' : 'border-yellow-800'
             }`}
             maxLength={3}
@@ -198,7 +198,7 @@ const WorkEntrySection = ({
 
         {/* Labour Hours */}
         <div className="flex-1">
-          <label className="block text-sm font-medium text-yellow-600 mb-1">
+          <label className="block text-xs font-medium text-yellow-600 mb-1">
             Labour Hrs
           </label>
           <input
@@ -206,7 +206,7 @@ const WorkEntrySection = ({
             value={entry.labourHours}
             onChange={handleLabourHoursChange}
             disabled={isLocked}
-            className={`w-full px-3 py-2 bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+            className={`w-full px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
               !hoursMatch && totalMachineHours > 0 && totalLabourHours > 0 ? 'border-red-500' : 'border-yellow-800'
             }`}
             maxLength={3}
@@ -217,15 +217,15 @@ const WorkEntrySection = ({
 
         {/* Production Quantity */}
         <div className="flex-1">
-          <label className="block text-sm font-medium text-yellow-600 mb-1">
-            Production Qty
+          <label className="block text-xs font-medium text-yellow-600 mb-1">
+            Quantity
           </label>
           <input
             type="text"
             value={entry.productionQuantity}
             onChange={handleProductionChange}
             disabled={isLocked}
-            className="w-full px-3 py-2 bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-full px-2 py-1.5 text-sm bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none"
             maxLength={3}
             inputMode="numeric"
             placeholder="0"
@@ -864,14 +864,14 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         <div className="flex gap-2 overflow-x-auto">
             {/* Clock In */}
             <div className="flex flex-col flex-shrink-0">
-              <label className="block text-sm font-medium text-yellow-600 mb-1">
+              <label className="block text-xs font-medium text-yellow-600 mb-1">
                 Clock In
               </label>
               <select
                 value={clockIn}
                 onChange={(e) => setClockIn(e.target.value)}
                 disabled={isLocked}
-                className={`w-auto min-w-[100px] px-3 py-2 bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-auto min-w-[90px] px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
                     : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
@@ -889,14 +889,14 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
             {/* Clock Out */}
             <div className="flex flex-col flex-shrink-0">
-              <label className="block text-sm font-medium text-yellow-600 mb-1">
+              <label className="block text-xs font-medium text-yellow-600 mb-1">
                 Clock Out
               </label>
               <select
                 value={clockOut}
                 onChange={(e) => setClockOut(e.target.value)}
                 disabled={isLocked}
-                className={`w-auto min-w-[100px] px-3 py-2 bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-auto min-w-[90px] px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
                     : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
@@ -914,14 +914,14 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
             {/* Total Hours - Evenly spaced */}
             <div className="flex flex-col flex-grow">
-              <label className="block text-sm font-medium text-yellow-600 mb-1">
+              <label className="block text-xs font-medium text-yellow-600 mb-1">
                 Total Hours
               </label>
               <input
                 type="text"
                 value={hours}
                 readOnly
-                className={`w-full px-3 py-2 rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
+                className={`w-full px-2 py-1.5 text-sm rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
                   isLocked 
                     ? 'bg-red-900 bg-opacity-20 border-red-600 text-red-300' 
                     : 'bg-yellow-900 bg-opacity-20 border rounded-lg'
@@ -1001,11 +1001,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 </button>
               )}
             </>
-          )}
-          {!showButtons && (
-            <div className="text-red-400 text-sm">
-              Buttons hidden: showButtons={showButtons}, canEdit={canEdit}, isLocked={isLocked}
-            </div>
           )}
         </div>
 

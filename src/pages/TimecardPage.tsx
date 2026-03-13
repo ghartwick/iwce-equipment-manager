@@ -356,7 +356,7 @@ export default function TimecardPage() {
           {/* Time Cards Display */}
           {selectedDate && (
             <div className="bg-black border border-yellow-600 rounded-lg p-6">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
                 <h3 className="text-lg font-semibold text-yellow-300">
                   Time Entries for {format(selectedDate, 'MMM d, yyyy')}
                 </h3>
@@ -369,7 +369,7 @@ export default function TimecardPage() {
                       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }, 100);
                   }}
-                  className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors"
+                  className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap"
                 >
                   Add Time Card
                 </button>

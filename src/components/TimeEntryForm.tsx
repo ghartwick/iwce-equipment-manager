@@ -99,7 +99,7 @@ const WorkEntrySection = ({
   
 
   return (
-    <div className="bg-yellow-950 bg-opacity-30 border border-yellow-800 rounded-lg p-4 space-y-4">
+    <div className="bg-yellow-900 bg-opacity-50 border border-yellow-800 rounded-lg p-4 space-y-4">
       <div 
         className="flex justify-between items-center cursor-pointer"
         onClick={() => !isLocked && toggleCollapse(entry.id)}
@@ -568,6 +568,12 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     
     if (!clockIn || !clockOut) {
       alert('Please select both clock in and clock out times');
+      return;
+    }
+
+    // Validate that total hours match the sum of machine and labour hours
+    if (!hoursMatch) {
+      alert(`Total hours (${hours}) must match the sum of machine and labour hours (${totalMachineLabourHours}). Please check your entries.`);
       return;
     }
 

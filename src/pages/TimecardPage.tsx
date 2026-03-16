@@ -530,7 +530,7 @@ export default function TimecardPage() {
                                     <div
                                       className={`bg-yellow-900 bg-opacity-10 border rounded-lg p-3 transition-colors ${
                                         isSelected 
-                                          ? 'border-green-500 bg-opacity-30 ring-2 ring-green-500 ring-opacity-50' 
+                                          ? 'border-green-500 bg-green-900 bg-opacity-60 ring-2 ring-green-500 ring-opacity-50' 
                                           : canAccess 
                                             ? 'border-yellow-700 hover:border-yellow-600 cursor-pointer' 
                                             : 'border-gray-600 opacity-75'
@@ -645,7 +645,7 @@ export default function TimecardPage() {
                                     <div
                                       className={`bg-yellow-900 bg-opacity-10 border rounded-lg p-3 transition-colors ${
                                         isSelected 
-                                          ? 'border-green-500 bg-opacity-30 ring-2 ring-green-500 ring-opacity-50' 
+                                          ? 'border-green-500 bg-green-900 bg-opacity-60 ring-2 ring-green-500 ring-opacity-50' 
                                           : canAccess 
                                             ? 'border-yellow-700 hover:border-yellow-600 cursor-pointer' 
                                             : 'border-gray-600 opacity-75'

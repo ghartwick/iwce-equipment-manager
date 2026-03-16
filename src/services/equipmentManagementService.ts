@@ -12,7 +12,7 @@ export interface Equipment {
 }
 
 export class EquipmentManagementService {
-  private readonly COLLECTION_NAME = 'equipment';
+  private readonly COLLECTION_NAME = 'timesheetEquipment';
 
   async getAllEquipment(): Promise<Equipment[]> {
     try {

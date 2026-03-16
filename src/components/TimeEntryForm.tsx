@@ -56,7 +56,7 @@ const WorkEntrySection = ({
   isLocked: boolean;
   hoursMatch: boolean;
   codeOptionsWithDetails: { name: string; description?: string }[];
-  equipmentOptions: string[];
+  equipmentOptions: { name: string; description?: string }[];
   smallToolsOptions: string[];
   user: User;
 }) => {
@@ -99,12 +99,21 @@ const WorkEntrySection = ({
   
 
   return (
-    <div className="border border-yellow-800 rounded-lg p-4 space-y-4">
+    <div className="bg-yellow-950 bg-opacity-30 border border-yellow-800 rounded-lg p-4 space-y-4">
       <div 
         className="flex justify-between items-center cursor-pointer"
         onClick={() => !isLocked && toggleCollapse(entry.id)}
       >
-        <h3 className="text-yellow-400 font-medium">Entry {entryIndex + 1}</h3>
+        <h3 className="text-yellow-400 font-medium">
+              Entry {entryIndex + 1}
+              {(entry.machineHours || entry.labourHours) && (
+                <span className="text-yellow-600 text-sm ml-2">
+                  {entry.machineHours && `M:${entry.machineHours}`}
+                  {entry.machineHours && entry.labourHours && ' '}
+                  {entry.labourHours && `L:${entry.labourHours}`}
+                </span>
+              )}
+            </h3>
         <div className="flex items-center gap-2">
           {entryIndex > 0 && (
             <button
@@ -171,8 +180,8 @@ const WorkEntrySection = ({
         >
           <option value="">Select Equipment</option>
           {equipmentOptions.map(equipmentOption => (
-            <option key={equipmentOption} value={equipmentOption}>
-              {equipmentOption}
+            <option key={equipmentOption.name} value={equipmentOption.name}>
+              {equipmentOption.name}{equipmentOption.description ? ` - ${equipmentOption.description}` : ''}
             </option>
           ))}
         </select>
@@ -224,10 +233,10 @@ const WorkEntrySection = ({
       </div>
 
       {/* Machine & Labour Hours */}
-      <div className="flex gap-4">
+      <div className="flex gap-2 sm:gap-4 overflow-x-auto">
         {/* Machine Hours */}
-        <div className="w-auto">
-          <label className="block text-xs font-medium text-yellow-600 mb-1">
+        <div className="flex flex-col flex-shrink-0 min-w-0">
+          <label className="block text-xs font-medium text-yellow-600 mb-1 whitespace-nowrap">
             Machine Hrs
           </label>
           <input
@@ -235,7 +244,7 @@ const WorkEntrySection = ({
             value={entry.machineHours}
             onChange={handleMachineHoursChange}
             disabled={isLocked}
-            className={`w-auto px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
               !hoursMatch ? 'border-red-500' : 'border-yellow-800'
             }`}
             maxLength={5}
@@ -245,8 +254,8 @@ const WorkEntrySection = ({
         </div>
 
         {/* Labour Hours */}
-        <div className="w-auto">
-          <label className="block text-xs font-medium text-yellow-600 mb-1">
+        <div className="flex flex-col flex-shrink-0 min-w-0">
+          <label className="block text-xs font-medium text-yellow-600 mb-1 whitespace-nowrap">
             Labour Hrs
           </label>
           <input
@@ -254,7 +263,7 @@ const WorkEntrySection = ({
             value={entry.labourHours}
             onChange={handleLabourHoursChange}
             disabled={isLocked}
-            className={`w-auto px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
               !hoursMatch ? 'border-red-500' : 'border-yellow-800'
             }`}
             maxLength={5}
@@ -287,7 +296,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
   const [sitesData, setSitesData] = useState<Site[]>([]);
   const [smallToolsOptionsState, setSmallToolsOptionsState] = useState<string[]>([]);
-  const [equipmentOptionsState, setEquipmentOptionsState] = useState<string[]>([]);
+  const [equipmentOptionsState, setEquipmentOptionsState] = useState<{name: string; description?: string}[]>([]);
   const [workEntries, setWorkEntries] = useState<WorkEntry[]>([
     {
       id: '1',
@@ -432,7 +441,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         setSmallToolsOptionsState(smallTools.map(tool => tool.name));
         
         const equipment = await equipmentManagementService.getActiveEquipment();
-        setEquipmentOptionsState(equipment.map(item => item.name));
+        setEquipmentOptionsState(equipment.map(item => ({ name: item.name, description: item.description || '' })));
       } catch (error) {
         console.error('Failed to load dropdown options:', error);
       }
@@ -669,6 +678,12 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       return;
     }
 
+    // Validate that total hours match the sum of machine and labour hours
+    if (!hoursMatch) {
+      alert(`Total hours (${hours}) must match the sum of machine and labour hours (${totalMachineLabourHours}). Please check your entries.`);
+      return;
+    }
+
     // Show confirmation dialog
     const confirmSubmit = window.confirm(
       'By submitting this form, I confirm that, to the best of my knowledge, all assigned work has been completed and that I departed the worksite without injury, illness, or incident at the time of departure.\n\n' +
@@ -802,17 +817,17 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         </div>
 
         {/* Clock In and Clock Out - Horizontal layout */}
-        <div className="flex gap-1 sm:gap-2">
+        <div className="flex gap-1 sm:gap-2 overflow-x-auto">
             {/* Clock In */}
-            <div className="flex flex-col w-auto">
-              <label className="block text-xs font-medium text-yellow-600 mb-1">
+            <div className="flex flex-col flex-shrink-0 min-w-0">
+              <label className="block text-xs font-medium text-yellow-600 mb-1 whitespace-nowrap">
                 Clock In
               </label>
               <select
                 value={clockIn}
                 onChange={(e) => setClockIn(e.target.value)}
                 disabled={isLocked}
-                className={`w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
                     : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
@@ -829,15 +844,15 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
             </div>
 
             {/* Clock Out */}
-            <div className="flex flex-col w-auto">
-              <label className="block text-xs font-medium text-yellow-600 mb-1">
+            <div className="flex flex-col flex-shrink-0 min-w-0">
+              <label className="block text-xs font-medium text-yellow-600 mb-1 whitespace-nowrap">
                 Clock Out
               </label>
               <select
                 value={clockOut}
                 onChange={(e) => setClockOut(e.target.value)}
                 disabled={isLocked}
-                className={`w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
                     : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
@@ -854,15 +869,15 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
             </div>
 
             {/* Total Hours */}
-            <div className="flex flex-col w-auto">
-              <label className="block text-xs font-medium text-yellow-600 mb-1">
+            <div className="flex flex-col flex-shrink-0 min-w-0">
+              <label className="block text-xs font-medium text-yellow-600 mb-1 whitespace-nowrap">
                 Total Hours
               </label>
               <input
                 type="text"
                 value={hours}
                 readOnly
-                className={`w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
                   isLocked 
                     ? 'bg-red-900 bg-opacity-20 border-red-600 text-red-300' 
                     : 'bg-yellow-900 bg-opacity-20 border rounded-lg'

@@ -20,7 +20,7 @@ export const useTimecard = () => {
         if (user.role === 'admin') {
           entries = await timecardService.getAllTimeEntries();
         } else if (user.role === 'supervisor') {
-          entries = await timecardService.getSupervisorTimeEntries();
+          entries = await timecardService.getSupervisorTimeEntries(user.id);
         } else {
           entries = await timecardService.getUserTimeEntries(user.id);
         }
@@ -48,7 +48,7 @@ export const useTimecard = () => {
       if (user.role === 'admin') {
         entries = await timecardService.getAllTimeEntries();
       } else if (user.role === 'supervisor') {
-        entries = await timecardService.getSupervisorTimeEntries();
+        entries = await timecardService.getSupervisorTimeEntries(user.id);
       } else {
         entries = await timecardService.getUserTimeEntries(user.id);
       }

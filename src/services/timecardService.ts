@@ -133,9 +133,9 @@ class TimecardService {
     return sortedEntries;
   }
 
-  // Get time entries for supervisor (all entries for oversight)
-  async getSupervisorTimeEntries(): Promise<TimeEntry[]> {
-    // Get all entries for supervisor oversight
+  // Get time entries for supervisor (their own entries + submitted entries from others)
+  async getSupervisorTimeEntries(supervisorId: string): Promise<TimeEntry[]> {
+    // Get all entries
     const q = query(
       collection(db, this.collection)
     );
@@ -163,8 +163,13 @@ class TimecardService {
       } as TimeEntry;
     });
     
+    // Filter: supervisor's own entries (all statuses) + submitted entries from others
+    const filteredEntries = entries.filter(entry => 
+      entry.userId === supervisorId || entry.status === 'submitted'
+    );
+    
     // Sort by creation time first (oldest first), then by date to maintain creation order
-    const sortedEntries = entries.sort((a, b) => {
+    const sortedEntries = filteredEntries.sort((a, b) => {
       // First sort by creation time (oldest first)
       const createTimeA = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
       const createTimeB = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
@@ -232,8 +237,10 @@ class TimecardService {
 
   // Check if user can edit entry
   canEditEntry(entry: TimeEntry, user: User): boolean {
-    if (user.role === 'admin') return true;
-    if (user.role === 'supervisor') return true;
+    // Admins and supervisors can edit, but only if unlocked
+    if (user.role === 'admin' || user.role === 'supervisor') {
+      return !entry.isLocked;
+    }
     // Field users can only edit their own draft entries (not submitted or locked)
     if (user.role === 'field' && entry.userId === user.id && entry.status === 'draft' && !entry.isLocked) return true;
     return false;
@@ -241,8 +248,8 @@ class TimecardService {
 
   // Check if user can view entry (read-only access)
   canViewEntry(entry: TimeEntry, user: User): boolean {
-    if (user.role === 'admin') return true;
-    if (user.role === 'supervisor') return true;
+    // Admins and supervisors can always view entries
+    if (user.role === 'admin' || user.role === 'supervisor') return true;
     // Field users can only view their own draft entries (submitted entries are locked from view)
     if (user.role === 'field' && entry.userId === user.id && entry.status === 'draft' && !entry.isLocked) return true;
     return false;

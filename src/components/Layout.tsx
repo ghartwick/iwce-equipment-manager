@@ -91,7 +91,7 @@ function Layout({ children }: LayoutProps) {
                   alt="IWCE Logo" 
                   className="h-6 w-6 sm:h-8 sm:w-8"
                 />
-                <h1 className="text-lg sm:text-xl font-semibold text-yellow-400">Hub</h1>
+                <h1 className="text-lg sm:text-xl font-semibold text-yellow-400">Field Hub</h1>
               </div>
             </div>
 

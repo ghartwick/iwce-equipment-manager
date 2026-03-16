@@ -40,7 +40,7 @@ const WorkEntrySection = ({
   toggleCollapse,
   isLocked,
   hoursMatch,
-  codeOptions,
+  codeOptionsWithDetails,
   equipmentOptions,
   smallToolsOptions,
   user
@@ -54,7 +54,7 @@ const WorkEntrySection = ({
   toggleCollapse: (entryId: string) => void;
   isLocked: boolean;
   hoursMatch: boolean;
-  codeOptions: string[];
+  codeOptionsWithDetails: { name: string; description?: string }[];
   equipmentOptions: string[];
   smallToolsOptions: string[];
   user: User;
@@ -141,9 +141,9 @@ const WorkEntrySection = ({
           className="w-full px-3 py-2 bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <option value="">Select Code</option>
-          {codeOptions.map(codeOption => (
-            <option key={codeOption} value={codeOption}>
-              {codeOption}
+          {codeOptionsWithDetails.map(codeOption => (
+            <option key={codeOption.name} value={codeOption.name}>
+              {codeOption.name}{codeOption.description ? ` - ${codeOption.description}` : ''}
             </option>
           ))}
         </select>
@@ -460,15 +460,15 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   }, []);
 
   // Use state-based code options, filtered by selected site
-  const codeOptions = useMemo(() => {
+  const codeOptionsWithDetails = useMemo(() => {
     if (job) {
       const selectedSite = sitesData.find(s => s.name === job);
       if (selectedSite && selectedSite.codes && selectedSite.codes.length > 0) {
-        return selectedSite.codes.map(c => c.name);
+        return selectedSite.codes;
       }
     }
     // Fall back to all codes if no site selected or site has no codes
-    return codeOptionsState;
+    return codeOptionsState.map(name => ({ name, description: '' }));
   }, [codeOptionsState, job, sitesData]);
 
   // Use state-based small tools options
@@ -781,8 +781,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     onSubmit(finalData);
   };
 
-  // Simplified lock logic: users can always edit their own entries
-  const isLocked = entry?.isLocked && entry?.userId !== user?.id;
+  // Lock logic: entry is locked if isLocked is true
+  // Field users can edit their own draft entries regardless of lock (but lock shouldn't happen for drafts)
+  // Admins/supervisors must unlock before editing
+  const isLocked = entry?.isLocked || false;
   
   // Show buttons if: can edit and not locked, OR if creating new entry
   const showButtons = (canEdit && !isLocked) || (!entry && selectedEntryId === null);
@@ -920,7 +922,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               toggleCollapse={toggleCollapse}
               isLocked={isLocked || false}
               hoursMatch={hoursMatch}
-              codeOptions={codeOptions}
+              codeOptionsWithDetails={codeOptionsWithDetails}
               equipmentOptions={equipmentOptions}
               smallToolsOptions={smallToolsOptions}
               user={user}

@@ -74,54 +74,58 @@ export default function TimecardPage() {
 
   const handleEntrySubmit = async (entryData: any) => {
     try {
-      // Check for existing entry on the same date AND site
       const entries = getEntriesForDate(entryData.date);
-      const existingEntry = entries.find(entry => entry.job === entryData.job);
       
-      if (existingEntry) {
-        // Preserve the original entry details when updating
-        const preservedFields = {
-          entryNumber: existingEntry.entryNumber || 1,
-          userId: existingEntry.userId, // Preserve original owner
-          createdAt: existingEntry.createdAt, // Preserve creation time
-          status: entryData.status || existingEntry.status, // Use new status if provided
-          submittedAt: entryData.submittedAt || existingEntry.submittedAt, // Use new submission time if provided
-        };
+      // If editing an existing entry (selectedEntryId is set), update it
+      if (selectedEntryId) {
+        const existingEntry = entries.find(entry => entry.id === selectedEntryId);
+        if (existingEntry) {
+          // Preserve the original entry details when updating
+          const preservedFields = {
+            entryNumber: existingEntry.entryNumber || 1,
+            userId: existingEntry.userId,
+            createdAt: existingEntry.createdAt,
+            status: entryData.status || existingEntry.status,
+            submittedAt: entryData.submittedAt || existingEntry.submittedAt,
+          };
 
-        // Filter out undefined values to prevent Firebase errors
-        const filteredPreservedFields = Object.fromEntries(
-          Object.entries(preservedFields).filter(([_, value]) => value !== undefined)
-        );
+          const filteredPreservedFields = Object.fromEntries(
+            Object.entries(preservedFields).filter(([_, value]) => value !== undefined)
+          );
 
-        const entryDataWithNumber = {
-          ...entryData,
-          ...filteredPreservedFields
-        };
-        await updateTimeEntry(existingEntry.id!, entryDataWithNumber);
-      } else {
-        // Calculate the next entry number for this date
-        const userEntries = entries
-          .filter(entry => entry.userId === user?.id)
-          .sort((a, b) => {
-            const aTime = a.createdAt?.getTime() || a.date?.getTime() || 0;
-            const bTime = b.createdAt?.getTime() || b.date?.getTime() || 0;
-            return aTime - bTime;
-          });
-        
-        const nextEntryNumber = userEntries.length + 1;
-        
-        // Add the entry number to the data being saved
-        const entryDataWithNumber = {
-          ...entryData,
-          entryNumber: nextEntryNumber,
-          userId: user?.id,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        
-        const id = await createTimeEntry(entryDataWithNumber);
-        setSelectedEntryId(id);
+          const entryDataWithNumber = {
+            ...entryData,
+            ...filteredPreservedFields
+          };
+          await updateTimeEntry(selectedEntryId, entryDataWithNumber);
+          setRefreshKey(prev => prev + 1);
+          setShowEntryForm(false);
+          setSelectedEntryId(null);
+          return;
+        }
       }
+      
+      // Always create a new entry if not editing
+      const userEntries = entries
+        .filter(entry => entry.userId === user?.id)
+        .sort((a, b) => {
+          const aTime = a.createdAt?.getTime() || a.date?.getTime() || 0;
+          const bTime = b.createdAt?.getTime() || b.date?.getTime() || 0;
+          return aTime - bTime;
+        });
+      
+      const nextEntryNumber = userEntries.length + 1;
+      
+      const entryDataWithNumber = {
+        ...entryData,
+        entryNumber: nextEntryNumber,
+        userId: user?.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      const id = await createTimeEntry(entryDataWithNumber);
+      setSelectedEntryId(id);
       
       setRefreshKey(prev => prev + 1);
       setShowEntryForm(false);
@@ -140,6 +144,19 @@ export default function TimecardPage() {
         } catch (error) {
           // Error loading users
         }
+      } else if (user) {
+        // For field users, add themselves to the users array so their name displays
+        const currentUserAsAppUser: AppUser = {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          name: user.name,
+          password: '', // Not needed for display
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setUsers([currentUserAsAppUser]);
       }
     };
 

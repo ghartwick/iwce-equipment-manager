@@ -70,6 +70,9 @@ export default function TimecardPage() {
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
     setShowEntryForm(false); // Show time cards first, not the form
+    // Reset filters when selecting a new date
+    setSiteFilter('');
+    setEmployeeFilter('');
   };
 
   const handleEntrySubmit = async (entryData: any) => {
@@ -311,9 +314,9 @@ export default function TimecardPage() {
                     className={`
                       relative p-2 text-sm rounded-lg border transition-all
                       ${isCurrentMonth ? 'text-yellow-100' : 'text-yellow-700'}
-                      ${isTodayDate ? 'border-yellow-400' : 'border-yellow-800'}
-                      ${isSelected ? 'bg-green-900 bg-opacity-50 border-green-500' : 'hover:bg-yellow-900 hover:bg-opacity-30'}
                       ${!isCurrentMonth ? 'opacity-50' : ''}
+                      ${isTodayDate && !isSelected ? 'border-yellow-400' : (!isTodayDate && !isSelected ? 'border-yellow-800' : '')}
+                      ${isSelected ? 'bg-green-900 bg-opacity-50 border-green-500' : 'hover:bg-yellow-900 hover:bg-opacity-30'}
                     `}
                   >
                     <div className="text-center relative">
@@ -386,7 +389,10 @@ export default function TimecardPage() {
                     </label>
                     <select
                       value={siteFilter}
-                      onChange={(e) => setSiteFilter(e.target.value)}
+                      onChange={(e) => {
+                        setSiteFilter(e.target.value);
+                        setEmployeeFilter(''); // Reset employee filter when site filter changes
+                      }}
                       className="w-full px-3 py-2 bg-black border border-yellow-700 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400"
                     >
                       <option value="">None</option>
@@ -403,7 +409,10 @@ export default function TimecardPage() {
                     </label>
                     <select
                       value={employeeFilter}
-                      onChange={(e) => setEmployeeFilter(e.target.value)}
+                      onChange={(e) => {
+                        setEmployeeFilter(e.target.value);
+                        setSiteFilter(''); // Reset site filter when employee filter changes
+                      }}
                       className="w-full px-3 py-2 bg-black border border-yellow-700 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400"
                     >
                       <option value="">None</option>

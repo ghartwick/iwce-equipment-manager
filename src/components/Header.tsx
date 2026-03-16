@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Plus, Bell, User, LogOut, ChevronDown, Menu } from 'lucide-react';
+import { Plus, Bell, User, LogOut, ChevronDown, Menu, Trash2 } from 'lucide-react';
+import { deleteEquipment, getEquipment } from '../services/firebaseService';
+import { getCategories } from '../services/firebaseService';
 
 interface User {
   id: string;
@@ -14,11 +16,13 @@ interface HeaderProps {
   onToggleAlerts: () => void;
   user: User | null;
   onLogout: () => void;
+  onRefresh?: () => void;
 }
 
-export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogout }: HeaderProps) {
+export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogout, onRefresh }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const getRoleDisplay = (role: string) => {
     switch (role) {
@@ -39,6 +43,44 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
         return 'text-green-400';
       default:
         return 'text-yellow-400';
+    }
+  };
+
+  const handleDeleteOrphanedEquipment = async () => {
+    if (!user || user.role !== 'admin') {
+      alert('Only administrators can perform this action.');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete all equipment entries that do not belong to a valid category? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const [allEquipment, allCategories] = await Promise.all([
+        getEquipment(),
+        getCategories()
+      ]);
+
+      const validCategoryIds = new Set(allCategories.map(cat => cat.id));
+      const orphanedEquipment = allEquipment.filter(eq => !validCategoryIds.has(eq.category));
+
+      if (orphanedEquipment.length === 0) {
+        alert('No orphaned equipment found. All equipment entries have valid categories.');
+        return;
+      }
+
+      const deletePromises = orphanedEquipment.map(eq => deleteEquipment(eq.id));
+      await Promise.all(deletePromises);
+
+      alert(`Successfully deleted ${orphanedEquipment.length} orphaned equipment entries.`);
+      onRefresh?.();
+    } catch (error) {
+      console.error('Error deleting orphaned equipment:', error);
+      alert('Failed to delete orphaned equipment. Please check the console for details.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -127,7 +169,17 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
                       </div>
                     </div>
                     
-                    <div className="p-2">
+                    <div className="p-2 space-y-1">
+                      {true && ( // Temporarily always show for testing
+                        <button
+                          onClick={handleDeleteOrphanedEquipment}
+                          disabled={isDeleting}
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-red-400 hover:bg-red-900 hover:bg-opacity-30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span>{isDeleting ? 'Deleting...' : 'Delete Orphaned Equipment'}</span>
+                        </button>
+                      )}
                       <button
                         onClick={onLogout}
                         className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"

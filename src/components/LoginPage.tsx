@@ -47,10 +47,9 @@ export function LoginPage({ onLogin, error }: LoginProps) {
               src="/top-left-logo.png" 
               alt="IWCE Logo" 
               className="object-contain"
-              style={{ width: '110px', height: '110px' }}
+              style={{ width: '171.875px', height: '171.875px' }}
             />
           </div>
-          <h1 className="text-3xl text-yellow-400 mb-2">IWCE Equipment</h1>
         </div>
 
         {/* Login Form */}
@@ -146,12 +145,6 @@ export function LoginPage({ onLogin, error }: LoginProps) {
             </button>
           </form>
 
-          {/* Forgot Password */}
-          <div className="mt-6 text-center">
-            <a href="#" className="text-sm text-yellow-400 hover:text-yellow-300">
-              Forgot your password?
-            </a>
-          </div>
         </div>
 
         {/* Footer */}

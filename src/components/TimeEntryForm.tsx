@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { TimeEntry, User } from '../services/timecardService';
-import { siteManagementService } from '../services/siteManagementService';
+import { Site, siteManagementService } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
 import { smallToolsManagementService } from '../services/smallToolsManagementService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
@@ -301,6 +301,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const [hours, setHours] = useState(0);
   const [jobOptions, setJobOptions] = useState<string[]>([]);
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
+  const [sitesData, setSitesData] = useState<Site[]>([]);
   const [smallToolsOptionsState, setSmallToolsOptionsState] = useState<string[]>([]);
   const [equipmentOptionsState, setEquipmentOptionsState] = useState<string[]>([]);
   const [workEntries, setWorkEntries] = useState<WorkEntry[]>([
@@ -440,6 +441,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     const loadOptions = async () => {
       try {
         const sites = await siteManagementService.getActiveSites();
+        setSitesData(sites);
         setJobOptions(sites.map(site => site.name));
         
         const codes = await codeManagementService.getActiveCodes();
@@ -457,8 +459,17 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     loadOptions();
   }, []);
 
-  // Use state-based code options
-  const codeOptions = useMemo(() => codeOptionsState, [codeOptionsState]);
+  // Use state-based code options, filtered by selected site
+  const codeOptions = useMemo(() => {
+    if (job) {
+      const selectedSite = sitesData.find(s => s.name === job);
+      if (selectedSite && selectedSite.codes && selectedSite.codes.length > 0) {
+        return selectedSite.codes.map(c => c.name);
+      }
+    }
+    // Fall back to all codes if no site selected or site has no codes
+    return codeOptionsState;
+  }, [codeOptionsState, job, sitesData]);
 
   // Use state-based small tools options
   const smallToolsOptions = useMemo(() => smallToolsOptionsState, [smallToolsOptionsState]);

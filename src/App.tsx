@@ -22,6 +22,18 @@ function App() {
     logout,
   } = useAuth();
 
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Equipment | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   const {
     products,
     categories,
@@ -34,14 +46,7 @@ function App() {
     addCategory,
     editCategory,
     deleteCategory,
-  } = useInventory();
-
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Equipment | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [showAlerts, setShowAlerts] = useState(false);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  } = useInventory(refreshKey);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -171,6 +176,7 @@ function App() {
         onToggleAlerts={() => setShowAlerts(!showAlerts)}
         user={user}
         onLogout={logout}
+        onRefresh={handleRefresh}
       />
       
       <main className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3">

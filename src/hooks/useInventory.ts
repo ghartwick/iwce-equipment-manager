@@ -14,7 +14,7 @@ import {
   deleteAlert as _deleteAlert
 } from '../services/firebaseService';
 
-export function useInventory() {
+export function useInventory(refreshKey?: number) {
   const [products, setProducts] = useState<Equipment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
@@ -22,7 +22,7 @@ export function useInventory() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [refreshKey]);
 
   const loadData = async () => {
     try {

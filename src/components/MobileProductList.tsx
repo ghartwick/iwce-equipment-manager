@@ -41,7 +41,7 @@ export function MobileProductList({
   ];
 
   return (
-    <div className="divide-y divide-yellow-800">
+    <div data-product-list className="divide-y divide-yellow-800">
       {/* Group products by category */}
       {categoriesToUse.map((category) => {
         // Try both exact match and case-insensitive match
@@ -196,9 +196,13 @@ export function MobileProductList({
               displayCategoryName = categoryInfo.name;
             }
             
+            // Find the category ID from the categories array
+            const category = categories.find(c => c.name === displayCategoryName);
+            const categoryId = category?.id || categoryName;
+            
             return (
               <div key={categoryName}>
-                <div className="sticky top-0 bg-yellow-900 bg-opacity-30 z-10 p-3 border-b border-yellow-700">
+                <div id={`category-${categoryId}`} className="sticky top-0 bg-yellow-900 bg-opacity-30 z-10 p-3 border-b border-yellow-700">
                   <h3 className="text-sm font-semibold text-yellow-300">
                     {displayCategoryName} ({categoryProducts.length})
                   </h3>

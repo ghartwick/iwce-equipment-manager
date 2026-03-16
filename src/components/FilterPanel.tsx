@@ -19,6 +19,38 @@ export function FilterPanel({
   onDeleteCategory,
   onEditCategory 
 }: FilterPanelProps) {
+
+  const scrollToCategory = (categoryId: string) => {
+    // First change the category
+    onCategoryChange(categoryId);
+    
+    // Then scroll to the category section after a brief delay to allow re-render
+    setTimeout(() => {
+      let elementId: string;
+      
+      if (categoryId === 'all') {
+        // Scroll to top of product list
+        const productList = document.querySelector('[data-product-list]');
+        if (productList) {
+          productList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else {
+        // Find the category by ID or name
+        const category = categories.find(c => c.id === categoryId);
+        if (category) {
+          elementId = `category-${category.id}`;
+        } else {
+          // If not found by ID, try by name
+          elementId = `category-${categoryId}`;
+        }
+        
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }, 100);
+  };
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -165,7 +197,7 @@ export function FilterPanel({
 
           <div className="space-y-1 sm:space-y-2">
             <button
-              onClick={() => onCategoryChange('all')}
+              onClick={() => scrollToCategory('all')}
               className={`w-full text-left px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm ${
                 selectedCategory === 'all'
                   ? 'bg-yellow-600 text-black'
@@ -184,7 +216,7 @@ export function FilterPanel({
                 }`}
               >
                 <button
-                  onClick={() => onCategoryChange(category.id)}
+                  onClick={() => scrollToCategory(category.id)}
                   className="flex items-center space-x-2 flex-1 text-left"
                 >
                   <span>{category.name}</span>

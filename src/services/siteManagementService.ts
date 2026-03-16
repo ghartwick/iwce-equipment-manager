@@ -1,10 +1,16 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
+export interface SiteCode {
+  name: string;
+  description?: string;
+}
+
 export interface Site {
   id: string;
   name: string;
   description?: string;
+  codes?: SiteCode[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +32,9 @@ export class SiteManagementService {
           id: doc.id,
           name: data.name,
           description: data.description || '',
+          codes: (data.codes || []).map((c: any) =>
+            typeof c === 'string' ? { name: c, description: '' } : c
+          ),
           isActive: data.isActive ?? true,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),

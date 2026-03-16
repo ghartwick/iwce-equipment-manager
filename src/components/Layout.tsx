@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock, MapPin, Code2, Wrench, Truck } from 'lucide-react';
+import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock, MapPin, Wrench, Truck } from 'lucide-react';
 import { UserManagement } from './UserManagement';
 import { SiteManagement } from './SiteManagement';
-import { CodeManagement } from './CodeManagement';
 import { SmallToolsManagement } from './SmallToolsManagement';
 import { EquipmentManagement } from './EquipmentManagement';
 
@@ -19,7 +18,6 @@ function Layout({ children }: LayoutProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showSiteManagement, setShowSiteManagement] = useState(false);
-  const [showCodeManagement, setShowCodeManagement] = useState(false);
   const [showSmallToolsManagement, setShowSmallToolsManagement] = useState(false);
   const [showEquipmentManagement, setShowEquipmentManagement] = useState(false);
 
@@ -93,7 +91,7 @@ function Layout({ children }: LayoutProps) {
                   alt="IWCE Logo" 
                   className="h-6 w-6 sm:h-8 sm:w-8"
                 />
-                <h1 className="text-lg sm:text-xl font-semibold text-yellow-400">IWCE</h1>
+                <h1 className="text-lg sm:text-xl font-semibold text-yellow-400">Hub</h1>
               </div>
             </div>
 
@@ -214,17 +212,6 @@ function Layout({ children }: LayoutProps) {
                             >
                               <MapPin className="h-4 w-4" />
                               <span>Manage Sites</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowCodeManagement(true);
-                                setShowUserMenu(false);
-                              }}
-                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
-                            >
-                              <Code2 className="h-4 w-4" />
-                              <span>Manage Codes</span>
                             </button>
                             <button
                               onClick={(e) => {
@@ -387,13 +374,6 @@ function Layout({ children }: LayoutProps) {
         />
       )}
 
-      {/* Code Management Modal */}
-      {showCodeManagement && user && (
-        <CodeManagement
-          currentUser={user}
-          onClose={() => setShowCodeManagement(false)}
-        />
-      )}
 
       {/* Small Tools Management Modal */}
       {showSmallToolsManagement && user && (

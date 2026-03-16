@@ -312,7 +312,7 @@ export default function TimecardPage() {
                       relative p-2 text-sm rounded-lg border transition-all
                       ${isCurrentMonth ? 'text-yellow-100' : 'text-yellow-700'}
                       ${isTodayDate ? 'border-yellow-400' : 'border-yellow-800'}
-                      ${isSelected ? 'bg-yellow-900 bg-opacity-50 border-green-500' : 'hover:bg-yellow-900 hover:bg-opacity-30'}
+                      ${isSelected ? 'bg-green-900 bg-opacity-50 border-green-500' : 'hover:bg-yellow-900 hover:bg-opacity-30'}
                       ${!isCurrentMonth ? 'opacity-50' : ''}
                     `}
                   >

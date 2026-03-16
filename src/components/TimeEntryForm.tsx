@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { TimeEntry, User } from '../services/timecardService';
 import { Site, siteManagementService } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
@@ -14,6 +15,7 @@ interface TimeEntryFormProps {
   onCancel: () => void;
   canEdit: boolean;
   selectedEntryId?: string | null;
+  entryOwnerName?: string;
 }
 
 // Define the structure for a single work entry
@@ -105,13 +107,19 @@ const WorkEntrySection = ({
 
   return (
     <div className="border border-yellow-800 rounded-lg p-4 space-y-4">
-      <div className="flex justify-between items-center">
+      <div 
+        className="flex justify-between items-center cursor-pointer"
+        onClick={() => !isLocked && toggleCollapse(entry.id)}
+      >
         <h3 className="text-yellow-400 font-medium">Entry {entryIndex + 1}</h3>
         <div className="flex items-center gap-2">
           {entryIndex > 0 && (
             <button
               type="button"
-              onClick={() => removeEntry(entry.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeEntry(entry.id);
+              }}
               disabled={isLocked}
               className="text-red-400 hover:text-red-300 disabled:opacity-50"
             >
@@ -120,11 +128,10 @@ const WorkEntrySection = ({
           )}
           <button
             type="button"
-            onClick={() => toggleCollapse(entry.id)}
+            className="text-yellow-400 hover:text-yellow-200 disabled:opacity-50"
             disabled={isLocked}
-            className="text-yellow-400 hover:text-yellow-200 disabled:opacity-50 text-sm"
           >
-            {entry.collapsed ? '▶ Expand' : '▼ Collapse'}
+            {entry.collapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
           </button>
         </div>
       </div>
@@ -293,7 +300,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   onSubmit, 
   onCancel, 
   canEdit,
-  selectedEntryId
+  selectedEntryId,
+  entryOwnerName
 }: TimeEntryFormProps) => {
   const [clockIn, setClockIn] = useState('');
   const [clockOut, setClockOut] = useState('');
@@ -781,10 +789,9 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     onSubmit(finalData);
   };
 
-  // Lock logic: entry is locked if isLocked is true
-  // Field users can edit their own draft entries regardless of lock (but lock shouldn't happen for drafts)
-  // Admins/supervisors must unlock before editing
-  const isLocked = entry?.isLocked || false;
+  // Lock logic: only field users are affected by lock status
+  // Admins/supervisors can always edit
+  const isLocked = (user.role === 'field') ? (entry?.isLocked || false) : false;
   
   // Show buttons if: can edit and not locked, OR if creating new entry
   const showButtons = (canEdit && !isLocked) || (!entry && selectedEntryId === null);
@@ -805,7 +812,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       </h3>
       
       <div className="text-yellow-600 text-sm mb-4">
-        {user.name || user.username}
+        {entryOwnerName || user.name || user.username}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -833,10 +840,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
           </select>
         </div>
 
-        {/* Clock In and Clock Out - Side by Side */}
-        <div className="flex gap-2 overflow-x-auto">
+        {/* Clock In and Clock Out - Horizontal layout */}
+        <div className="flex gap-1 sm:gap-2">
             {/* Clock In */}
-            <div className="flex flex-col flex-shrink-0">
+            <div className="flex flex-col flex-1 min-w-0">
               <label className="block text-xs font-medium text-yellow-600 mb-1">
                 Clock In
               </label>
@@ -844,7 +851,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 value={clockIn}
                 onChange={(e) => setClockIn(e.target.value)}
                 disabled={isLocked}
-                className={`w-auto min-w-[90px] px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-full px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
                     : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
@@ -861,7 +868,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
             </div>
 
             {/* Clock Out */}
-            <div className="flex flex-col flex-shrink-0">
+            <div className="flex flex-col flex-1 min-w-0">
               <label className="block text-xs font-medium text-yellow-600 mb-1">
                 Clock Out
               </label>
@@ -869,7 +876,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 value={clockOut}
                 onChange={(e) => setClockOut(e.target.value)}
                 disabled={isLocked}
-                className={`w-auto min-w-[90px] px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-full px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
                     : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
@@ -885,8 +892,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               </select>
             </div>
 
-            {/* Total Hours - Evenly spaced */}
-            <div className="flex flex-col flex-shrink-0">
+            {/* Total Hours */}
+            <div className="flex flex-col flex-1 min-w-0">
               <label className="block text-xs font-medium text-yellow-600 mb-1">
                 Total Hours
               </label>
@@ -894,7 +901,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 type="text"
                 value={hours}
                 readOnly
-                className={`w-auto min-w-[90px] px-2 py-1.5 text-sm rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
+                className={`w-full px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
                   isLocked 
                     ? 'bg-red-900 bg-opacity-20 border-red-600 text-red-300' 
                     : 'bg-yellow-900 bg-opacity-20 border rounded-lg'

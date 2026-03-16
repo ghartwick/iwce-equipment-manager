@@ -253,15 +253,6 @@ export default function TimecardPage() {
     }
   };
 
-  // Handle unlocking/locking time entries
-  const handleToggleLock = async (entryId: string, currentLocked: boolean) => {
-    try {
-      await updateTimeEntry(entryId, { isLocked: !currentLocked });
-      setRefreshKey(prev => prev + 1);
-    } catch (error) {
-      alert('Error toggling lock: ' + (error as Error).message);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-black text-yellow-100 p-4">
@@ -321,7 +312,7 @@ export default function TimecardPage() {
                       relative p-2 text-sm rounded-lg border transition-all
                       ${isCurrentMonth ? 'text-yellow-100' : 'text-yellow-700'}
                       ${isTodayDate ? 'border-yellow-400' : 'border-yellow-800'}
-                      ${isSelected ? 'bg-yellow-900 bg-opacity-50 border-yellow-400' : 'hover:bg-yellow-900 hover:bg-opacity-30'}
+                      ${isSelected ? 'bg-yellow-900 bg-opacity-50 border-green-500' : 'hover:bg-yellow-900 hover:bg-opacity-30'}
                       ${!isCurrentMonth ? 'opacity-50' : ''}
                     `}
                   >
@@ -507,8 +498,9 @@ export default function TimecardPage() {
 
                   return (
                     <div>
-                      {/* Your Time Cards Section - Always visible */}
-                      <div className="border-t border-yellow-700 pt-4">
+                      {/* Your Time Cards Section - Hidden for admins */}
+                      {user?.role !== 'admin' && (
+                        <div className="border-t border-yellow-700 pt-4">
                         <div 
                           className="flex justify-between items-center cursor-pointer mb-3"
                           onClick={() => setYourCardsCollapsed(!yourCardsCollapsed)}
@@ -529,9 +521,9 @@ export default function TimecardPage() {
                                     <div
                                       className={`bg-yellow-900 bg-opacity-10 border rounded-lg p-3 transition-colors ${
                                         isSelected 
-                                          ? 'border-yellow-400 bg-opacity-30 ring-2 ring-yellow-400 ring-opacity-50' 
+                                          ? 'border-green-500 bg-opacity-30 ring-2 ring-green-500 ring-opacity-50' 
                                           : canAccess 
-                                            ? 'border-yellow-700 hover:border-yellow-600' 
+                                            ? 'border-yellow-700 hover:border-yellow-600 cursor-pointer' 
                                             : 'border-gray-600 opacity-75'
                                       }`}
                                       onClick={() => canAccess && handleEntrySelect(entry.id!)}
@@ -541,19 +533,17 @@ export default function TimecardPage() {
                                           <span className="text-yellow-100 font-medium">
                                             Time Card {entry.entryNumber}
                                           </span>
-                                          {user?.role === 'field' && (
-                                            <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                                              entry.status === 'draft' ? 'bg-gray-600' :
-                                              entry.status === 'submitted' ? 'bg-green-600' :
-                                              entry.status === 'rejected' ? 'bg-red-600' :
-                                              'bg-blue-600'
-                                            } text-white`}>
-                                              {(entry.status === 'submitted') && (
-                                                <Check className="w-3 h-3 inline mr-1" />
-                                              )}
-                                              {getStatusDisplay(entry.status)}
-                                            </span>
-                                          )}
+                                          <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                                            entry.status === 'draft' ? 'bg-gray-600' :
+                                            entry.status === 'submitted' ? 'bg-green-600' :
+                                            entry.status === 'rejected' ? 'bg-red-600' :
+                                            'bg-blue-600'
+                                          } text-white`}>
+                                            {(entry.status === 'submitted') && (
+                                              <Check className="w-3 h-3 inline mr-1" />
+                                            )}
+                                            {getStatusDisplay(entry.status)}
+                                          </span>
                                           {isSelected && (
                                             <span className="ml-2 px-2 py-1 rounded text-xs bg-blue-600 text-white">
                                               Selected
@@ -571,23 +561,6 @@ export default function TimecardPage() {
                                             >
                                               Delete
                                             </button>
-                                          )}
-                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (entry.status === 'submitted') && (
-                                            <>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  if (entry.id) handleToggleLock(entry.id, entry.isLocked || false);
-                                                }}
-                                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                                  (entry.isLocked || false)
-                                                    ? 'bg-orange-600 text-white hover:bg-orange-700' 
-                                                    : 'bg-gray-600 text-white hover:bg-gray-700'
-                                                }`}
-                                              >
-                                                {entry.isLocked || false ? 'Unlock' : 'Lock'}
-                                              </button>
-                                            </>
                                           )}
                                         </div>
                                       </div>
@@ -618,7 +591,8 @@ export default function TimecardPage() {
                             )}
                           </div>
                         )}
-                      </div>
+                        </div>
+                      )}
 
                       {/* Other Time Cards Section (Admins/Supervisors only) */}
                       {otherEntries.length > 0 && (
@@ -662,9 +636,9 @@ export default function TimecardPage() {
                                     <div
                                       className={`bg-yellow-900 bg-opacity-10 border rounded-lg p-3 transition-colors ${
                                         isSelected 
-                                          ? 'border-yellow-400 bg-opacity-30 ring-2 ring-yellow-400 ring-opacity-50' 
+                                          ? 'border-green-500 bg-opacity-30 ring-2 ring-green-500 ring-opacity-50' 
                                           : canAccess 
-                                            ? 'border-yellow-700 hover:border-yellow-600' 
+                                            ? 'border-yellow-700 hover:border-yellow-600 cursor-pointer' 
                                             : 'border-gray-600 opacity-75'
                                       }`}
                                       onClick={() => canAccess && handleEntrySelect(entry.id!)}
@@ -674,19 +648,17 @@ export default function TimecardPage() {
                                           <span className="text-yellow-100 font-medium">
                                             Time Card {entry.entryNumber}
                                           </span>
-                                          {user?.role === 'field' && (
-                                            <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                                              entry.status === 'draft' ? 'bg-gray-600' :
-                                              entry.status === 'submitted' ? 'bg-green-600' :
-                                              entry.status === 'rejected' ? 'bg-red-600' :
-                                              'bg-blue-600'
-                                            } text-white`}>
-                                              {(entry.status === 'submitted') && (
-                                                <Check className="w-3 h-3 inline mr-1" />
-                                              )}
-                                              {getStatusDisplay(entry.status)}
-                                            </span>
-                                          )}
+                                          <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                                            entry.status === 'draft' ? 'bg-gray-600' :
+                                            entry.status === 'submitted' ? 'bg-green-600' :
+                                            entry.status === 'rejected' ? 'bg-red-600' :
+                                            'bg-blue-600'
+                                          } text-white`}>
+                                            {(entry.status === 'submitted') && (
+                                              <Check className="w-3 h-3 inline mr-1" />
+                                            )}
+                                            {getStatusDisplay(entry.status)}
+                                          </span>
                                           {isSelected && (
                                             <span className="ml-2 px-2 py-1 rounded text-xs bg-blue-600 text-white">
                                               Selected
@@ -704,23 +676,6 @@ export default function TimecardPage() {
                                             >
                                               Delete
                                             </button>
-                                          )}
-                                          {(user?.role === 'admin' || user?.role === 'supervisor') && (entry.status === 'submitted') && (
-                                            <>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  if (entry.id) handleToggleLock(entry.id, entry.isLocked || false);
-                                                }}
-                                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                                  (entry.isLocked || false)
-                                                    ? 'bg-orange-600 text-white hover:bg-orange-700' 
-                                                    : 'bg-gray-600 text-white hover:bg-gray-700'
-                                                }`}
-                                              >
-                                                {entry.isLocked || false ? 'Unlock' : 'Lock'}
-                                              </button>
-                                            </>
                                           )}
                                         </div>
                                       </div>
@@ -768,6 +723,16 @@ export default function TimecardPage() {
                   setSelectedEntryId(null);
                 }}
                 canEdit={true}
+                entryOwnerName={(() => {
+                  if (selectedEntryId) {
+                    const selectedEntry = getEntriesForDate(selectedDate).find(e => e.id === selectedEntryId);
+                    if (selectedEntry) {
+                      const owner = users.find(u => u.id === selectedEntry.userId);
+                      return owner ? (owner.name || owner.username) : undefined;
+                    }
+                  }
+                  return undefined;
+                })()}
               />
             </div>
           )}

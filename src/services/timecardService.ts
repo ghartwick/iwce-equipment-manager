@@ -237,9 +237,9 @@ class TimecardService {
 
   // Check if user can edit entry
   canEditEntry(entry: TimeEntry, user: User): boolean {
-    // Admins and supervisors can edit, but only if unlocked
+    // Admins and supervisors can always edit
     if (user.role === 'admin' || user.role === 'supervisor') {
-      return !entry.isLocked;
+      return true;
     }
     // Field users can only edit their own draft entries (not submitted or locked)
     if (user.role === 'field' && entry.userId === user.id && entry.status === 'draft' && !entry.isLocked) return true;

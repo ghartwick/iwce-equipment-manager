@@ -26,7 +26,6 @@ interface WorkEntry {
   equipment: string;
   machineHours: string;
   labourHours: string;
-  productionQuantity: string;
   smallTools: string[];
   collapsed: boolean;
 }
@@ -98,12 +97,6 @@ const WorkEntrySection = ({
     }
   };
   
-  const handleProductionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9.]/g, '');
-    if (value.length <= 3) {
-      updateEntryField(entry.id, 'productionQuantity', value);
-    }
-  };
 
   return (
     <div className="border border-yellow-800 rounded-lg p-4 space-y-4">
@@ -230,10 +223,10 @@ const WorkEntrySection = ({
         </select>
       </div>
 
-      {/* Machine, Labour & Production Hours */}
+      {/* Machine & Labour Hours */}
       <div className="flex gap-4">
         {/* Machine Hours */}
-        <div className="flex-1">
+        <div className="w-auto">
           <label className="block text-xs font-medium text-yellow-600 mb-1">
             Machine Hrs
           </label>
@@ -242,7 +235,7 @@ const WorkEntrySection = ({
             value={entry.machineHours}
             onChange={handleMachineHoursChange}
             disabled={isLocked}
-            className={`w-full px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+            className={`w-auto px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
               !hoursMatch ? 'border-red-500' : 'border-yellow-800'
             }`}
             maxLength={5}
@@ -252,7 +245,7 @@ const WorkEntrySection = ({
         </div>
 
         {/* Labour Hours */}
-        <div className="flex-1">
+        <div className="w-auto">
           <label className="block text-xs font-medium text-yellow-600 mb-1">
             Labour Hrs
           </label>
@@ -261,28 +254,11 @@ const WorkEntrySection = ({
             value={entry.labourHours}
             onChange={handleLabourHoursChange}
             disabled={isLocked}
-            className={`w-full px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+            className={`w-auto px-2 py-1.5 text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
               !hoursMatch ? 'border-red-500' : 'border-yellow-800'
             }`}
             maxLength={5}
             inputMode="decimal"
-            placeholder="0"
-          />
-        </div>
-
-        {/* Production Quantity */}
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-yellow-600 mb-1">
-            Quantity
-          </label>
-          <input
-            type="text"
-            value={entry.productionQuantity}
-            onChange={handleProductionChange}
-            disabled={isLocked}
-            className="w-full px-2 py-1.5 text-sm bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none"
-            maxLength={3}
-            inputMode="numeric"
             placeholder="0"
           />
         </div>
@@ -320,7 +296,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       equipment: '',
       machineHours: '',
       labourHours: '',
-      productionQuantity: '',
       smallTools: [],
       collapsed: false
     }
@@ -389,7 +364,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                  entryToRemove.equipment || 
                  entryToRemove.machineHours || 
                  entryToRemove.labourHours || 
-                 entryToRemove.productionQuantity ||
                  entryToRemove.smallTools.length > 0;
   
   // Show confirmation if entry has data
@@ -415,7 +389,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         equipment: '',
         machineHours: '',
         labourHours: '',
-        productionQuantity: '',
         smallTools: [],
         collapsed: false
       };
@@ -514,11 +487,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
           equipment: workEntry.equipment || '',
           machineHours: workEntry.machineHours?.toString() || '',
           labourHours: workEntry.labourHours?.toString() || '',
-          productionQuantity: workEntry.productionQuantity?.toString() || '',
           smallTools: workEntry.smallTools || [],
           collapsed: true  // Always load collapsed for existing entries
         })));
-      } else if (entry.notes || entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.productionQuantity || entry.smallTools) {
+      } else if (entry.notes || entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.smallTools) {
         // Load from legacy single entry structure
         setWorkEntries([{
           id: '1',
@@ -527,7 +499,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
           equipment: entry.equipment || '',
           machineHours: entry.machineHours?.toString() || '',
           labourHours: entry.labourHours?.toString() || '',
-          productionQuantity: entry.productionQuantity?.toString() || '',
           smallTools: entry.smallTools ? (Array.isArray(entry.smallTools) ? entry.smallTools : [entry.smallTools]) : [],
           collapsed: true
         }]);
@@ -540,7 +511,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
           equipment: '',
           machineHours: '',
           labourHours: '',
-          productionQuantity: '',
           smallTools: [],
           collapsed: true
         }]);
@@ -558,7 +528,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         equipment: '',
         machineHours: '',
         labourHours: '',
-        productionQuantity: '',
         smallTools: [],
         collapsed: false
       }]);
@@ -617,7 +586,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         equipment: entry.equipment || null,
         machineHours: entry.machineHours ? parseFloat(entry.machineHours) : null,
         labourHours: entry.labourHours ? parseFloat(entry.labourHours) : null,
-        productionQuantity: entry.productionQuantity ? parseFloat(entry.productionQuantity) : null,
         smallTools: entry.smallTools.length > 0 ? entry.smallTools : null,
         collapsed: entry.collapsed || false
       }))
@@ -626,8 +594,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         entry.code || 
         entry.equipment || 
         entry.machineHours !== null || 
-        entry.labourHours !== null || 
-        entry.productionQuantity !== null ||
+        entry.labourHours !== null ||
         (entry.smallTools && entry.smallTools.length > 0)
       );
 
@@ -651,7 +618,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       const firstEntry = workEntriesData[0];
       if (firstEntry.code) cleanEntryData.code = firstEntry.code;
       if (firstEntry.equipment) cleanEntryData.equipment = firstEntry.equipment;
-      if (firstEntry.productionQuantity !== null) cleanEntryData.productionQuantity = firstEntry.productionQuantity;
       if (firstEntry.machineHours !== null) cleanEntryData.machineHours = firstEntry.machineHours;
       if (firstEntry.labourHours !== null) cleanEntryData.labourHours = firstEntry.labourHours;
       if (firstEntry.smallTools) cleanEntryData.smallTools = firstEntry.smallTools;
@@ -662,7 +628,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       const firstEntry = workEntries[0];
       if (firstEntry.code) cleanEntryData.code = firstEntry.code;
       if (firstEntry.equipment) cleanEntryData.equipment = firstEntry.equipment;
-      if (firstEntry.productionQuantity) cleanEntryData.productionQuantity = parseFloat(firstEntry.productionQuantity);
       if (firstEntry.machineHours) cleanEntryData.machineHours = parseFloat(firstEntry.machineHours);
       if (firstEntry.labourHours) cleanEntryData.labourHours = parseFloat(firstEntry.labourHours);
       if (firstEntry.smallTools.length > 0) cleanEntryData.smallTools = firstEntry.smallTools;
@@ -695,8 +660,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       entry.code || 
       entry.equipment || 
       entry.machineHours || 
-      entry.labourHours || 
-      entry.productionQuantity ||
+      entry.labourHours ||
       entry.smallTools.length > 0
     );
 
@@ -733,7 +697,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         equipment: entry.equipment || null,
         machineHours: entry.machineHours ? parseFloat(entry.machineHours) : null,
         labourHours: entry.labourHours ? parseFloat(entry.labourHours) : null,
-        productionQuantity: entry.productionQuantity ? parseFloat(entry.productionQuantity) : null,
         smallTools: entry.smallTools.length > 0 ? entry.smallTools : null,
         collapsed: entry.collapsed || false
       }))
@@ -742,8 +705,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         entry.code || 
         entry.equipment || 
         entry.machineHours !== null || 
-        entry.labourHours !== null || 
-        entry.productionQuantity !== null ||
+        entry.labourHours !== null ||
         (entry.smallTools && entry.smallTools.length > 0)
       );
 
@@ -768,7 +730,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       const firstEntry = workEntriesData[0];
       if (firstEntry.code) cleanEntryData.code = firstEntry.code;
       if (firstEntry.equipment) cleanEntryData.equipment = firstEntry.equipment;
-      if (firstEntry.productionQuantity !== null) cleanEntryData.productionQuantity = firstEntry.productionQuantity;
       if (firstEntry.machineHours !== null) cleanEntryData.machineHours = firstEntry.machineHours;
       if (firstEntry.labourHours !== null) cleanEntryData.labourHours = firstEntry.labourHours;
       if (firstEntry.smallTools) cleanEntryData.smallTools = firstEntry.smallTools;
@@ -843,7 +804,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         {/* Clock In and Clock Out - Horizontal layout */}
         <div className="flex gap-1 sm:gap-2">
             {/* Clock In */}
-            <div className="flex flex-col flex-1 min-w-0">
+            <div className="flex flex-col w-auto">
               <label className="block text-xs font-medium text-yellow-600 mb-1">
                 Clock In
               </label>
@@ -851,7 +812,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 value={clockIn}
                 onChange={(e) => setClockIn(e.target.value)}
                 disabled={isLocked}
-                className={`w-full px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
                     : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
@@ -868,7 +829,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
             </div>
 
             {/* Clock Out */}
-            <div className="flex flex-col flex-1 min-w-0">
+            <div className="flex flex-col w-auto">
               <label className="block text-xs font-medium text-yellow-600 mb-1">
                 Clock Out
               </label>
@@ -876,7 +837,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 value={clockOut}
                 onChange={(e) => setClockOut(e.target.value)}
                 disabled={isLocked}
-                className={`w-full px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
                     : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
@@ -893,7 +854,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
             </div>
 
             {/* Total Hours */}
-            <div className="flex flex-col flex-1 min-w-0">
+            <div className="flex flex-col w-auto">
               <label className="block text-xs font-medium text-yellow-600 mb-1">
                 Total Hours
               </label>
@@ -901,7 +862,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 type="text"
                 value={hours}
                 readOnly
-                className={`w-full px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
+                className={`w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
                   isLocked 
                     ? 'bg-red-900 bg-opacity-20 border-red-600 text-red-300' 
                     : 'bg-yellow-900 bg-opacity-20 border rounded-lg'

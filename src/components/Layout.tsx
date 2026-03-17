@@ -155,17 +155,6 @@ function Layout({ children }: LayoutProps) {
                 <Bell className="h-5 w-5" />
               </button>
 
-              {/* User Management - Admin, Supervisor, and Field Users */}
-              {user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'field') && (
-                <button
-                  onClick={() => setShowUserManagement(true)}
-                  className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors"
-                  title="User Management"
-                >
-                  <Users className="h-5 w-5" />
-                </button>
-              )}
-
               {/* User Menu */}
               {user && (
                 <div className="relative">
@@ -199,6 +188,19 @@ function Layout({ children }: LayoutProps) {
                       </div>
                       
                       <div className="p-2">
+                        {/* User Management - Available to all users */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowUserManagement(true);
+                            setShowUserMenu(false);
+                          }}
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                        >
+                          <Users className="h-4 w-4" />
+                          <span>User Management</span>
+                        </button>
+
                         {/* Admin-only Site and Code Management */}
                         {user.role === 'admin' && (
                           <>

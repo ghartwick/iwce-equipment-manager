@@ -27,7 +27,6 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAlerts, setShowAlerts] = useState(false);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleRefresh = () => {
@@ -232,6 +231,7 @@ function App() {
                     onAddCategory={addCategory}
                     onDeleteCategory={deleteCategory}
                     onEditCategory={editCategory}
+                    userRole={user?.role}
                   />
                 </div>
               </div>
@@ -293,19 +293,6 @@ function App() {
             {/* Mobile Equipment Table - Optimized */}
             <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
               <div className="p-2 sm:p-3">
-                {/* Mobile Filter Toggle */}
-                <div className="mb-2">
-                  <button
-                    onClick={() => setShowMobileFilters(!showMobileFilters)}
-                    className="w-full p-1 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors flex items-center justify-between"
-                  >
-                    <span className="text-yellow-300 text-xs">Filters</span>
-                    <span className="text-yellow-400 transform transition-transform">
-                      {showMobileFilters ? '▼' : '▶'}
-                    </span>
-                  </button>
-                </div>
-
                 <div className="flex flex-col space-y-2">
                   {/* Search - Mobile Full Width */}
                   <div className="flex-1">
@@ -315,19 +302,18 @@ function App() {
                     />
                   </div>
 
-                  {/* Mobile Filters - Collapsible */}
-                  {showMobileFilters && (
-                    <div className="mt-2">
-                      <FilterPanel
-                        categories={categories}
-                        selectedCategory={selectedCategory}
-                        onCategoryChange={setSelectedCategory}
-                        onAddCategory={addCategory}
-                        onDeleteCategory={deleteCategory}
-                        onEditCategory={editCategory}
-                      />
-                    </div>
-                  )}
+                  {/* Mobile Categories - Always Visible */}
+                  <div className="mt-2">
+                    <FilterPanel
+                      categories={categories}
+                      selectedCategory={selectedCategory}
+                      onCategoryChange={setSelectedCategory}
+                      onAddCategory={addCategory}
+                      onDeleteCategory={deleteCategory}
+                      onEditCategory={editCategory}
+                      userRole={user?.role}
+                    />
+                  </div>
                 </div>
               </div>
 

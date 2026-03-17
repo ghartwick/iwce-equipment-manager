@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Clock } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { EquipmentLog } from './EquipmentLog';
+import { siteManagementService, Site } from '../services/siteManagementService';
 
 interface ProductFormProps {
   categories: Category[];
@@ -24,6 +25,9 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   });
 
   const [showLog, setShowLog] = useState(false);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [showCustomSite, setShowCustomSite] = useState(false);
+  const [customSite, setCustomSite] = useState('');
 
   // Sort categories alphabetically and numerically
   const sortedCategories = [...categories].sort((a, b) => {
@@ -47,6 +51,22 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   const isAdmin = userRole === 'admin';
   const canEditRestrictedFields = isAdmin || !isEditing; // Admins can edit, anyone can add
 
+  // Sort sites alphabetically
+  const sortedSites = [...sites].sort((a, b) => a.name.localeCompare(b.name));
+
+  // Fetch sites on component mount
+  useEffect(() => {
+    const fetchSites = async () => {
+      try {
+        const activeSites = await siteManagementService.getActiveSites();
+        setSites(activeSites);
+      } catch (error) {
+        console.error('Error fetching sites:', error);
+      }
+    };
+    fetchSites();
+  }, []);
+
   useEffect(() => {
     if (product) {
       setFormData({
@@ -58,8 +78,18 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
         repair: product.repair,
         repairDescription: product.repairDescription,
       });
+      
+      // Check if the site is a custom site (not in the sites list)
+      if (product.site && !sites.some(site => site.name === product.site)) {
+        setShowCustomSite(true);
+        setCustomSite(product.site);
+      } else {
+        // Reset custom site state if editing a product with a database site
+        setShowCustomSite(false);
+        setCustomSite('');
+      }
     }
-  }, [product]);
+  }, [product, sites]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +99,22 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
       console.error('Error in form submission:', error);
       alert('Error submitting form: ' + (error as Error).message);
     }
+  };
+
+  const handleSiteChange = (value: string) => {
+    if (value === 'OTHER') {
+      setShowCustomSite(true);
+      setFormData(prev => ({ ...prev, site: '' }));
+    } else {
+      setShowCustomSite(false);
+      setCustomSite('');
+      setFormData(prev => ({ ...prev, site: value }));
+    }
+  };
+
+  const handleCustomSiteChange = (value: string) => {
+    setCustomSite(value);
+    setFormData(prev => ({ ...prev, site: value }));
   };
 
   const handleInputChange = (field: string, value: string | number | boolean) => {
@@ -189,12 +235,29 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
             <label className="block text-xs sm:text-sm font-medium text-yellow-300 mb-1">
               Site
             </label>
-            <input
-              type="text"
-              value={formData.site}
-              onChange={(e) => handleInputChange('site', e.target.value)}
-              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-            />
+            <select
+              value={showCustomSite ? 'OTHER' : formData.site}
+              onChange={(e) => handleSiteChange(e.target.value)}
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+            >
+              <option value="">Select a site</option>
+              {sortedSites.map((site) => (
+                <option key={site.id} value={site.name}>
+                  {site.name}
+                </option>
+              ))}
+              <option value="OTHER">Other (type custom site)</option>
+            </select>
+            {showCustomSite && (
+              <input
+                type="text"
+                value={customSite}
+                onChange={(e) => handleCustomSiteChange(e.target.value)}
+                placeholder="Enter custom site name"
+                className="w-full mt-2 px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                autoFocus
+              />
+            )}
           </div>
 
           <div>

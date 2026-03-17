@@ -9,6 +9,7 @@ interface FilterPanelProps {
   onAddCategory: (category: Omit<Category, 'id'>) => void;
   onDeleteCategory: (categoryId: string) => void;
   onEditCategory: (categoryId: string, category: Omit<Category, 'id'>) => void;
+  userRole?: 'admin' | 'supervisor' | 'field';
 }
 
 export function FilterPanel({ 
@@ -17,12 +18,16 @@ export function FilterPanel({
   onCategoryChange, 
   onAddCategory,
   onDeleteCategory,
-  onEditCategory 
+  onEditCategory,
+  userRole
 }: FilterPanelProps) {
 
   const scrollToCategory = (categoryId: string) => {
     // First change the category
     onCategoryChange(categoryId);
+    
+    // Collapse the form when a category is selected
+    setIsCategoryFormCollapsed(true);
     
     // Then scroll to the category section after a brief delay to allow re-render
     setTimeout(() => {
@@ -130,13 +135,15 @@ export function FilterPanel({
               <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" />
             )}
           </button>
-          <button
-            onClick={() => setShowAddCategory(!showAddCategory)}
-            className="p-1 text-yellow-400 hover:text-yellow-300"
-            title="Add Category"
-          >
-            <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-          </button>
+          {userRole === 'admin' && (
+            <button
+              onClick={() => setShowAddCategory(!showAddCategory)}
+              className="p-1 text-yellow-400 hover:text-yellow-300"
+              title="Add Category"
+            >
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -221,26 +228,28 @@ export function FilterPanel({
                 >
                   <span>{category.name}</span>
                 </button>
-                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all">
-                  <button
-                    onClick={() => handleEditCategory(category.id)}
-                    className="p-1 text-yellow-500 hover:text-yellow-300"
-                    title="Edit category"
-                  >
-                    <Edit2 className="h-2 w-2 sm:h-3 sm:w-3" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
-                        onDeleteCategory(category.id);
-                      }
-                    }}
-                    className="p-1 text-red-500 hover:text-red-300"
-                    title="Delete category"
-                  >
-                    <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
-                  </button>
-                </div>
+                {userRole === 'admin' && (
+                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={() => handleEditCategory(category.id)}
+                      className="p-1 text-yellow-500 hover:text-yellow-300"
+                      title="Edit category"
+                    >
+                      <Edit2 className="h-2 w-2 sm:h-3 sm:w-3" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
+                          onDeleteCategory(category.id);
+                        }
+                      }}
+                      className="p-1 text-red-500 hover:text-red-300"
+                      title="Delete category"
+                    >
+                      <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

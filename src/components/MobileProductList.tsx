@@ -68,7 +68,7 @@ export function MobileProductList({
               return (
                 <React.Fragment key={product.id}>
                   <div 
-                    className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${product.repair ? 'bg-red-100 dark:bg-red-950' : 'bg-white dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                    className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${product.repair ? 'bg-red-100 dark:bg-red-950' : 'bg-[#fffff0] dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                   >
                     {/* Equipment Name - Primary */}
                     <div className="flex items-start justify-between">
@@ -117,7 +117,7 @@ export function MobileProductList({
                         <div className="flex items-start space-x-2 mt-2 p-2 bg-red-900 bg-opacity-20 rounded">
                           <Wrench className="h-3 w-3 text-red-500 mt-0.5" />
                           <div>
-                            <span className="text-red-400 text-xs font-medium">Repair Details:</span>
+                            <span className="text-red-400 text-xs font-medium">Alert Details:</span>
                             <p className="text-red-300 text-xs mt-1">{product.repairDescription}</p>
                           </div>
                         </div>
@@ -213,7 +213,7 @@ export function MobileProductList({
                   return (
                     <React.Fragment key={product.id}>
                       <div 
-                        className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${product.repair ? 'bg-red-100 dark:bg-red-950' : 'bg-white dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                        className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${product.repair ? 'bg-red-100 dark:bg-red-950' : 'bg-[#fffff0] dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                       >
                         {/* Equipment Name - Primary */}
                         <div className="flex items-start justify-between">
@@ -262,7 +262,7 @@ export function MobileProductList({
                             <div className="flex items-start space-x-2 mt-2 p-2 bg-red-900 bg-opacity-20 rounded">
                               <Wrench className="h-3 w-3 text-red-500 mt-0.5" />
                               <div>
-                                <span className="text-red-400 text-xs font-medium">Repair Details:</span>
+                                <span className="text-red-400 text-xs font-medium">Alert Details:</span>
                                 <p className="text-red-300 text-xs mt-1">{product.repairDescription}</p>
                               </div>
                             </div>

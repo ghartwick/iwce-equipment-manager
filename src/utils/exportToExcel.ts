@@ -17,8 +17,8 @@ export function exportToExcel(equipment: Equipment[], filename: string = 'equipm
     'Site': item.site || '',
     'Category': categoryMap.get(item.category) || item.category || '', // Convert ID to name
     'Serial Number': item.serialNumber,
-    'Repair Status': item.repair ? 'Yes' : 'No',
-    'Repair Description': item.repairDescription || '',
+    'Alert Status': item.repair ? 'Yes' : 'No',
+    'Alert Description': item.repairDescription || '',
     'Created Date': new Date(item.createdAt).toLocaleDateString(),
     'Last Updated': new Date(item.updatedAt).toLocaleDateString()
   }));
@@ -34,8 +34,8 @@ export function exportToExcel(equipment: Equipment[], filename: string = 'equipm
     { wch: 15 }, // Site
     { wch: 15 }, // Category
     { wch: 15 }, // Serial Number
-    { wch: 12 }, // Repair Status
-    { wch: 30 }, // Repair Description
+    { wch: 12 }, // Alert Status
+    { wch: 30 }, // Alert Description
     { wch: 12 }, // Created Date
     { wch: 12 }, // Last Updated
   ];
@@ -54,8 +54,8 @@ export interface ImportedEquipment {
   'Site'?: string;
   'Category': string;
   'Serial Number'?: string;
-  'Repair Status'?: string;
-  'Repair Description'?: string;
+  'Alert Status'?: string;
+  'Alert Description'?: string;
 }
 
 export function importFromExcel(file: File, existingCategories: Category[]): Promise<Partial<Equipment>[]> {
@@ -121,8 +121,8 @@ export function importFromExcel(file: File, existingCategories: Category[]): Pro
             site: row['Site']?.trim() || '',
             category: categoryId, // Store category ID instead of name
             serialNumber: row['Serial Number']?.trim() || '',
-            repair: row['Repair Status']?.toLowerCase() === 'yes',
-            repairDescription: row['Repair Description']?.trim() || '',
+            repair: row['Alert Status']?.toLowerCase() === 'yes',
+            repairDescription: row['Alert Description']?.trim() || '',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           });

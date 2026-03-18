@@ -78,7 +78,13 @@ export function useInventory(refreshKey?: number) {
         );
         
         if (existingAlert) {
-          return existingAlert;
+          // Update the alert with the latest timestamp and user from the product
+          return {
+            ...existingAlert,
+            message: `${product.name} has an alert${product.repairDescription ? ': ' + product.repairDescription : ''}`,
+            createdAt: product.updatedAt || existingAlert.createdAt,
+            userName: product.lastModifiedBy || existingAlert.userName,
+          };
         }
         
         // Create new repair alert
@@ -86,8 +92,9 @@ export function useInventory(refreshKey?: number) {
           id: `repair-${product.id}-${Date.now()}`,
           productId: product.id,
           type: 'repair',
-          message: `${product.name} needs repair${product.repairDescription ? ': ' + product.repairDescription : ''}`,
-          createdAt: new Date().toISOString(),
+          message: `${product.name} has an alert${product.repairDescription ? ': ' + product.repairDescription : ''}`,
+          createdAt: product.updatedAt || new Date().toISOString(),
+          userName: product.lastModifiedBy || 'Unknown User',
         };
         return newAlert;
       });

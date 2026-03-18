@@ -46,6 +46,18 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
     }).format(date);
   };
 
+  const getFieldLabel = (field: string): string => {
+    const labels: Record<string, string> = {
+      repairDescription: 'Alert Description',
+      serialNumber: 'Serial Number',
+      name: 'Name',
+      employee: 'Employee',
+      site: 'Site',
+      category: 'Category',
+    };
+    return labels[field] || field.charAt(0).toUpperCase() + field.slice(1);
+  };
+
   const getActionColor = (action: string) => {
     switch (action) {
       case 'created':
@@ -111,7 +123,7 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
                 <div className="mt-0.5 space-y-0">
                   {entry.changes.map((change, index) => (
                     <div key={index} className="text-xs bg-gray-100 dark:bg-black dark:bg-opacity-30 rounded p-1">
-                      <span className="font-medium capitalize">{change.field}:</span> <span className="text-green-600 dark:text-green-400">{change.newValue || '(empty)'}</span>
+                      <span className="font-medium">{getFieldLabel(change.field)}:</span> <span className="text-green-600 dark:text-green-400">{change.newValue || '(empty)'}</span>
                     </div>
                   ))}
                 </div>

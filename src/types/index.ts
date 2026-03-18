@@ -9,6 +9,7 @@ export interface Equipment {
   repairDescription: string;
   createdAt: string;
   updatedAt: string;
+  lastModifiedBy?: string;
 }
 
 export interface Category {
@@ -24,4 +25,6 @@ export interface StockAlert {
   type: 'low_stock' | 'out_of_stock' | 'repair';
   message: string;
   createdAt: string;
+  userId?: string;
+  userName?: string;
 }

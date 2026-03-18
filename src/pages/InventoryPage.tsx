@@ -113,11 +113,17 @@ function InventoryPage() {
 
   const handleEditProduct = async (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingProduct && user) {
-      // Create updated equipment object
       const updatedEquipment: Equipment = {
         ...editingProduct,
-        ...productData,
-        updatedAt: new Date().toISOString()
+        name: productData.name,
+        employee: productData.employee,
+        site: productData.site,
+        category: productData.category,
+        serialNumber: productData.serialNumber,
+        repair: productData.repair,
+        repairDescription: productData.repairDescription,
+        updatedAt: new Date().toISOString(),
+        lastModifiedBy: user.name
       };
       
       try {
@@ -132,7 +138,7 @@ function InventoryPage() {
         console.error('Failed to track Firebase history:', error);
       }
       
-      await updateProduct(editingProduct.id, productData);
+      await updateProduct(editingProduct.id, updatedEquipment);
       setEditingProduct(null);
     }
   };

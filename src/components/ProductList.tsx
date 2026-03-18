@@ -84,7 +84,7 @@ export function ProductList({
 
   if (products.length === 0) {
     return (
-      <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow p-8 text-center">
+      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow p-8 text-center">
         <Package className="h-12 w-12 text-yellow-600 dark:text-yellow-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-2">No equipment found</h3>
         <p className="text-yellow-600">Get started by adding your first equipment to the inventory.</p>
@@ -93,7 +93,7 @@ export function ProductList({
   }
 
   return (
-    <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+    <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
       {/* Header with export button */}
       <div className="bg-yellow-100 dark:bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
         <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300">Equipment Inventory</h2>
@@ -137,7 +137,7 @@ export function ProductList({
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-black divide-y divide-yellow-200 dark:divide-yellow-800">
+          <tbody className="bg-[#fffff0] dark:bg-black divide-y divide-yellow-200 dark:divide-yellow-800">
             {showCategoryHeadings ? (
               // Group by category with headings
               (() => {
@@ -168,7 +168,7 @@ export function ProductList({
                           className={`
                             ${selectedEquipmentId === product.id 
                               ? (product.repair ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
-                              : (product.repair ? "bg-red-100 dark:bg-red-950" : "bg-white dark:bg-black")
+                              : (product.repair ? "bg-red-100 dark:bg-red-950" : "bg-[#fffff0] dark:bg-black")
                             } 
                             transition-all duration-200
                           `}
@@ -181,9 +181,9 @@ export function ProductList({
                                 {product.site && <div className="break-words">{product.site}</div>}
                                 {product.repair && (
                                   <>
-                                    <div className="text-xs sm:text-sm text-red-500 font-medium break-words">Repair: Yes</div>
+                                    <div className="text-xs sm:text-sm text-red-500 font-medium break-words">Alert: Yes</div>
                                     {product.repairDescription && (
-                                      <div className="text-xs text-red-400 mt-1 italic break-words">Repair: {product.repairDescription}</div>
+                                      <div className="text-xs text-red-400 mt-1 italic break-words">Alert: {product.repairDescription}</div>
                                     )}
                                   </>
                                 )}
@@ -259,7 +259,7 @@ export function ProductList({
                           className={`
                             ${selectedEquipmentId === product.id 
                               ? (product.repair ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
-                              : (product.repair ? "bg-red-100 dark:bg-red-950" : "bg-white dark:bg-black")
+                              : (product.repair ? "bg-red-100 dark:bg-red-950" : "bg-[#fffff0] dark:bg-black")
                             } 
                             transition-all duration-200
                           `}
@@ -272,9 +272,9 @@ export function ProductList({
                                 {product.site && <div className="break-words">{product.site}</div>}
                                 {product.repair && (
                                   <>
-                                    <div className="text-xs sm:text-sm text-red-500 font-medium break-words">Repair: Yes</div>
+                                    <div className="text-xs sm:text-sm text-red-500 font-medium break-words">Alert: Yes</div>
                                     {product.repairDescription && (
-                                      <div className="text-xs text-red-400 mt-1 italic break-words">Repair: {product.repairDescription}</div>
+                                      <div className="text-xs text-red-400 mt-1 italic break-words">Alert: {product.repairDescription}</div>
                                     )}
                                   </>
                                 )}

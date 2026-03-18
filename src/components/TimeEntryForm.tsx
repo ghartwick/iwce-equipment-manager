@@ -101,41 +101,61 @@ const WorkEntrySection = ({
   return (
     <div className="bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-300 dark:border-yellow-800 rounded-lg p-4 space-y-4">
       <div 
-        className="flex justify-between items-center cursor-pointer"
+        className="cursor-pointer"
         onClick={() => !isLocked && toggleCollapse(entry.id)}
       >
-        <h3 className="text-yellow-600 dark:text-yellow-400 font-medium">
-              Entry {entryIndex + 1}
-              {(entry.machineHours || entry.labourHours) && (
-                <span className="text-yellow-500 dark:text-yellow-600 text-sm ml-2">
-                  {entry.machineHours && `M:${entry.machineHours}`}
-                  {entry.machineHours && entry.labourHours && ' '}
-                  {entry.labourHours && `L:${entry.labourHours}`}
-                </span>
-              )}
-            </h3>
-        <div className="flex items-center gap-2">
-          {entryIndex > 0 && (
+        <div className="flex justify-between items-center">
+          <h3 className="text-yellow-600 dark:text-yellow-400 font-medium">
+            Entry {entryIndex + 1}
+            {(entry.machineHours || entry.labourHours) && (
+              <span className="text-yellow-500 dark:text-yellow-600 text-sm ml-2">
+                {entry.machineHours && `M:${entry.machineHours}`}
+                {entry.machineHours && entry.labourHours && ' '}
+                {entry.labourHours && `L:${entry.labourHours}`}
+              </span>
+            )}
+          </h3>
+          <div className="flex items-center gap-2">
+            {entryIndex > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeEntry(entry.id);
+                }}
+                disabled={isLocked}
+                className="text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 disabled:opacity-50"
+              >
+                Remove
+              </button>
+            )}
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                removeEntry(entry.id);
-              }}
+              className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-200 disabled:opacity-50"
               disabled={isLocked}
-              className="text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 disabled:opacity-50"
             >
-              Remove
+              {entry.collapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
             </button>
-          )}
-          <button
-            type="button"
-            className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-200 disabled:opacity-50"
-            disabled={isLocked}
-          >
-            {entry.collapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-          </button>
+          </div>
         </div>
+
+        {/* Show summary when collapsed */}
+        {entry.collapsed && (
+          <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-500 space-y-1">
+            {entry.code && (
+              <div><span className="font-medium">Code:</span> {entry.code}</div>
+            )}
+            {entry.equipment && (
+              <div><span className="font-medium">Equipment:</span> {entry.equipment}</div>
+            )}
+            {entry.smallTools.length > 0 && (
+              <div><span className="font-medium">Small Tools:</span> {entry.smallTools.join(', ')}</div>
+            )}
+            {entry.notes && (
+              <div className="truncate"><span className="font-medium">Notes:</span> {entry.notes}</div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Show content only if not collapsed */}
@@ -147,7 +167,7 @@ const WorkEntrySection = ({
           value={entry.code}
           onChange={handleCodeChange}
           disabled={isLocked || user.role === 'field'}
-          className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <option value="">Select Code</option>
           {codeOptionsWithDetails.map(codeOption => (
@@ -165,7 +185,7 @@ const WorkEntrySection = ({
             onChange={handleNotesChange}
             disabled={isLocked}
             rows={3}
-            className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 resize-none"
+            className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 resize-none"
             placeholder="Add any notes about this time entry..."
           />
         </div>
@@ -176,7 +196,7 @@ const WorkEntrySection = ({
           value={entry.equipment}
           onChange={handleEquipmentChange}
           disabled={isLocked}
-          className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+          className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
         >
           <option value="">Select Equipment</option>
           {equipmentOptions.map(equipmentOption => (
@@ -221,7 +241,7 @@ const WorkEntrySection = ({
             }
           }}
           disabled={isLocked}
-          className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+          className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
         >
           <option value="">Select Small Tools</option>
           {smallToolsOptions.filter(option => !entry.smallTools.includes(option)).map(smallToolsOption => (
@@ -244,7 +264,7 @@ const WorkEntrySection = ({
             value={entry.machineHours}
             onChange={handleMachineHoursChange}
             disabled={isLocked}
-            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-white dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
               !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
             }`}
             maxLength={5}
@@ -263,7 +283,7 @@ const WorkEntrySection = ({
             value={entry.labourHours}
             onChange={handleLabourHoursChange}
             disabled={isLocked}
-            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-white dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
               !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
             }`}
             maxLength={5}
@@ -291,6 +311,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const [clockIn, setClockIn] = useState('');
   const [clockOut, setClockOut] = useState('');
   const [job, setJob] = useState('');
+  const [customSite, setCustomSite] = useState('');
   const [hours, setHours] = useState(0);
   const [jobOptions, setJobOptions] = useState<string[]>([]);
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
@@ -563,11 +584,35 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     }
   }, [clockIn, clockOut]);
 
+  // Handle custom site initialization when editing existing entries
+  useEffect(() => {
+    if (entry && entry.job && jobOptions.length > 0) {
+      if (!jobOptions.includes(entry.job)) {
+        setJob('Other');
+        setCustomSite(entry.job);
+      } else {
+        setJob(entry.job);
+        setCustomSite('');
+      }
+    }
+  }, [entry, jobOptions]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!clockIn || !clockOut) {
       alert('Please select both clock in and clock out times');
+      return;
+    }
+
+    // Validate site selection
+    if (!job) {
+      alert('Please select a site');
+      return;
+    }
+
+    if (job === 'Other' && !customSite.trim()) {
+      alert('Please specify the site name');
       return;
     }
 
@@ -620,7 +665,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       clockIn: clockInDate,
       clockOut: clockOutDate,
       hours,
-      job: job || null,
+      job: job === 'Other' ? customSite.trim() : job,
       status: entry?.status || 'draft',
       isLocked: entry?.isLocked || false,
     };
@@ -666,6 +711,17 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const handleSubmitSubmit = () => {
     if (!clockIn || !clockOut) {
       alert('Please select both clock in and clock out times before submitting');
+      return;
+    }
+
+    // Validate site selection
+    if (!job) {
+      alert('Please select a site');
+      return;
+    }
+
+    if (job === 'Other' && !customSite.trim()) {
+      alert('Please specify the site name');
       return;
     }
 
@@ -737,7 +793,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       clockIn: clockInDate,
       clockOut: clockOutDate,
       hours,
-      job: job || null,
+      job: job === 'Other' ? customSite.trim() : job,
       status: 'submitted',
       submittedAt: new Date(),
       isLocked: true, // Submitted entries are locked
@@ -779,7 +835,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const showButtons = (canEdit && !isLocked) || (!entry && selectedEntryId === null);
 
   return (
-    <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6 relative">
+    <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6 relative">
       {/* X Button in Top Right Corner */}
       <button
         type="button"
@@ -805,9 +861,14 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
           </label>
           <select
             value={job}
-            onChange={(e) => setJob(e.target.value)}
+            onChange={(e) => {
+              setJob(e.target.value);
+              if (e.target.value !== 'Other') {
+                setCustomSite('');
+              }
+            }}
             disabled={isLocked}
-            className={`w-full px-3 py-2 bg-white dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+            className={`w-full px-3 py-2 bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
               isLocked 
                 ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                 : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
@@ -819,7 +880,30 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 {jobOption}
               </option>
             ))}
+            <option value="Other">Other (specify)</option>
           </select>
+          
+          {/* Custom Site Input - Shows when "Other" is selected */}
+          {job === 'Other' && (
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-1">
+                Specify Site
+              </label>
+              <input
+                type="text"
+                value={customSite}
+                onChange={(e) => setCustomSite(e.target.value)}
+                disabled={isLocked}
+                placeholder="Enter site name"
+                className={`w-full px-3 py-2 bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                  isLocked 
+                    ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
+                    : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
+                }`}
+                required
+              />
+            </div>
+          )}
         </div>
 
         {/* Clock In and Clock Out - Horizontal layout */}
@@ -833,7 +917,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 value={clockIn}
                 onChange={(e) => setClockIn(e.target.value)}
                 disabled={isLocked}
-                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-white dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                     : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
@@ -858,7 +942,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 value={clockOut}
                 onChange={(e) => setClockOut(e.target.value)}
                 disabled={isLocked}
-                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-white dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                     : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'

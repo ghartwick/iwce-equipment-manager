@@ -99,15 +99,6 @@ function Layout({ children }: LayoutProps) {
 
             {/* Right Side - Mobile Icons */}
             <div className="flex items-center space-x-2">
-              {/* Mobile Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 lg:hidden"
-                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              >
-                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </button>
-
               {/* Mobile Alert Icon */}
               <button
                 onClick={handleToggleAlerts}
@@ -149,30 +140,11 @@ function Layout({ children }: LayoutProps) {
                 })}
               </div>
 
-              {user?.role !== 'field' && (
-                <button
-                  onClick={handleAddProduct}
-                  className="p-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors"
-                  title="Add Equipment"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              )}
-              
               <button
                 onClick={handleToggleAlerts}
                 className="relative p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
               >
                 <Bell className="h-5 w-5" />
-              </button>
-
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
-                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              >
-                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
 
               {/* User Menu */}
@@ -257,8 +229,31 @@ function Layout({ children }: LayoutProps) {
                               <Truck className="h-4 w-4" />
                               <span>Manage Equipment</span>
                             </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddProduct();
+                                setShowUserMenu(false);
+                              }}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
+                            >
+                              <Plus className="h-4 w-4" />
+                              <span>Add Equipment</span>
+                            </button>
                           </>
                         )}
+                        
+                        {/* Theme Toggle */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleTheme();
+                          }}
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
+                        >
+                          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                          <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                        </button>
                         
                         <button
                           onClick={(e) => {
@@ -286,35 +281,37 @@ function Layout({ children }: LayoutProps) {
                 {navigation.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      onClick={() => setShowMobileMenu(false)}
-                      className={`flex items-center space-x-3 w-full p-3 rounded-lg transition-colors ${
-                        isActive(item.href)
-                          ? 'bg-yellow-200 dark:bg-yellow-900 dark:bg-opacity-70 border border-yellow-600 text-yellow-900 dark:text-yellow-100'
-                          : 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-opacity-70'
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                      <span>{item.name}</span>
-                    </Link>
+                    <div key={item.name}>
+                      <Link
+                        to={item.href}
+                        onClick={() => setShowMobileMenu(false)}
+                        className={`flex items-center space-x-3 w-full p-3 rounded-lg transition-colors ${
+                          isActive(item.href)
+                            ? 'bg-yellow-200 dark:bg-yellow-900 dark:bg-opacity-70 border border-yellow-600 text-yellow-900 dark:text-yellow-100'
+                            : 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-opacity-70'
+                        }`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                      </Link>
+                      
+                      {/* Add Equipment button - appears under Inventory for admins */}
+                      {item.name === 'Inventory' && user && user.role === 'admin' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddProduct();
+                            setShowMobileMenu(false);
+                          }}
+                          className="flex items-center space-x-3 w-full p-3 mt-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
+                        >
+                          <Plus className="h-5 w-5" />
+                          <span>Add Equipment</span>
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
-                
-                {user?.role !== 'field' && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddProduct(); 
-                      setShowMobileMenu(false);
-                    }}
-                    className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
-                  >
-                    <Plus className="h-5 w-5" />
-                    <span>Add Equipment</span>
-                  </button>
-                )}
                 
                 {/* User Management - Admin, Supervisor, and Field Users */}
                 {user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'field') && (
@@ -350,6 +347,18 @@ function Layout({ children }: LayoutProps) {
                     </div>
                   </div>
                 )}
+                
+                {/* Mobile Theme Toggle */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleTheme(); 
+                  }}
+                  className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
+                >
+                  {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                  <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                </button>
                 
                 {user && (
                   <button

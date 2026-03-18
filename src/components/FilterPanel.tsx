@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Filter, Plus, Trash2, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Category } from '../types';
 
@@ -60,6 +60,25 @@ export function FilterPanel({
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isCategoryFormCollapsed, setIsCategoryFormCollapsed] = useState(true);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Detect clicks outside the panel to collapse it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        setIsCategoryFormCollapsed(true);
+      }
+    };
+
+    // Only add listener if panel is expanded
+    if (!isCategoryFormCollapsed) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCategoryFormCollapsed]);
 
   // Sort categories alphabetically and numerically
   const sortedCategories = [...categories].sort((a, b) => {
@@ -117,7 +136,7 @@ export function FilterPanel({
   };
 
   return (
-    <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow p-2 sm:p-4">
+    <div ref={panelRef} className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow p-2 sm:p-4">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center space-x-2">
           <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600 dark:text-yellow-400" />

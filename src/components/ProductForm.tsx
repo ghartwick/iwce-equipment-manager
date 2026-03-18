@@ -93,6 +93,13 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate custom site if "Other" is selected
+    if (showCustomSite && !customSite.trim()) {
+      alert('Please enter a custom site name');
+      return;
+    }
+    
     try {
       onSubmit(formData);
     } catch (error) {
@@ -132,7 +139,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   };
 
   return (
-    <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-4 sm:p-6">
+    <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-4 sm:p-6">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
           {formTitle}
@@ -171,7 +178,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
                 isEditing && !canEditRestrictedFields
                   ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'border-yellow-600 bg-white dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
               }`}
               placeholder="Enter equipment name"
             />
@@ -189,7 +196,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
                 isEditing && !canEditRestrictedFields
                   ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'border-yellow-600 bg-white dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
               }`}
               placeholder="Optional serial number"
             />
@@ -207,7 +214,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
                 isEditing && !canEditRestrictedFields
                   ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'border-yellow-600 bg-white dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
               }`}
             >
               <option value="">Select a category</option>
@@ -227,7 +234,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               type="text"
               value={formData.employee}
               onChange={(e) => handleInputChange('employee', e.target.value)}
-              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-white dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
             />
           </div>
 
@@ -238,7 +245,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
             <select
               value={showCustomSite ? 'OTHER' : formData.site}
               onChange={(e) => handleSiteChange(e.target.value)}
-              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-white dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
             >
               <option value="">Select a site</option>
               {sortedSites.map((site) => (
@@ -254,7 +261,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
                 value={customSite}
                 onChange={(e) => handleCustomSiteChange(e.target.value)}
                 placeholder="Enter custom site name"
-                className="w-full mt-2 px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-white dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                className="w-full mt-2 px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
                 autoFocus
               />
             )}
@@ -262,7 +269,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
 
           <div>
             <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-              Repair
+              Alert
             </label>
             <div className="flex items-center space-x-3">
               <label className="relative inline-flex items-center cursor-pointer">
@@ -283,14 +290,14 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
         {formData.repair && (
           <div className="mt-2 sm:mt-3">
             <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-              Repair Description
+              Alert Description
             </label>
             <textarea
               rows={3}
               value={formData.repairDescription}
               onChange={(e) => handleInputChange('repairDescription', e.target.value)}
-              placeholder="Describe the repair needed or repair details..."
-              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-white dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+              placeholder="Describe the alert or issue details..."
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
             />
           </div>
         )}

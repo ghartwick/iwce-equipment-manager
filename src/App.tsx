@@ -104,7 +104,8 @@ function App() {
       const updatedEquipment: Equipment = {
         ...editingProduct,
         ...productData,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        lastModifiedBy: user.name
       };
       
       // Track the change in history
@@ -115,7 +116,7 @@ function App() {
         editingProduct
       );
       
-      updateProduct(editingProduct.id, productData);
+      updateProduct(editingProduct.id, updatedEquipment);
       setEditingProduct(null);
     }
   };

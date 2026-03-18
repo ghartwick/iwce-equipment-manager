@@ -117,16 +117,16 @@ export function FilterPanel({
   };
 
   return (
-    <div className="bg-black border border-yellow-600 rounded-lg shadow p-2 sm:p-4">
+    <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow p-2 sm:p-4">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center space-x-2">
-          <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400" />
-          <h3 className="text-xs sm:text-sm font-medium text-yellow-400">Categories</h3>
+          <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600 dark:text-yellow-400" />
+          <h3 className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-400">Categories</h3>
         </div>
         <div className="flex items-center space-x-1">
           <button
             onClick={() => setIsCategoryFormCollapsed(!isCategoryFormCollapsed)}
-            className="p-1 text-yellow-400 hover:text-yellow-300"
+            className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
             title={isCategoryFormCollapsed ? "Expand Category Form" : "Collapse Category Form"}
           >
             {isCategoryFormCollapsed ? (
@@ -138,7 +138,7 @@ export function FilterPanel({
           {userRole === 'admin' && (
             <button
               onClick={() => setShowAddCategory(!showAddCategory)}
-              className="p-1 text-yellow-400 hover:text-yellow-300"
+              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
               title="Add Category"
             >
               <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -150,13 +150,13 @@ export function FilterPanel({
       {!isCategoryFormCollapsed && (
         <>
           {showAddCategory && (
-            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
+            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
               <input
                 type="text"
                 placeholder="Category name"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
-                className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-white dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
               />
               <div className="flex space-x-2">
                 <button
@@ -167,7 +167,7 @@ export function FilterPanel({
                 </button>
                 <button
                   onClick={() => setShowAddCategory(false)}
-                  className="px-2 py-1 sm:px-3 sm:py-1 bg-gray-300 text-gray-700 text-xs sm:text-sm rounded hover:bg-gray-400"
+                  className="px-2 py-1 sm:px-3 sm:py-1 bg-gray-200 dark:bg-gray-300 text-gray-700 text-xs sm:text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-400"
                 >
                   Cancel
                 </button>
@@ -176,14 +176,14 @@ export function FilterPanel({
           )}
 
           {editingCategoryId && (
-            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
-              <h4 className="text-xs sm:text-sm font-medium text-yellow-200">Edit Category</h4>
+            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
+              <h4 className="text-xs sm:text-sm font-medium text-yellow-700 dark:text-yellow-200">Edit Category</h4>
               <input
                 type="text"
                 placeholder="Category name"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
-                className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-black text-yellow-100 placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-white dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
               />
               <div className="flex space-x-2">
                 <button
@@ -194,7 +194,7 @@ export function FilterPanel({
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="px-2 py-1 sm:px-3 sm:py-1 bg-gray-300 text-gray-700 text-xs sm:text-sm rounded hover:bg-gray-400"
+                  className="px-2 py-1 sm:px-3 sm:py-1 bg-gray-200 dark:bg-gray-300 text-gray-700 text-xs sm:text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-400"
                 >
                   Cancel
                 </button>
@@ -208,7 +208,7 @@ export function FilterPanel({
               className={`w-full text-left px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm ${
                 selectedCategory === 'all'
                   ? 'bg-yellow-600 text-black'
-                  : 'hover:bg-yellow-900 text-yellow-200'
+                  : 'hover:bg-yellow-100 dark:hover:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
               }`}
             >
               All Categories
@@ -219,7 +219,7 @@ export function FilterPanel({
                 className={`w-full px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors flex items-center justify-between group text-xs sm:text-sm ${
                   selectedCategory === category.id
                     ? 'bg-yellow-600 text-black'
-                    : 'hover:bg-yellow-900 text-yellow-200'
+                    : 'hover:bg-yellow-100 dark:hover:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
                 }`}
               >
                 <button

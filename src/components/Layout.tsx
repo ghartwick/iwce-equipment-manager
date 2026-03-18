@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock, MapPin, Wrench, Truck } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon } from 'lucide-react';
 import { UserManagement } from './UserManagement';
 import { SiteManagement } from './SiteManagement';
 import { SmallToolsManagement } from './SmallToolsManagement';
@@ -13,6 +14,7 @@ interface LayoutProps {
 
 function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -78,9 +80,9 @@ function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-white dark:bg-black transition-colors duration-200">
       {/* Header - Matching Original Style */}
-      <header className="bg-black border-b border-yellow-600">
+      <header className="bg-white dark:bg-black border-b border-yellow-600 transition-colors duration-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left Side - Logo + Title */}
@@ -91,16 +93,25 @@ function Layout({ children }: LayoutProps) {
                   alt="IWCE Logo" 
                   className="h-6 w-6 sm:h-8 sm:w-8"
                 />
-                <h1 className="text-lg sm:text-xl font-semibold text-yellow-400">Field Hub</h1>
+                <h1 className="text-lg sm:text-xl font-semibold text-yellow-600 dark:text-yellow-400">Field Hub</h1>
               </div>
             </div>
 
             {/* Right Side - Mobile Icons */}
             <div className="flex items-center space-x-2">
+              {/* Mobile Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 lg:hidden"
+                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </button>
+
               {/* Mobile Alert Icon */}
               <button
                 onClick={handleToggleAlerts}
-                className="relative p-2 text-yellow-400 hover:text-yellow-300 lg:hidden"
+                className="relative p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 lg:hidden"
               >
                 <Bell className="h-5 w-5" />
               </button>
@@ -108,7 +119,7 @@ function Layout({ children }: LayoutProps) {
               {/* Hamburger Menu - Moved to Right */}
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="p-2 text-yellow-400 hover:text-yellow-300 lg:hidden"
+                className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 lg:hidden"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -126,8 +137,8 @@ function Layout({ children }: LayoutProps) {
                       to={item.href}
                       className={`flex items-center px-2 py-1 rounded text-sm font-medium transition-colors ${
                         isActive(item.href)
-                          ? 'bg-yellow-900 text-yellow-100'
-                          : 'text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30'
+                          ? 'bg-yellow-200 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
+                          : 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30'
                       }`}
                       title={item.name}
                     >
@@ -150,9 +161,18 @@ function Layout({ children }: LayoutProps) {
               
               <button
                 onClick={handleToggleAlerts}
-                className="relative p-2 text-yellow-400 hover:text-yellow-300 transition-colors"
+                className="relative p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
               >
                 <Bell className="h-5 w-5" />
+              </button>
+
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
+                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
 
               {/* User Menu */}
@@ -163,26 +183,26 @@ function Layout({ children }: LayoutProps) {
                       e.stopPropagation();
                       setShowUserMenu(!showUserMenu);
                     }}
-                    className="flex items-center space-x-2 p-2 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors"
+                    className="flex items-center space-x-2 p-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 rounded-lg hover:bg-yellow-200 dark:hover:bg-opacity-50 transition-colors"
                     title="User Menu"
                   >
-                    <User className="h-4 w-4 text-yellow-400" />
-                    <ChevronDown className="h-3 w-3 text-yellow-400" />
+                    <User className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                    <ChevronDown className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
                   </button>
 
                   {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-64 bg-black border border-yellow-600 rounded-lg shadow-lg z-50">
-                      <div className="p-4 border-b border-yellow-800">
+                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-lg z-50">
+                      <div className="p-4 border-b border-yellow-200 dark:border-yellow-800">
                         <div className="flex items-center space-x-3">
                           <div className="h-10 w-10 bg-yellow-600 rounded-full flex items-center justify-center">
                             <User className="h-5 w-5 text-black" />
                           </div>
                           <div>
-                            <p className="text-yellow-100 font-medium">{user.name}</p>
+                            <p className="text-gray-900 dark:text-yellow-100 font-medium">{user.name}</p>
                             <p className={`text-xs ${getRoleColor(user.role)}`}>
                               {getRoleDisplay(user.role)}
                             </p>
-                            <p className="text-xs text-yellow-600">@{user.username}</p>
+                            <p className="text-xs text-yellow-700 dark:text-yellow-600">@{user.username}</p>
                           </div>
                         </div>
                       </div>
@@ -195,7 +215,7 @@ function Layout({ children }: LayoutProps) {
                             setShowUserManagement(true);
                             setShowUserMenu(false);
                           }}
-                          className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                         >
                           <Users className="h-4 w-4" />
                           <span>User Management</span>
@@ -210,7 +230,7 @@ function Layout({ children }: LayoutProps) {
                                 setShowSiteManagement(true);
                                 setShowUserMenu(false);
                               }}
-                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <MapPin className="h-4 w-4" />
                               <span>Manage Sites</span>
@@ -221,7 +241,7 @@ function Layout({ children }: LayoutProps) {
                                 setShowSmallToolsManagement(true);
                                 setShowUserMenu(false);
                               }}
-                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <Wrench className="h-4 w-4" />
                               <span>Manage Small Tools</span>
@@ -232,7 +252,7 @@ function Layout({ children }: LayoutProps) {
                                 setShowEquipmentManagement(true);
                                 setShowUserMenu(false);
                               }}
-                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <Truck className="h-4 w-4" />
                               <span>Manage Equipment</span>
@@ -245,7 +265,7 @@ function Layout({ children }: LayoutProps) {
                             e.stopPropagation();
                             handleLogout();
                           }}
-                          className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                         >
                           <LogOut className="h-4 w-4" />
                           <span>Sign Out</span>
@@ -260,7 +280,7 @@ function Layout({ children }: LayoutProps) {
 
           {/* Mobile Menu */}
           {showMobileMenu && (
-            <div className="lg:hidden border-t border-yellow-800">
+            <div className="lg:hidden border-t border-yellow-200 dark:border-yellow-800">
               <div className="px-4 py-4 space-y-3">
                 {/* Mobile Navigation */}
                 {navigation.map((item) => {
@@ -272,8 +292,8 @@ function Layout({ children }: LayoutProps) {
                       onClick={() => setShowMobileMenu(false)}
                       className={`flex items-center space-x-3 w-full p-3 rounded-lg transition-colors ${
                         isActive(item.href)
-                          ? 'bg-yellow-900 bg-opacity-70 border border-yellow-600 text-yellow-100'
-                          : 'bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 hover:bg-opacity-70'
+                          ? 'bg-yellow-200 dark:bg-yellow-900 dark:bg-opacity-70 border border-yellow-600 text-yellow-900 dark:text-yellow-100'
+                          : 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-opacity-70'
                       }`}
                     >
                       <Icon className="h-5 w-5" />
@@ -289,7 +309,7 @@ function Layout({ children }: LayoutProps) {
                       handleAddProduct(); 
                       setShowMobileMenu(false);
                     }}
-                    className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
+                    className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                   >
                     <Plus className="h-5 w-5" />
                     <span>Add Equipment</span>
@@ -304,7 +324,7 @@ function Layout({ children }: LayoutProps) {
                       setShowUserManagement(true);
                       setShowMobileMenu(false);
                     }}
-                    className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
+                    className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                   >
                     <Users className="h-5 w-5" />
                     <span>User Management</span>
@@ -313,18 +333,18 @@ function Layout({ children }: LayoutProps) {
                 
                 {/* Mobile User Identification Section */}
                 {user && (
-                  <div className="border-t border-yellow-800 pt-3">
-                    <div className="p-3 bg-yellow-900 bg-opacity-30 rounded-lg">
+                  <div className="border-t border-yellow-200 dark:border-yellow-800 pt-3">
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-30 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="h-10 w-10 bg-yellow-600 rounded-full flex items-center justify-center">
                           <User className="h-5 w-5 text-black" />
                         </div>
                         <div>
-                          <p className="text-yellow-100 font-medium">{user.name}</p>
+                          <p className="text-gray-900 dark:text-yellow-100 font-medium">{user.name}</p>
                           <p className={`text-xs ${getRoleColor(user.role)}`}>
                             {getRoleDisplay(user.role)}
                           </p>
-                          <p className="text-xs text-yellow-600">@{user.username}</p>
+                          <p className="text-xs text-yellow-700 dark:text-yellow-600">@{user.username}</p>
                         </div>
                       </div>
                     </div>
@@ -337,7 +357,7 @@ function Layout({ children }: LayoutProps) {
                       e.stopPropagation();
                       handleLogout(); 
                     }}
-                    className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
+                    className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                   >
                     <LogOut className="h-5 w-5" />
                     <span>Logout</span>

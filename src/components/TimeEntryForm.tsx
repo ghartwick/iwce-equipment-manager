@@ -99,15 +99,15 @@ const WorkEntrySection = ({
   
 
   return (
-    <div className="bg-yellow-900 bg-opacity-50 border border-yellow-800 rounded-lg p-4 space-y-4">
+    <div className="bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-300 dark:border-yellow-800 rounded-lg p-4 space-y-4">
       <div 
         className="flex justify-between items-center cursor-pointer"
         onClick={() => !isLocked && toggleCollapse(entry.id)}
       >
-        <h3 className="text-yellow-400 font-medium">
+        <h3 className="text-yellow-600 dark:text-yellow-400 font-medium">
               Entry {entryIndex + 1}
               {(entry.machineHours || entry.labourHours) && (
-                <span className="text-yellow-600 text-sm ml-2">
+                <span className="text-yellow-500 dark:text-yellow-600 text-sm ml-2">
                   {entry.machineHours && `M:${entry.machineHours}`}
                   {entry.machineHours && entry.labourHours && ' '}
                   {entry.labourHours && `L:${entry.labourHours}`}
@@ -123,14 +123,14 @@ const WorkEntrySection = ({
                 removeEntry(entry.id);
               }}
               disabled={isLocked}
-              className="text-red-400 hover:text-red-300 disabled:opacity-50"
+              className="text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 disabled:opacity-50"
             >
               Remove
             </button>
           )}
           <button
             type="button"
-            className="text-yellow-400 hover:text-yellow-200 disabled:opacity-50"
+            className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-200 disabled:opacity-50"
             disabled={isLocked}
           >
             {entry.collapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
@@ -147,7 +147,7 @@ const WorkEntrySection = ({
           value={entry.code}
           onChange={handleCodeChange}
           disabled={isLocked || user.role === 'field'}
-          className="w-full px-3 py-2 bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <option value="">Select Code</option>
           {codeOptionsWithDetails.map(codeOption => (
@@ -165,7 +165,7 @@ const WorkEntrySection = ({
             onChange={handleNotesChange}
             disabled={isLocked}
             rows={3}
-            className="w-full px-3 py-2 bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 resize-none"
+            className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 resize-none"
             placeholder="Add any notes about this time entry..."
           />
         </div>
@@ -176,7 +176,7 @@ const WorkEntrySection = ({
           value={entry.equipment}
           onChange={handleEquipmentChange}
           disabled={isLocked}
-          className="w-full px-3 py-2 bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+          className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
         >
           <option value="">Select Equipment</option>
           {equipmentOptions.map(equipmentOption => (
@@ -195,14 +195,14 @@ const WorkEntrySection = ({
             {entry.smallTools.map((tool, index) => (
               <div
                 key={index}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-900 bg-opacity-30 border border-yellow-700 rounded text-yellow-100 text-sm"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 border border-yellow-400 dark:border-yellow-700 rounded text-gray-800 dark:text-yellow-100 text-sm"
               >
                 {tool}
                 <button
                   type="button"
                   onClick={() => removeSmallTool(entry.id, tool)}
                   disabled={isLocked}
-                  className="text-yellow-400 hover:text-yellow-200 disabled:opacity-50"
+                  className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-200 disabled:opacity-50"
                 >
                   ×
                 </button>
@@ -221,7 +221,7 @@ const WorkEntrySection = ({
             }
           }}
           disabled={isLocked}
-          className="w-full px-3 py-2 bg-black border border-yellow-800 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+          className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
         >
           <option value="">Select Small Tools</option>
           {smallToolsOptions.filter(option => !entry.smallTools.includes(option)).map(smallToolsOption => (
@@ -236,7 +236,7 @@ const WorkEntrySection = ({
       <div className="flex gap-2 sm:gap-4 overflow-x-auto">
         {/* Machine Hours */}
         <div className="flex flex-col flex-shrink-0 min-w-0">
-          <label className="block text-xs font-medium text-yellow-600 mb-1 whitespace-nowrap">
+          <label className="block text-xs font-medium text-yellow-600 dark:text-yellow-600 mb-1 whitespace-nowrap">
             Machine Hrs
           </label>
           <input
@@ -244,8 +244,8 @@ const WorkEntrySection = ({
             value={entry.machineHours}
             onChange={handleMachineHoursChange}
             disabled={isLocked}
-            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
-              !hoursMatch ? 'border-red-500' : 'border-yellow-800'
+            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-white dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+              !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
             }`}
             maxLength={5}
             inputMode="decimal"
@@ -255,7 +255,7 @@ const WorkEntrySection = ({
 
         {/* Labour Hours */}
         <div className="flex flex-col flex-shrink-0 min-w-0">
-          <label className="block text-xs font-medium text-yellow-600 mb-1 whitespace-nowrap">
+          <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
             Labour Hrs
           </label>
           <input
@@ -263,8 +263,8 @@ const WorkEntrySection = ({
             value={entry.labourHours}
             onChange={handleLabourHoursChange}
             disabled={isLocked}
-            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
-              !hoursMatch ? 'border-red-500' : 'border-yellow-800'
+            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-white dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+              !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
             }`}
             maxLength={5}
             inputMode="decimal"
@@ -779,38 +779,38 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const showButtons = (canEdit && !isLocked) || (!entry && selectedEntryId === null);
 
   return (
-    <div className="bg-black border border-yellow-600 rounded-lg p-6 relative">
+    <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6 relative">
       {/* X Button in Top Right Corner */}
       <button
         type="button"
         onClick={onCancel}
-        className="absolute top-4 right-4 text-yellow-400 hover:text-yellow-200 text-2xl font-bold leading-none w-8 h-8 flex items-center justify-center rounded hover:bg-yellow-900 hover:bg-opacity-20 transition-colors"
+        className="absolute top-4 right-4 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-200 text-2xl font-bold leading-none w-8 h-8 flex items-center justify-center rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-20 transition-colors"
       >
         ×
       </button>
       
-      <h3 className="text-lg font-semibold text-yellow-300 mb-1 pr-8">
+      <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-1 pr-8">
         {entry ? `Time Card ${entry.entryNumber || 'New'}` : 'New Time Card'} - {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
       </h3>
       
-      <div className="text-yellow-600 text-sm mb-4">
+      <div className="text-yellow-700 dark:text-yellow-600 text-sm mb-4">
         {entryOwnerName || user.name || user.username}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Site Dropdown */}
         <div>
-          <label className="block text-sm font-medium text-yellow-600 mb-1">
+          <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-1">
             Site
           </label>
           <select
             value={job}
             onChange={(e) => setJob(e.target.value)}
             disabled={isLocked}
-            className={`w-full px-3 py-2 bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+            className={`w-full px-3 py-2 bg-white dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
               isLocked 
-                ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
-                : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
+                ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
+                : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
             }`}
           >
             <option value="">Select Site</option>
@@ -826,17 +826,17 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         <div className="flex gap-1 sm:gap-2 overflow-x-auto">
             {/* Clock In */}
             <div className="flex flex-col flex-shrink-0 min-w-0">
-              <label className="block text-xs font-medium text-yellow-600 mb-1 whitespace-nowrap">
+              <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
                 Clock In
               </label>
               <select
                 value={clockIn}
                 onChange={(e) => setClockIn(e.target.value)}
                 disabled={isLocked}
-                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-white dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
-                    ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
-                    : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
+                    ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
+                    : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
                 }`}
                 required
               >
@@ -851,17 +851,17 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
             {/* Clock Out */}
             <div className="flex flex-col flex-shrink-0 min-w-0">
-              <label className="block text-xs font-medium text-yellow-600 mb-1 whitespace-nowrap">
+              <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
                 Clock Out
               </label>
               <select
                 value={clockOut}
                 onChange={(e) => setClockOut(e.target.value)}
                 disabled={isLocked}
-                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-black border rounded-lg text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-white dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
-                    ? 'border-red-600 bg-red-900 bg-opacity-20 text-red-300' 
-                    : 'border-yellow-800 focus:border-yellow-400 disabled:opacity-50'
+                    ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
+                    : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
                 }`}
                 required
               >
@@ -876,20 +876,20 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
             {/* Total Hours */}
             <div className="flex flex-col flex-shrink-0 min-w-0">
-              <label className="block text-xs font-medium text-yellow-600 mb-1 whitespace-nowrap">
+              <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
                 Total Hours
               </label>
               <input
                 type="text"
                 value={hours}
                 readOnly
-                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-gray-900 dark:text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
                   isLocked 
-                    ? 'bg-red-900 bg-opacity-20 border-red-600 text-red-300' 
-                    : 'bg-yellow-900 bg-opacity-20 border rounded-lg'
+                    ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-20 border-red-600 text-red-600 dark:text-red-300' 
+                    : 'bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-20 border rounded-lg'
                 } ${
                   !isLocked && !hoursMatch ? 'border-red-500' : 
-                  !isLocked ? 'border-yellow-800' : ''
+                  !isLocked ? 'border-yellow-400 dark:border-yellow-800' : ''
                 }`}
                 maxLength={3}
               />
@@ -898,7 +898,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
         {/* Work Entries */}
         <div className="space-y-4">
-          <h3 className="text-yellow-400 font-medium">Work Entries</h3>
+          <h3 className="text-yellow-600 dark:text-yellow-400 font-medium">Work Entries</h3>
           {workEntries.map((entry, index) => (
             <WorkEntrySection 
               key={entry.id} 
@@ -945,7 +945,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 <button
                   type="button"
                   onClick={handleSubmitSubmit}
-                  className="flex-1 p-2 bg-yellow-900 bg-opacity-50 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
+                  className="flex-1 p-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-50 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-opacity-70 transition-colors"
                 >
                   Submit
                 </button>
@@ -956,7 +956,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 <button
                   type="button"
                   onClick={handleSubmitSubmit}
-                  className="flex-1 p-2 bg-yellow-900 bg-opacity-50 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
+                  className="flex-1 p-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-50 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-opacity-70 transition-colors"
                 >
                   Submit
                 </button>
@@ -966,7 +966,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         </div>
 
         {isLocked && (
-          <div className="bg-red-900 bg-opacity-20 border border-red-600 rounded-lg p-3 mb-4">
+          <div className="bg-red-100 dark:bg-red-900 dark:bg-opacity-20 border border-red-600 rounded-lg p-3 mb-4">
             <div className="flex items-center justify-center space-x-2">
               <span className="text-red-400 text-lg">🔒</span>
               <p className="text-sm text-red-400 font-medium text-center">

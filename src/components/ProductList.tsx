@@ -84,19 +84,19 @@ export function ProductList({
 
   if (products.length === 0) {
     return (
-      <div className="bg-black border border-yellow-600 rounded-lg shadow p-8 text-center">
-        <Package className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-yellow-300 mb-2">No equipment found</h3>
+      <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow p-8 text-center">
+        <Package className="h-12 w-12 text-yellow-600 dark:text-yellow-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-2">No equipment found</h3>
         <p className="text-yellow-600">Get started by adding your first equipment to the inventory.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+    <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
       {/* Header with export button */}
-      <div className="bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
-        <h2 className="text-lg font-semibold text-yellow-300">Equipment Inventory</h2>
+      <div className="bg-yellow-100 dark:bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
+        <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300">Equipment Inventory</h2>
         {userRole === 'admin' && (
           <div className="flex items-center space-x-2">
             <input
@@ -127,17 +127,17 @@ export function ProductList({
       </div>
       
       <div className="overflow-x-auto">
-        <table className="w-full max-w-[100vw] divide-y divide-yellow-800">
-          <thead className="bg-yellow-900">
+        <table className="w-full max-w-[100vw] divide-y divide-yellow-200 dark:divide-yellow-800">
+          <thead className="bg-yellow-100 dark:bg-yellow-900">
             <tr>
-              <th className="w-[70%] px-2 py-3 text-left text-xs font-medium text-yellow-200 uppercase tracking-wider">
+              <th className="w-[70%] px-2 py-3 text-left text-xs font-medium text-yellow-700 dark:text-yellow-200 uppercase tracking-wider">
                 Equipment
               </th>
-              <th className="w-[30%] px-1 py-3 text-center text-xs font-medium text-yellow-200 uppercase tracking-wider">
+              <th className="w-[30%] px-1 py-3 text-center text-xs font-medium text-yellow-700 dark:text-yellow-200 uppercase tracking-wider">
               </th>
             </tr>
           </thead>
-          <tbody className="bg-black divide-y divide-yellow-800">
+          <tbody className="bg-white dark:bg-black divide-y divide-yellow-200 dark:divide-yellow-800">
             {showCategoryHeadings ? (
               // Group by category with headings
               (() => {
@@ -167,16 +167,16 @@ export function ProductList({
                         <tr 
                           className={`
                             ${selectedEquipmentId === product.id 
-                              ? (product.repair ? "bg-red-900" : "bg-yellow-900") 
-                              : (product.repair ? "bg-red-950" : "bg-black")
+                              ? (product.repair ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
+                              : (product.repair ? "bg-red-100 dark:bg-red-950" : "bg-white dark:bg-black")
                             } 
                             transition-all duration-200
                           `}
                         >
                           <td className="w-[70%] px-2 py-4">
                             <div className="max-w-xs">
-                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-400" : "text-yellow-100"} break-words`}>{product.name}</div>
-                              <div className="text-xs sm:text-sm text-yellow-600">
+                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>{product.name}</div>
+                              <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600">
                                 {product.employee && <div className="break-words">{product.employee}</div>}
                                 {product.site && <div className="break-words">{product.site}</div>}
                                 {product.repair && (
@@ -201,7 +201,7 @@ export function ProductList({
                                       onEdit(product);
                                     }
                                   }}
-                                  className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-300 bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-800 hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                                  className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
                                   title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
                                 >
                                   <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
@@ -214,8 +214,8 @@ export function ProductList({
                         {/* Inline Edit Form */}
                         {selectedEquipmentId === product.id && (
                           <tr>
-                            <td colSpan={2} className="px-0 py-0 border-t border-yellow-800">
-                              <div className="bg-yellow-900">
+                            <td colSpan={2} className="px-0 py-0 border-t border-yellow-200 dark:border-yellow-800">
+                              <div className="bg-yellow-50 dark:bg-yellow-900">
                                 <ProductForm
                                   categories={categories}
                                   product={selectedProduct}
@@ -258,16 +258,16 @@ export function ProductList({
                         <tr 
                           className={`
                             ${selectedEquipmentId === product.id 
-                              ? (product.repair ? "bg-red-900" : "bg-yellow-900") 
-                              : (product.repair ? "bg-red-950" : "bg-black")
+                              ? (product.repair ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
+                              : (product.repair ? "bg-red-100 dark:bg-red-950" : "bg-white dark:bg-black")
                             } 
                             transition-all duration-200
                           `}
                         >
                           <td className="w-[70%] px-2 py-4">
                             <div className="max-w-xs">
-                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-400" : "text-yellow-100"} break-words`}>{product.name}</div>
-                              <div className="text-xs sm:text-sm text-yellow-600">
+                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>{product.name}</div>
+                              <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600">
                                 {product.employee && <div className="break-words">{product.employee}</div>}
                                 {product.site && <div className="break-words">{product.site}</div>}
                                 {product.repair && (
@@ -292,7 +292,7 @@ export function ProductList({
                                       onEdit(product);
                                     }
                                   }}
-                                  className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-300 bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-800 hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                                  className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
                                   title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
                                 >
                                   <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
@@ -305,8 +305,8 @@ export function ProductList({
                         {/* Inline Edit Form */}
                         {selectedEquipmentId === product.id && (
                           <tr>
-                            <td colSpan={2} className="px-0 py-0 border-t border-yellow-800">
-                              <div className="bg-yellow-900">
+                            <td colSpan={2} className="px-0 py-0 border-t border-yellow-200 dark:border-yellow-800">
+                              <div className="bg-yellow-50 dark:bg-yellow-900">
                                 <ProductForm
                                   categories={categories}
                                   product={selectedProduct}

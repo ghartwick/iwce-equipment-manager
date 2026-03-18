@@ -212,7 +212,7 @@ function App() {
 
           {/* Desktop Equipment Table - Original Design */}
           <div className="max-w-4xl mx-auto">
-            <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
               <div className="p-6">
                 {/* Search Field - Above */}
                 <div className="mb-4">
@@ -291,7 +291,7 @@ function App() {
             )}
 
             {/* Mobile Equipment Table - Optimized */}
-            <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
               <div className="p-2 sm:p-3">
                 <div className="flex flex-col space-y-2">
                   {/* Search - Mobile Full Width */}

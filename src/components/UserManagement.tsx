@@ -159,8 +159,8 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-black border border-yellow-600 rounded-lg p-6">
-          <div className="text-yellow-400">Loading users...</div>
+        <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6">
+          <div className="text-yellow-600 dark:text-yellow-400">Loading users...</div>
         </div>
       </div>
     );
@@ -168,13 +168,13 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-yellow-900 bg-opacity-30 px-6 py-4 border-b border-yellow-700 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-yellow-300">User Management</h2>
+        <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">User Management</h2>
           <button
             onClick={onClose}
-            className="text-yellow-400 hover:text-yellow-300 transition-colors"
+            className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
           >
             <X className="h-6 w-6" />
           </button>
@@ -184,12 +184,12 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           {/* Alerts */}
           {error && (
-            <div className="mb-4 p-3 bg-red-900 bg-opacity-30 border border-red-600 rounded-lg text-red-300">
+            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 dark:bg-opacity-30 border border-red-600 rounded-lg text-red-600 dark:text-red-300">
               {error}
             </div>
           )}
           {success && (
-            <div className="mb-4 p-3 bg-green-900 bg-opacity-30 border border-green-600 rounded-lg text-green-300">
+            <div className="mb-4 p-3 bg-green-100 dark:bg-green-900 dark:bg-opacity-30 border border-green-600 rounded-lg text-green-700 dark:text-green-300">
               {success}
             </div>
           )}
@@ -209,28 +209,28 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
 
           {/* Add User Form */}
           {showAddForm && (
-            <div className="mb-6 p-4 bg-yellow-900 bg-opacity-20 border border-yellow-700 rounded-lg">
-              <h3 className="text-lg font-medium text-yellow-300 mb-4">Add New User</h3>
+            <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+              <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-4">Add New User</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-yellow-300 mb-1">Username</label>
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Username</label>
                     <input
                       type="text"
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                      className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-yellow-300 mb-1">Password</label>
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Password</label>
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full px-3 py-2 pr-10 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        className="w-full px-3 py-2 pr-10 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                         required
                       />
                       <button
@@ -244,21 +244,21 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-yellow-300 mb-1">Full Name</label>
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Full Name</label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-yellow-300 mb-1">Role</label>
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Role</label>
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value as FormDataRole })}
-                      className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
                       <option value="field">Field</option>
                       <option value="supervisor">Supervisor</option>
@@ -272,9 +272,9 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                     id="isActive"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="w-4 h-4 text-yellow-500 bg-black border-yellow-600 rounded focus:ring-yellow-500"
+                    className="w-4 h-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
                   />
-                  <label htmlFor="isActive" className="text-sm text-yellow-300">Active User</label>
+                  <label htmlFor="isActive" className="text-sm text-yellow-700 dark:text-yellow-300">Active User</label>
                 </div>
                 <div className="flex space-x-3">
                   <button
@@ -290,7 +290,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                       setError(null);
                       setSuccess(null);
                     }}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
                   >
                     Cancel
                   </button>
@@ -321,23 +321,23 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                   <div key={role}>
                     {/* Role Header */}
                     <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-yellow-300 flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 flex items-center space-x-2">
                         {role === 'admin' && <Shield className="h-5 w-5 text-red-400" />}
                         {role === 'supervisor' && <Users className="h-5 w-5 text-purple-400" />}
                         {role === 'field' && <Wrench className="h-5 w-5 text-blue-400" />}
                         <span className="capitalize">{role}s ({roleUsers.length})</span>
                         {(currentUser?.role === 'supervisor' || currentUser?.role === 'field') && (
-                          <span className="text-xs text-yellow-600 ml-2">(Your Profile Only)</span>
+                          <span className="text-xs text-yellow-700 dark:text-yellow-600 ml-2">(Your Profile Only)</span>
                         )}
                       </h3>
-                      <div className="h-px bg-yellow-700 mt-2"></div>
+                      <div className="h-px bg-yellow-200 dark:bg-yellow-700 mt-2"></div>
                     </div>
                     
                     {/* Users in this role */}
                     <div className="space-y-3">
                       {roleUsers.map((user) => (
                         <React.Fragment key={user.id}>
-                          <div className="bg-yellow-900 bg-opacity-10 border border-yellow-700 rounded-lg p-4">
+                          <div className="bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-4">
                                 {/* Role Icon - Hidden on Mobile */}
@@ -358,13 +358,13 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                 {/* User Info */}
                                 <div>
                                   <div className="flex items-center space-x-2">
-                                    <h3 className="font-medium text-yellow-100">{user.name}</h3>
-                                    <span className={`px-2 py-1 text-xs rounded-full ${user.isActive ? 'bg-green-900 bg-opacity-30 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
+                                    <h3 className="font-medium text-gray-900 dark:text-yellow-100">{user.name}</h3>
+                                    <span className={`px-2 py-1 text-xs rounded-full ${user.isActive ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-400' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
                                       {user.isActive ? 'Active' : 'Inactive'}
                                     </span>
                                   </div>
-                                  <div className="text-sm text-yellow-600">@{user.username}</div>
-                                  <div className="text-xs text-yellow-700 capitalize">{user.role}</div>
+                                  <div className="text-sm text-yellow-700 dark:text-yellow-600">@{user.username}</div>
+                                  <div className="text-xs text-yellow-700 dark:text-yellow-700 capitalize">{user.role}</div>
                                 </div>
                               </div>
 
@@ -374,7 +374,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                 {currentUser?.role === 'admin' && (
                                   <button
                                     onClick={() => handleToggleActive(user)}
-                                    className={`p-2 rounded-lg transition-colors ${user.isActive ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-500 hover:text-gray-400'}`}
+                                    className={`p-2 rounded-lg transition-colors ${user.isActive ? 'text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300' : 'text-gray-500 hover:text-gray-400'}`}
                                     title={user.isActive ? 'Deactivate User' : 'Activate User'}
                                   >
                                     {user.isActive ? <Check className="h-4 w-4" /> : <XIcon className="h-4 w-4" />}
@@ -385,7 +385,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                 {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
                                   <button
                                     onClick={() => handleEdit(user)}
-                                    className="p-2 text-yellow-400 hover:text-yellow-300 transition-colors"
+                                    className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
                                     title="Edit User"
                                   >
                                     <Edit2 className="h-4 w-4" />
@@ -396,7 +396,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                 {currentUser?.role === 'admin' && (
                                   <button
                                     onClick={() => handleDelete(user)}
-                                    className="p-2 text-red-400 hover:text-red-300 transition-colors"
+                                    className="p-2 text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
                                     title="Delete User"
                                     disabled={user.id === currentUser?.id}
                                   >
@@ -409,27 +409,27 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
 
                           {/* Inline Edit Form - Shows below selected user */}
                           {editingUser && editingUser.id === user.id && (
-                            <div className="bg-yellow-900 bg-opacity-20 border border-yellow-700 rounded-lg p-4 mt-2">
-                              <h3 className="text-lg font-medium text-yellow-300 mb-4">Edit User</h3>
+                            <div className="bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 mt-2">
+                              <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-4">Edit User</h3>
                               <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div>
-                                    <label className="block text-sm font-medium text-yellow-300 mb-1">Username</label>
+                                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Username</label>
                                     <input
                                       type="text"
                                       value={formData.username}
                                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                      className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                       required
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-medium text-yellow-300 mb-1">Name</label>
+                                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Name</label>
                                     <input
                                       type="text"
                                       value={formData.name}
                                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                      className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                       required
                                     />
                                   </div>
@@ -454,14 +454,14 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                     <p className="text-xs text-yellow-600 mt-1">Current password is shown for reference</p>
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-medium text-yellow-300 mb-1">New Password</label>
+                                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">New Password</label>
                                     <div className="relative">
                                       <input
                                         type={showPassword ? "text" : "password"}
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                         placeholder="Leave blank to keep current password"
-                                        className="w-full px-3 py-2 pr-10 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        className="w-full px-3 py-2 pr-10 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                       />
                                       <button
                                         type="button"
@@ -474,11 +474,11 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                     </div>
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-medium text-yellow-300 mb-1">Role</label>
+                                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Role</label>
                                     <select
                                       value={formData.role}
                                       onChange={(e) => setFormData({ ...formData, role: e.target.value as FormDataRole })}
-                                      className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     >
                                       <option value="field">Field</option>
                                       <option value="supervisor">Supervisor</option>
@@ -486,11 +486,11 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                     </select>
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-medium text-yellow-300 mb-1">Status</label>
+                                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Status</label>
                                     <select
                                       value={formData.isActive ? 'true' : 'false'}
                                       onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'true' })}
-                                      className="w-full px-3 py-2 bg-black border border-yellow-600 rounded-lg text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     >
                                       <option value="true">Active</option>
                                       <option value="false">Inactive</option>
@@ -511,7 +511,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                       setError(null);
                                       setSuccess(null);
                                     }}
-                                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
                                   >
                                     Cancel
                                   </button>

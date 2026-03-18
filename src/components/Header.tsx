@@ -85,7 +85,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
   };
 
   return (
-    <header className="bg-black border-b border-yellow-600">
+    <header className="bg-white dark:bg-black border-b border-yellow-600">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-3">
@@ -94,13 +94,13 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
               alt="IWCE Logo" 
               className="h-6 w-6 sm:h-8 sm:w-8"
             />
-            <h1 className="text-lg sm:text-xl font-semibold text-yellow-400">IWCE Equipment</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-yellow-600 dark:text-yellow-400">IWCE Equipment</h1>
           </div>
           
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="p-2 text-yellow-400 hover:text-yellow-300 lg:hidden"
+            className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 lg:hidden"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -108,7 +108,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
           {/* Mobile Alert Icon */}
           <button
             onClick={onToggleAlerts}
-            className="relative p-2 text-yellow-400 hover:text-yellow-300 lg:hidden"
+            className="relative p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 lg:hidden"
           >
             <Bell className="h-5 w-5" />
             {alertCount > 0 && (
@@ -130,7 +130,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
             
             <button
               onClick={onToggleAlerts}
-              className="relative p-2 text-yellow-400 hover:text-yellow-300 transition-colors"
+              className="relative p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
             >
               <Bell className="h-5 w-5" />
               {alertCount > 0 && (
@@ -145,26 +145,26 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
               <div className="relative">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-2 p-2 bg-yellow-900 bg-opacity-30 rounded-lg hover:bg-opacity-50 transition-colors"
+                  className="flex items-center space-x-2 p-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 rounded-lg hover:bg-yellow-200 dark:hover:bg-opacity-50 transition-colors"
                   title="User Menu"
                 >
-                  <User className="h-4 w-4 text-yellow-400" />
-                  <ChevronDown className="h-3 w-3 text-yellow-400" />
+                  <User className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                  <ChevronDown className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-64 bg-black border border-yellow-600 rounded-lg shadow-lg z-50">
-                    <div className="p-4 border-b border-yellow-800">
+                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-lg z-50">
+                    <div className="p-4 border-b border-yellow-200 dark:border-yellow-800">
                       <div className="flex items-center space-x-3">
                         <div className="h-10 w-10 bg-yellow-600 rounded-full flex items-center justify-center">
                           <User className="h-5 w-5 text-black" />
                         </div>
                         <div>
-                          <p className="text-yellow-100 font-medium">{user.name}</p>
+                          <p className="text-gray-900 dark:text-yellow-100 font-medium">{user.name}</p>
                           <p className={`text-xs ${getRoleColor(user.role)}`}>
                             {getRoleDisplay(user.role)}
                           </p>
-                          <p className="text-xs text-yellow-600">@{user.username}</p>
+                          <p className="text-xs text-yellow-700 dark:text-yellow-600">@{user.username}</p>
                         </div>
                       </div>
                     </div>
@@ -174,7 +174,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
                         <button
                           onClick={handleDeleteOrphanedEquipment}
                           disabled={isDeleting}
-                          className="w-full flex items-center space-x-2 px-3 py-2 text-red-400 hover:bg-red-900 hover:bg-opacity-30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 dark:hover:bg-opacity-30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="h-4 w-4" />
                           <span>{isDeleting ? 'Deleting...' : 'Delete Orphaned Equipment'}</span>
@@ -182,7 +182,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
                       )}
                       <button
                         onClick={onLogout}
-                        className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                       >
                         <LogOut className="h-4 w-4" />
                         <span>Sign Out</span>
@@ -197,11 +197,11 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
 
         {/* Mobile Menu */}
         {showMobileMenu && (
-          <div className="lg:hidden border-t border-yellow-800">
+          <div className="lg:hidden border-t border-yellow-200 dark:border-yellow-800">
             <div className="px-4 py-4 space-y-3">
               <button
                 onClick={() => { onAddProduct(); setShowMobileMenu(false); }}
-                className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
+                className="flex items-center space-x-3 w-full p-3 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-opacity-70 transition-colors"
               >
                 <Plus className="h-5 w-5" />
                 <span>Add Equipment</span>
@@ -209,7 +209,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
               {user && (
                 <button
                   onClick={() => { onLogout(); setShowMobileMenu(false); }}
-                  className="flex items-center space-x-3 w-full p-3 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-300 rounded-lg hover:bg-opacity-70 transition-colors"
+                  className="flex items-center space-x-3 w-full p-3 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-opacity-70 transition-colors"
                 >
                   <LogOut className="h-5 w-5" />
                   <span>Logout</span>

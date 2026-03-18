@@ -53,19 +53,19 @@ export function LoginPage({ onLogin, error }: LoginProps) {
         </div>
 
         {/* Login Form */}
-        <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-8">
+        <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Message */}
             {error && (
-              <div className="flex items-center space-x-2 p-3 bg-red-900 border border-red-600 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-red-400" />
-                <span className="text-red-300 text-sm">{error}</span>
+              <div className="flex items-center space-x-2 p-3 bg-red-100 dark:bg-red-900 border border-red-600 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400" />
+                <span className="text-red-700 dark:text-red-300 text-sm">{error}</span>
               </div>
             )}
 
             {/* Username Field */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-yellow-400 mb-2">
+              <label htmlFor="username" className="block text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">
                 Username
               </label>
               <div className="relative">
@@ -77,7 +77,7 @@ export function LoginPage({ onLogin, error }: LoginProps) {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 bg-black border border-yellow-600 rounded-lg text-yellow-100 placeholder-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className="block w-full pl-10 pr-3 py-3 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   placeholder="Enter your username"
                   required
                 />
@@ -86,7 +86,7 @@ export function LoginPage({ onLogin, error }: LoginProps) {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-yellow-400 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -98,7 +98,7 @@ export function LoginPage({ onLogin, error }: LoginProps) {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-10 py-3 bg-black border border-yellow-600 rounded-lg text-yellow-100 placeholder-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                  className="block w-full pl-10 pr-10 py-3 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   placeholder="Enter your password"
                   required
                 />
@@ -121,9 +121,9 @@ export function LoginPage({ onLogin, error }: LoginProps) {
               <input
                 id="remember"
                 type="checkbox"
-                className="h-4 w-4 bg-black border-yellow-600 rounded focus:ring-yellow-500 focus:ring-2 text-yellow-500"
+                className="h-4 w-4 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500 focus:ring-2 text-yellow-500"
               />
-              <label htmlFor="remember" className="ml-2 block text-sm text-yellow-300">
+              <label htmlFor="remember" className="ml-2 block text-sm text-yellow-700 dark:text-yellow-300">
                 Remember me
               </label>
             </div>
@@ -132,7 +132,7 @@ export function LoginPage({ onLogin, error }: LoginProps) {
             <button
               type="submit"
               disabled={isLoading || !username || !password}
-              className="w-full flex justify-center items-center py-3 px-4 bg-yellow-500 text-black font-medium rounded-lg hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex justify-center items-center py-3 px-4 bg-yellow-500 text-black font-medium rounded-lg hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <div className="flex items-center space-x-2">

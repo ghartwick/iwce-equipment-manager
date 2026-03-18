@@ -64,24 +64,24 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
   }
 
   return (
-    <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-6">
+    <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-yellow-400 flex items-center space-x-2">
+        <h2 className="text-lg font-semibold text-yellow-600 dark:text-yellow-400 flex items-center space-x-2">
           <Clock className="h-5 w-5" />
           <span>Equipment Edit History</span>
         </h2>
         <button
           onClick={onClose}
-          className="p-1 text-yellow-400 hover:text-yellow-300"
+          className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
         >
           <X className="h-5 w-5" />
         </button>
       </div>
 
-      <div className="mb-4 p-3 bg-yellow-900 rounded-lg">
-        <h3 className="text-sm font-medium text-yellow-300 mb-1">Current Equipment</h3>
-        <p className="text-yellow-100 font-medium">{equipment.name}</p>
-        <p className="text-yellow-600 text-sm">Serial: {equipment.serialNumber}</p>
+      <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+        <h3 className="text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Current Equipment</h3>
+        <p className="text-gray-900 dark:text-yellow-100 font-medium">{equipment.name}</p>
+        <p className="text-yellow-700 dark:text-yellow-600 text-sm">Serial: {equipment.serialNumber}</p>
       </div>
 
       <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -110,8 +110,8 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
               {entry.changes && entry.changes.length > 0 && (
                 <div className="mt-0.5 space-y-0">
                   {entry.changes.map((change, index) => (
-                    <div key={index} className="text-xs bg-black bg-opacity-30 rounded p-1">
-                      <span className="font-medium capitalize">{change.field}:</span> <span className="text-green-400">{change.newValue || '(empty)'}</span>
+                    <div key={index} className="text-xs bg-gray-100 dark:bg-black dark:bg-opacity-30 rounded p-1">
+                      <span className="font-medium capitalize">{change.field}:</span> <span className="text-green-600 dark:text-green-400">{change.newValue || '(empty)'}</span>
                     </div>
                   ))}
                 </div>

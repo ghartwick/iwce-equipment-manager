@@ -168,10 +168,10 @@ export default function TimecardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-          <div className="text-lg text-yellow-400">Loading timecard...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 dark:border-yellow-400 mx-auto mb-4"></div>
+          <div className="text-lg text-yellow-600 dark:text-yellow-400">Loading timecard...</div>
         </div>
       </div>
     );
@@ -258,32 +258,32 @@ export default function TimecardPage() {
 
 
   return (
-    <div className="min-h-screen bg-black text-yellow-100 p-4">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-yellow-100 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-yellow-400 mb-2">Timecard</h1>
+          <h1 className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-2">Timecard</h1>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
           {/* Calendar */}
-          <div className="bg-black border border-yellow-600 rounded-lg p-6">
+          <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6">
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
               <button
                 onClick={handlePreviousMonth}
-                className="p-2 text-yellow-400 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                className="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <h2 className="text-xl font-semibold text-yellow-300">
+              <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">
                 {format(currentMonth, 'MMMM yyyy')}
               </h2>
               <button
                 onClick={handleNextMonth}
-                className="p-2 text-yellow-400 hover:bg-yellow-900 hover:bg-opacity-30 rounded-lg transition-colors"
+                className="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -294,7 +294,7 @@ export default function TimecardPage() {
             {/* Week Days */}
             <div className="grid grid-cols-7 gap-2 mb-2">
               {weekDays.map(day => (
-                <div key={day} className="text-center text-xs font-medium text-yellow-600 py-2">
+                <div key={day} className="text-center text-xs font-medium text-yellow-700 dark:text-yellow-600 py-2">
                   {day}
                 </div>
               ))}
@@ -313,10 +313,10 @@ export default function TimecardPage() {
                     onClick={() => handleDateClick(day)}
                     className={`
                       relative p-2 text-sm rounded-lg border transition-all
-                      ${isCurrentMonth ? 'text-yellow-100' : 'text-yellow-700'}
+                      ${isCurrentMonth ? 'text-gray-800 dark:text-yellow-100' : 'text-yellow-600 dark:text-yellow-700'}
                       ${!isCurrentMonth ? 'opacity-50' : ''}
-                      ${isTodayDate && !isSelected ? 'border-yellow-400' : (!isTodayDate && !isSelected ? 'border-yellow-800' : '')}
-                      ${isSelected ? 'bg-green-900 bg-opacity-50 border-green-500' : 'hover:bg-yellow-900 hover:bg-opacity-30'}
+                      ${isTodayDate && !isSelected ? 'border-yellow-500 dark:border-yellow-400' : (!isTodayDate && !isSelected ? 'border-yellow-200 dark:border-yellow-800' : '')}
+                      ${isSelected ? 'bg-green-200 dark:bg-green-900 dark:bg-opacity-50 border-green-500' : 'hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30'}
                     `}
                   >
                     <div className="text-center relative">
@@ -360,9 +360,9 @@ export default function TimecardPage() {
 
           {/* Time Cards Display */}
           {selectedDate && (
-            <div className="bg-black border border-yellow-600 rounded-lg p-6">
+            <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
-                <h3 className="text-lg font-semibold text-yellow-300">
+                <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
                   Time Entries for {format(selectedDate, 'MMM d, yyyy')}
                 </h3>
                 <button
@@ -384,7 +384,7 @@ export default function TimecardPage() {
               {(user?.role === 'admin' || user?.role === 'supervisor') && (
                 <div className="mb-6 grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-yellow-600 mb-2">
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
                       Site
                     </label>
                     <select
@@ -393,7 +393,7 @@ export default function TimecardPage() {
                         setSiteFilter(e.target.value);
                         setEmployeeFilter(''); // Reset employee filter when site filter changes
                       }}
-                      className="w-full px-3 py-2 bg-black border border-yellow-700 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400"
+                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     >
                       <option value="">None</option>
                       <option value="all">All</option>
@@ -404,7 +404,7 @@ export default function TimecardPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-yellow-600 mb-2">
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
                       Employee
                     </label>
                     <select
@@ -413,7 +413,7 @@ export default function TimecardPage() {
                         setEmployeeFilter(e.target.value);
                         setSiteFilter(''); // Reset site filter when employee filter changes
                       }}
-                      className="w-full px-3 py-2 bg-black border border-yellow-700 rounded-lg text-yellow-100 focus:outline-none focus:border-yellow-400"
+                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     >
                       <option value="">None</option>
                       <option value="all">All</option>
@@ -440,7 +440,7 @@ export default function TimecardPage() {
 
                   if (filteredEntries.length === 0) {
                     return (
-                      <div className="text-center py-8 text-yellow-600">
+                      <div className="text-center py-8 text-yellow-700 dark:text-yellow-600">
                         No time entries found for this date
                       </div>
                     );
@@ -509,13 +509,13 @@ export default function TimecardPage() {
                     <div>
                       {/* Your Time Cards Section - Hidden for admins */}
                       {user?.role !== 'admin' && (
-                        <div className="border-t border-yellow-700 pt-4">
+                        <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4">
                         <div 
                           className="flex justify-between items-center cursor-pointer mb-3"
                           onClick={() => setYourCardsCollapsed(!yourCardsCollapsed)}
                         >
-                          <h4 className="text-yellow-300 font-semibold text-lg">Your Time Cards</h4>
-                          <button className="text-yellow-300 hover:text-yellow-200 transition-colors">
+                          <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">Your Time Cards</h4>
+                          <button className="text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-200 transition-colors">
                             {yourCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                           </button>
                         </div>
@@ -528,18 +528,18 @@ export default function TimecardPage() {
                                 return (
                                   <div key={entry.id || `your-${index}`}>
                                     <div
-                                      className={`bg-yellow-900 bg-opacity-10 border rounded-lg p-3 transition-colors ${
+                                      className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
                                         isSelected 
-                                          ? 'border-green-500 bg-green-900 bg-opacity-60 ring-2 ring-green-500 ring-opacity-50' 
+                                          ? 'border-green-500 bg-green-100 dark:bg-green-900 dark:bg-opacity-60 ring-2 ring-green-500 ring-opacity-50' 
                                           : canAccess 
-                                            ? 'border-yellow-700 hover:border-yellow-600 cursor-pointer' 
-                                            : 'border-gray-600 opacity-75'
+                                            ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600 cursor-pointer' 
+                                            : 'border-gray-400 dark:border-gray-600 opacity-75'
                                       }`}
                                       onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                     >
                                       <div className="flex justify-between items-center">
                                         <div>
-                                          <span className="text-yellow-100 font-medium">
+                                          <span className="text-gray-900 dark:text-yellow-100 font-medium">
                                             Time Card {entry.entryNumber}
                                           </span>
                                           <span className={`ml-2 px-2 py-1 rounded text-xs ${
@@ -594,7 +594,7 @@ export default function TimecardPage() {
                                 );
                               })
                             ) : (
-                              <div className="text-center py-8 text-yellow-600">
+                              <div className="text-center py-8 text-yellow-700 dark:text-yellow-600">
                                 No time entries found for this date
                               </div>
                             )}
@@ -605,12 +605,12 @@ export default function TimecardPage() {
 
                       {/* Other Time Cards Section (Admins/Supervisors only) */}
                       {otherEntries.length > 0 && (
-                        <div className="border-t border-yellow-700 pt-4 mt-4">
+                        <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4 mt-4">
                           <div 
                             className="flex justify-between items-center cursor-pointer mb-3"
                             onClick={() => setOtherCardsCollapsed(!otherCardsCollapsed)}
                           >
-                            <h4 className="text-yellow-300 font-semibold text-lg">
+                            <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">
                               {(() => {
                                 // Check if "all" is selected for either filter
                                 if (siteFilter === 'all' || employeeFilter === 'all') {
@@ -631,7 +631,7 @@ export default function TimecardPage() {
                                 }
                               })()}
                             </h4>
-                            <button className="text-yellow-300 hover:text-yellow-200 transition-colors">
+                            <button className="text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-200 transition-colors">
                               {otherCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                             </button>
                           </div>
@@ -643,18 +643,18 @@ export default function TimecardPage() {
                                 return (
                                   <div key={entry.id || `other-${index}`}>
                                     <div
-                                      className={`bg-yellow-900 bg-opacity-10 border rounded-lg p-3 transition-colors ${
+                                      className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
                                         isSelected 
-                                          ? 'border-green-500 bg-green-900 bg-opacity-60 ring-2 ring-green-500 ring-opacity-50' 
+                                          ? 'border-green-500 bg-green-100 dark:bg-green-900 dark:bg-opacity-60 ring-2 ring-green-500 ring-opacity-50' 
                                           : canAccess 
-                                            ? 'border-yellow-700 hover:border-yellow-600 cursor-pointer' 
-                                            : 'border-gray-600 opacity-75'
+                                            ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600 cursor-pointer' 
+                                            : 'border-gray-400 dark:border-gray-600 opacity-75'
                                       }`}
                                       onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                     >
                                       <div className="flex justify-between items-center">
                                         <div>
-                                          <span className="text-yellow-100 font-medium">
+                                          <span className="text-gray-900 dark:text-yellow-100 font-medium">
                                             Time Card {entry.entryNumber}
                                           </span>
                                           <span className={`ml-2 px-2 py-1 rounded text-xs ${
@@ -721,7 +721,7 @@ export default function TimecardPage() {
 
           {/* Time Entry Form - Appears below the time cards */}
           {showEntryForm && selectedDate && user && (
-            <div ref={formRef} className="mt-6 pt-6 border-t border-yellow-700">
+            <div ref={formRef} className="mt-6 pt-6 border-t border-yellow-200 dark:border-yellow-700">
               <TimeEntryForm
                 selectedDate={selectedDate}
                 entry={selectedEntryId ? getEntriesForDate(selectedDate).find(e => e.id === selectedEntryId) : undefined}
@@ -747,9 +747,9 @@ export default function TimecardPage() {
           )}
 
           {!showEntryForm && !selectedDate && (
-            <div className="bg-black border border-yellow-600 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-yellow-300 mb-4">Select a Date</h3>
-              <p className="text-yellow-600">Click on a date in the calendar to view or edit time entries.</p>
+            <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-4">Select a Date</h3>
+              <p className="text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view or edit time entries.</p>
             </div>
           )}
 

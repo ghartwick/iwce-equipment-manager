@@ -145,8 +145,8 @@ function InventoryPage() {
   // Show loading screen while loading inventory
   if (inventoryLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-lg text-yellow-400">Loading inventory...</div>
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+        <div className="text-lg text-yellow-600 dark:text-yellow-400">Loading inventory...</div>
       </div>
     );
   }
@@ -186,7 +186,7 @@ function InventoryPage() {
 
         {/* Desktop Equipment Table - Original Design */}
         <div className="max-w-4xl mx-auto">
-          <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+          <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
             <div className="p-6">
               {/* Search Field - Above */}
               <div className="mb-4">
@@ -255,7 +255,7 @@ function InventoryPage() {
 
           {/* Forms Section */}
           {showAddForm && (
-            <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-2 sm:p-3">
+            <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-2 sm:p-3">
               <ProductForm
                 categories={categories}
                 product={editingProduct}
@@ -268,7 +268,7 @@ function InventoryPage() {
           )}
 
           {/* Mobile Equipment Table - Optimized */}
-          <div className="bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+          <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
             <div className="p-2 sm:p-3">
               <div className="flex flex-col space-y-2">
                 {/* Search - Mobile Full Width */}

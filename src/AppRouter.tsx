@@ -4,6 +4,7 @@ import { LoginPage } from './components/LoginPage';
 import InventoryPage from './pages/InventoryPage';
 import TimecardPage from './pages/TimecardPage';
 import Layout from './components/Layout';
+import { ThemeProvider } from './context/ThemeContext';
 
 function AppRouter() {
   const { isAuthenticated, isLoading, login, error: authError } = useAuth();
@@ -18,16 +19,17 @@ function AppRouter() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto mb-4"></div>
-          <div className="text-lg text-yellow-400">Loading...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 dark:border-yellow-400 mx-auto mb-4"></div>
+          <div className="text-lg text-yellow-600 dark:text-yellow-400">Loading...</div>
         </div>
       </div>
     );
   }
 
   return (
+    <ThemeProvider>
     <Router>
       <Routes>
         <Route path="/login" element={!isAuthenticated ? <LoginPage onLogin={handleLogin} error={authError || undefined} /> : <Navigate to="/inventory" replace />} />
@@ -48,6 +50,7 @@ function AppRouter() {
         } />
       </Routes>
     </Router>
+    </ThemeProvider>
   );
 }
 

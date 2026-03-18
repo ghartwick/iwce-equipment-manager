@@ -29,7 +29,7 @@ export function MobileProductList({
         <div className="h-12 w-12 bg-yellow-400 rounded-full mx-auto mb-4 flex items-center justify-center">
           <span className="text-black text-xl font-bold">!</span>
         </div>
-        <h3 className="text-lg font-medium text-yellow-300 mb-2">No equipment found</h3>
+        <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-2">No equipment found</h3>
         <p className="text-yellow-600">Get started by adding your first equipment to the inventory.</p>
       </div>
     );
@@ -41,7 +41,7 @@ export function MobileProductList({
   ];
 
   return (
-    <div data-product-list className="divide-y divide-yellow-800">
+    <div data-product-list className="divide-y divide-yellow-200 dark:divide-yellow-800">
       {/* Group products by category */}
       {categoriesToUse.map((category) => {
         // Try both exact match and case-insensitive match
@@ -55,8 +55,8 @@ export function MobileProductList({
         return (
           <div key={category.id}>
             {/* Category Header */}
-            <div className="sticky top-0 bg-yellow-900 bg-opacity-30 z-10 p-3 border-b border-yellow-700">
-              <h3 className="text-sm font-semibold text-yellow-300">
+            <div className="sticky top-0 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 z-10 p-3 border-b border-yellow-700">
+              <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
                 {category.name} ({categoryProducts.length})
               </h3>
             </div>
@@ -68,12 +68,12 @@ export function MobileProductList({
               return (
                 <React.Fragment key={product.id}>
                   <div 
-                    className={`p-3 border-b border-yellow-800 ${product.repair ? 'bg-red-950' : 'bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                    className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${product.repair ? 'bg-red-100 dark:bg-red-950' : 'bg-white dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                   >
                     {/* Equipment Name - Primary */}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className={`text-sm font-medium ${product.repair ? 'text-red-400' : 'text-yellow-100'} break-words`}>
+                        <h3 className={`text-sm font-medium ${product.repair ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-yellow-100'} break-words`}>
                           {product.name}
                         </h3>
                       </div>
@@ -87,7 +87,7 @@ export function MobileProductList({
                             onEdit(product);
                           }
                         }}
-                        className="p-2 text-yellow-300 bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-800 hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                        className="p-2 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
                         title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
                       >
                         <Pencil className="h-4 w-4" />
@@ -100,7 +100,7 @@ export function MobileProductList({
                       {product.employee && (
                         <div className="flex items-center space-x-2">
                           <User className="h-3 w-3 text-yellow-600" />
-                          <span className="text-yellow-300 text-xs">{product.employee}</span>
+                          <span className="text-yellow-700 dark:text-yellow-300 text-xs">{product.employee}</span>
                         </div>
                       )}
 
@@ -108,7 +108,7 @@ export function MobileProductList({
                       {product.site && (
                         <div className="flex items-center space-x-2">
                           <MapPin className="h-3 w-3 text-yellow-600" />
-                          <span className="text-yellow-300 text-xs">{product.site}</span>
+                          <span className="text-yellow-700 dark:text-yellow-300 text-xs">{product.site}</span>
                         </div>
                       )}
 
@@ -127,8 +127,8 @@ export function MobileProductList({
                   
                   {/* Inline Edit Form - Appears directly below selected equipment */}
                   {selectedEquipmentId === product.id && (
-                    <div className="border-t border-yellow-800">
-                      <div className="bg-yellow-900 p-3">
+                    <div className="border-t border-yellow-200 dark:border-yellow-800">
+                      <div className="bg-yellow-50 dark:bg-yellow-900 p-3">
                         <ProductForm
                           categories={categories}
                           product={selectedProduct}
@@ -202,8 +202,8 @@ export function MobileProductList({
             
             return (
               <div key={categoryName}>
-                <div id={`category-${categoryId}`} className="sticky top-0 bg-yellow-900 bg-opacity-30 z-10 p-3 border-b border-yellow-700">
-                  <h3 className="text-sm font-semibold text-yellow-300">
+                <div id={`category-${categoryId}`} className="sticky top-0 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 z-10 p-3 border-b border-yellow-700">
+                  <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
                     {displayCategoryName} ({categoryProducts.length})
                   </h3>
                 </div>
@@ -213,12 +213,12 @@ export function MobileProductList({
                   return (
                     <React.Fragment key={product.id}>
                       <div 
-                        className={`p-3 border-b border-yellow-800 ${product.repair ? 'bg-red-950' : 'bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                        className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${product.repair ? 'bg-red-100 dark:bg-red-950' : 'bg-white dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                       >
                         {/* Equipment Name - Primary */}
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h3 className={`text-sm font-medium ${product.repair ? 'text-red-400' : 'text-yellow-100'} break-words`}>
+                            <h3 className={`text-sm font-medium ${product.repair ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-yellow-100'} break-words`}>
                               {product.name}
                             </h3>
                           </div>
@@ -232,7 +232,7 @@ export function MobileProductList({
                                 onEdit(product);
                               }
                             }}
-                            className="p-2 text-yellow-300 bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-800 hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                            className="p-2 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
                             title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
                           >
                             <Pencil className="h-4 w-4" />
@@ -245,7 +245,7 @@ export function MobileProductList({
                           {product.employee && (
                             <div className="flex items-center space-x-2">
                               <User className="h-3 w-3 text-yellow-600" />
-                              <span className="text-yellow-300 text-xs">{product.employee}</span>
+                              <span className="text-yellow-700 dark:text-yellow-300 text-xs">{product.employee}</span>
                             </div>
                           )}
 
@@ -253,7 +253,7 @@ export function MobileProductList({
                           {product.site && (
                             <div className="flex items-center space-x-2">
                               <MapPin className="h-3 w-3 text-yellow-600" />
-                              <span className="text-yellow-300 text-xs">{product.site}</span>
+                              <span className="text-yellow-700 dark:text-yellow-300 text-xs">{product.site}</span>
                             </div>
                           )}
 
@@ -272,8 +272,8 @@ export function MobileProductList({
                       
                       {/* Inline Edit Form - Appears directly below selected equipment */}
                       {selectedEquipmentId === product.id && (
-                        <div className="border-t border-yellow-800">
-                          <div className="bg-yellow-900 p-3">
+                        <div className="border-t border-yellow-200 dark:border-yellow-800">
+                          <div className="bg-yellow-50 dark:bg-yellow-900 p-3">
                             <ProductForm
                               categories={categories}
                               product={selectedProduct}

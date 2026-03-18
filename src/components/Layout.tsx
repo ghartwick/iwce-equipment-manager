@@ -80,9 +80,9 @@ function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black transition-colors duration-200">
+    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black transition-colors duration-200">
       {/* Header - Matching Original Style */}
-      <header className="bg-white dark:bg-black border-b border-yellow-600 transition-colors duration-200">
+      <header className="bg-[#f0e0c8] dark:bg-black border-b border-yellow-600 transition-colors duration-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left Side - Logo + Title */}
@@ -191,7 +191,7 @@ function Layout({ children }: LayoutProps) {
                   </button>
 
                   {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-lg z-50">
+                    <div className="absolute right-0 mt-2 w-64 bg-[#f8ede0] dark:bg-black border border-yellow-600 rounded-lg shadow-lg z-50">
                       <div className="p-4 border-b border-yellow-200 dark:border-yellow-800">
                         <div className="flex items-center space-x-3">
                           <div className="h-10 w-10 bg-yellow-600 rounded-full flex items-center justify-center">

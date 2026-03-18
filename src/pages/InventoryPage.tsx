@@ -186,7 +186,7 @@ function InventoryPage() {
 
         {/* Desktop Equipment Table - Original Design */}
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl overflow-hidden">
             <div className="p-6">
               {/* Search Field - Above */}
               <div className="mb-4">
@@ -255,7 +255,7 @@ function InventoryPage() {
 
           {/* Forms Section */}
           {showAddForm && (
-            <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-2 sm:p-3">
+            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-2 sm:p-3">
               <ProductForm
                 categories={categories}
                 product={editingProduct}
@@ -268,7 +268,7 @@ function InventoryPage() {
           )}
 
           {/* Mobile Equipment Table - Optimized */}
-          <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl overflow-hidden">
             <div className="p-2 sm:p-3">
               <div className="flex flex-col space-y-2">
                 {/* Search - Mobile Full Width */}

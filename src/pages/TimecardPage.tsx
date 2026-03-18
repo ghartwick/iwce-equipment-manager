@@ -168,7 +168,7 @@ export default function TimecardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 dark:border-yellow-400 mx-auto mb-4"></div>
           <div className="text-lg text-yellow-600 dark:text-yellow-400">Loading timecard...</div>
@@ -258,7 +258,7 @@ export default function TimecardPage() {
 
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-yellow-100 p-4">
+    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -267,7 +267,7 @@ export default function TimecardPage() {
 
         <div className="grid grid-cols-1 gap-6">
           {/* Calendar */}
-          <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6">
+          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6">
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
               <button
@@ -360,7 +360,7 @@ export default function TimecardPage() {
 
           {/* Time Cards Display */}
           {selectedDate && (
-            <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6">
+            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
                   Time Entries for {format(selectedDate, 'MMM d, yyyy')}
@@ -747,7 +747,7 @@ export default function TimecardPage() {
           )}
 
           {!showEntryForm && !selectedDate && (
-            <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6">
+            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6">
               <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-4">Select a Date</h3>
               <p className="text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view or edit time entries.</p>
             </div>

@@ -213,7 +213,6 @@ export default function TimecardPage() {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 p-4">
       <div className="max-w-6xl mx-auto">

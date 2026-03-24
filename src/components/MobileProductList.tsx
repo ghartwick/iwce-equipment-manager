@@ -105,7 +105,7 @@ export function MobileProductList({
                       )}
 
                       {/* Site */}
-                      {product.site && (
+                      {product.site && product.equipmentType === 'heavy' && (
                         <div className="flex items-center space-x-2">
                           <MapPin className="h-3 w-3 text-yellow-600" />
                           <span className="text-yellow-700 dark:text-yellow-300 text-xs">{product.site}</span>

@@ -299,6 +299,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               <option value="Office">Office</option>
               <option value="Broken">Broken</option>
               <option value="Out For Repair">Out For Repair</option>
+              <option value="Missing">Missing</option>
               {users.map((user) => (
                 <option key={user.id} value={user.name}>
                   {user.name}

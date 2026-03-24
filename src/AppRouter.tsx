@@ -4,6 +4,7 @@ import { LoginPage } from './components/LoginPage';
 import InventoryPage from './pages/InventoryPage';
 import TimecardPage from './pages/TimecardPage';
 import TimecardEditPage from './pages/TimecardEditPage';
+import EquipmentPage from './pages/EquipmentPage';
 import Layout from './components/Layout';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -53,6 +54,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <TimecardEditPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/inventory/equipment/:equipmentId" element={
+          isAuthenticated ? (
+            <Layout>
+              <EquipmentPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

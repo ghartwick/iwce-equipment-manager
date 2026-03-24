@@ -22,7 +22,6 @@ export function MobileProductList({
   categories,
   userRole
 }: MobileProductListProps) {
-
   if (products.length === 0) {
     return (
       <div className="p-8 text-center">
@@ -41,6 +40,7 @@ export function MobileProductList({
   ];
 
   return (
+    <>
     <div data-product-list className="divide-y divide-yellow-200 dark:divide-yellow-800">
       {/* Group products by category */}
       {categoriesToUse.map((category) => {
@@ -298,5 +298,7 @@ export function MobileProductList({
         return null;
       })()}
     </div>
+
+    </>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock } from 'lucide-react';
+import { X, Clock, QrCode, Download } from 'lucide-react';
+import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { Equipment, Category } from '../types';
 import { EquipmentLog } from './EquipmentLog';
 import { siteManagementService, Site } from '../services/siteManagementService';
@@ -25,6 +26,21 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   });
 
   const [showLog, setShowLog] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+
+  const getEquipmentUrl = (id: string) =>
+    `${window.location.origin}/inventory/equipment/${id}`;
+
+  const handleDownloadQR = () => {
+    if (!product?.id) return;
+    const canvas = document.getElementById(`qr-form-${product.id}`) as HTMLCanvasElement;
+    if (!canvas) return;
+    const url = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${product.name.replace(/\s+/g, '-')}-qr.png`;
+    link.click();
+  };
   const [sites, setSites] = useState<Site[]>([]);
   const [showCustomSite, setShowCustomSite] = useState(false);
   const [customSite, setCustomSite] = useState('');
@@ -146,13 +162,22 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
         </h2>
         <div className="flex items-center space-x-2">
           {isEditing && (
-            <button
-              onClick={() => setShowLog(!showLog)}
-              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
-              title="View edit history"
-            >
-              <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
-            </button>
+            <>
+              <button
+                onClick={() => setShowQR(!showQR)}
+                className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                title="Show QR code"
+              >
+                <QrCode className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+              <button
+                onClick={() => setShowLog(!showLog)}
+                className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                title="View edit history"
+              >
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+            </>
           )}
           <button
             onClick={onCancel}
@@ -340,6 +365,34 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
             equipment={product}
             onClose={() => setShowLog(false)}
           />
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {showQR && product?.id && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" onClick={() => setShowQR(false)}>
+          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6 w-80" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">{product.name}</h3>
+              <button onClick={() => setShowQR(false)} className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex justify-center mb-4">
+              <QRCodeSVG value={getEquipmentUrl(product.id)} size={200} level="M" includeMargin />
+            </div>
+            <div className="hidden">
+              <QRCodeCanvas id={`qr-form-${product.id}`} value={getEquipmentUrl(product.id)} size={400} level="M" includeMargin />
+            </div>
+            <p className="text-xs text-yellow-600 dark:text-yellow-500 text-center mb-4 break-all">{getEquipmentUrl(product.id)}</p>
+            <button
+              onClick={handleDownloadQR}
+              className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors font-medium"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download QR Code</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

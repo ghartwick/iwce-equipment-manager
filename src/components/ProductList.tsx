@@ -93,6 +93,7 @@ export function ProductList({
   }
 
   return (
+    <>
     <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
       {/* Header with export button */}
       <div className="bg-[#fffff0] dark:bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
@@ -320,5 +321,6 @@ export function ProductList({
         </table>
       </div>
     </div>
+    </>
   );
 }

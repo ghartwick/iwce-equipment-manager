@@ -59,7 +59,10 @@ export function AlertPanel({ alerts, products, onClearAlert }: AlertPanelProps) 
         </div>
       </div>
       
-      <div className="max-h-96 overflow-y-auto">
+      <div 
+        className="max-h-96 overflow-y-auto"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         {groupedByDay.map((group) => (
           <div key={group.label}>
             <div className="sticky top-0 px-3 py-1.5 sm:px-4 sm:py-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-50 border-b border-yellow-300 dark:border-yellow-700">

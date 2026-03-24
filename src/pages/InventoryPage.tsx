@@ -139,6 +139,7 @@ function InventoryPage() {
         site: productData.site,
         category: productData.category,
         serialNumber: productData.serialNumber,
+        equipmentType: productData.equipmentType,
         repair: productData.repair,
         repairDescription: productData.repairDescription,
         updatedAt: new Date().toISOString(),
@@ -193,8 +194,8 @@ function InventoryPage() {
           </div>
         )}
 
-        {/* Desktop Forms Section */}
-        {showAddForm && (
+        {/* Desktop Forms Section - Admin Only */}
+        {showAddForm && user?.role === 'admin' && (
           <div className="mb-3">
             <div className="max-w-4xl mx-auto">
               <ProductForm
@@ -239,8 +240,8 @@ function InventoryPage() {
               <ProductList
                 products={filteredProducts}
                 categories={categories}
-                onEdit={handleEditClick}
-                onDelete={deleteProduct}
+                onEdit={user?.role === 'admin' ? handleEditClick : undefined}
+                onDelete={user?.role === 'admin' ? deleteProduct : undefined}
                 selectedEquipmentId={editingProduct?.id}
                 onEditProduct={handleEditProduct}
                 onAddProduct={handleAddProduct}
@@ -269,8 +270,8 @@ function InventoryPage() {
             </div>
           )}
 
-          {/* Forms Section */}
-          {showAddForm && (
+          {/* Forms Section - Admin Only */}
+          {showAddForm && user?.role === 'admin' && (
             <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-2 sm:p-3">
               <ProductForm
                 categories={categories}
@@ -313,7 +314,7 @@ function InventoryPage() {
             {/* Mobile Equipment List */}
             <MobileProductList
               products={filteredProducts}
-              onEdit={handleEditClick}
+              onEdit={user?.role === 'admin' ? handleEditClick : undefined}
               selectedEquipmentId={editingProduct?.id}
               onEditProduct={handleEditProduct}
               onCancelEdit={() => setEditingProduct(null)}

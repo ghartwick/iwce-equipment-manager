@@ -5,6 +5,7 @@ export interface Equipment {
   site: string;
   category: string;
   serialNumber: string;
+  equipmentType: 'heavy' | 'field';
   repair: boolean;
   repairDescription: string;
   createdAt: string;

@@ -5,7 +5,7 @@ import { ProductForm } from './ProductForm';
 
 interface MobileProductListProps {
   products: Equipment[];
-  onEdit: (product: Equipment) => void;
+  onEdit?: (product: Equipment) => void;
   selectedEquipmentId?: string;
   onEditProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancelEdit: () => void;
@@ -83,7 +83,7 @@ export function MobileProductList({
                           e.stopPropagation();
                           if (selectedEquipmentId === product.id) {
                             onCancelEdit();
-                          } else {
+                          } else if (onEdit) {
                             onEdit(product);
                           }
                         }}
@@ -228,7 +228,7 @@ export function MobileProductList({
                               e.stopPropagation();
                               if (selectedEquipmentId === product.id) {
                                 onCancelEdit();
-                              } else {
+                              } else if (onEdit) {
                                 onEdit(product);
                               }
                             }}

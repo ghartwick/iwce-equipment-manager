@@ -7,8 +7,8 @@ import { ProductForm } from './ProductForm';
 interface ProductListProps {
   products: Equipment[];
   categories: Category[];
-  onEdit: (product: Equipment) => void;
-  onDelete: (id: string) => void;
+  onEdit?: (product: Equipment) => void;
+  onDelete?: (id: string) => void;
   selectedEquipmentId?: string;
   onEditProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onAddProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -189,7 +189,7 @@ export function ProductList({
                                   onClick={() => {
                                     if (selectedEquipmentId === product.id) {
                                       onCancelEdit();
-                                    } else {
+                                    } else if (onEdit) {
                                       onEdit(product);
                                     }
                                   }}
@@ -213,7 +213,7 @@ export function ProductList({
                                   product={selectedProduct}
                                   onSubmit={onEditProduct}
                                   onCancel={onCancelEdit}
-                                  onDelete={() => onDelete(product.id)}
+                                  onDelete={onDelete ? () => onDelete(product.id) : undefined}
                                   userRole={userRole}
                                 />
                               </div>
@@ -280,7 +280,7 @@ export function ProductList({
                                   onClick={() => {
                                     if (selectedEquipmentId === product.id) {
                                       onCancelEdit();
-                                    } else {
+                                    } else if (onEdit) {
                                       onEdit(product);
                                     }
                                   }}
@@ -304,7 +304,7 @@ export function ProductList({
                                   product={selectedProduct}
                                   onSubmit={onEditProduct}
                                   onCancel={onCancelEdit}
-                                  onDelete={() => onDelete(product.id)}
+                                  onDelete={onDelete ? () => onDelete(product.id) : undefined}
                                   userRole={userRole}
                                 />
                               </div>

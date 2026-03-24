@@ -4,6 +4,7 @@ import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { Equipment, Category } from '../types';
 import { EquipmentLog } from './EquipmentLog';
 import { siteManagementService, Site } from '../services/siteManagementService';
+import { userManagementService, AppUser } from '../services/userManagementService';
 
 interface ProductFormProps {
   categories: Category[];
@@ -21,6 +22,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
     site: '',
     category: '',
     serialNumber: '',
+    equipmentType: 'field' as 'heavy' | 'field',
     repair: false,
     repairDescription: '',
   });
@@ -44,6 +46,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   const [sites, setSites] = useState<Site[]>([]);
   const [showCustomSite, setShowCustomSite] = useState(false);
   const [customSite, setCustomSite] = useState('');
+  const [users, setUsers] = useState<AppUser[]>([]);
 
   // Sort categories alphabetically and numerically
   const sortedCategories = [...categories].sort((a, b) => {
@@ -70,17 +73,25 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   // Sort sites alphabetically
   const sortedSites = [...sites].sort((a, b) => a.name.localeCompare(b.name));
 
-  // Fetch sites on component mount
+  // Fetch sites and users on component mount
   useEffect(() => {
-    const fetchSites = async () => {
+    const fetchData = async () => {
       try {
-        const activeSites = await siteManagementService.getActiveSites();
+        const [activeSites, allUsers] = await Promise.all([
+          siteManagementService.getActiveSites(),
+          userManagementService.getAllUsers()
+        ]);
         setSites(activeSites);
+        // Filter for active users (field, admin, supervisor) and sort by name
+        const activeUsers = allUsers
+          .filter(user => user.isActive && (user.role === 'field' || user.role === 'admin' || user.role === 'supervisor'))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setUsers(activeUsers);
       } catch (error) {
-        console.error('Error fetching sites:', error);
+        console.error('Error fetching data:', error);
       }
     };
-    fetchSites();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -91,6 +102,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
         site: product.site,
         category: product.category,
         serialNumber: product.serialNumber,
+        equipmentType: product.equipmentType || 'field',
         repair: product.repair,
         repairDescription: product.repairDescription,
       });
@@ -147,6 +159,24 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
         [field]: value,
         repairDescription: '' 
       }));
+    } else if (field === 'equipmentType') {
+      if (value === 'field') {
+        // Clear site when switching to field tools
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          site: ''
+        }));
+        setShowCustomSite(false);
+        setCustomSite('');
+      } else if (value === 'heavy') {
+        // Clear employee when switching to heavy equipment
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          employee: ''
+        }));
+      }
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
@@ -243,15 +273,42 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
           </div>
 
           <div>
-            <input
-              type="text"
-              value={formData.employee}
-              onChange={(e) => handleInputChange('employee', e.target.value)}
-              placeholder="Employee"
-              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-            />
+            <select
+              value={formData.equipmentType}
+              onChange={(e) => handleInputChange('equipmentType', e.target.value)}
+              disabled={isEditing && !canEditRestrictedFields}
+              className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
+                isEditing && !canEditRestrictedFields
+                  ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+              }`}
+            >
+              <option value="field">Field Tools</option>
+              <option value="heavy">Heavy Equipment</option>
+            </select>
           </div>
 
+          {formData.equipmentType === 'field' && (
+          <div>
+            <select
+              value={formData.employee}
+              onChange={(e) => handleInputChange('employee', e.target.value)}
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+            >
+              <option value="">Employee</option>
+              <option value="Office">Office</option>
+              <option value="Broken">Broken</option>
+              <option value="Out For Repair">Out For Repair</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.name}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+          {formData.equipmentType === 'heavy' && (
           <div>
             <select
               value={showCustomSite ? 'OTHER' : formData.site}
@@ -277,9 +334,13 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               />
             )}
           </div>
+        )}
 
           <div>
             <div className="flex items-center space-x-3">
+              <span className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300">
+                Alert
+              </span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"

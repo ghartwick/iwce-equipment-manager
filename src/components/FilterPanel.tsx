@@ -140,7 +140,11 @@ export function FilterPanel({
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center space-x-2">
           <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600 dark:text-yellow-400" />
-          <h3 className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-400">Categories</h3>
+          <h3 className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-400">
+                    {selectedCategory === 'all' 
+                      ? 'All Categories' 
+                      : categories.find(c => c.id === selectedCategory)?.name || 'All Categories'}
+                  </h3>
         </div>
         <div className="flex items-center space-x-1">
           <button

@@ -191,9 +191,6 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-              Equipment Name *
-            </label>
             <input
               type="text"
               required
@@ -203,16 +200,13 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
                 isEditing && !canEditRestrictedFields
                   ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
               }`}
-              placeholder="Enter equipment name"
+              placeholder="Equipment Name"
             />
           </div>
 
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-              Serial Number
-            </label>
             <input
               type="text"
               value={formData.serialNumber}
@@ -221,16 +215,13 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
                 isEditing && !canEditRestrictedFields
                   ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
               }`}
-              placeholder="Optional serial number"
+              placeholder="Serial Number"
             />
           </div>
 
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-              Category *
-            </label>
             <select
               required
               value={formData.category}
@@ -242,7 +233,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
                   : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
               }`}
             >
-              <option value="">Select a category</option>
+              <option value="">Category</option>
               {sortedCategories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
@@ -252,27 +243,22 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
           </div>
 
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-              Employee
-            </label>
             <input
               type="text"
               value={formData.employee}
               onChange={(e) => handleInputChange('employee', e.target.value)}
-              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+              placeholder="Employee"
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-              Site
-            </label>
             <select
               value={showCustomSite ? 'OTHER' : formData.site}
               onChange={(e) => handleSiteChange(e.target.value)}
               className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
             >
-              <option value="">Select a site</option>
+              <option value="">Site</option>
               {sortedSites.map((site) => (
                 <option key={site.id} value={site.name}>
                   {site.name}
@@ -293,9 +279,6 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
           </div>
 
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-              Alert
-            </label>
             <div className="flex items-center space-x-3">
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -314,9 +297,6 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
 
         {formData.repair && (
           <div className="mt-2 sm:mt-3">
-            <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-              Alert Description
-            </label>
             <textarea
               rows={3}
               value={formData.repairDescription}

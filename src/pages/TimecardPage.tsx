@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
@@ -19,9 +19,11 @@ import {
   isToday
 } from 'date-fns';
 
+// Persists selected date/month across navigation to/from edit page
+let _savedTimecardState: { selectedDate: string | null; currentMonth: string; siteFilter: string; employeeFilter: string } | null = null;
+
 export default function TimecardPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const { 
     loading, 
@@ -35,21 +37,32 @@ export default function TimecardPage() {
     getStatusColor,
   } = useTimecard();
 
-  const routeState = location.state as { selectedDate?: string; currentMonth?: string } | null;
   const [currentMonth, setCurrentMonth] = useState(() =>
-    routeState?.currentMonth ? new Date(routeState.currentMonth) : new Date()
+    _savedTimecardState?.currentMonth ? new Date(_savedTimecardState.currentMonth) : new Date()
   );
   const [selectedDate, setSelectedDate] = useState<Date | null>(() =>
-    routeState?.selectedDate ? new Date(routeState.selectedDate) : null
+    _savedTimecardState?.selectedDate ? new Date(_savedTimecardState.selectedDate) : null
   );
+
+  // Consume saved state once on mount then clear it
+  useEffect(() => {
+    if (_savedTimecardState) {
+      if (_savedTimecardState.selectedDate) setSelectedDate(new Date(_savedTimecardState.selectedDate));
+      if (_savedTimecardState.currentMonth) setCurrentMonth(new Date(_savedTimecardState.currentMonth));
+      setSiteFilter(_savedTimecardState.siteFilter);
+      setEmployeeFilter(_savedTimecardState.employeeFilter);
+      _savedTimecardState = null;
+    }
+  }, []);
+
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0); // Add refresh key
   const formRef = useRef<HTMLDivElement>(null); // Ref for scrolling to form
   
   // Filter states for admins and supervisors
-  const [siteFilter, setSiteFilter] = useState<string>('');
-  const [employeeFilter, setEmployeeFilter] = useState<string>('');
+  const [siteFilter, setSiteFilter] = useState<string>(_savedTimecardState?.siteFilter ?? '');
+  const [employeeFilter, setEmployeeFilter] = useState<string>(_savedTimecardState?.employeeFilter ?? '');
   
   // User management
   const [users, setUsers] = useState<AppUser[]>([]);
@@ -263,14 +276,15 @@ export default function TimecardPage() {
     return user ? [user] : [];
   };
 
-  // Handle entry selection - navigate to dedicated edit page, preserving current state
+  // Handle entry selection - save page state then navigate to edit page
   const handleEntrySelect = (entryId: string) => {
-    navigate(`/timecard/edit/${entryId}`, {
-      state: {
-        selectedDate: selectedDate?.toISOString(),
-        currentMonth: currentMonth.toISOString(),
-      }
-    });
+    _savedTimecardState = {
+      selectedDate: selectedDate?.toISOString() ?? null,
+      currentMonth: currentMonth.toISOString(),
+      siteFilter,
+      employeeFilter,
+    };
+    navigate(`/timecard/edit/${entryId}`);
   };
 
   // Handle entry deletion

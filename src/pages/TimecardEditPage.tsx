@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
 import { TimeEntryForm } from '../components/TimeEntryForm';
@@ -9,8 +9,6 @@ import { timecardService, TimeEntry } from '../services/timecardService';
 export default function TimecardEditPage() {
   const { entryId } = useParams<{ entryId: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
-  const returnState = location.state as { selectedDate?: string; currentMonth?: string } | null;
   const { user } = useAuth();
   const { canEditEntry, updateTimeEntry } = useTimecard();
 
@@ -67,14 +65,14 @@ export default function TimecardEditPage() {
         Object.entries(preservedFields).filter(([_, value]) => value !== undefined)
       );
       await updateTimeEntry(entry.id, { ...entryData, ...filteredPreservedFields });
-      navigate('/timecard', { state: returnState });
+      navigate('/timecard');
     } catch (err: any) {
       throw err;
     }
   };
 
   const handleCancel = () => {
-    navigate('/timecard', { state: returnState });
+    navigate('/timecard');
   };
 
   if (loading) {

@@ -646,6 +646,11 @@ export default function TimecardPage() {
                                                     {workEntry.code}
                                                   </div>
                                                 )}
+                                                {workEntry.notes && (
+                                                  <div className="text-yellow-600 dark:text-yellow-500 mt-1">
+                                                    {workEntry.notes}
+                                                  </div>
+                                                )}
                                                 {workEntry.equipment && (
                                                   <div className="text-yellow-700 dark:text-yellow-400">
                                                     Equipment: {workEntry.equipment}
@@ -663,11 +668,6 @@ export default function TimecardPage() {
                                                     Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
                                                   </div>
                                                 )}
-                                                {workEntry.notes && (
-                                                  <div className="text-yellow-600 dark:text-yellow-500 mt-1">
-                                                    {workEntry.notes}
-                                                  </div>
-                                                )}
                                               </div>
                                             ))}
                                           </div>
@@ -679,6 +679,11 @@ export default function TimecardPage() {
                                             {entry.code && (
                                               <div className="font-medium text-yellow-800 dark:text-yellow-300">
                                                 {entry.code}
+                                              </div>
+                                            )}
+                                            {entry.notes && (
+                                              <div className="text-yellow-600 dark:text-yellow-500 mt-1">
+                                                {entry.notes}
                                               </div>
                                             )}
                                             {entry.equipment && (
@@ -696,11 +701,6 @@ export default function TimecardPage() {
                                             {entry.smallTools && (
                                               <div className="text-yellow-700 dark:text-yellow-400">
                                                 Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
-                                              </div>
-                                            )}
-                                            {entry.notes && (
-                                              <div className="text-yellow-600 dark:text-yellow-500 mt-1">
-                                                {entry.notes}
                                               </div>
                                             )}
                                           </div>

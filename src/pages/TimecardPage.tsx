@@ -556,6 +556,22 @@ export default function TimecardPage() {
                     return filtered;
                   })() : [];
 
+                  const showGrouped = siteFilter === 'all' || employeeFilter === 'all';
+                  const siteGroups: { site: string | null; entries: any[] }[] = [];
+                  if (showGrouped) {
+                    const groupMap: Record<string, any[]> = {};
+                    (otherEntries as any[]).forEach((entry: any) => {
+                      const site = entry.job || '(No Site)';
+                      if (!groupMap[site]) groupMap[site] = [];
+                      groupMap[site].push(entry);
+                    });
+                    Object.keys(groupMap)
+                      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+                      .forEach(site => siteGroups.push({ site, entries: groupMap[site] }));
+                  } else {
+                    siteGroups.push({ site: null, entries: otherEntries });
+                  }
+
                   return (
                     <div>
                       {/* Your Time Cards Section - Field users only */}
@@ -575,26 +591,33 @@ export default function TimecardPage() {
                                         }`}
                                         onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                       >
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex justify-between items-start">
                                           <div>
-                                            <span className="text-gray-900 dark:text-yellow-100 font-medium">
-                                              {getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                            </span>
-                                            <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                                              entry.status === 'draft' ? 'bg-gray-600' :
-                                              entry.status === 'submitted' ? 'bg-green-600' :
-                                              entry.status === 'rejected' ? 'bg-red-600' :
-                                              'bg-blue-600'
-                                            } text-white`}>
-                                              {entry.status === 'submitted' ? (
-                                                <>
-                                                  <Check className="w-3 h-3 inline sm:mr-1" />
-                                                  <span className="hidden sm:inline">{getStatusDisplay(entry.status)}</span>
-                                                </>
-                                              ) : (
-                                                getStatusDisplay(entry.status)
-                                              )}
-                                            </span>
+                                            <div className="flex items-center flex-wrap gap-x-2">
+                                              <span className="text-gray-900 dark:text-yellow-100 font-medium">
+                                                {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                              </span>
+                                              <span className={`px-2 py-1 rounded text-xs ${
+                                                entry.status === 'draft' ? 'bg-gray-600' :
+                                                entry.status === 'submitted' ? 'bg-green-600' :
+                                                entry.status === 'rejected' ? 'bg-red-600' :
+                                                'bg-blue-600'
+                                              } text-white`}>
+                                                {entry.status === 'submitted' ? (
+                                                  <>
+                                                    <Check className="w-3 h-3 inline sm:mr-1" />
+                                                    <span className="hidden sm:inline">{getStatusDisplay(entry.status)}</span>
+                                                  </>
+                                                ) : (
+                                                  getStatusDisplay(entry.status)
+                                                )}
+                                              </span>
+                                            </div>
+                                            {entry.job && (
+                                              <div className="text-gray-900 dark:text-yellow-100 font-medium mt-0.5">
+                                                {entry.job}
+                                              </div>
+                                            )}
                                           </div>
                                           <div className="flex gap-2">
                                             {canEditEntry(entry, user!) && (
@@ -610,13 +633,6 @@ export default function TimecardPage() {
                                             )}
                                           </div>
                                         </div>
-                                        
-                                        {/* Site */}
-                                        {entry.job && (
-                                          <div className="text-xs text-yellow-700 dark:text-yellow-600 mt-1">
-                                            {entry.job}
-                                          </div>
-                                        )}
                                         
                                         {/* Time Details */}
                                         <div className="flex items-center gap-3 text-xs text-yellow-700 dark:text-yellow-600 mt-2">
@@ -655,6 +671,13 @@ export default function TimecardPage() {
                                                     {workEntry.code}
                                                   </div>
                                                 )}
+                                                {(workEntry.machineHours || workEntry.labourHours) && (
+                                                  <div className="text-yellow-700 dark:text-yellow-400">
+                                                    Hours: {workEntry.machineHours && `${workEntry.machineHours} machine`}
+                                                    {workEntry.machineHours && workEntry.labourHours && ' + '}
+                                                    {workEntry.labourHours && `${workEntry.labourHours} labour`}
+                                                  </div>
+                                                )}
                                                 {workEntry.notes && (
                                                   <div className="text-yellow-600 dark:text-yellow-500 mt-1">
                                                     {workEntry.notes}
@@ -663,13 +686,6 @@ export default function TimecardPage() {
                                                 {workEntry.equipment && (
                                                   <div className="text-yellow-700 dark:text-yellow-400">
                                                     Equipment: {workEntry.equipment}
-                                                  </div>
-                                                )}
-                                                {(workEntry.machineHours || workEntry.labourHours) && (
-                                                  <div className="text-yellow-700 dark:text-yellow-400">
-                                                    Hours: {workEntry.machineHours && `${workEntry.machineHours} machine`}
-                                                    {workEntry.machineHours && workEntry.labourHours && ' + '}
-                                                    {workEntry.labourHours && `${workEntry.labourHours} labour`}
                                                   </div>
                                                 )}
                                                 {workEntry.smallTools && workEntry.smallTools.length > 0 && (
@@ -690,6 +706,13 @@ export default function TimecardPage() {
                                                 {entry.code}
                                               </div>
                                             )}
+                                            {(entry.machineHours || entry.labourHours) && (
+                                              <div className="text-yellow-700 dark:text-yellow-400">
+                                                Hours: {entry.machineHours && `${entry.machineHours} machine`}
+                                                  {entry.machineHours && entry.labourHours && ' + '}
+                                                  {entry.labourHours && `${entry.labourHours} labour`}
+                                              </div>
+                                            )}
                                             {entry.notes && (
                                               <div className="text-yellow-600 dark:text-yellow-500 mt-1">
                                                 {entry.notes}
@@ -698,13 +721,6 @@ export default function TimecardPage() {
                                             {entry.equipment && (
                                               <div className="text-yellow-700 dark:text-yellow-400">
                                                 Equipment: {entry.equipment}
-                                              </div>
-                                            )}
-                                            {(entry.machineHours || entry.labourHours) && (
-                                              <div className="text-yellow-700 dark:text-yellow-400">
-                                                Hours: {entry.machineHours && `${entry.machineHours} machine`}
-                                                  {entry.machineHours && entry.labourHours && ' + '}
-                                                  {entry.labourHours && `${entry.labourHours} labour`}
                                               </div>
                                             )}
                                             {entry.smallTools && (
@@ -763,8 +779,16 @@ export default function TimecardPage() {
                             </div>
                           )}
                           {!otherCardsCollapsed && (
-                            <div className="space-y-3">
-                              {otherEntries.map((entry: any, index: number) => {
+                            <div className={showGrouped ? 'space-y-4' : 'space-y-3'}>
+                              {siteGroups.map(({ site, entries }) => (
+                                <div key={site ?? 'ungrouped'}>
+                                  {site && (
+                                    <h5 className="text-yellow-700 dark:text-yellow-400 font-semibold text-sm mb-2 mt-1 border-b border-yellow-200 dark:border-yellow-800 pb-1">
+                                      {site}
+                                    </h5>
+                                  )}
+                                  <div className="space-y-3">
+                              {entries.map((entry: any, index: number) => {
                                 const canAccess = canViewEntry(entry, user!);
                                 return (
                                   <div key={entry.id || `other-${index}`}>
@@ -776,26 +800,33 @@ export default function TimecardPage() {
                                       }`}
                                       onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                     >
-                                      <div className="flex justify-between items-center">
+                                      <div className="flex justify-between items-start">
                                         <div>
-                                          <span className="text-gray-900 dark:text-yellow-100 font-medium">
-                                            {getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                          </span>
-                                          <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                                            entry.status === 'draft' ? 'bg-gray-600' :
-                                            entry.status === 'submitted' ? 'bg-green-600' :
-                                            entry.status === 'rejected' ? 'bg-red-600' :
-                                            'bg-blue-600'
-                                          } text-white`}>
-                                            {entry.status === 'submitted' ? (
-                                              <>
-                                                <Check className="w-3 h-3 inline sm:mr-1" />
-                                                <span className="hidden sm:inline">{getStatusDisplay(entry.status)}</span>
-                                              </>
-                                            ) : (
-                                              getStatusDisplay(entry.status)
-                                            )}
-                                          </span>
+                                          <div className="flex items-center flex-wrap gap-x-2">
+                                            <span className="text-gray-900 dark:text-yellow-100 font-medium">
+                                              {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                            </span>
+                                            <span className={`px-2 py-1 rounded text-xs ${
+                                              entry.status === 'draft' ? 'bg-gray-600' :
+                                              entry.status === 'submitted' ? 'bg-green-600' :
+                                              entry.status === 'rejected' ? 'bg-red-600' :
+                                              'bg-blue-600'
+                                            } text-white`}>
+                                              {entry.status === 'submitted' ? (
+                                                <>
+                                                  <Check className="w-3 h-3 inline sm:mr-1" />
+                                                  <span className="hidden sm:inline">{getStatusDisplay(entry.status)}</span>
+                                                </>
+                                              ) : (
+                                                getStatusDisplay(entry.status)
+                                              )}
+                                            </span>
+                                          </div>
+                                          {!showGrouped && entry.job && (
+                                            <div className="text-gray-900 dark:text-yellow-100 font-medium mt-0.5">
+                                              {entry.job}
+                                            </div>
+                                          )}
                                         </div>
                                         <div className="flex gap-2">
                                           {canEditEntry(entry, user!) && (
@@ -814,10 +845,7 @@ export default function TimecardPage() {
                                       {/* Time Details */}
                                       <div className="flex items-center gap-3 text-xs text-yellow-700 dark:text-yellow-600 mt-2">
                                         {entry.clockIn && (
-                                          <span className="flex items-center gap-1">
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
+                                          <span>
                                             In: {(() => {
                                               const date = entry.clockIn instanceof Date ? entry.clockIn : 
                                                 (entry.clockIn && 'toDate' in entry.clockIn && typeof (entry.clockIn as any).toDate === 'function') ? 
@@ -827,10 +855,7 @@ export default function TimecardPage() {
                                           </span>
                                         )}
                                         {entry.clockOut && (
-                                          <span className="flex items-center gap-1">
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
+                                          <span>
                                             Out: {(() => {
                                               const date = entry.clockOut instanceof Date ? entry.clockOut : 
                                                 (entry.clockOut && 'toDate' in entry.clockOut && typeof (entry.clockOut as any).toDate === 'function') ? 
@@ -844,17 +869,6 @@ export default function TimecardPage() {
                                         </span>
                                       </div>
                                       
-                                      {/* Site */}
-                                      {entry.job && (
-                                        <div className="flex items-center gap-1 text-xs text-yellow-700 dark:text-yellow-600 mt-1">
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                          </svg>
-                                          {entry.job}
-                                        </div>
-                                      )}
-                                      
                                       {/* Work Entries */}
                                       {entry.workEntries && entry.workEntries.length > 0 && (
                                         <div className="mt-2 space-y-1">
@@ -865,11 +879,6 @@ export default function TimecardPage() {
                                                   {workEntry.code}
                                                 </div>
                                               )}
-                                              {workEntry.equipment && (
-                                                <div className="text-yellow-700 dark:text-yellow-400">
-                                                  Equipment: {workEntry.equipment}
-                                                </div>
-                                              )}
                                               {(workEntry.machineHours || workEntry.labourHours) && (
                                                 <div className="text-yellow-700 dark:text-yellow-400">
                                                   Hours: {workEntry.machineHours && `${workEntry.machineHours} machine`}
@@ -877,14 +886,19 @@ export default function TimecardPage() {
                                                   {workEntry.labourHours && `${workEntry.labourHours} labour`}
                                                 </div>
                                               )}
-                                              {workEntry.smallTools && workEntry.smallTools.length > 0 && (
-                                                <div className="text-yellow-700 dark:text-yellow-400">
-                                                  Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
-                                                </div>
-                                              )}
                                               {workEntry.notes && (
                                                 <div className="text-yellow-600 dark:text-yellow-500 mt-1">
                                                   {workEntry.notes}
+                                                </div>
+                                              )}
+                                              {workEntry.equipment && (
+                                                <div className="text-yellow-700 dark:text-yellow-400">
+                                                  Equipment: {workEntry.equipment}
+                                                </div>
+                                              )}
+                                              {workEntry.smallTools && workEntry.smallTools.length > 0 && (
+                                                <div className="text-yellow-700 dark:text-yellow-400">
+                                                  Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
                                                 </div>
                                               )}
                                             </div>
@@ -900,11 +914,6 @@ export default function TimecardPage() {
                                               {entry.code}
                                             </div>
                                           )}
-                                          {entry.equipment && (
-                                            <div className="text-yellow-700 dark:text-yellow-400">
-                                              Equipment: {entry.equipment}
-                                            </div>
-                                          )}
                                           {(entry.machineHours || entry.labourHours) && (
                                             <div className="text-yellow-700 dark:text-yellow-400">
                                               Hours: {entry.machineHours && `${entry.machineHours} machine`}
@@ -912,14 +921,19 @@ export default function TimecardPage() {
                                               {entry.labourHours && `${entry.labourHours} labour`}
                                             </div>
                                           )}
-                                          {entry.smallTools && (
-                                            <div className="text-yellow-700 dark:text-yellow-400">
-                                              Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
-                                            </div>
-                                          )}
                                           {entry.notes && (
                                             <div className="text-yellow-600 dark:text-yellow-500 mt-1">
                                               {entry.notes}
+                                            </div>
+                                          )}
+                                          {entry.equipment && (
+                                            <div className="text-yellow-700 dark:text-yellow-400">
+                                              Equipment: {entry.equipment}
+                                            </div>
+                                          )}
+                                          {entry.smallTools && (
+                                            <div className="text-yellow-700 dark:text-yellow-400">
+                                              Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
                                             </div>
                                           )}
                                         </div>
@@ -934,6 +948,9 @@ export default function TimecardPage() {
                                   </div>
                                 );
                               })}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>

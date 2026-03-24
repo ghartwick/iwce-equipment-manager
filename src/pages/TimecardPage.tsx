@@ -27,8 +27,6 @@ export default function TimecardPage() {
   const { 
     loading, 
     getEntriesForDate,
-    createTimeEntry,
-    updateTimeEntry,
     deleteTimeEntry,
     canEditEntry,
     canViewEntry,

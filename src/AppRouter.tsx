@@ -50,7 +50,7 @@ function AppRouter() {
             </Layout>
           ) : <Navigate to="/login" replace />
         } />
-        <Route path="/timecard/edit/:entryId" element={
+                <Route path="/timecard/edit/:entryId" element={
           isAuthenticated ? (
             <Layout>
               <TimecardEditPage />

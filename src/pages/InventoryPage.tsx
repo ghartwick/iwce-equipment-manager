@@ -58,9 +58,12 @@ function InventoryPage() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showAlerts && alertsRef.current && !alertsRef.current.contains(event.target as Node)) {
-        // Check if the click is not on the Bell button
-        const bellButton = (event.target as Element).closest('button[aria-label*="Alerts"], button:has(.bell)');
-        if (!bellButton) {
+        // Check if the click is on the Bell button
+        const clickedElement = event.target as Element;
+        const isBellButton = clickedElement.closest('button')?.querySelector('svg.lucide-bell') ||
+                           clickedElement.closest('svg.lucide-bell');
+        
+        if (!isBellButton) {
           setShowAlerts(false);
         }
       }
@@ -74,7 +77,6 @@ function InventoryPage() {
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.site.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.repair ? 'yes' : 'no').includes(searchTerm.toLowerCase()) ||

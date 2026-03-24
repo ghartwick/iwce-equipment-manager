@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useInventory } from './hooks/useInventory';
 import { useAuth } from './hooks/useAuth';
 import { Header } from './components/Header';
@@ -33,6 +33,28 @@ function App() {
     setRefreshKey(prev => prev + 1);
   };
 
+  // Click outside handler for alerts
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showAlerts) {
+        // Check if the click is on the Bell button
+        const clickedElement = event.target as Element;
+        const isBellButton = clickedElement.closest('button')?.querySelector('svg.lucide-bell') ||
+                           clickedElement.closest('svg.lucide-bell');
+        
+        // If the click is not on the bell button and not inside the alerts panel, close it
+        if (!isBellButton && !clickedElement.closest('.bg-[#fffff0].dark\\:bg-black.border.border-yellow-600')) {
+          setShowAlerts(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAlerts]);
+
   const {
     products,
     categories,
@@ -49,7 +71,6 @@ function App() {
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.site.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (product.repair ? 'yes' : 'no').includes(searchTerm.toLowerCase()) ||

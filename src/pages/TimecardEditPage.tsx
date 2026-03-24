@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
 import { TimeEntryForm } from '../components/TimeEntryForm';
@@ -9,6 +9,7 @@ import { timecardService, TimeEntry } from '../services/timecardService';
 export default function TimecardEditPage() {
   const { entryId } = useParams<{ entryId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { canEditEntry, updateTimeEntry } = useTimecard();
 
@@ -19,26 +20,30 @@ export default function TimecardEditPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user || !entryId) return;
+      if (!user) return;
       try {
         setLoading(true);
-        // Load all entries and find the one with matching ID
-        let entries: TimeEntry[] = [];
-        if (user.role === 'admin') {
-          entries = await timecardService.getAllTimeEntries();
-        } else if (user.role === 'supervisor') {
-          entries = await timecardService.getSupervisorTimeEntries(user.id);
-        } else {
-          entries = await timecardService.getUserTimeEntries(user.id);
-        }
-        const found = entries.find(e => e.id === entryId);
-        setEntry(found || null);
-
+        
         // Load users
         const allUsers = await userManagementService.getAllUsers();
         setUsers(allUsers);
+        
+        // Only load entry if we're editing (not creating new)
+        if (entryId && entryId !== 'new') {
+          // Load all entries and find the one with matching ID
+          let entries: TimeEntry[] = [];
+          if (user.role === 'admin') {
+            entries = await timecardService.getAllTimeEntries();
+          } else if (user.role === 'supervisor') {
+            entries = await timecardService.getSupervisorTimeEntries(user.id);
+          } else {
+            entries = await timecardService.getUserTimeEntries(user.id);
+          }
+          const found = entries.find(e => e.id === entryId);
+          setEntry(found || null);
+        }
       } catch (err) {
-        console.error('Failed to load entry', err);
+        console.error('Failed to load data', err);
       } finally {
         setLoading(false);
       }
@@ -52,19 +57,20 @@ export default function TimecardEditPage() {
   };
 
   const handleSubmit = async (entryData: any) => {
-    if (!entry || !entry.id) return;
+    if (!user) return;
     try {
-      const preservedFields = {
-        entryNumber: entry.entryNumber || 1,
-        userId: entry.userId,
-        createdAt: entry.createdAt,
-        status: entryData.status || entry.status,
-        submittedAt: entryData.submittedAt || entry.submittedAt,
-      };
-      const filteredPreservedFields = Object.fromEntries(
-        Object.entries(preservedFields).filter(([_, value]) => value !== undefined)
-      );
-      await updateTimeEntry(entry.id, { ...entryData, ...filteredPreservedFields });
+      if (entryId === 'new') {
+        // Create new entry
+        await timecardService.createTimeEntry(entryData as Omit<TimeEntry, 'id' | 'createdAt' | 'updatedAt'>);
+      } else {
+        // Update existing entry
+        if (!entry) return;
+        // Preserve certain fields if supervisor editing
+        const filteredPreservedFields = user.role === 'supervisor' && entry.userId !== user.id
+          ? {}
+          : {};
+        await updateTimeEntry(entry.id!, { ...entryData, ...filteredPreservedFields });
+      }
       navigate('/timecard');
     } catch (err: any) {
       throw err;
@@ -83,7 +89,7 @@ export default function TimecardEditPage() {
     );
   }
 
-  if (!entry) {
+  if (!entry && entryId !== 'new') {
     return (
       <div className="min-h-screen bg-[#f0e0c8] dark:bg-black flex items-center justify-center">
         <div className="text-red-500">Time card not found.</div>
@@ -91,26 +97,28 @@ export default function TimecardEditPage() {
     );
   }
 
-  const entryDate = entry.date instanceof Date
+  const entryDate = entry?.date instanceof Date
     ? entry.date
-    : (entry.date && 'toDate' in (entry.date as any))
+    : entry?.date && 'toDate' in (entry.date as any)
       ? (entry.date as any).toDate()
-      : new Date(entry.date as any);
+      : searchParams.get('date') 
+        ? new Date(searchParams.get('date')!)
+        : new Date();
 
-  const ownerName = getBestDisplayName(users.find(u => u.id === entry.userId));
+  const ownerName = entry ? getBestDisplayName(users.find(u => u.id === entry.userId)) : user?.name || '';
 
   return (
     <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 p-4">
       <div className="max-w-4xl mx-auto">
         <TimeEntryForm
           selectedDate={entryDate}
-          entry={entry}
+          entry={entry || undefined}
           user={user!}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
-          canEdit={canEditEntry(entry, user!)}
+          canEdit={entry ? canEditEntry(entry, user!) : true}
           entryOwnerName={ownerName}
-          selectedEntryId={entry.id || null}
+          selectedEntryId={entry?.id || null}
           showCancelButton={true}
         />
       </div>

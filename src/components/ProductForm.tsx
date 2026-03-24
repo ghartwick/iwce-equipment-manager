@@ -272,6 +272,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
             </select>
           </div>
 
+          {userRole === 'admin' && (
           <div>
             <select
               value={formData.equipmentType}
@@ -287,6 +288,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               <option value="heavy">Heavy Equipment</option>
             </select>
           </div>
+        )}
 
           {formData.equipmentType === 'field' && (
           <div>

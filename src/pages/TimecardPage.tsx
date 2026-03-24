@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
-import { TimeEntryForm } from '../components/TimeEntryForm';
 import { UserManagementService, AppUser } from '../services/userManagementService';
 import { 
   format, 
@@ -55,10 +54,6 @@ export default function TimecardPage() {
     }
   }, []);
 
-  const [showEntryForm, setShowEntryForm] = useState(false);
-  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0); // Add refresh key
-  const formRef = useRef<HTMLDivElement>(null); // Ref for scrolling to form
   
   // Filter states for admins and supervisors
   const [siteFilter, setSiteFilter] = useState<string>(_savedTimecardState?.siteFilter ?? '');
@@ -89,89 +84,9 @@ export default function TimecardPage() {
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
-    setShowEntryForm(false); // Show time cards first, not the form
     // Reset filters when selecting a new date
     setSiteFilter('');
     setEmployeeFilter('');
-  };
-
-  const handleEntrySubmit = async (entryData: any) => {
-    try {
-      const entries = getEntriesForDate(entryData.date);
-      
-      // Check if field or supervisor user is trying to submit a second time card for the same site
-      if (entryData.status === 'submitted' && (user?.role === 'field' || user?.role === 'supervisor')) {
-        const existingSubmittedEntries = entries.filter(entry => 
-          entry.userId === user?.id && 
-          entry.status === 'submitted' && 
-          entry.job === entryData.job &&
-          entry.id !== selectedEntryId // Don't count the entry being edited
-        );
-        
-        if (existingSubmittedEntries.length > 0) {
-          // Use the alert function from the component (will be passed down)
-          const alertMessage = `You have already submitted a time card for ${entryData.job} on this date. Only one submitted time card per site is allowed.`;
-          // We'll need to pass this error up to the form
-          throw new Error(alertMessage);
-        }
-      }
-      
-      // If editing an existing entry (selectedEntryId is set), update it
-      if (selectedEntryId) {
-        const existingEntry = entries.find(entry => entry.id === selectedEntryId);
-        if (existingEntry) {
-          // Preserve the original entry details when updating
-          const preservedFields = {
-            entryNumber: existingEntry.entryNumber || 1,
-            userId: existingEntry.userId,
-            createdAt: existingEntry.createdAt,
-            status: entryData.status || existingEntry.status,
-            submittedAt: entryData.submittedAt || existingEntry.submittedAt,
-          };
-
-          const filteredPreservedFields = Object.fromEntries(
-            Object.entries(preservedFields).filter(([_, value]) => value !== undefined)
-          );
-
-          const entryDataWithNumber = {
-            ...entryData,
-            ...filteredPreservedFields
-          };
-          await updateTimeEntry(selectedEntryId, entryDataWithNumber);
-          setRefreshKey(prev => prev + 1);
-          setShowEntryForm(false);
-          setSelectedEntryId(null);
-          return;
-        }
-      }
-      
-      // Always create a new entry if not editing
-      const userEntries = entries
-        .filter(entry => entry.userId === user?.id)
-        .sort((a, b) => {
-          const aTime = a.createdAt?.getTime() || a.date?.getTime() || 0;
-          const bTime = b.createdAt?.getTime() || b.date?.getTime() || 0;
-          return aTime - bTime;
-        });
-      
-      const nextEntryNumber = userEntries.length + 1;
-      
-      const entryDataWithNumber = {
-        ...entryData,
-        entryNumber: nextEntryNumber,
-        userId: user?.id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      const id = await createTimeEntry(entryDataWithNumber);
-      setSelectedEntryId(id);
-      
-      setRefreshKey(prev => prev + 1);
-      setShowEntryForm(false);
-    } catch (error) {
-      alert('Error saving time entry: ' + (error as Error).message);
-    }
   };
 
   // Create a set of supervisor user IDs for filtering
@@ -292,7 +207,6 @@ export default function TimecardPage() {
     if (window.confirm('Are you sure you want to delete this time entry?')) {
       try {
         await deleteTimeEntry(entryId);
-        setSelectedEntryId(null);
       } catch (error) {
         alert('Error deleting time entry');
       }
@@ -352,7 +266,7 @@ export default function TimecardPage() {
 
                 return (
                   <button
-                    key={`${index}-${refreshKey}`}
+                    key={index}
                     onClick={() => handleDateClick(day)}
                     className={`
                       relative p-2 text-sm rounded-lg border transition-all
@@ -410,12 +324,8 @@ export default function TimecardPage() {
                 </h3>
                 <button
                   onClick={() => {
-                    setSelectedEntryId(null);
-                    setShowEntryForm(true);
-                    // Scroll to form after a short delay to ensure it's rendered
-                    setTimeout(() => {
-                      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 100);
+                    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+                    navigate(`/timecard/edit/new?date=${dateStr}`);
                   }}
                   className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap"
                 >
@@ -990,34 +900,8 @@ export default function TimecardPage() {
             </div>
           )}
 
-          {/* Time Entry Form - Appears below the time cards for new entries only */}
-          {showEntryForm && selectedDate && user && !selectedEntryId && (
-            <div ref={formRef} className="mt-6 pt-6 border-t border-yellow-200 dark:border-yellow-700">
-              <TimeEntryForm
-                selectedDate={selectedDate}
-                entry={selectedEntryId ? getEntriesForDate(selectedDate).find(e => e.id === selectedEntryId) : undefined}
-                user={user}
-                onSubmit={handleEntrySubmit}
-                onCancel={() => {
-                  setShowEntryForm(false);
-                  setSelectedEntryId(null);
-                }}
-                canEdit={true}
-                entryOwnerName={(() => {
-                  if (selectedEntryId) {
-                    const selectedEntry = getEntriesForDate(selectedDate).find(e => e.id === selectedEntryId);
-                    if (selectedEntry) {
-                      const owner = users.find(u => u.id === selectedEntry.userId);
-                      return owner ? (owner.name || owner.username) : undefined;
-                    }
-                  }
-                  return undefined;
-                })()}
-              />
-            </div>
-          )}
 
-          {!showEntryForm && !selectedDate && (
+          {!selectedDate && (
             <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6">
               <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-4">Select a Date</h3>
               <p className="text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view or edit time entries.</p>

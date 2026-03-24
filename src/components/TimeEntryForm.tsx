@@ -716,7 +716,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     onSubmit(finalData);
   };
 
-  const handleSubmitSubmit = () => {
+  const handleSubmitSubmit = async () => {
     if (!clockIn || !clockOut) {
       showAlert('Please select both clock in and clock out times before submitting');
       return;
@@ -832,7 +832,11 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     finalData.clockOut = clockOutDate;
     finalData.submittedAt = new Date();
 
-    onSubmit(finalData);
+    try {
+      await onSubmit(finalData);
+    } catch (error) {
+      showAlert((error as Error).message);
+    }
   };
 
   // Lock logic: only field users are affected by lock status
@@ -854,7 +858,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       </button>
       
       <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-1 pr-8">
-        {entry ? `Time Card ${entry.entryNumber || 'New'}` : 'New Time Card'} - {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
+        {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
       </h3>
       
       <div className="text-yellow-700 dark:text-yellow-600 text-sm mb-4">

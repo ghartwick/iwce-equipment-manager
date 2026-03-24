@@ -666,33 +666,40 @@ export default function TimecardPage() {
                                           <div className="mt-2 space-y-1">
                                             {entry.workEntries.map((workEntry: any, idx: number) => (
                                               <div key={idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                                {workEntry.code && (
-                                                  <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                    {workEntry.code}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                  <div>
+                                                    {workEntry.code && (
+                                                      <div className="font-medium text-yellow-800 dark:text-yellow-300">
+                                                        {workEntry.code}
+                                                      </div>
+                                                    )}
+                                                    {workEntry.machineHours && (
+                                                      <div className="text-yellow-700 dark:text-yellow-400">
+                                                        Machine {workEntry.machineHours}
+                                                      </div>
+                                                    )}
+                                                    {workEntry.labourHours && (
+                                                      <div className="text-yellow-700 dark:text-yellow-400">
+                                                        Labour {workEntry.labourHours}
+                                                      </div>
+                                                    )}
+                                                    {workEntry.equipment && (
+                                                      <div className="text-yellow-700 dark:text-yellow-400">
+                                                        Equipment: {workEntry.equipment}
+                                                      </div>
+                                                    )}
+                                                    {workEntry.smallTools && workEntry.smallTools.length > 0 && (
+                                                      <div className="text-yellow-700 dark:text-yellow-400">
+                                                        Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
+                                                      </div>
+                                                    )}
                                                   </div>
-                                                )}
-                                                {(workEntry.machineHours || workEntry.labourHours) && (
-                                                  <div className="text-yellow-700 dark:text-yellow-400">
-                                                    Hours: {workEntry.machineHours && `${workEntry.machineHours} machine`}
-                                                    {workEntry.machineHours && workEntry.labourHours && ' + '}
-                                                    {workEntry.labourHours && `${workEntry.labourHours} labour`}
-                                                  </div>
-                                                )}
-                                                {workEntry.notes && (
-                                                  <div className="text-yellow-600 dark:text-yellow-500 mt-1">
-                                                    {workEntry.notes}
-                                                  </div>
-                                                )}
-                                                {workEntry.equipment && (
-                                                  <div className="text-yellow-700 dark:text-yellow-400">
-                                                    Equipment: {workEntry.equipment}
-                                                  </div>
-                                                )}
-                                                {workEntry.smallTools && workEntry.smallTools.length > 0 && (
-                                                  <div className="text-yellow-700 dark:text-yellow-400">
-                                                    Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
-                                                  </div>
-                                                )}
+                                                  {workEntry.notes && (
+                                                    <div className="text-yellow-600 dark:text-yellow-500">
+                                                      {workEntry.notes}
+                                                    </div>
+                                                  )}
+                                                </div>
                                               </div>
                                             ))}
                                           </div>
@@ -701,33 +708,40 @@ export default function TimecardPage() {
                                         {/* Legacy single entry display */}
                                         {!entry.workEntries && (entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.notes) && (
                                           <div className="mt-2 text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                            {entry.code && (
-                                              <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                {entry.code}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                              <div>
+                                                {entry.code && (
+                                                  <div className="font-medium text-yellow-800 dark:text-yellow-300">
+                                                    {entry.code}
+                                                  </div>
+                                                )}
+                                                {entry.machineHours && (
+                                                  <div className="text-yellow-700 dark:text-yellow-400">
+                                                    Machine {entry.machineHours}
+                                                  </div>
+                                                )}
+                                                {entry.labourHours && (
+                                                  <div className="text-yellow-700 dark:text-yellow-400">
+                                                    Labour {entry.labourHours}
+                                                  </div>
+                                                )}
+                                                {entry.equipment && (
+                                                  <div className="text-yellow-700 dark:text-yellow-400">
+                                                    Equipment: {entry.equipment}
+                                                  </div>
+                                                )}
+                                                {entry.smallTools && (
+                                                  <div className="text-yellow-700 dark:text-yellow-400">
+                                                    Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
+                                                  </div>
+                                                )}
                                               </div>
-                                            )}
-                                            {(entry.machineHours || entry.labourHours) && (
-                                              <div className="text-yellow-700 dark:text-yellow-400">
-                                                Hours: {entry.machineHours && `${entry.machineHours} machine`}
-                                                  {entry.machineHours && entry.labourHours && ' + '}
-                                                  {entry.labourHours && `${entry.labourHours} labour`}
-                                              </div>
-                                            )}
-                                            {entry.notes && (
-                                              <div className="text-yellow-600 dark:text-yellow-500 mt-1">
-                                                {entry.notes}
-                                              </div>
-                                            )}
-                                            {entry.equipment && (
-                                              <div className="text-yellow-700 dark:text-yellow-400">
-                                                Equipment: {entry.equipment}
-                                              </div>
-                                            )}
-                                            {entry.smallTools && (
-                                              <div className="text-yellow-700 dark:text-yellow-400">
-                                                Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
-                                              </div>
-                                            )}
+                                              {entry.notes && (
+                                                <div className="text-yellow-600 dark:text-yellow-500">
+                                                  {entry.notes}
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                         )}
                                         
@@ -874,33 +888,40 @@ export default function TimecardPage() {
                                         <div className="mt-2 space-y-1">
                                           {entry.workEntries.map((workEntry: any, idx: number) => (
                                             <div key={idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                              {workEntry.code && (
-                                                <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                  {workEntry.code}
+                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                <div>
+                                                  {workEntry.code && (
+                                                    <div className="font-medium text-yellow-800 dark:text-yellow-300">
+                                                      {workEntry.code}
+                                                    </div>
+                                                  )}
+                                                  {workEntry.machineHours && (
+                                                    <div className="text-yellow-700 dark:text-yellow-400">
+                                                      Machine {workEntry.machineHours}
+                                                    </div>
+                                                  )}
+                                                  {workEntry.labourHours && (
+                                                    <div className="text-yellow-700 dark:text-yellow-400">
+                                                      Labour {workEntry.labourHours}
+                                                    </div>
+                                                  )}
+                                                  {workEntry.equipment && (
+                                                    <div className="text-yellow-700 dark:text-yellow-400">
+                                                      Equipment: {workEntry.equipment}
+                                                    </div>
+                                                  )}
+                                                  {workEntry.smallTools && workEntry.smallTools.length > 0 && (
+                                                    <div className="text-yellow-700 dark:text-yellow-400">
+                                                      Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
+                                                    </div>
+                                                  )}
                                                 </div>
-                                              )}
-                                              {(workEntry.machineHours || workEntry.labourHours) && (
-                                                <div className="text-yellow-700 dark:text-yellow-400">
-                                                  Hours: {workEntry.machineHours && `${workEntry.machineHours} machine`}
-                                                  {workEntry.machineHours && workEntry.labourHours && ' + '}
-                                                  {workEntry.labourHours && `${workEntry.labourHours} labour`}
-                                                </div>
-                                              )}
-                                              {workEntry.notes && (
-                                                <div className="text-yellow-600 dark:text-yellow-500 mt-1">
-                                                  {workEntry.notes}
-                                                </div>
-                                              )}
-                                              {workEntry.equipment && (
-                                                <div className="text-yellow-700 dark:text-yellow-400">
-                                                  Equipment: {workEntry.equipment}
-                                                </div>
-                                              )}
-                                              {workEntry.smallTools && workEntry.smallTools.length > 0 && (
-                                                <div className="text-yellow-700 dark:text-yellow-400">
-                                                  Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
-                                                </div>
-                                              )}
+                                                {workEntry.notes && (
+                                                  <div className="text-yellow-600 dark:text-yellow-500">
+                                                    {workEntry.notes}
+                                                  </div>
+                                                )}
+                                              </div>
                                             </div>
                                           ))}
                                         </div>
@@ -909,33 +930,40 @@ export default function TimecardPage() {
                                       {/* Legacy single entry display */}
                                       {!entry.workEntries && (entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.notes) && (
                                         <div className="mt-2 text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                          {entry.code && (
-                                            <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                              {entry.code}
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            <div>
+                                              {entry.code && (
+                                                <div className="font-medium text-yellow-800 dark:text-yellow-300">
+                                                  {entry.code}
+                                                </div>
+                                              )}
+                                              {entry.machineHours && (
+                                                <div className="text-yellow-700 dark:text-yellow-400">
+                                                  Machine {entry.machineHours}
+                                                </div>
+                                              )}
+                                              {entry.labourHours && (
+                                                <div className="text-yellow-700 dark:text-yellow-400">
+                                                  Labour {entry.labourHours}
+                                                </div>
+                                              )}
+                                              {entry.equipment && (
+                                                <div className="text-yellow-700 dark:text-yellow-400">
+                                                  Equipment: {entry.equipment}
+                                                </div>
+                                              )}
+                                              {entry.smallTools && (
+                                                <div className="text-yellow-700 dark:text-yellow-400">
+                                                  Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
+                                                </div>
+                                              )}
                                             </div>
-                                          )}
-                                          {(entry.machineHours || entry.labourHours) && (
-                                            <div className="text-yellow-700 dark:text-yellow-400">
-                                              Hours: {entry.machineHours && `${entry.machineHours} machine`}
-                                              {entry.machineHours && entry.labourHours && ' + '}
-                                              {entry.labourHours && `${entry.labourHours} labour`}
-                                            </div>
-                                          )}
-                                          {entry.notes && (
-                                            <div className="text-yellow-600 dark:text-yellow-500 mt-1">
-                                              {entry.notes}
-                                            </div>
-                                          )}
-                                          {entry.equipment && (
-                                            <div className="text-yellow-700 dark:text-yellow-400">
-                                              Equipment: {entry.equipment}
-                                            </div>
-                                          )}
-                                          {entry.smallTools && (
-                                            <div className="text-yellow-700 dark:text-yellow-400">
-                                              Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
-                                            </div>
-                                          )}
+                                            {entry.notes && (
+                                              <div className="text-yellow-600 dark:text-yellow-500">
+                                                {entry.notes}
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
                                       )}
                                       

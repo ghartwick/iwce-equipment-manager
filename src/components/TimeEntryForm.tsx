@@ -110,13 +110,6 @@ const WorkEntrySection = ({
         <div className="flex justify-between items-center">
           <h3 className="text-yellow-600 dark:text-yellow-400 font-medium">
             Entry {entryIndex + 1}
-            {(entry.machineHours || entry.labourHours) && (
-              <span className="text-yellow-500 dark:text-yellow-600 text-sm ml-2">
-                {entry.machineHours && `M:${entry.machineHours}`}
-                {entry.machineHours && entry.labourHours && ' '}
-                {entry.labourHours && `L:${entry.labourHours}`}
-              </span>
-            )}
           </h3>
           <div className="flex items-center gap-2">
             {entryIndex > 0 && (
@@ -148,14 +141,20 @@ const WorkEntrySection = ({
             {entry.code && (
               <div><span className="font-medium">Code:</span> {entry.code}</div>
             )}
+            {entry.machineHours && (
+              <div><span className="font-medium">Machine:</span> {entry.machineHours}</div>
+            )}
+            {entry.labourHours && (
+              <div><span className="font-medium">Labour:</span> {entry.labourHours}</div>
+            )}
+            {entry.notes && (
+              <div className="truncate"><span className="font-medium">Notes:</span> {entry.notes}</div>
+            )}
             {entry.equipment && (
               <div><span className="font-medium">Equipment:</span> {entry.equipment}</div>
             )}
             {entry.smallTools.length > 0 && (
-              <div><span className="font-medium">Small Tools:</span> {entry.smallTools.join(', ')}</div>
-            )}
-            {entry.notes && (
-              <div className="truncate"><span className="font-medium">Notes:</span> {entry.notes}</div>
+              <div><span className="font-medium">Tools:</span> {entry.smallTools.join(', ')}</div>
             )}
           </div>
         )}
@@ -170,7 +169,7 @@ const WorkEntrySection = ({
           value={entry.code}
           onChange={handleCodeChange}
           disabled={isLocked || user.role === 'field'}
-          className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
         >
           <option value="">Select Code</option>
           {codeOptionsWithDetails.map(codeOption => (
@@ -181,8 +180,52 @@ const WorkEntrySection = ({
         </select>
       </div>
 
+      {/* Machine & Labour Hours */}
+      <div className="flex gap-2 sm:gap-4 overflow-x-auto">
+        {/* Machine Hours */}
+        <div className="flex flex-col flex-shrink-0 min-w-0">
+          <label className="block text-xs font-medium text-yellow-600 dark:text-yellow-600 mb-1 whitespace-nowrap">
+            Machine Hrs
+          </label>
+          <input
+            type="text"
+            value={entry.machineHours}
+            onChange={handleMachineHoursChange}
+            disabled={isLocked}
+            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+              !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
+            }`}
+            maxLength={5}
+            inputMode="decimal"
+            placeholder="0"
+          />
+        </div>
+
+        {/* Labour Hours */}
+        <div className="flex flex-col flex-shrink-0 min-w-0">
+          <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
+            Labour Hrs
+          </label>
+          <input
+            type="text"
+            value={entry.labourHours}
+            onChange={handleLabourHoursChange}
+            disabled={isLocked}
+            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+              !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
+            }`}
+            maxLength={5}
+            inputMode="decimal"
+            placeholder="0"
+          />
+        </div>
+      </div>
+
         {/* Task Description */}
-        <div>
+        <div className="flex flex-col">
+          <label className="block text-xs font-medium text-yellow-600 dark:text-yellow-600 mb-1 whitespace-nowrap">
+            Notes
+          </label>
           <textarea
             value={entry.notes}
             onChange={handleNotesChange}
@@ -253,47 +296,6 @@ const WorkEntrySection = ({
             </option>
           ))}
         </select>
-      </div>
-
-      {/* Machine & Labour Hours */}
-      <div className="flex gap-2 sm:gap-4 overflow-x-auto">
-        {/* Machine Hours */}
-        <div className="flex flex-col flex-shrink-0 min-w-0">
-          <label className="block text-xs font-medium text-yellow-600 dark:text-yellow-600 mb-1 whitespace-nowrap">
-            Machine Hrs
-          </label>
-          <input
-            type="text"
-            value={entry.machineHours}
-            onChange={handleMachineHoursChange}
-            disabled={isLocked}
-            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
-              !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
-            }`}
-            maxLength={5}
-            inputMode="decimal"
-            placeholder="0"
-          />
-        </div>
-
-        {/* Labour Hours */}
-        <div className="flex flex-col flex-shrink-0 min-w-0">
-          <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
-            Labour Hrs
-          </label>
-          <input
-            type="text"
-            value={entry.labourHours}
-            onChange={handleLabourHoursChange}
-            disabled={isLocked}
-            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
-              !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
-            }`}
-            maxLength={5}
-            inputMode="decimal"
-            placeholder="0"
-          />
-        </div>
       </div>
         </>
       )}

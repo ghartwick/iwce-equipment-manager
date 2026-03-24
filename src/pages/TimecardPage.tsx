@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
@@ -19,6 +20,8 @@ import {
 } from 'date-fns';
 
 export default function TimecardPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { 
     loading, 
@@ -32,8 +35,13 @@ export default function TimecardPage() {
     getStatusColor,
   } = useTimecard();
 
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const routeState = location.state as { selectedDate?: string; currentMonth?: string } | null;
+  const [currentMonth, setCurrentMonth] = useState(() =>
+    routeState?.currentMonth ? new Date(routeState.currentMonth) : new Date()
+  );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() =>
+    routeState?.selectedDate ? new Date(routeState.selectedDate) : null
+  );
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0); // Add refresh key
@@ -48,7 +56,6 @@ export default function TimecardPage() {
   const [userManagementService] = useState(() => new UserManagementService());
   
   // Collapsible states
-  const [yourCardsCollapsed, setYourCardsCollapsed] = useState(false);
   const [otherCardsCollapsed, setOtherCardsCollapsed] = useState(false);
 
   const monthStart = startOfMonth(currentMonth);
@@ -256,21 +263,14 @@ export default function TimecardPage() {
     return user ? [user] : [];
   };
 
-  // Handle entry selection
+  // Handle entry selection - navigate to dedicated edit page, preserving current state
   const handleEntrySelect = (entryId: string) => {
-    if (selectedEntryId === entryId) {
-      // If clicking the same card, collapse it
-      setSelectedEntryId(null);
-      setShowEntryForm(false);
-    } else {
-      // If clicking a different card, select it
-      setSelectedEntryId(entryId);
-      setShowEntryForm(true); // Show the form when an entry is selected
-      // Scroll to form after a short delay to ensure it's rendered
-      setTimeout(() => {
-        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }
+    navigate(`/timecard/edit/${entryId}`, {
+      state: {
+        selectedDate: selectedDate?.toISOString(),
+        currentMonth: currentMonth.toISOString(),
+      }
+    });
   };
 
   // Handle entry deletion
@@ -445,6 +445,9 @@ export default function TimecardPage() {
                       className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     >
                       <option value="">None</option>
+                      {user?.role === 'supervisor' && (
+                        <option value="self">Your Time Card</option>
+                      )}
                       <option value="all">All</option>
                       {getUniqueEmployees().map(employee => (
                         <option key={employee.id} value={employee.id}>
@@ -500,15 +503,20 @@ export default function TimecardPage() {
                     }));
                   
                   const otherEntries = isAdminOrSupervisor ? (() => {
+                    // 'self' filter: show supervisor's own entries
+                    if (employeeFilter === 'self') {
+                      return filteredEntries.filter(entry => entry.userId === user?.id);
+                    }
+
                     // Show all other users' entries for supervisors/admins (including drafts)
                     const otherUsersEntries = filteredEntries.filter(entry => entry.userId !== user?.id);
                     
                     // Check if "all" is explicitly selected for either filter
                     const showAll = (siteFilter === 'all') || (employeeFilter === 'all');
                     
-                    // Check if a specific filter is set (not empty and not 'all')
+                    // Check if a specific filter is set (not empty and not 'all' and not 'self')
                     const hasSpecificFilter = (siteFilter && siteFilter !== '' && siteFilter !== 'all') || 
-                                            (employeeFilter && employeeFilter !== '' && employeeFilter !== 'all');
+                                            (employeeFilter && employeeFilter !== '' && employeeFilter !== 'all' && employeeFilter !== 'self');
                     
                     if (showAll) {
                       // "All" selected - show all other users' entries
@@ -536,33 +544,20 @@ export default function TimecardPage() {
 
                   return (
                     <div>
-                      {/* Your Time Cards Section - Hidden for admins */}
-                      {user?.role !== 'admin' && (
+                      {/* Your Time Cards Section - Field users only */}
+                      {user?.role === 'field' && (
                         <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4">
-                          <div 
-                            className="flex justify-between items-center cursor-pointer mb-3"
-                            onClick={() => setYourCardsCollapsed(!yourCardsCollapsed)}
-                          >
-                            <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">Your Time Cards</h4>
-                            <button className="text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-200 transition-colors">
-                              {yourCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-                            </button>
-                          </div>
-                          {!yourCardsCollapsed && (
                             <div className="space-y-3">
                               {yourEntries.length > 0 ? (
                                 yourEntries.map((entry: any, index: number) => {
                                   const canAccess = canViewEntry(entry, user!);
-                                  const isSelected = selectedEntryId === entry.id;
                                   return (
                                     <div key={entry.id || `your-${index}`}>
                                       <div
                                         className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
-                                          isSelected 
-                                            ? 'border-green-500 bg-green-100 dark:bg-green-900 dark:bg-opacity-60 ring-2 ring-green-500 ring-opacity-50' 
-                                            : canAccess 
-                                              ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600 cursor-pointer' 
-                                              : 'border-gray-400 dark:border-gray-600 opacity-75'
+                                          canAccess 
+                                            ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600 cursor-pointer' 
+                                            : 'border-gray-400 dark:border-gray-600 opacity-75'
                                         }`}
                                         onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                       >
@@ -712,24 +707,6 @@ export default function TimecardPage() {
                                           </div>
                                         )}
                                       </div>
-                                      {/* Inline Time Entry Form */}
-                                      {isSelected && showEntryForm && (
-                                        <div className="mt-3">
-                                          <TimeEntryForm
-                                            selectedDate={selectedDate!}
-                                            entry={selectedEntryId ? getEntriesForDate(selectedDate!).find(e => e.id === selectedEntryId) : undefined}
-                                            user={user!}
-                                            onSubmit={handleEntrySubmit}
-                                            onCancel={() => {
-                                              setShowEntryForm(false);
-                                              setSelectedEntryId(null);
-                                            }}
-                                            canEdit={canEditEntry(entry, user!)}
-                                            entryOwnerName={getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                            selectedEntryId={selectedEntryId}
-                                          />
-                                        </div>
-                                      )}
                                     </div>
                                   );
                                 })
@@ -739,56 +716,49 @@ export default function TimecardPage() {
                                 </div>
                               )}
                             </div>
-                          )}
                         </div>
                       )}
 
                       {/* Other Time Cards Section (Admins/Supervisors only) */}
                       {otherEntries.length > 0 && (
                         <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4 mt-4">
-                          <div 
-                            className="flex justify-between items-center cursor-pointer mb-3"
-                            onClick={() => setOtherCardsCollapsed(!otherCardsCollapsed)}
-                          >
-                            <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">
-                              {(() => {
-                                // Check if "all" is selected for either filter
-                                if (siteFilter === 'all' || employeeFilter === 'all') {
-                                  return 'All Time Cards';
-                                } else if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
-                                  // Both specific filters selected
-                                  const employeeName = getBestDisplayName(users.find(u => u.id === employeeFilter));
-                                  return `${siteFilter} - ${employeeName}'s Time Cards`;
-                                } else if (siteFilter && siteFilter !== 'all') {
-                                  // Only site filter selected
-                                  return `${siteFilter} Time Cards`;
-                                } else if (employeeFilter && employeeFilter !== 'all') {
-                                  // Only employee filter selected
-                                  return `${getBestDisplayName(users.find(u => u.id === employeeFilter))}'s Time Cards`;
-                                } else {
-                                  // No filters selected
-                                  return 'Other Time Cards';
-                                }
-                              })()}
-                            </h4>
-                            <button className="text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-200 transition-colors">
-                              {otherCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-                            </button>
-                          </div>
+                          {employeeFilter !== 'self' && (
+                            <div 
+                              className="flex justify-between items-center cursor-pointer mb-3"
+                              onClick={() => setOtherCardsCollapsed(!otherCardsCollapsed)}
+                            >
+                              <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">
+                                {(() => {
+                                  if (siteFilter === 'all' || employeeFilter === 'all') {
+                                    return 'All Time Cards';
+                                  } else if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
+                                    const employeeName = getBestDisplayName(users.find(u => u.id === employeeFilter));
+                                    return `${siteFilter} - ${employeeName}'s Time Cards`;
+                                  } else if (siteFilter && siteFilter !== 'all') {
+                                    return `${siteFilter} Time Cards`;
+                                  } else if (employeeFilter && employeeFilter !== 'all') {
+                                    return `${getBestDisplayName(users.find(u => u.id === employeeFilter))}'s Time Cards`;
+                                  } else {
+                                    return 'Other Time Cards';
+                                  }
+                                })()}
+                              </h4>
+                              <button className="text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-200 transition-colors">
+                                {otherCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                              </button>
+                            </div>
+                          )}
                           {!otherCardsCollapsed && (
                             <div className="space-y-3">
                               {otherEntries.map((entry: any, index: number) => {
                                 const canAccess = canViewEntry(entry, user!);
-                                const isSelected = selectedEntryId === entry.id;
                                 return (
                                   <div key={entry.id || `other-${index}`}>
                                     <div
                                       className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
-                                        isSelected 
-                                          ? 'border-green-500 bg-green-100 dark:bg-green-900 dark:bg-opacity-60 ring-2 ring-green-500 ring-opacity-50' 
-                                          : canAccess 
-                                            ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600 cursor-pointer' 
-                                            : 'border-gray-400 dark:border-gray-600 opacity-75'
+                                        canAccess 
+                                          ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600 cursor-pointer' 
+                                          : 'border-gray-400 dark:border-gray-600 opacity-75'
                                       }`}
                                       onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                     >
@@ -947,24 +917,6 @@ export default function TimecardPage() {
                                         </div>
                                       )}
                                     </div>
-                                    {/* Inline Time Entry Form */}
-                                    {isSelected && showEntryForm && (
-                                      <div className="mt-3">
-                                        <TimeEntryForm
-                                          selectedDate={selectedDate!}
-                                          entry={selectedEntryId ? getEntriesForDate(selectedDate!).find(e => e.id === selectedEntryId) : undefined}
-                                          user={user!}
-                                          onSubmit={handleEntrySubmit}
-                                          onCancel={() => {
-                                            setShowEntryForm(false);
-                                            setSelectedEntryId(null);
-                                          }}
-                                          canEdit={canEditEntry(entry, user!)}
-                                          entryOwnerName={getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                          selectedEntryId={selectedEntryId}
-                                        />
-                                      </div>
-                                    )}
                                   </div>
                                 );
                               })}

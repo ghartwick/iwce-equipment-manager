@@ -17,6 +17,8 @@ interface TimeEntryFormProps {
   canEdit: boolean;
   selectedEntryId?: string | null;
   entryOwnerName?: string;
+  isInline?: boolean;
+  showCancelButton?: boolean;
 }
 
 // Define the structure for a single work entry
@@ -307,7 +309,9 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   onCancel, 
   canEdit,
   selectedEntryId,
-  entryOwnerName
+  entryOwnerName,
+  isInline = false,
+  showCancelButton = false
 }: TimeEntryFormProps) => {
   const [clockIn, setClockIn] = useState('');
   const [clockOut, setClockOut] = useState('');
@@ -847,17 +851,20 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const showButtons = (canEdit && !isLocked) || (!entry && selectedEntryId === null);
 
   return (
-    <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6 relative">
-      {/* X Button in Top Right Corner */}
-      <button
-        type="button"
-        onClick={onCancel}
-        className="absolute top-4 right-4 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-200 text-2xl font-bold leading-none w-8 h-8 flex items-center justify-center rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-20 transition-colors"
-      >
-        ×
-      </button>
+    <div className={`bg-[#fffff0] dark:bg-black relative ${isInline ? 'w-full' : 'border border-yellow-600 rounded-lg p-6'}`}>
+      {/* X Button in Top Right Corner - hidden when showCancelButton is true */}
+      {!showCancelButton && (
+        <button
+          type="button"
+          onClick={onCancel}
+          className="absolute top-4 right-4 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-200 text-2xl font-bold leading-none w-8 h-8 flex items-center justify-center rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-20 transition-colors"
+        >
+          ×
+        </button>
+      )}
       
-      <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-1 pr-8">
+      <div className={isInline ? 'p-6 w-full' : ''}>
+        <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-1 pr-8">
         {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
       </h3>
       
@@ -865,7 +872,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         {entryOwnerName || user.name || user.username}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className={`space-y-4 ${isInline ? 'w-full' : ''}`}>
         {/* Site Dropdown */}
         <div>
           <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-1">
@@ -1029,6 +1036,15 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
         {/* Action Buttons */}
         <div className="flex space-x-3">
+          {showCancelButton && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 p-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
+            >
+              Cancel
+            </button>
+          )}
           {showButtons && (
             <>
               <button
@@ -1083,8 +1099,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
           message={alert.message}
           type={alert.type}
           onClose={() => setAlert(null)}
-        />
-      )}
+        />)}
+      </div>
     </div>
   );
 }

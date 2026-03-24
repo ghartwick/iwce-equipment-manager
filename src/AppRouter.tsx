@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth';
 import { LoginPage } from './components/LoginPage';
 import InventoryPage from './pages/InventoryPage';
 import TimecardPage from './pages/TimecardPage';
+import TimecardEditPage from './pages/TimecardEditPage';
 import Layout from './components/Layout';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -45,6 +46,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <TimecardPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/timecard/edit/:entryId" element={
+          isAuthenticated ? (
+            <Layout>
+              <TimecardEditPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

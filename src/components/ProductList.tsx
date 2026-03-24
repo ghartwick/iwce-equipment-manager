@@ -95,7 +95,7 @@ export function ProductList({
   return (
     <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
       {/* Header with export button */}
-      <div className="bg-yellow-100 dark:bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
+      <div className="bg-[#fffff0] dark:bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
         <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300">Equipment Inventory</h2>
         {userRole === 'admin' && (
           <div className="flex items-center space-x-2">
@@ -127,16 +127,7 @@ export function ProductList({
       </div>
       
       <div className="overflow-x-auto">
-        <table className="w-full max-w-[100vw] divide-y divide-yellow-200 dark:divide-yellow-800">
-          <thead className="bg-yellow-100 dark:bg-yellow-900">
-            <tr>
-              <th className="w-[70%] px-2 py-3 text-left text-xs font-medium text-yellow-700 dark:text-yellow-200 uppercase tracking-wider">
-                Equipment
-              </th>
-              <th className="w-[30%] px-1 py-3 text-center text-xs font-medium text-yellow-700 dark:text-yellow-200 uppercase tracking-wider">
-              </th>
-            </tr>
-          </thead>
+        <table className="w-full max-w-[100vw]">
           <tbody className="bg-[#fffff0] dark:bg-black divide-y divide-yellow-200 dark:divide-yellow-800">
             {showCategoryHeadings ? (
               // Group by category with headings
@@ -155,7 +146,7 @@ export function ProductList({
                     {/* Category Heading */}
                     <tr>
                       <td colSpan={2} className="px-4 py-2 bg-yellow-900 bg-opacity-30 border-b border-yellow-700">
-                        <h3 className="text-sm font-semibold text-yellow-300 uppercase tracking-wide">
+                        <h3 className="text-sm font-semibold text-yellow-600 uppercase tracking-wide">
                           {categoryName}
                         </h3>
                       </td>
@@ -215,7 +206,7 @@ export function ProductList({
                         {selectedEquipmentId === product.id && (
                           <tr>
                             <td colSpan={2} className="px-0 py-0 border-t border-yellow-200 dark:border-yellow-800">
-                              <div className="bg-yellow-50 dark:bg-yellow-900">
+                              <div className="bg-[#fffff0] dark:bg-yellow-900">
                                 <ProductForm
                                   categories={categories}
                                   product={selectedProduct}
@@ -306,7 +297,7 @@ export function ProductList({
                         {selectedEquipmentId === product.id && (
                           <tr>
                             <td colSpan={2} className="px-0 py-0 border-t border-yellow-200 dark:border-yellow-800">
-                              <div className="bg-yellow-50 dark:bg-yellow-900">
+                              <div className="bg-[#fffff0] dark:bg-yellow-900">
                                 <ProductForm
                                   categories={categories}
                                   product={selectedProduct}

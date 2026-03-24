@@ -128,7 +128,7 @@ export function MobileProductList({
                   {/* Inline Edit Form - Appears directly below selected equipment */}
                   {selectedEquipmentId === product.id && (
                     <div className="border-t border-yellow-200 dark:border-yellow-800">
-                      <div className="bg-yellow-50 dark:bg-yellow-900 p-3">
+                      <div className="bg-[#fffff0] dark:bg-yellow-900 p-3">
                         <ProductForm
                           categories={categories}
                           product={selectedProduct}
@@ -273,7 +273,7 @@ export function MobileProductList({
                       {/* Inline Edit Form - Appears directly below selected equipment */}
                       {selectedEquipmentId === product.id && (
                         <div className="border-t border-yellow-200 dark:border-yellow-800">
-                          <div className="bg-yellow-50 dark:bg-yellow-900 p-3">
+                          <div className="bg-[#fffff0] dark:bg-yellow-900 p-3">
                             <ProductForm
                               categories={categories}
                               product={selectedProduct}

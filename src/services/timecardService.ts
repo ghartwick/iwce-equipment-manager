@@ -1,5 +1,6 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import { UserManagementService } from './userManagementService';
 
 export interface TimeEntry {
   id?: string;
@@ -48,6 +49,7 @@ export interface User {
 
 class TimecardService {
   private readonly collection = 'timeEntries';
+  private userManagementService = new UserManagementService();
 
   // Create new time entry
   async createTimeEntry(entry: Omit<TimeEntry, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
@@ -133,8 +135,14 @@ class TimecardService {
     return sortedEntries;
   }
 
-  // Get time entries for supervisor (their own entries + submitted entries from others)
+  // Get time entries for supervisor (their own entries + submitted entries from others, excluding other supervisors)
   async getSupervisorTimeEntries(supervisorId: string): Promise<TimeEntry[]> {
+    // Get all users to determine roles
+    const allUsers = await this.userManagementService.getAllUsers();
+    const supervisorUserIds = new Set(
+      allUsers.filter(u => u.role === 'supervisor').map(u => u.id)
+    );
+    
     // Get all entries
     const q = query(
       collection(db, this.collection)
@@ -163,10 +171,16 @@ class TimecardService {
       } as TimeEntry;
     });
     
-    // Filter: supervisor's own entries (all statuses) + submitted entries from others
-    const filteredEntries = entries.filter(entry => 
-      entry.userId === supervisorId || entry.status === 'submitted'
-    );
+    // Filter: supervisor's own entries (all statuses) + submitted entries from others (but NOT from other supervisors)
+    const filteredEntries = entries.filter(entry => {
+      // Always show supervisor's own entries
+      if (entry.userId === supervisorId) return true;
+      
+      // For other users' entries, only show if submitted AND not from another supervisor
+      if (entry.status === 'submitted' && !supervisorUserIds.has(entry.userId)) return true;
+      
+      return false;
+    });
     
     // Sort by creation time first (oldest first), then by date to maintain creation order
     const sortedEntries = filteredEntries.sort((a, b) => {
@@ -256,9 +270,23 @@ class TimecardService {
   }
 
   // Check if user can see entry in list (but not necessarily access it)
-  canSeeEntry(entry: TimeEntry, user: User): boolean {
+  // supervisorUserIds: Set of user IDs who are supervisors (optional, for filtering)
+  canSeeEntry(entry: TimeEntry, user: User, supervisorUserIds?: Set<string>): boolean {
     if (user.role === 'admin') return true;
-    if (user.role === 'supervisor') return true;
+    
+    if (user.role === 'supervisor') {
+      // Supervisors can see their own entries
+      if (entry.userId === user.id) return true;
+      
+      // If we have supervisor IDs, check if the entry belongs to another supervisor
+      if (supervisorUserIds && supervisorUserIds.has(entry.userId)) {
+        return false; // Don't show entries from other supervisors
+      }
+      
+      // Show entries from field users
+      return true;
+    }
+    
     // Field users can see their own entries regardless of status
     if (user.role === 'field' && entry.userId === user.id) return true;
     return false;

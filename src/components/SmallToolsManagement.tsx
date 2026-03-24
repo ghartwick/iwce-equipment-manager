@@ -140,7 +140,7 @@ export function SmallToolsManagement({ onClose, currentUser }: SmallToolsManagem
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6">
+        <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6">
           <div className="text-yellow-400">Loading small tools...</div>
         </div>
       </div>
@@ -149,7 +149,7 @@ export function SmallToolsManagement({ onClose, currentUser }: SmallToolsManagem
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex justify-between items-center">
           <div className="flex items-center space-x-2">

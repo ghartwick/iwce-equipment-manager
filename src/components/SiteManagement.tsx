@@ -200,7 +200,7 @@ export function SiteManagement({ onClose, currentUser }: SiteManagementProps) {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6">
+        <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6">
           <div className="text-yellow-600 dark:text-yellow-400">Loading sites...</div>
         </div>
       </div>
@@ -209,7 +209,7 @@ export function SiteManagement({ onClose, currentUser }: SiteManagementProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex justify-between items-center">
           <div className="flex items-center space-x-2">
@@ -263,7 +263,7 @@ export function SiteManagement({ onClose, currentUser }: SiteManagementProps) {
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                       required
                     />
                   </div>
@@ -273,7 +273,7 @@ export function SiteManagement({ onClose, currentUser }: SiteManagementProps) {
                       type="text"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     />
                   </div>
                 </div>
@@ -405,7 +405,7 @@ export function SiteManagement({ onClose, currentUser }: SiteManagementProps) {
                                   ...prev,
                                   [site.id]: { ...prev[site.id], name: e.target.value }
                                 }))}
-                                className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                 required
                               />
                             </div>
@@ -418,7 +418,7 @@ export function SiteManagement({ onClose, currentUser }: SiteManagementProps) {
                                   ...prev,
                                   [site.id]: { ...prev[site.id], description: e.target.value }
                                 }))}
-                                className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
                               />
                             </div>
                           </div>
@@ -505,7 +505,7 @@ export function SiteManagement({ onClose, currentUser }: SiteManagementProps) {
                                 }
                               }}
                               placeholder="Code name"
-                              className="flex-1 px-3 py-1.5 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                              className="flex-1 px-3 py-1.5 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
                             />
                             <input
                               type="text"
@@ -518,7 +518,7 @@ export function SiteManagement({ onClose, currentUser }: SiteManagementProps) {
                                 }
                               }}
                               placeholder="Description (optional)"
-                              className="flex-1 px-3 py-1.5 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                              className="flex-1 px-3 py-1.5 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
                             />
                             <button
                               onClick={() => handleAddCode(site.id)}

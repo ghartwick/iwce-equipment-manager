@@ -136,7 +136,7 @@ export function FilterPanel({
   };
 
   return (
-    <div ref={panelRef} className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow p-2 sm:p-4">
+    <div ref={panelRef} className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow p-2 sm:p-4">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center space-x-2">
           <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600 dark:text-yellow-400" />
@@ -175,7 +175,7 @@ export function FilterPanel({
                 placeholder="Category name"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
-                className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-white dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
               />
               <div className="flex space-x-2">
                 <button
@@ -202,7 +202,7 @@ export function FilterPanel({
                 placeholder="Category name"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
-                className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-white dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
               />
               <div className="flex space-x-2">
                 <button
@@ -227,7 +227,7 @@ export function FilterPanel({
               className={`w-full text-left px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm ${
                 selectedCategory === 'all'
                   ? 'bg-yellow-600 text-black'
-                  : 'hover:bg-yellow-100 dark:hover:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
+                  : 'hover:bg-[#fffff0] dark:hover:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
               }`}
             >
               All Categories
@@ -238,7 +238,7 @@ export function FilterPanel({
                 className={`w-full px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors flex items-center justify-between group text-xs sm:text-sm ${
                   selectedCategory === category.id
                     ? 'bg-yellow-600 text-black'
-                    : 'hover:bg-yellow-100 dark:hover:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
+                    : 'hover:bg-[#fffff0] dark:hover:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
                 }`}
               >
                 <button

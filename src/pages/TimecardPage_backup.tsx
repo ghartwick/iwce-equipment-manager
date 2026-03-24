@@ -515,114 +515,115 @@ export default function TimecardPage() {
                       {/* Your Time Cards Section - Hidden for admins */}
                       {user?.role !== 'admin' && (
                         <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4">
-                          <div 
-                            className="flex justify-between items-center cursor-pointer mb-3"
-                            onClick={() => setYourCardsCollapsed(!yourCardsCollapsed)}
-                          >
-                            <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">Your Time Cards</h4>
-                            <button className="text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-200 transition-colors">
-                              {yourCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-                            </button>
-                          </div>
-                          {!yourCardsCollapsed && (
-                            <div className="space-y-3">
-                              {yourEntries.length > 0 ? (
-                                yourEntries.map((entry: any, index: number) => {
-                                  const canAccess = canViewEntry(entry, user!);
-                                  const isSelected = selectedEntryId === entry.id;
-                                  return (
-                                    <div key={entry.id || `your-${index}`}>
-                                      <div
-                                        className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
-                                          isSelected 
-                                            ? 'border-green-500 bg-green-100 dark:bg-green-900 dark:bg-opacity-60 ring-2 ring-green-500 ring-opacity-50' 
-                                            : canAccess 
-                                              ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600 cursor-pointer' 
-                                              : 'border-gray-400 dark:border-gray-600 opacity-75'
-                                        }`}
-                                        onClick={() => canAccess && handleEntrySelect(entry.id!)}
-                                      >
-                                        <div className="flex justify-between items-center">
-                                          <div>
-                                            <span className="text-gray-900 dark:text-yellow-100 font-medium">
-                                              Time Card {entry.entryNumber}
-                                            </span>
-                                            <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                                              entry.status === 'draft' ? 'bg-gray-600' :
-                                              entry.status === 'submitted' ? 'bg-green-600' :
-                                              entry.status === 'rejected' ? 'bg-red-600' :
-                                              'bg-blue-600'
-                                            } text-white`}>
-                                              {(entry.status === 'submitted') && (
-                                                <Check className="w-3 h-3 inline mr-1" />
-                                              )}
-                                              {getStatusDisplay(entry.status)}
-                                            </span>
-                                            {isSelected && (
-                                              <span className="ml-2 px-2 py-1 rounded text-xs bg-blue-600 text-white">
-                                                Selected
-                                              </span>
+                        <div 
+                          className="flex justify-between items-center cursor-pointer mb-3"
+                          onClick={() => setYourCardsCollapsed(!yourCardsCollapsed)}
+                        >
+                          <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">Your Time Cards</h4>
+                          <button className="text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-200 transition-colors">
+                            {yourCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                          </button>
+                        </div>
+                        {!yourCardsCollapsed && (
+                          <div className="space-y-3">
+                            {yourEntries.length > 0 ? (
+                              yourEntries.map((entry, index) => {
+                                const canAccess = canViewEntry(entry, user!);
+                                const isSelected = selectedEntryId === entry.id;
+                                return (
+                                  <div key={entry.id || `your-${index}`}>
+                                    <div
+                                      className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
+                                        isSelected 
+                                          ? 'border-green-500 bg-green-100 dark:bg-green-900 dark:bg-opacity-60 ring-2 ring-green-500 ring-opacity-50' 
+                                          : canAccess 
+                                            ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600 cursor-pointer' 
+                                            : 'border-gray-400 dark:border-gray-600 opacity-75'
+                                      }`}
+                                      onClick={() => canAccess && handleEntrySelect(entry.id!)}
+                                    >
+                                      <div className="flex justify-between items-center">
+                                        <div>
+                                          <span className="text-gray-900 dark:text-yellow-100 font-medium">
+                                            Time Card {entry.entryNumber}
+                                          </span>
+                                          <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                                            entry.status === 'draft' ? 'bg-gray-600' :
+                                            entry.status === 'submitted' ? 'bg-green-600' :
+                                            entry.status === 'rejected' ? 'bg-red-600' :
+                                            'bg-blue-600'
+                                          } text-white`}>
+                                            {(entry.status === 'submitted') && (
+                                              <Check className="w-3 h-3 inline mr-1" />
                                             )}
-                                          </div>
-                                          <div className="flex gap-2">
-                                            {canEditEntry(entry, user!) && (
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  if (entry.id) handleDeleteEntry(entry.id);
-                                                }}
-                                                className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
-                                              >
-                                                Delete
-                                              </button>
-                                            )}
-                                          </div>
+                                            {getStatusDisplay(entry.status)}
+                                          </span>
+                                          {isSelected && (
+                                            <span className="ml-2 px-2 py-1 rounded text-xs bg-blue-600 text-white">
+                                              Selected
+                                            </span>
+                                          )}
                                         </div>
-                                        <div className="text-yellow-100 text-sm mt-1">
-                                          {entry.hours} hours
+                                        <div className="flex gap-2">
+                                          {canEditEntry(entry, user!) && (
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (entry.id) handleDeleteEntry(entry.id);
+                                              }}
+                                              className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                            >
+                                              Delete
+                                            </button>
+                                          )}
                                         </div>
-                                        {entry.job && (
-                                          <div className="text-yellow-600 text-sm mt-1">
-                                            {entry.job}
-                                          </div>
-                                        )}
-                                        <div className="text-yellow-600 text-sm mt-1">
-                                          {getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                        </div>
-                                        {!canAccess && (
-                                          <div className="text-red-400 text-xs mt-2">
-                                            This time card has been submitted and cannot be accessed.
-                                          </div>
-                                        )}
                                       </div>
-                                      {/* Inline Time Entry Form */}
-                                      {isSelected && showEntryForm && (
-                                        <div className="mt-3 ml-3 mr-3">
-                                          <TimeEntryForm
-                                            selectedDate={selectedDate!}
-                                            entry={selectedEntryId ? getEntriesForDate(selectedDate!).find(e => e.id === selectedEntryId) : undefined}
-                                            user={user!}
-                                            onSubmit={handleEntrySubmit}
-                                            onCancel={() => {
-                                              setShowEntryForm(false);
-                                              setSelectedEntryId(null);
-                                            }}
-                                            canEdit={canEditEntry(entry, user!)}
-                                            entryOwnerName={getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                            selectedEntryId={selectedEntryId}
-                                          />
+                                      <div className="text-yellow-100 text-sm mt-1">
+                                        {entry.hours} hours
+                                      </div>
+                                      {entry.job && (
+                                        <div className="text-yellow-600 text-sm mt-1">
+                                          {entry.job}
+                                        </div>
+                                      )}
+                                      <div className="text-yellow-600 text-sm mt-1">
+                                        {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                      </div>
+                                      {!canAccess && (
+                                        <div className="text-red-400 text-xs mt-2">
+                                          This time card has been submitted and cannot be accessed.
                                         </div>
                                       )}
                                     </div>
-                                  );
-                                })
-                              ) : (
-                                <div className="text-center py-8 text-yellow-700 dark:text-yellow-600">
-                                  No time entries found for this date
+                                  </div>
+                                  {/* Inline Time Entry Form */}
+                                  {isSelected && showEntryForm && (
+                                    <div className="mt-3 ml-3 mr-3">
+                                      <TimeEntryForm
+                                        selectedDate={selectedDate!}
+                                        entry={selectedEntryId ? getEntriesForDate(selectedDate!).find(e => e.id === selectedEntryId) : undefined}
+                                        user={user!}
+                                        onSubmit={handleEntrySubmit}
+                                        onCancel={() => {
+                                          setShowEntryForm(false);
+                                          setSelectedEntryId(null);
+                                        }}
+                                        canEdit={canEditEntry(entry, user!)}
+                                        entryOwnerName={getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                        selectedEntryId={selectedEntryId}
+                                      />
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          )}
+                                );
+                              })
+                            ) : (
+                              <div className="text-center py-8 text-yellow-700 dark:text-yellow-600">
+                                No time entries found for this date
+                              </div>
+                            )}
+                          </div>
+                        )}
                         </div>
                       )}
 
@@ -728,25 +729,26 @@ export default function TimecardPage() {
                                         </div>
                                       )}
                                     </div>
-                                    {/* Inline Time Entry Form */}
-                                    {isSelected && showEntryForm && (
-                                      <div className="mt-3 ml-3 mr-3">
-                                        <TimeEntryForm
-                                          selectedDate={selectedDate!}
-                                          entry={selectedEntryId ? getEntriesForDate(selectedDate!).find(e => e.id === selectedEntryId) : undefined}
-                                          user={user!}
-                                          onSubmit={handleEntrySubmit}
-                                          onCancel={() => {
-                                            setShowEntryForm(false);
-                                            setSelectedEntryId(null);
-                                          }}
-                                          canEdit={canEditEntry(entry, user!)}
-                                          entryOwnerName={getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                          selectedEntryId={selectedEntryId}
-                                        />
-                                      </div>
-                                    )}
                                   </div>
+                                  {/* Inline Time Entry Form */}
+                                  {isSelected && showEntryForm && (
+                                    <div className="mt-3 ml-3 mr-3">
+                                      <TimeEntryForm
+                                        selectedDate={selectedDate!}
+                                        entry={selectedEntryId ? getEntriesForDate(selectedDate!).find(e => e.id === selectedEntryId) : undefined}
+                                        user={user!}
+                                        onSubmit={handleEntrySubmit}
+                                        onCancel={() => {
+                                          setShowEntryForm(false);
+                                          setSelectedEntryId(null);
+                                        }}
+                                        canEdit={canEditEntry(entry, user!)}
+                                        entryOwnerName={getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                        selectedEntryId={selectedEntryId}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
                                 );
                               })}
                             </div>

@@ -159,7 +159,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg p-6">
+        <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6">
           <div className="text-yellow-600 dark:text-yellow-400">Loading users...</div>
         </div>
       </div>
@@ -168,7 +168,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">User Management</h2>
@@ -219,7 +219,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                       type="text"
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                       required
                     />
                   </div>
@@ -230,7 +230,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full px-3 py-2 pr-10 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        className="w-full px-3 py-2 pr-10 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                         required
                       />
                       <button
@@ -249,7 +249,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                       required
                     />
                   </div>
@@ -258,7 +258,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value as FormDataRole })}
-                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
                       <option value="field">Field</option>
                       <option value="supervisor">Supervisor</option>
@@ -419,7 +419,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                       type="text"
                                       value={formData.username}
                                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                       required
                                     />
                                   </div>
@@ -429,7 +429,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                       type="text"
                                       value={formData.name}
                                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                       required
                                     />
                                   </div>
@@ -461,7 +461,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                         placeholder="Leave blank to keep current password"
-                                        className="w-full px-3 py-2 pr-10 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        className="w-full px-3 py-2 pr-10 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                       />
                                       <button
                                         type="button"
@@ -478,7 +478,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                     <select
                                       value={formData.role}
                                       onChange={(e) => setFormData({ ...formData, role: e.target.value as FormDataRole })}
-                                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     >
                                       <option value="field">Field</option>
                                       <option value="supervisor">Supervisor</option>
@@ -490,7 +490,7 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                     <select
                                       value={formData.isActive ? 'true' : 'false'}
                                       onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'true' })}
-                                      className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                     >
                                       <option value="true">Active</option>
                                       <option value="false">Inactive</option>

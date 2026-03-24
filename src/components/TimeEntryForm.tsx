@@ -6,6 +6,7 @@ import { Site, siteManagementService } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
 import { smallToolsManagementService } from '../services/smallToolsManagementService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
+import { Alert } from './Alert';
 
 interface TimeEntryFormProps {
   selectedDate: Date;
@@ -331,6 +332,13 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     }
   ]);
 
+  // Alert state
+  const [alert, setAlert] = useState<{ message: string; type: 'error' | 'warning' | 'info' } | null>(null);
+
+  const showAlert = (message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+    setAlert({ message, type });
+  };
+
   // Calculate validation for hours matching (sum of ALL work entries)
   const totalMachineHours = workEntries.reduce((sum, entry) => {
     return sum + (parseFloat(entry.machineHours || '0') || 0);
@@ -601,24 +609,24 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     e.preventDefault();
     
     if (!clockIn || !clockOut) {
-      alert('Please select both clock in and clock out times');
+      showAlert('Please select both clock in and clock out times');
       return;
     }
 
     // Validate site selection
     if (!job) {
-      alert('Please select a site');
+      showAlert('Please select a site');
       return;
     }
 
     if (job === 'Other' && !customSite.trim()) {
-      alert('Please specify the site name');
+      showAlert('Please specify the site name');
       return;
     }
 
     // Validate that total hours match the sum of machine and labour hours
     if (!hoursMatch) {
-      alert(`Total hours (${hours}) must match the sum of machine and labour hours (${totalMachineLabourHours}). Please check your entries.`);
+      showAlert(`Total hours (${hours}) must match the sum of machine and labour hours (${totalMachineLabourHours}). Please check your entries.`);
       return;
     }
 
@@ -710,18 +718,18 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
   const handleSubmitSubmit = () => {
     if (!clockIn || !clockOut) {
-      alert('Please select both clock in and clock out times before submitting');
+      showAlert('Please select both clock in and clock out times before submitting');
       return;
     }
 
     // Validate site selection
     if (!job) {
-      alert('Please select a site');
+      showAlert('Please select a site');
       return;
     }
 
     if (job === 'Other' && !customSite.trim()) {
-      alert('Please specify the site name');
+      showAlert('Please specify the site name');
       return;
     }
 
@@ -736,13 +744,13 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     );
 
     if (!hasValidEntry) {
-      alert('Please add at least one work entry with data before submitting');
+      showAlert('Please add at least one work entry with data before submitting');
       return;
     }
 
     // Validate that total hours match the sum of machine and labour hours
     if (!hoursMatch) {
-      alert(`Total hours (${hours}) must match the sum of machine and labour hours (${totalMachineLabourHours}). Please check your entries.`);
+      showAlert(`Total hours (${hours}) must match the sum of machine and labour hours (${totalMachineLabourHours}). Please check your entries.`);
       return;
     }
 
@@ -1064,6 +1072,15 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
           </div>
         )}
       </form>
+      
+      {/* Alert Component */}
+      {alert && (
+        <Alert
+          message={alert.message}
+          type={alert.type}
+          onClose={() => setAlert(null)}
+        />
+      )}
     </div>
   );
 }

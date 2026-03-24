@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useInventory } from '../hooks/useInventory';
 import { useAuth } from '../hooks/useAuth';
 import { ProductList } from '../components/ProductList';
@@ -33,6 +33,7 @@ function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAlerts, setShowAlerts] = useState(false);
+  const alertsRef = useRef<HTMLDivElement>(null);
 
   // Handle custom events from Layout component
   useEffect(() => {
@@ -50,6 +51,24 @@ function InventoryPage() {
     return () => {
       window.removeEventListener('addProduct', handleAddProduct);
       window.removeEventListener('toggleAlerts', handleToggleAlerts);
+    };
+  }, [showAlerts]);
+
+  // Click outside handler for alerts
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showAlerts && alertsRef.current && !alertsRef.current.contains(event.target as Node)) {
+        // Check if the click is not on the Bell button
+        const bellButton = (event.target as Element).closest('button[aria-label*="Alerts"], button:has(.bell)');
+        if (!bellButton) {
+          setShowAlerts(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showAlerts]);
 
@@ -163,7 +182,7 @@ function InventoryPage() {
       <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Desktop Alerts - Always Visible */}
         {showAlerts && (
-          <div className="mb-3">
+          <div className="mb-3" ref={alertsRef}>
             <div className="max-w-4xl mx-auto">
               <AlertPanel 
                 alerts={alerts} 
@@ -236,12 +255,12 @@ function InventoryPage() {
         </div>
       </div>
 
-      {/* Mobile Layout - Optimized */}
-      <div className="lg:hidden">
+      {/* Mobile Layout */}
+      <div className="lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="space-y-3 sm:space-y-4">
           {/* Mobile Alerts - Collapsible */}
           {showAlerts && (
-            <div>
+            <div ref={alertsRef}>
               <AlertPanel 
                 alerts={alerts} 
                 products={products} 
@@ -249,15 +268,6 @@ function InventoryPage() {
               />
             </div>
           )}
-
-          {/* Desktop Alerts - Always Visible */}
-          <div className="hidden lg:block">
-            <AlertPanel 
-              alerts={alerts} 
-              products={products} 
-              onClearAlert={clearAlert} 
-            />
-          </div>
 
           {/* Forms Section */}
           {showAddForm && (

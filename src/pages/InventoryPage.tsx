@@ -242,7 +242,7 @@ function InventoryPage() {
               <ProductList
                 products={filteredProducts}
                 categories={categories}
-                onEdit={user?.role === 'admin' ? handleEditClick : undefined}
+                onEdit={handleEditClick}
                 onDelete={user?.role === 'admin' ? deleteProduct : undefined}
                 selectedEquipmentId={editingProduct?.id}
                 onEditProduct={handleEditProduct}
@@ -316,7 +316,7 @@ function InventoryPage() {
             {/* Mobile Equipment List */}
             <MobileProductList
               products={filteredProducts}
-              onEdit={user?.role === 'admin' ? handleEditClick : undefined}
+              onEdit={handleEditClick}
               selectedEquipmentId={editingProduct?.id}
               onEditProduct={handleEditProduct}
               onCancelEdit={() => setEditingProduct(null)}

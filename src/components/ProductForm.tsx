@@ -28,6 +28,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     repair: false,
     repairDescription: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showLog, setShowLog] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -111,8 +112,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     }
   }, [product, sites]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSubmitting) return;
     
     // Validate custom site if "Other" is selected
     if (showCustomSite && !customSite.trim()) {
@@ -120,11 +123,16 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       return;
     }
     
+    setIsSubmitting(true);
+    
     try {
-      onSubmit(formData);
+      await onSubmit(formData);
+      // Reset submitting state after successful submission
+      setIsSubmitting(false);
     } catch (error) {
       console.error('Error in form submission:', error);
       alert('Error submitting form: ' + (error as Error).message);
+      setIsSubmitting(false);
     }
   };
 
@@ -350,7 +358,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         </button>
         <button
           type="submit"
-          className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors"
+          disabled={isSubmitting}
+          className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isEditing ? 'Update' : 'Add'} Equipment
         </button>

@@ -156,8 +156,17 @@ export function useInventory(refreshKey?: number) {
       const product = products.find(p => p.id === id);
       
       if (product?.equipmentType === 'heavy') {
-        // Route heavy equipment site updates through equipmentManagementService
-        await equipmentManagementService.updateEquipment(id, { site: updates.site });
+        // Route heavy equipment updates through equipmentManagementService
+        // Convert the updates to match the heavy equipment service format
+        const heavyUpdates: any = {};
+        if (updates.name !== undefined) heavyUpdates.name = updates.name;
+        if (updates.description !== undefined) heavyUpdates.description = updates.description;
+        if (updates.serialNumber !== undefined) heavyUpdates.serialNumber = updates.serialNumber;
+        if (updates.category !== undefined) heavyUpdates.category = updates.category;
+        if (updates.site !== undefined) heavyUpdates.site = updates.site;
+        if (updates.employee !== undefined) heavyUpdates.employee = updates.employee;
+        
+        await equipmentManagementService.updateEquipment(id, heavyUpdates);
       } else {
         await updateEquipment(id, updates);
       }
@@ -165,6 +174,7 @@ export function useInventory(refreshKey?: number) {
       await loadData();
     } catch (error) {
       console.error('Error updating product:', error);
+      throw error; // Re-throw the error so it can be caught by the caller
     }
   };
 

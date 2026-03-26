@@ -34,6 +34,19 @@ function InventoryPage() {
   const [showAlerts, setShowAlerts] = useState(false);
   const alertsRef = useRef<HTMLDivElement>(null);
 
+  // Restore scroll position when component mounts
+  useEffect(() => {
+    const savedPosition = sessionStorage.getItem('inventoryScrollPosition');
+    if (savedPosition) {
+      const position = parseInt(savedPosition, 10);
+      // Use setTimeout to ensure the page has rendered before scrolling
+      setTimeout(() => {
+        window.scrollTo(0, position);
+        sessionStorage.removeItem('inventoryScrollPosition');
+      }, 100);
+    }
+  }, []);
+
   // Handle custom events from Layout component
   useEffect(() => {
     const handleAddProduct = () => {

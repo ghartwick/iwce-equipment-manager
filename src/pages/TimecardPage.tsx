@@ -62,8 +62,9 @@ export default function TimecardPage() {
   const [userManagementService] = useState(() => new UserManagementService());
   
   // Collapsible states
-  const [otherCardsCollapsed, setOtherCardsCollapsed] = useState(false);
-
+  const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
+  
+  
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday
@@ -211,14 +212,22 @@ export default function TimecardPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 p-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-2">Timecard</h1>
-        </div>
+  const toggleEntryExpanded = (entryId: string) => {
+    setExpandedEntries(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(entryId)) {
+        newSet.delete(entryId);
+      } else {
+        newSet.add(entryId);
+      }
+      return newSet;
+    });
+  };
 
+  return (
+    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 p-4 -mx-4 sm:-mx-4 lg:mx-0 lg:p-4">
+      <div className="max-w-6xl mx-auto">
+        
         <div className="grid grid-cols-1 gap-6">
           {/* Calendar */}
           <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6">
@@ -498,12 +507,25 @@ export default function TimecardPage() {
                                         }`}
                                         onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                       >
-                                        <div className="flex justify-between items-start">
-                                          <div>
-                                            <div className="flex items-center flex-wrap gap-x-2">
-                                              <span className="text-gray-900 dark:text-yellow-100 font-medium">
-                                                {getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                              </span>
+                                        <div className="space-y-2">
+                                          <div className="flex justify-between items-start">
+                                            <span className="text-gray-900 dark:text-yellow-100 font-medium">
+                                              {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  toggleEntryExpanded(entry.id || `your-${index}`);
+                                                }}
+                                                className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                                              >
+                                                {expandedEntries.has(entry.id || `your-${index}`) ? (
+                                                  <ChevronUp className="w-4 h-4" />
+                                                ) : (
+                                                  <ChevronDown className="w-4 h-4" />
+                                                )}
+                                              </button>
                                               <span className={`px-2 py-1 rounded text-xs ${
                                                 entry.status === 'draft' ? 'bg-gray-600' :
                                                 entry.status === 'submitted' ? 'bg-green-600' :
@@ -511,146 +533,146 @@ export default function TimecardPage() {
                                                 'bg-blue-600'
                                               } text-white`}>
                                                 {entry.status === 'submitted' ? (
-                                                  <>
-                                                    <Check className="w-3 h-3 inline sm:mr-1" />
-                                                    <span className="hidden sm:inline">{getStatusDisplay(entry.status)}</span>
-                                                  </>
+                                                  <Check className="w-3 h-3" />
                                                 ) : (
-                                                  getStatusDisplay(entry.status)
+                                                  getStatusDisplay(entry.status).charAt(0)
                                                 )}
                                               </span>
-                                            </div>
-                                            {entry.job && (
-                                              <div className="text-gray-900 dark:text-yellow-100 font-medium mt-0.5">
-                                                {entry.job}
-                                              </div>
-                                            )}
-                                          </div>
-                                          <div className="flex gap-2">
-                                            {canEditEntry(entry, user!) && (
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  if (entry.id) handleDeleteEntry(entry.id);
-                                                }}
-                                                className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
-                                              >
-                                                Delete
-                                              </button>
-                                            )}
-                                          </div>
-                                        </div>
-                                        
-                                        {/* Time Details */}
-                                        <div className="flex items-center gap-3 text-xs text-yellow-700 dark:text-yellow-600 mt-2">
-                                          {entry.clockIn && (
-                                            <span>
-                                              In: {(() => {
-                                                const date = entry.clockIn instanceof Date ? entry.clockIn : 
-                                                  (entry.clockIn && 'toDate' in entry.clockIn && typeof (entry.clockIn as any).toDate === 'function') ? 
-                                                    (entry.clockIn as any).toDate() : new Date(entry.clockIn);
-                                                return format(date, 'HH:mm');
-                                              })()}
-                                            </span>
-                                          )}
-                                          {entry.clockOut && (
-                                            <span>
-                                              Out: {(() => {
-                                                const date = entry.clockOut instanceof Date ? entry.clockOut : 
-                                                  (entry.clockOut && 'toDate' in entry.clockOut && typeof (entry.clockOut as any).toDate === 'function') ? 
-                                                    (entry.clockOut as any).toDate() : new Date(entry.clockOut);
-                                                return format(date, 'HH:mm');
-                                              })()}
-                                            </span>
-                                          )}
-                                          <span className="font-medium">
-                                            {entry.hours}
-                                          </span>
-                                        </div>
-                                        
-                                        {/* Work Entries */}
-                                        {entry.workEntries && entry.workEntries.length > 0 && (
-                                          <div className="mt-2 space-y-1">
-                                            {entry.workEntries.map((workEntry: any, idx: number) => (
-                                              <div key={idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                  <div>
-                                                    {workEntry.code && (
-                                                      <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                        {workEntry.code}
-                                                      </div>
-                                                    )}
-                                                    {workEntry.machineHours && (
-                                                      <div className="text-yellow-700 dark:text-yellow-400">
-                                                        Machine {workEntry.machineHours}
-                                                      </div>
-                                                    )}
-                                                    {workEntry.labourHours && (
-                                                      <div className="text-yellow-700 dark:text-yellow-400">
-                                                        Labour {workEntry.labourHours}
-                                                      </div>
-                                                    )}
-                                                    {workEntry.equipment && (
-                                                      <div className="text-yellow-700 dark:text-yellow-400">
-                                                        Equipment: {workEntry.equipment}
-                                                      </div>
-                                                    )}
-                                                    {workEntry.smallTools && workEntry.smallTools.length > 0 && (
-                                                      <div className="text-yellow-700 dark:text-yellow-400">
-                                                        Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
-                                                      </div>
-                                                    )}
-                                                  </div>
-                                                  {workEntry.notes && (
-                                                    <div className="text-yellow-600 dark:text-yellow-500">
-                                                      {workEntry.notes}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        )}
-                                        
-                                        {/* Legacy single entry display */}
-                                        {!entry.workEntries && (entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.notes) && (
-                                          <div className="mt-2 text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                              <div>
-                                                {entry.code && (
-                                                  <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                    {entry.code}
-                                                  </div>
-                                                )}
-                                                {entry.machineHours && (
-                                                  <div className="text-yellow-700 dark:text-yellow-400">
-                                                    Machine {entry.machineHours}
-                                                  </div>
-                                                )}
-                                                {entry.labourHours && (
-                                                  <div className="text-yellow-700 dark:text-yellow-400">
-                                                    Labour {entry.labourHours}
-                                                  </div>
-                                                )}
-                                                {entry.equipment && (
-                                                  <div className="text-yellow-700 dark:text-yellow-400">
-                                                    Equipment: {entry.equipment}
-                                                  </div>
-                                                )}
-                                                {entry.smallTools && (
-                                                  <div className="text-yellow-700 dark:text-yellow-400">
-                                                    Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
-                                                  </div>
-                                                )}
-                                              </div>
-                                              {entry.notes && (
-                                                <div className="text-yellow-600 dark:text-yellow-500">
-                                                  {entry.notes}
-                                                </div>
+                                              {canEditEntry(entry, user!) && (
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (entry.id) handleDeleteEntry(entry.id);
+                                                  }}
+                                                  className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                                >
+                                                  Delete
+                                                </button>
                                               )}
                                             </div>
                                           </div>
-                                        )}
+                                          {entry.job && (
+                                            <div className="text-gray-900 dark:text-yellow-100">
+                                              {entry.job}
+                                            </div>
+                                          )}
+                                          <div className="font-medium text-yellow-700 dark:text-yellow-600">
+                                            {entry.hours}
+                                          </div>
+                                          
+                                          {/* Expanded Details */}
+                                          {expandedEntries.has(entry.id || `your-${index}`) && (
+                                            <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-700 space-y-2">
+                                              {/* Time Details */}
+                                              <div className="flex items-center gap-4 text-xs text-yellow-700 dark:text-yellow-600">
+                                                {entry.clockIn && (
+                                                  <span>
+                                                    In: {(() => {
+                                                      const date = entry.clockIn instanceof Date ? entry.clockIn : 
+                                                        (entry.clockIn && 'toDate' in entry.clockIn && typeof (entry.clockIn as any).toDate === 'function') ? 
+                                                          (entry.clockIn as any).toDate() : new Date(entry.clockIn);
+                                                      return format(date, 'HH:mm');
+                                                    })()}
+                                                  </span>
+                                                )}
+                                                {entry.clockOut && (
+                                                  <span>
+                                                    Out: {(() => {
+                                                      const date = entry.clockOut instanceof Date ? entry.clockOut : 
+                                                        (entry.clockOut && 'toDate' in entry.clockOut && typeof (entry.clockOut as any).toDate === 'function') ? 
+                                                          (entry.clockOut as any).toDate() : new Date(entry.clockOut);
+                                                      return format(date, 'HH:mm');
+                                                    })()}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              
+                                              {/* Work Entries */}
+                                              {entry.workEntries && entry.workEntries.length > 0 && (
+                                                <div className="space-y-1">
+                                                  {entry.workEntries.map((workEntry: any, idx: number) => (
+                                                    <div key={idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
+                                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                        <div>
+                                                          {workEntry.code && (
+                                                            <div className="font-medium text-yellow-800 dark:text-yellow-300">
+                                                              {workEntry.code}
+                                                            </div>
+                                                          )}
+                                                          {workEntry.machineHours && (
+                                                            <div className="text-yellow-700 dark:text-yellow-400">
+                                                              Machine {workEntry.machineHours}
+                                                            </div>
+                                                          )}
+                                                          {workEntry.labourHours && (
+                                                            <div className="text-yellow-700 dark:text-yellow-400">
+                                                              Labour {workEntry.labourHours}
+                                                            </div>
+                                                          )}
+                                                          {workEntry.equipment && (
+                                                            <div className="text-yellow-700 dark:text-yellow-400">
+                                                              Equipment: {workEntry.equipment}
+                                                            </div>
+                                                          )}
+                                                          {workEntry.smallTools && workEntry.smallTools.length > 0 && (
+                                                            <div className="text-yellow-700 dark:text-yellow-400">
+                                                              Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
+                                                            </div>
+                                                          )}
+                                                        </div>
+                                                        {workEntry.notes && (
+                                                          <div className="text-yellow-600 dark:text-yellow-500">
+                                                            {workEntry.notes}
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              )}
+                                              
+                                              {/* Legacy single entry display */}
+                                              {!entry.workEntries && (entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.notes) && (
+                                                <div className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
+                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                    <div>
+                                                      {entry.code && (
+                                                        <div className="font-medium text-yellow-800 dark:text-yellow-300">
+                                                          {entry.code}
+                                                        </div>
+                                                      )}
+                                                      {entry.machineHours && (
+                                                        <div className="text-yellow-700 dark:text-yellow-400">
+                                                          Machine {entry.machineHours}
+                                                        </div>
+                                                      )}
+                                                      {entry.labourHours && (
+                                                        <div className="text-yellow-700 dark:text-yellow-400">
+                                                          Labour {entry.labourHours}
+                                                        </div>
+                                                      )}
+                                                      {entry.equipment && (
+                                                        <div className="text-yellow-700 dark:text-yellow-400">
+                                                          Equipment: {entry.equipment}
+                                                        </div>
+                                                      )}
+                                                      {entry.smallTools && (
+                                                        <div className="text-yellow-700 dark:text-yellow-400">
+                                                          Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                    {entry.notes && (
+                                                      <div className="text-yellow-600 dark:text-yellow-500">
+                                                        {entry.notes}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
                                         
                                         {!canAccess && (
                                           <div className="text-red-400 text-xs mt-2">
@@ -673,34 +695,25 @@ export default function TimecardPage() {
                       {/* Other Time Cards Section (Admins/Supervisors only) */}
                       {otherEntries.length > 0 && (
                         <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4 mt-4">
-                          {employeeFilter !== 'self' && (
-                            <div 
-                              className="flex justify-between items-center cursor-pointer mb-3"
-                              onClick={() => setOtherCardsCollapsed(!otherCardsCollapsed)}
-                            >
-                              <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">
-                                {(() => {
-                                  if (siteFilter === 'all' || employeeFilter === 'all') {
-                                    return 'All Time Cards';
-                                  } else if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
-                                    const employeeName = getBestDisplayName(users.find(u => u.id === employeeFilter));
-                                    return `${siteFilter} - ${employeeName}'s Time Cards`;
-                                  } else if (siteFilter && siteFilter !== 'all') {
-                                    return `${siteFilter} Time Cards`;
-                                  } else if (employeeFilter && employeeFilter !== 'all') {
-                                    return `${getBestDisplayName(users.find(u => u.id === employeeFilter))}'s Time Cards`;
-                                  } else {
-                                    return 'Other Time Cards';
-                                  }
-                                })()}
-                              </h4>
-                              <button className="text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-200 transition-colors">
-                                {otherCardsCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-                              </button>
-                            </div>
-                          )}
-                          {!otherCardsCollapsed && (
-                            <div className={showGrouped ? 'space-y-4' : 'space-y-3'}>
+                          <div className="mb-3">
+                            <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">
+                              {(() => {
+                                if (siteFilter === 'all' || employeeFilter === 'all') {
+                                  return 'All Time Cards';
+                                } else if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
+                                  const employeeName = getBestDisplayName(users.find(u => u.id === employeeFilter));
+                                  return `${siteFilter} - ${employeeName}'s Time Cards`;
+                                } else if (siteFilter && siteFilter !== 'all') {
+                                  return `${siteFilter} Time Cards`;
+                                } else if (employeeFilter && employeeFilter !== 'all') {
+                                  return `${getBestDisplayName(users.find(u => u.id === employeeFilter))}'s Time Cards`;
+                                } else {
+                                  return 'Other Time Cards';
+                                }
+                              })()}
+                            </h4>
+                          </div>
+                          <div className={showGrouped ? 'space-y-4' : 'space-y-3'}>
                               {siteGroups.map(({ site, entries }) => (
                                 <div key={site ?? 'ungrouped'}>
                                   {site && (
@@ -721,12 +734,25 @@ export default function TimecardPage() {
                                       }`}
                                       onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                     >
-                                      <div className="flex justify-between items-start">
-                                        <div>
-                                          <div className="flex items-center flex-wrap gap-x-2">
-                                            <span className="text-gray-900 dark:text-yellow-100 font-medium">
-                                              {getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                            </span>
+                                      <div className="space-y-2">
+                                        <div className="flex justify-between items-start">
+                                          <span className="text-gray-900 dark:text-yellow-100 font-medium">
+                                            {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                          </span>
+                                          <div className="flex items-center gap-2">
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleEntryExpanded(entry.id || `other-${index}`);
+                                              }}
+                                              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                                            >
+                                              {expandedEntries.has(entry.id || `other-${index}`) ? (
+                                                <ChevronUp className="w-4 h-4" />
+                                              ) : (
+                                                <ChevronDown className="w-4 h-4" />
+                                              )}
+                                            </button>
                                             <span className={`px-2 py-1 rounded text-xs ${
                                               entry.status === 'draft' ? 'bg-gray-600' :
                                               entry.status === 'submitted' ? 'bg-green-600' :
@@ -734,145 +760,146 @@ export default function TimecardPage() {
                                               'bg-blue-600'
                                             } text-white`}>
                                               {entry.status === 'submitted' ? (
-                                                <>
-                                                  <Check className="w-3 h-3 inline sm:mr-1" />
-                                                  <span className="hidden sm:inline">{getStatusDisplay(entry.status)}</span>
-                                                </>
+                                                <Check className="w-3 h-3" />
                                               ) : (
-                                                getStatusDisplay(entry.status)
+                                                getStatusDisplay(entry.status).charAt(0)
                                               )}
                                             </span>
-                                          </div>
-                                          {!showGrouped && entry.job && (
-                                            <div className="text-gray-900 dark:text-yellow-100 font-medium mt-0.5">
-                                              {entry.job}
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex gap-2">
-                                          {canEditEntry(entry, user!) && (
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (entry.id) handleDeleteEntry(entry.id);
-                                              }}
-                                              className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
-                                            >
-                                              Delete
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                      {/* Time Details */}
-                                      <div className="flex items-center gap-3 text-xs text-yellow-700 dark:text-yellow-600 mt-2">
-                                        {entry.clockIn && (
-                                          <span>
-                                            In: {(() => {
-                                              const date = entry.clockIn instanceof Date ? entry.clockIn : 
-                                                (entry.clockIn && 'toDate' in entry.clockIn && typeof (entry.clockIn as any).toDate === 'function') ? 
-                                                  (entry.clockIn as any).toDate() : new Date(entry.clockIn);
-                                              return format(date, 'HH:mm');
-                                            })()}
-                                          </span>
-                                        )}
-                                        {entry.clockOut && (
-                                          <span>
-                                            Out: {(() => {
-                                              const date = entry.clockOut instanceof Date ? entry.clockOut : 
-                                                (entry.clockOut && 'toDate' in entry.clockOut && typeof (entry.clockOut as any).toDate === 'function') ? 
-                                                  (entry.clockOut as any).toDate() : new Date(entry.clockOut);
-                                              return format(date, 'HH:mm');
-                                            })()}
-                                          </span>
-                                        )}
-                                        <span className="font-medium">
-                                          {entry.hours}h
-                                        </span>
-                                      </div>
-                                      
-                                      {/* Work Entries */}
-                                      {entry.workEntries && entry.workEntries.length > 0 && (
-                                        <div className="mt-2 space-y-1">
-                                          {entry.workEntries.map((workEntry: any, idx: number) => (
-                                            <div key={idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                <div>
-                                                  {workEntry.code && (
-                                                    <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                      {workEntry.code}
-                                                    </div>
-                                                  )}
-                                                  {workEntry.machineHours && (
-                                                    <div className="text-yellow-700 dark:text-yellow-400">
-                                                      Machine {workEntry.machineHours}
-                                                    </div>
-                                                  )}
-                                                  {workEntry.labourHours && (
-                                                    <div className="text-yellow-700 dark:text-yellow-400">
-                                                      Labour {workEntry.labourHours}
-                                                    </div>
-                                                  )}
-                                                  {workEntry.equipment && (
-                                                    <div className="text-yellow-700 dark:text-yellow-400">
-                                                      Equipment: {workEntry.equipment}
-                                                    </div>
-                                                  )}
-                                                  {workEntry.smallTools && workEntry.smallTools.length > 0 && (
-                                                    <div className="text-yellow-700 dark:text-yellow-400">
-                                                      Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                                {workEntry.notes && (
-                                                  <div className="text-yellow-600 dark:text-yellow-500">
-                                                    {workEntry.notes}
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-                                      
-                                      {/* Legacy single entry display */}
-                                      {!entry.workEntries && (entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.notes) && (
-                                        <div className="mt-2 text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                            <div>
-                                              {entry.code && (
-                                                <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                  {entry.code}
-                                                </div>
-                                              )}
-                                              {entry.machineHours && (
-                                                <div className="text-yellow-700 dark:text-yellow-400">
-                                                  Machine {entry.machineHours}
-                                                </div>
-                                              )}
-                                              {entry.labourHours && (
-                                                <div className="text-yellow-700 dark:text-yellow-400">
-                                                  Labour {entry.labourHours}
-                                                </div>
-                                              )}
-                                              {entry.equipment && (
-                                                <div className="text-yellow-700 dark:text-yellow-400">
-                                                  Equipment: {entry.equipment}
-                                                </div>
-                                              )}
-                                              {entry.smallTools && (
-                                                <div className="text-yellow-700 dark:text-yellow-400">
-                                                  Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
-                                                </div>
-                                              )}
-                                            </div>
-                                            {entry.notes && (
-                                              <div className="text-yellow-600 dark:text-yellow-500">
-                                                {entry.notes}
-                                              </div>
+                                            {canEditEntry(entry, user!) && (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (entry.id) handleDeleteEntry(entry.id);
+                                                }}
+                                                className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                              >
+                                                Delete
+                                              </button>
                                             )}
                                           </div>
                                         </div>
-                                      )}
+                                        {!showGrouped && entry.job && (
+                                          <div className="text-gray-900 dark:text-yellow-100">
+                                            {entry.job}
+                                          </div>
+                                        )}
+                                        <div className="font-medium text-yellow-700 dark:text-yellow-600">
+                                          {entry.hours}
+                                        </div>
+                                        
+                                        {/* Expanded Details */}
+                                        {expandedEntries.has(entry.id || `other-${index}`) && (
+                                          <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-700 space-y-2">
+                                            {/* Time Details */}
+                                            <div className="flex items-center gap-4 text-xs text-yellow-700 dark:text-yellow-600">
+                                              {entry.clockIn && (
+                                                <span>
+                                                  In: {(() => {
+                                                    const date = entry.clockIn instanceof Date ? entry.clockIn : 
+                                                      (entry.clockIn && 'toDate' in entry.clockIn && typeof (entry.clockIn as any).toDate === 'function') ? 
+                                                        (entry.clockIn as any).toDate() : new Date(entry.clockIn);
+                                                    return format(date, 'HH:mm');
+                                                  })()}
+                                                </span>
+                                              )}
+                                              {entry.clockOut && (
+                                                <span>
+                                                  Out: {(() => {
+                                                    const date = entry.clockOut instanceof Date ? entry.clockOut : 
+                                                      (entry.clockOut && 'toDate' in entry.clockOut && typeof (entry.clockOut as any).toDate === 'function') ? 
+                                                        (entry.clockOut as any).toDate() : new Date(entry.clockOut);
+                                                    return format(date, 'HH:mm');
+                                                  })()}
+                                                </span>
+                                              )}
+                                            </div>
+                                            
+                                            {/* Work Entries */}
+                                            {entry.workEntries && entry.workEntries.length > 0 && (
+                                              <div className="space-y-1">
+                                                {entry.workEntries.map((workEntry: any, idx: number) => (
+                                                  <div key={idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                      <div>
+                                                        {workEntry.code && (
+                                                          <div className="font-medium text-yellow-800 dark:text-yellow-300">
+                                                            {workEntry.code}
+                                                          </div>
+                                                        )}
+                                                        {workEntry.machineHours && (
+                                                          <div className="text-yellow-700 dark:text-yellow-400">
+                                                            Machine {workEntry.machineHours}
+                                                          </div>
+                                                        )}
+                                                        {workEntry.labourHours && (
+                                                          <div className="text-yellow-700 dark:text-yellow-400">
+                                                            Labour {workEntry.labourHours}
+                                                          </div>
+                                                        )}
+                                                        {workEntry.equipment && (
+                                                          <div className="text-yellow-700 dark:text-yellow-400">
+                                                            Equipment: {workEntry.equipment}
+                                                          </div>
+                                                        )}
+                                                        {workEntry.smallTools && workEntry.smallTools.length > 0 && (
+                                                          <div className="text-yellow-700 dark:text-yellow-400">
+                                                            Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                      {workEntry.notes && (
+                                                        <div className="text-yellow-600 dark:text-yellow-500">
+                                                          {workEntry.notes}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                            
+                                            {/* Legacy single entry display */}
+                                            {!entry.workEntries && (entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.notes) && (
+                                              <div className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                  <div>
+                                                    {entry.code && (
+                                                      <div className="font-medium text-yellow-800 dark:text-yellow-300">
+                                                        {entry.code}
+                                                      </div>
+                                                    )}
+                                                    {entry.machineHours && (
+                                                      <div className="text-yellow-700 dark:text-yellow-400">
+                                                        Machine {entry.machineHours}
+                                                      </div>
+                                                    )}
+                                                    {entry.labourHours && (
+                                                      <div className="text-yellow-700 dark:text-yellow-400">
+                                                        Labour {entry.labourHours}
+                                                      </div>
+                                                    )}
+                                                    {entry.equipment && (
+                                                      <div className="text-yellow-700 dark:text-yellow-400">
+                                                        Equipment: {entry.equipment}
+                                                      </div>
+                                                    )}
+                                                    {entry.smallTools && (
+                                                      <div className="text-yellow-700 dark:text-yellow-400">
+                                                        Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                  {entry.notes && (
+                                                    <div className="text-yellow-600 dark:text-yellow-500">
+                                                      {entry.notes}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
                                       
                                       {!canAccess && (
                                         <div className="text-red-400 text-xs mt-2">
@@ -887,7 +914,6 @@ export default function TimecardPage() {
                                 </div>
                               ))}
                             </div>
-                          )}
                         </div>
                       )}
                     </div>

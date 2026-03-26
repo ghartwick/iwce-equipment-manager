@@ -108,7 +108,7 @@ export default function TimecardEditPage() {
   const ownerName = entry ? getBestDisplayName(users.find(u => u.id === entry.userId)) : user?.name || '';
 
   return (
-    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 p-4">
+    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 p-4 -mx-4 sm:-mx-4 lg:mx-0 lg:p-4">
       <div className="max-w-4xl mx-auto">
         <TimeEntryForm
           selectedDate={entryDate}

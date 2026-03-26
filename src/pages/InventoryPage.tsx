@@ -180,7 +180,7 @@ function InventoryPage() {
   }
 
   return (
-    <main className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3">
+    <main className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 -mx-2 sm:-mx-4 lg:mx-0">
       {/* Desktop Layout - Original Design */}
       <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Desktop Alerts - Always Visible */}
@@ -259,7 +259,7 @@ function InventoryPage() {
       </div>
 
       {/* Mobile Layout */}
-      <div className="lg:hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="lg:hidden max-w-7xl mx-auto py-4">
         <div className="space-y-3 sm:space-y-4">
           {/* Mobile Alerts - Collapsible */}
           {showAlerts && (

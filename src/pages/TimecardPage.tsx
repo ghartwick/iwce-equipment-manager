@@ -225,12 +225,12 @@ export default function TimecardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 p-4 -mx-4 sm:-mx-4 lg:mx-0 lg:p-4">
+    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-4">
       <div className="max-w-6xl mx-auto">
         
         <div className="grid grid-cols-1 gap-6">
           {/* Calendar */}
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6">
+          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-6">
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
               <button
@@ -323,7 +323,7 @@ export default function TimecardPage() {
 
           {/* Time Cards Display */}
           {selectedDate && (
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6">
+            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
                   Time Entries for {format(selectedDate, 'MMM d, yyyy')}
@@ -925,7 +925,7 @@ export default function TimecardPage() {
 
 
           {!selectedDate && (
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6">
+            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-6">
               <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-4">Select a Date</h3>
               <p className="text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view or edit time entries.</p>
             </div>

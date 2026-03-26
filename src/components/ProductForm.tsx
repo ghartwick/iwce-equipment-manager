@@ -185,7 +185,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   };
 
   return (
-    <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-4 sm:p-6">
+    <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-3 sm:p-4">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
           {formTitle}

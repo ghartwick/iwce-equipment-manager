@@ -65,21 +65,35 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
 
     try {
       if (editingUser) {
-        // Update user - only update password if a new one is provided
-        const updateData: any = {
-          username: formData.username,
-          name: formData.name,
-          role: formData.role,
-          isActive: formData.isActive
-        };
+        // Update user - different behavior based on current user role
+        let updateData: any = {};
         
-        // Only include password if it's not empty (user wants to change password)
-        if (formData.password.trim() !== '') {
-          updateData.password = formData.password;
+        if (currentUser?.role === 'admin') {
+          // Admin can update all fields
+          updateData = {
+            username: formData.username,
+            name: formData.name,
+            role: formData.role,
+            isActive: formData.isActive
+          };
+          
+          // Only include password if it's not empty (user wants to change password)
+          if (formData.password.trim() !== '') {
+            updateData.password = formData.password;
+          }
+        } else {
+          // Supervisor and Field users can only update their password
+          if (formData.password.trim() === '') {
+            setError('Please enter a new password to update');
+            return;
+          }
+          updateData = {
+            password: formData.password
+          };
         }
         
         await userManagementService.updateUser(editingUser.id, updateData);
-        setSuccess('User updated successfully');
+        setSuccess(currentUser?.role === 'admin' ? 'User updated successfully' : 'Password updated successfully');
         setEditingUser(null);
       } else {
         // Add new user
@@ -411,6 +425,13 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                           {editingUser && editingUser.id === user.id && (
                             <div className="bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 mt-2">
                               <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-4">Edit User</h3>
+                              {currentUser?.role !== 'admin' && (
+                                <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-800 dark:bg-opacity-30 border border-yellow-400 rounded-lg">
+                                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                    For security purposes, you can only change your password. Contact an administrator to update other information.
+                                  </p>
+                                </div>
+                              )}
                               <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div>
@@ -419,8 +440,13 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                       type="text"
                                       value={formData.username}
                                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className={`w-full px-3 py-2 border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 ${
+                                        currentUser?.role === 'admin' 
+                                          ? 'bg-[#fffff0] dark:bg-black focus:outline-none focus:ring-2 focus:ring-yellow-500' 
+                                          : 'bg-gray-200 dark:bg-gray-800 cursor-not-allowed'
+                                      }`}
                                       required
+                                      disabled={currentUser?.role !== 'admin'}
                                     />
                                   </div>
                                   <div>
@@ -429,8 +455,13 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                       type="text"
                                       value={formData.name}
                                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className={`w-full px-3 py-2 border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 ${
+                                        currentUser?.role === 'admin' 
+                                          ? 'bg-[#fffff0] dark:bg-black focus:outline-none focus:ring-2 focus:ring-yellow-500' 
+                                          : 'bg-gray-200 dark:bg-gray-800 cursor-not-allowed'
+                                      }`}
                                       required
+                                      disabled={currentUser?.role !== 'admin'}
                                     />
                                   </div>
                                   <div>
@@ -478,7 +509,12 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                     <select
                                       value={formData.role}
                                       onChange={(e) => setFormData({ ...formData, role: e.target.value as FormDataRole })}
-                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className={`w-full px-3 py-2 border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 ${
+                                        currentUser?.role === 'admin' 
+                                          ? 'bg-[#fffff0] dark:bg-black focus:outline-none focus:ring-2 focus:ring-yellow-500' 
+                                          : 'bg-gray-200 dark:bg-gray-800 cursor-not-allowed'
+                                      }`}
+                                      disabled={currentUser?.role !== 'admin'}
                                     >
                                       <option value="field">Field</option>
                                       <option value="supervisor">Supervisor</option>
@@ -490,7 +526,12 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                     <select
                                       value={formData.isActive ? 'true' : 'false'}
                                       onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'true' })}
-                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      className={`w-full px-3 py-2 border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 ${
+                                        currentUser?.role === 'admin' 
+                                          ? 'bg-[#fffff0] dark:bg-black focus:outline-none focus:ring-2 focus:ring-yellow-500' 
+                                          : 'bg-gray-200 dark:bg-gray-800 cursor-not-allowed'
+                                      }`}
+                                      disabled={currentUser?.role !== 'admin'}
                                     >
                                       <option value="true">Active</option>
                                       <option value="false">Inactive</option>

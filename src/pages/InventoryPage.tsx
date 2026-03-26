@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useInventory } from '../hooks/useInventory';
 import { useAuth } from '../hooks/useAuth';
 import { ProductList } from '../components/ProductList';
@@ -11,6 +12,7 @@ import { Equipment } from '../types';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 
 function InventoryPage() {
+  const navigate = useNavigate();
   const {
     products,
     categories,
@@ -18,7 +20,6 @@ function InventoryPage() {
     loading: inventoryLoading,
     addProduct,
     updateProduct,
-    deleteProduct,
     clearAlert,
     addCategory,
     editCategory,
@@ -132,42 +133,9 @@ function InventoryPage() {
     }
   };
 
-  const handleEditProduct = async (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (editingProduct && user) {
-      const updatedEquipment: Equipment = {
-        ...editingProduct,
-        name: productData.name,
-        employee: productData.employee,
-        site: productData.site,
-        category: productData.category,
-        serialNumber: productData.serialNumber,
-        equipmentType: productData.equipmentType,
-        repair: productData.repair,
-        repairDescription: productData.repairDescription,
-        updatedAt: new Date().toISOString(),
-        lastModifiedBy: user.name
-      };
-      
-      try {
-        // Track the change in Firebase history
-        await equipmentHistoryFirebaseService.trackEquipmentChange(
-          'updated',
-          updatedEquipment,
-          { username: user.username, role: user.role },
-          editingProduct
-        );
-      } catch (error) {
-        console.error('Failed to track Firebase history:', error);
-      }
-      
-      await updateProduct(editingProduct.id, updatedEquipment);
-      setEditingProduct(null);
-    }
-  };
-
+  
   const handleEditClick = (product: Equipment) => {
-    setEditingProduct(product);
-    setShowAddForm(false);
+    navigate(`/inventory/equipment/${product.id}`);
   };
 
   // Show loading screen while loading inventory
@@ -180,7 +148,7 @@ function InventoryPage() {
   }
 
   return (
-    <main className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 -mx-2 sm:-mx-4 lg:mx-0">
+    <main className="px-4 sm:px-6 lg:px-6 py-2 sm:py-3 -mx-4 sm:-mx-6 lg:mx-0">
       {/* Desktop Layout - Original Design */}
       <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Desktop Alerts - Always Visible */}
@@ -202,10 +170,9 @@ function InventoryPage() {
             <div className="max-w-4xl mx-auto">
               <ProductForm
                 categories={categories}
-                product={editingProduct}
-                onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
-                onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
-                onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
+                product={null}
+                onSubmit={handleAddProduct}
+                onCancel={() => { setShowAddForm(false); }}
                 userRole={user?.role || 'field'}
               />
             </div>
@@ -214,7 +181,7 @@ function InventoryPage() {
 
         {/* Desktop Equipment Table - Original Design */}
         <div className="max-w-4xl mx-auto">
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl overflow-hidden">
+          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
             <div className="p-6">
               {/* Search Field - Above */}
               <div className="mb-4">
@@ -243,11 +210,6 @@ function InventoryPage() {
                 products={filteredProducts}
                 categories={categories}
                 onEdit={handleEditClick}
-                onDelete={user?.role === 'admin' ? deleteProduct : undefined}
-                selectedEquipmentId={editingProduct?.id}
-                onEditProduct={handleEditProduct}
-                onAddProduct={handleAddProduct}
-                onCancelEdit={() => setEditingProduct(null)}
                 userRole={user?.role || 'field'}
                 showCategoryHeadings={true}
                 refreshData={refreshData}
@@ -274,20 +236,19 @@ function InventoryPage() {
 
           {/* Forms Section - Admin Only */}
           {showAddForm && user?.role === 'admin' && (
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-2 sm:p-3">
+            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2 sm:p-3">
               <ProductForm
                 categories={categories}
-                product={editingProduct}
-                onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
-                onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
-                onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
+                product={null}
+                onSubmit={handleAddProduct}
+                onCancel={() => { setShowAddForm(false); }}
                 userRole={user?.role || 'field'}
               />
             </div>
           )}
 
           {/* Mobile Equipment Table - Optimized */}
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl overflow-hidden">
+          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
             <div className="p-2 sm:p-3">
               <div className="flex flex-col space-y-2">
                 {/* Search - Mobile Full Width */}
@@ -317,11 +278,7 @@ function InventoryPage() {
             <MobileProductList
               products={filteredProducts}
               onEdit={handleEditClick}
-              selectedEquipmentId={editingProduct?.id}
-              onEditProduct={handleEditProduct}
-              onCancelEdit={() => setEditingProduct(null)}
               categories={categories}
-              userRole={user?.role || 'field'}
             />
           </div>
         </div>

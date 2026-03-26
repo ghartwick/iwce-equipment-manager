@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     historyApiFallback: true,
+    port: 3000,
   },
   build: {
     rollupOptions: {

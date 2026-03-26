@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useInventory } from './hooks/useInventory';
 import { useAuth } from './hooks/useAuth';
 import { Header } from './components/Header';
@@ -13,6 +14,7 @@ import { Equipment } from './types';
 import { equipmentHistoryService } from './services/equipmentHistoryService';
 
 function App() {
+  const navigate = useNavigate();
   const {
     user,
     isAuthenticated,
@@ -62,7 +64,6 @@ function App() {
     loading: inventoryLoading,
     addProduct,
     updateProduct,
-    deleteProduct,
     clearAlert,
     addCategory,
     editCategory,
@@ -143,8 +144,7 @@ function App() {
   };
 
   const handleEditClick = (product: Equipment) => {
-    setEditingProduct(product);
-    setShowAddForm(false);
+    navigate(`/inventory/equipment/${product.id}`);
   };
 
   const handleLogin = async (username: string, password: string) => {
@@ -200,7 +200,7 @@ function App() {
         onRefresh={handleRefresh}
       />
       
-      <main className="px-2 sm:px-4 lg:px-6 py-2 sm:py-3 -mx-2 sm:-mx-4 lg:mx-0">
+      <main className="px-4 sm:px-6 lg:px-6 py-2 sm:py-3 -mx-4 sm:-mx-6 lg:mx-0">
         {/* Desktop Layout - Original Design */}
         <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Desktop Alerts - Always Visible */}
@@ -222,10 +222,9 @@ function App() {
               <div className="max-w-4xl mx-auto">
                 <ProductForm
                   categories={categories}
-                  product={editingProduct}
-                  onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
-                  onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
-                  onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
+                  product={null}
+                  onSubmit={handleAddProduct}
+                  onCancel={() => { setShowAddForm(false); }}
                   userRole={user?.role || 'field'}
                 />
               </div>
@@ -263,11 +262,6 @@ function App() {
                   products={filteredProducts}
                   categories={categories}
                   onEdit={handleEditClick}
-                  onDelete={deleteProduct}
-                  selectedEquipmentId={editingProduct?.id}
-                  onEditProduct={handleEditProduct}
-                  onAddProduct={handleAddProduct}
-                  onCancelEdit={() => setEditingProduct(null)}
                   userRole={user?.role || 'field'}
                 />
               </div>
@@ -300,13 +294,12 @@ function App() {
 
             {/* Forms Section */}
             {showAddForm && (
-              <div className="bg-black border border-yellow-600 rounded-lg shadow-lg p-2 sm:p-3">
+              <div className="bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2 sm:p-3">
                 <ProductForm
                   categories={categories}
-                  product={editingProduct}
-                  onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
-                  onCancel={() => { setShowAddForm(false); setEditingProduct(null); }}
-                  onDelete={editingProduct ? () => { deleteProduct(editingProduct.id); setEditingProduct(null); } : undefined}
+                  product={null}
+                  onSubmit={handleAddProduct}
+                  onCancel={() => { setShowAddForm(false); }}
                   userRole={user?.role || 'field'}
                 />
               </div>
@@ -343,11 +336,7 @@ function App() {
               <MobileProductList
                 products={filteredProducts}
                 onEdit={handleEditClick}
-                selectedEquipmentId={editingProduct?.id}
-                onEditProduct={handleEditProduct}
-                onCancelEdit={() => setEditingProduct(null)}
                 categories={categories}
-                userRole={user?.role || 'field'}
               />
             </div>
           </div>

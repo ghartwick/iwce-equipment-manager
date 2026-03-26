@@ -2,17 +2,14 @@ import React, { useRef } from 'react';
 import { Package, Download, Upload, Pencil } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { exportToExcel, importFromExcel } from '../utils/exportToExcel';
-import { ProductForm } from './ProductForm';
 
 interface ProductListProps {
   products: Equipment[];
   categories: Category[];
   onEdit?: (product: Equipment) => void;
-  onDelete?: (id: string) => void;
   selectedEquipmentId?: string;
-  onEditProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  onAddProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  onCancelEdit: () => void;
+  onAddProduct?: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onCancelEdit?: () => void;
   userRole?: 'admin' | 'supervisor' | 'field';
   showCategoryHeadings?: boolean; // New prop for category headings
   refreshData?: () => void; // Add refresh function
@@ -23,9 +20,7 @@ export function ProductList({
   products,
   categories,
   onEdit,
-  onDelete,
   selectedEquipmentId,
-  onEditProduct,
   onAddProduct,
   onCancelEdit,
   userRole,
@@ -33,7 +28,6 @@ export function ProductList({
   refreshData,
   onImportComplete,
 }: ProductListProps) {
-  const selectedProduct = products.find(p => p.id === selectedEquipmentId);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +42,7 @@ export function ProductList({
         const equipment = importedEquipment[i];
         
         try {
-          await onAddProduct(equipment as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>);
+          await onAddProduct?.(equipment as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>);
         } catch (error) {
           console.error(`Failed to create equipment item ${i + 1}:`, error);
         }
@@ -183,9 +177,9 @@ export function ProductList({
                                 <button
                                   onClick={() => {
                                     if (selectedEquipmentId === product.id) {
-                                      onCancelEdit();
+                                      onCancelEdit?.();
                                     } else if (onEdit) {
-                                      onEdit(product);
+                                      onEdit?.(product);
                                     }
                                   }}
                                   className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
@@ -198,24 +192,7 @@ export function ProductList({
                           </td>
                         </tr>
                         
-                        {/* Inline Edit Form */}
-                        {selectedEquipmentId === product.id && (
-                          <tr>
-                            <td colSpan={2} className="px-0 py-0 border-t border-yellow-200 dark:border-yellow-800">
-                              <div className="bg-[#fffff0] dark:bg-yellow-900">
-                                <ProductForm
-                                  categories={categories}
-                                  product={selectedProduct}
-                                  onSubmit={onEditProduct}
-                                  onCancel={onCancelEdit}
-                                  onDelete={onDelete ? () => onDelete(product.id) : undefined}
-                                  userRole={userRole}
-                                />
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
+                                              </React.Fragment>
                     ))}
                   </React.Fragment>
                 ));
@@ -269,9 +246,9 @@ export function ProductList({
                                 <button
                                   onClick={() => {
                                     if (selectedEquipmentId === product.id) {
-                                      onCancelEdit();
+                                      onCancelEdit?.();
                                     } else if (onEdit) {
-                                      onEdit(product);
+                                      onEdit?.(product);
                                     }
                                   }}
                                   className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
@@ -284,24 +261,7 @@ export function ProductList({
                           </td>
                         </tr>
                         
-                        {/* Inline Edit Form */}
-                        {selectedEquipmentId === product.id && (
-                          <tr>
-                            <td colSpan={2} className="px-0 py-0 border-t border-yellow-200 dark:border-yellow-800">
-                              <div className="bg-[#fffff0] dark:bg-yellow-900">
-                                <ProductForm
-                                  categories={categories}
-                                  product={selectedProduct}
-                                  onSubmit={onEditProduct}
-                                  onCancel={onCancelEdit}
-                                  onDelete={onDelete ? () => onDelete(product.id) : undefined}
-                                  userRole={userRole}
-                                />
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
+                                              </React.Fragment>
                     ))}
                   </React.Fragment>
                 );

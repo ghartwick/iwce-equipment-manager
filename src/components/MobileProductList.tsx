@@ -1,26 +1,21 @@
 import React from 'react';
 import { User, MapPin, Wrench, Pencil } from 'lucide-react';
 import { Equipment, Category } from '../types';
-import { ProductForm } from './ProductForm';
 
 interface MobileProductListProps {
   products: Equipment[];
   onEdit?: (product: Equipment) => void;
   selectedEquipmentId?: string;
-  onEditProduct: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  onCancelEdit: () => void;
+  onCancelEdit?: () => void;
   categories: Category[];
-  userRole?: 'admin' | 'supervisor' | 'field';
 }
 
 export function MobileProductList({ 
   products, 
   onEdit,
   selectedEquipmentId,
-  onEditProduct,
   onCancelEdit,
-  categories,
-  userRole
+  categories
 }: MobileProductListProps) {
   if (products.length === 0) {
     return (
@@ -63,8 +58,7 @@ export function MobileProductList({
             
             {/* Products in this category */}
             {categoryProducts.map((product) => {
-              const selectedProduct = products.find(p => p.id === selectedEquipmentId);
-              
+                            
               return (
                 <React.Fragment key={product.id}>
                   <div 
@@ -82,9 +76,9 @@ export function MobileProductList({
                         onClick={(e) => {
                           e.stopPropagation();
                           if (selectedEquipmentId === product.id) {
-                            onCancelEdit();
+                            onCancelEdit?.();
                           } else if (onEdit) {
-                            onEdit(product);
+                            onEdit?.(product);
                           }
                         }}
                         className="p-2 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
@@ -125,24 +119,6 @@ export function MobileProductList({
                     </div>
                   </div>
                   
-                  {/* Inline Edit Form - Appears directly below selected equipment */}
-                  {selectedEquipmentId === product.id && (
-                    <div className="border-t border-yellow-200 dark:border-yellow-800">
-                      <div className="bg-[#fffff0] dark:bg-yellow-900 p-3">
-                        <ProductForm
-                          categories={categories}
-                          product={selectedProduct}
-                          onSubmit={onEditProduct}
-                          onCancel={onCancelEdit}
-                          onDelete={() => {
-                            // Delete functionality would need to be passed down
-                            console.log('Delete mobile product:', product.id);
-                          }}
-                          userRole={userRole}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </React.Fragment>
               );
             })}
@@ -208,8 +184,7 @@ export function MobileProductList({
                   </h3>
                 </div>
                 {categoryProducts.map((product) => {
-                  const selectedProduct = products.find(p => p.id === selectedEquipmentId);
-                  
+                                    
                   return (
                     <React.Fragment key={product.id}>
                       <div 
@@ -227,9 +202,9 @@ export function MobileProductList({
                             onClick={(e) => {
                               e.stopPropagation();
                               if (selectedEquipmentId === product.id) {
-                                onCancelEdit();
+                                onCancelEdit?.();
                               } else if (onEdit) {
-                                onEdit(product);
+                                onEdit?.(product);
                               }
                             }}
                             className="p-2 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
@@ -270,25 +245,7 @@ export function MobileProductList({
                         </div>
                       </div>
                       
-                      {/* Inline Edit Form - Appears directly below selected equipment */}
-                      {selectedEquipmentId === product.id && (
-                        <div className="border-t border-yellow-200 dark:border-yellow-800">
-                          <div className="bg-[#fffff0] dark:bg-yellow-900 p-3">
-                            <ProductForm
-                              categories={categories}
-                              product={selectedProduct}
-                              onSubmit={onEditProduct}
-                              onCancel={onCancelEdit}
-                              onDelete={() => {
-                                // Delete functionality would need to be passed down
-                                console.log('Delete mobile product:', product.id);
-                              }}
-                              userRole={userRole}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </React.Fragment>
+                                          </React.Fragment>
                   );
                 })}
               </div>

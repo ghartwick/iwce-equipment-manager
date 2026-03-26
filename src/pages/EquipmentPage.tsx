@@ -34,15 +34,15 @@ export default function EquipmentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black flex items-center justify-center">
-        <div className="text-yellow-600 dark:text-yellow-400">Loading...</div>
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
+        <div className="text-lg text-yellow-600 dark:text-yellow-400">Loading...</div>
       </div>
     );
   }
 
   if (!equipment) {
     return (
-      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-500 text-lg mb-4">Equipment not found.</div>
           <button
@@ -57,7 +57,7 @@ export default function EquipmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 p-4">
+    <main className="px-4 sm:px-6 lg:px-6 py-2 sm:py-3 -mx-4 sm:-mx-6 lg:mx-0">
       <div className="max-w-4xl mx-auto">
         <ProductForm
           categories={categories}
@@ -68,6 +68,6 @@ export default function EquipmentPage() {
           userRole={user?.role || 'field'}
         />
       </div>
-    </div>
+    </main>
   );
 }

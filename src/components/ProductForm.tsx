@@ -395,7 +395,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
         </button>
         <button
           type="submit"
-          className="px-4 py-3 bg-yellow-500 text-black rounded-md hover:bg-yellow-600 text-sm font-medium transition-colors"
+          className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors"
         >
           {isEditing ? 'Update' : 'Add'} Equipment
         </button>

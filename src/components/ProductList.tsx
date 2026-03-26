@@ -151,12 +151,13 @@ export function ProductList({
                     {categoryProducts.map((product) => (
                       <React.Fragment key={product.id}>
                         <tr 
+                          onClick={() => onEdit?.(product)}
                           className={`
                             ${selectedEquipmentId === product.id 
                               ? (product.repair ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
                               : (product.repair ? "bg-red-100 dark:bg-red-950" : "bg-[#fffff0] dark:bg-black")
                             } 
-                            transition-all duration-200
+                            transition-all duration-200 cursor-pointer hover:opacity-80
                           `}
                         >
                           <td className="w-[70%] px-2 py-4">
@@ -220,12 +221,13 @@ export function ProductList({
                     {products.map((product) => (
                       <React.Fragment key={product.id}>
                         <tr 
+                          onClick={() => onEdit?.(product)}
                           className={`
                             ${selectedEquipmentId === product.id 
                               ? (product.repair ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
                               : (product.repair ? "bg-red-100 dark:bg-red-950" : "bg-[#fffff0] dark:bg-black")
                             } 
-                            transition-all duration-200
+                            transition-all duration-200 cursor-pointer hover:opacity-80
                           `}
                         >
                           <td className="w-[70%] px-2 py-4">

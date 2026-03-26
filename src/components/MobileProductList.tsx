@@ -76,6 +76,9 @@ export function MobileProductList({
                         <h3 className={`text-sm font-medium ${product.repair ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-yellow-100'} break-words`}>
                           {product.name}
                         </h3>
+                        {product.description && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 break-words">{product.description}</p>
+                        )}
                       </div>
                       {/* Edit Button */}
                       <button
@@ -113,12 +116,12 @@ export function MobileProductList({
                       )}
 
                       {/* Repair Description */}
-                      {product.repair && product.repairDescription && (
+                      {product.repair && (
                         <div className="flex items-start space-x-2 mt-2 p-2 bg-red-900 bg-opacity-20 rounded">
                           <Wrench className="h-3 w-3 text-red-500 mt-0.5" />
                           <div>
                             <span className="text-red-400 text-xs font-medium">Alert Details:</span>
-                            <p className="text-red-300 text-xs mt-1">{product.repairDescription}</p>
+                            <p className="text-red-300 text-xs mt-1">{product.repairDescription || 'Equipment needs attention'}</p>
                           </div>
                         </div>
                       )}

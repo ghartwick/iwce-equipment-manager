@@ -8,6 +8,9 @@ export interface Equipment {
   serialNumber?: string;
   category?: string;
   site?: string;
+  employee?: string;
+  repair: boolean;
+  repairDescription?: string;
   isActive: boolean;
   showInInventory: boolean;
   showInTimecard: boolean;
@@ -45,6 +48,9 @@ export class EquipmentManagementService {
           serialNumber: data.serialNumber || '',
           category: data.category || '',
           site: data.site || '',
+          employee: data.employee || '',
+          repair: data.repair ?? false,
+          repairDescription: data.repairDescription || '',
           isActive: data.isActive ?? true,
           showInInventory: data.showInInventory ?? true,
           showInTimecard: data.showInTimecard ?? true,

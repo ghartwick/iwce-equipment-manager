@@ -125,6 +125,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     
     setIsSubmitting(true);
     
+    console.log('Submitting form data:', formData);
+    
     try {
       await onSubmit(formData);
       // Reset submitting state after successful submission

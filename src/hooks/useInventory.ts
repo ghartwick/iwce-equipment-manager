@@ -66,10 +66,10 @@ export function useInventory(refreshKey?: number) {
         description: equipment.description || '',
         serialNumber: equipment.serialNumber || '',
         category: equipment.category || 'Heavy Equipment',
-        employee: '',
+        employee: equipment.employee || '',
         site: equipment.site || '',
-        repair: false,
-        repairDescription: '',
+        repair: equipment.repair || false,
+        repairDescription: equipment.repairDescription || '',
         equipmentType: 'heavy' as const,
         createdAt: equipment.createdAt.toISOString(),
         updatedAt: equipment.updatedAt.toISOString(),
@@ -155,6 +155,9 @@ export function useInventory(refreshKey?: number) {
     try {
       const product = products.find(p => p.id === id);
       
+      console.log('Updating product:', id, 'Type:', product?.equipmentType);
+      console.log('Updates:', updates);
+      
       if (product?.equipmentType === 'heavy') {
         // Route heavy equipment updates through equipmentManagementService
         // Convert the updates to match the heavy equipment service format
@@ -165,9 +168,13 @@ export function useInventory(refreshKey?: number) {
         if (updates.category !== undefined) heavyUpdates.category = updates.category;
         if (updates.site !== undefined) heavyUpdates.site = updates.site;
         if (updates.employee !== undefined) heavyUpdates.employee = updates.employee;
+        if (updates.repair !== undefined) heavyUpdates.repair = updates.repair;
+        if (updates.repairDescription !== undefined) heavyUpdates.repairDescription = updates.repairDescription;
         
+        console.log('Heavy equipment updates:', heavyUpdates);
         await equipmentManagementService.updateEquipment(id, heavyUpdates);
       } else {
+        console.log('Small tool updates:', updates);
         await updateEquipment(id, updates);
       }
       

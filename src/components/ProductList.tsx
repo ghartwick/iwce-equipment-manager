@@ -178,8 +178,10 @@ export function ProductList({
                               <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600 mt-1">
                                 {product.employee && <div className="break-words">{product.employee}</div>}
                                 {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
-                                {product.repairDescription && (
-                                  <div className="text-xs text-red-400 mt-1 italic break-words">Alert: {product.repairDescription}</div>
+                                {product.repair && (
+                                  <div className="text-xs text-red-400 mt-1 italic break-words">
+                                    Alert: {product.repairDescription || 'Equipment needs attention'}
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -253,8 +255,10 @@ export function ProductList({
                               <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600 mt-1">
                                 {product.employee && <div className="break-words">{product.employee}</div>}
                                 {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
-                                {product.repairDescription && (
-                                  <div className="text-xs text-red-400 mt-1 italic break-words">Alert: {product.repairDescription}</div>
+                                {product.repair && (
+                                  <div className="text-xs text-red-400 mt-1 italic break-words">
+                                    Alert: {product.repairDescription || 'Equipment needs attention'}
+                                  </div>
                                 )}
                               </div>
                             </div>

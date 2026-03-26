@@ -25,7 +25,6 @@ function App() {
   } = useAuth();
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Equipment | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAlerts, setShowAlerts] = useState(false);
@@ -63,7 +62,6 @@ function App() {
     alerts,
     loading: inventoryLoading,
     addProduct,
-    updateProduct,
     clearAlert,
     addCategory,
     editCategory,
@@ -119,30 +117,6 @@ function App() {
     }
   };
 
-  const handleEditProduct = (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
-    console.log('handleEditProduct called - repair:', productData.repair);
-    if (editingProduct && user) {
-      // Create updated equipment object
-      const updatedEquipment: Equipment = {
-        ...editingProduct,
-        ...productData,
-        updatedAt: new Date().toISOString(),
-        lastModifiedBy: user.name
-      };
-      
-      // Track the change in history
-      equipmentHistoryService.trackEquipmentChange(
-        'updated',
-        updatedEquipment,
-        { username: user.username, role: user.role },
-        editingProduct
-      );
-      
-      updateProduct(editingProduct.id, updatedEquipment);
-      setEditingProduct(null);
-    }
-  };
-
   const handleEditClick = (product: Equipment) => {
     navigate(`/inventory/equipment/${product.id}`);
   };
@@ -191,7 +165,6 @@ function App() {
       <Header 
         onAddProduct={() => {
           setShowAddForm(!showAddForm);
-          setEditingProduct(null); // Clear any selected equipment when adding
         }}
         alertCount={alerts.length}
         onToggleAlerts={() => setShowAlerts(!showAlerts)}

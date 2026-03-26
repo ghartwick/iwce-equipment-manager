@@ -102,14 +102,19 @@ export default function TimecardEditPage() {
     : entry?.date && 'toDate' in (entry.date as any)
       ? (entry.date as any).toDate()
       : searchParams.get('date') 
-        ? new Date(searchParams.get('date')!)
+        ? (() => {
+            const dateStr = searchParams.get('date')!;
+            const [year, month, day] = dateStr.split('-').map(Number);
+            // Create date in local timezone at noon to avoid timezone issues
+            return new Date(year, month - 1, day, 12, 0, 0);
+          })()
         : new Date();
 
   const ownerName = entry ? getBestDisplayName(users.find(u => u.id === entry.userId)) : user?.name || '';
 
   return (
     <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <TimeEntryForm
           selectedDate={entryDate}
           entry={entry || undefined}

@@ -58,7 +58,7 @@ export default function EquipmentPage() {
 
   return (
     <main className="px-4 sm:px-6 lg:px-6 py-2 sm:py-3 -mx-4 sm:-mx-6 lg:mx-0">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <ProductForm
           categories={categories}
           product={equipment}

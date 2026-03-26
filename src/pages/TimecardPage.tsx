@@ -226,7 +226,7 @@ export default function TimecardPage() {
 
   return (
     <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         
         <div className="grid grid-cols-1 gap-2">
           {/* Calendar */}

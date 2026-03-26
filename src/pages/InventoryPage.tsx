@@ -19,7 +19,6 @@ function InventoryPage() {
     alerts,
     loading: inventoryLoading,
     addProduct,
-    updateProduct,
     clearAlert,
     addCategory,
     editCategory,
@@ -30,7 +29,6 @@ function InventoryPage() {
   const { user } = useAuth();
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Equipment | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAlerts, setShowAlerts] = useState(false);
@@ -150,38 +148,33 @@ function InventoryPage() {
   return (
     <main className="px-4 sm:px-6 lg:px-6 py-2 sm:py-3 -mx-4 sm:-mx-6 lg:mx-0">
       {/* Desktop Layout - Original Design */}
-      <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="hidden lg:block max-w-5xl mx-auto py-4">
         {/* Desktop Alerts - Always Visible */}
         {showAlerts && (
           <div className="mb-3" ref={alertsRef}>
-            <div className="max-w-4xl mx-auto">
-              <AlertPanel 
-                alerts={alerts} 
-                products={products} 
-                onClearAlert={clearAlert} 
-              />
-            </div>
+            <AlertPanel 
+              alerts={alerts} 
+              products={products} 
+              onClearAlert={clearAlert} 
+            />
           </div>
         )}
 
         {/* Desktop Forms Section - Admin Only */}
         {showAddForm && user?.role === 'admin' && (
           <div className="mb-3">
-            <div className="max-w-4xl mx-auto">
-              <ProductForm
-                categories={categories}
-                product={null}
-                onSubmit={handleAddProduct}
-                onCancel={() => { setShowAddForm(false); }}
-                userRole={user?.role || 'field'}
-              />
-            </div>
+            <ProductForm
+              categories={categories}
+              product={null}
+              onSubmit={handleAddProduct}
+              onCancel={() => { setShowAddForm(false); }}
+              userRole={user?.role || 'field'}
+            />
           </div>
         )}
 
         {/* Desktop Equipment Table - Original Design */}
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
+        <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
             <div className="p-6">
               {/* Search Field - Above */}
               <div className="mb-4">
@@ -217,11 +210,10 @@ function InventoryPage() {
               />
             </div>
           </div>
-        </div>
       </div>
 
       {/* Mobile Layout */}
-      <div className="lg:hidden max-w-7xl mx-auto py-4">
+      <div className="lg:hidden max-w-5xl mx-auto py-4">
         <div className="space-y-3 sm:space-y-4">
           {/* Mobile Alerts - Collapsible */}
           {showAlerts && (

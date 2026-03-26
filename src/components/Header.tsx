@@ -86,9 +86,9 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
 
   return (
     <header className="bg-white dark:bg-black border-b border-yellow-600">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3">
             <img 
               src="/top-left-logo.png" 
               alt="IWCE Logo" 
@@ -96,8 +96,10 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
             />
             <h1 className="text-lg sm:text-xl font-semibold text-yellow-600 dark:text-yellow-400">IWCE Equipment</h1>
           </div>
-          
-          {/* Mobile Menu Toggle */}
+            
+            {/* Right side items */}
+            <div className="flex items-center space-x-2">
+              {/* Mobile Menu Toggle */}
           <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
             className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 lg:hidden"
@@ -194,6 +196,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
                 )}
               </div>
             )}
+            </div>
           </div>
         </div>
 

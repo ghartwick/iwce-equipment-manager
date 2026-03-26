@@ -83,7 +83,7 @@ function Layout({ children }: LayoutProps) {
     <div className="min-h-screen bg-[#f0e0c8] dark:bg-black transition-colors duration-200">
       {/* Header - Matching Original Style */}
       <header className="bg-[#f0e0c8] dark:bg-black border-b border-yellow-600 transition-colors duration-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between h-16">
             {/* Left Side - Logo + Title */}
             <div className="flex items-center space-x-3">

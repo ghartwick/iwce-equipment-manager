@@ -201,6 +201,20 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
         {showMobileMenu && (
           <div className="lg:hidden border-t border-yellow-200 dark:border-yellow-800">
             <div className="px-4 py-4 space-y-3">
+              {/* User Info - First item */}
+              {user && (
+                <div className="flex items-center space-x-3 p-3 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-400 dark:border-yellow-600 rounded-lg">
+                  <User className="h-5 w-5 text-yellow-700 dark:text-yellow-300" />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                      {user.name || user.username}
+                    </div>
+                    <div className={`text-xs ${getRoleColor(user.role)}`}>
+                      {getRoleDisplay(user.role)}
+                    </div>
+                  </div>
+                </div>
+              )}
               {user?.role === 'admin' && (
                 <button
                   onClick={() => { onAddProduct(); setShowMobileMenu(false); }}

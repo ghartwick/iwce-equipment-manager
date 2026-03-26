@@ -277,6 +277,24 @@ function Layout({ children }: LayoutProps) {
           {showMobileMenu && (
             <div className="lg:hidden border-t border-yellow-200 dark:border-yellow-800">
               <div className="px-4 py-4 space-y-3">
+                {/* Mobile User Identification Section - Moved to top */}
+                {user && (
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-30 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-10 w-10 bg-yellow-600 rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-black" />
+                      </div>
+                      <div>
+                        <p className="text-gray-900 dark:text-yellow-100 font-medium">{user.name}</p>
+                        <p className={`text-xs ${getRoleColor(user.role)}`}>
+                          {getRoleDisplay(user.role)}
+                        </p>
+                        <p className="text-xs text-yellow-700 dark:text-yellow-600">@{user.username}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Mobile Navigation */}
                 {navigation.map((item) => {
                   const Icon = item.icon;
@@ -328,26 +346,7 @@ function Layout({ children }: LayoutProps) {
                   </button>
                 )}
                 
-                {/* Mobile User Identification Section */}
-                {user && (
-                  <div className="border-t border-yellow-200 dark:border-yellow-800 pt-3">
-                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-30 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="h-10 w-10 bg-yellow-600 rounded-full flex items-center justify-center">
-                          <User className="h-5 w-5 text-black" />
-                        </div>
-                        <div>
-                          <p className="text-gray-900 dark:text-yellow-100 font-medium">{user.name}</p>
-                          <p className={`text-xs ${getRoleColor(user.role)}`}>
-                            {getRoleDisplay(user.role)}
-                          </p>
-                          <p className="text-xs text-yellow-700 dark:text-yellow-600">@{user.username}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
+                                
                 {/* Mobile Theme Toggle */}
                 <button
                   onClick={(e) => {

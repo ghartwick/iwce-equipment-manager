@@ -102,7 +102,7 @@ const WorkEntrySection = ({
   
 
   return (
-    <div className="bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-300 dark:border-yellow-800 rounded-lg p-4 space-y-4">
+    <div className="bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-300 dark:border-yellow-800 rounded-lg p-2 space-y-4">
       <div 
         className="cursor-pointer"
         onClick={() => !isLocked && toggleCollapse(entry.id)}
@@ -137,25 +137,31 @@ const WorkEntrySection = ({
 
         {/* Show summary when collapsed */}
         {entry.collapsed && (
-          <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-500 space-y-1">
-            {entry.code && (
-              <div><span className="font-medium">Code:</span> {entry.code}</div>
-            )}
-            {entry.machineHours && (
-              <div><span className="font-medium">Machine:</span> {entry.machineHours}</div>
-            )}
-            {entry.labourHours && (
-              <div><span className="font-medium">Labour:</span> {entry.labourHours}</div>
-            )}
-            {entry.notes && (
-              <div className="truncate"><span className="font-medium">Notes:</span> {entry.notes}</div>
-            )}
-            {entry.equipment && (
-              <div><span className="font-medium">Equipment:</span> {entry.equipment}</div>
-            )}
-            {entry.smallTools.length > 0 && (
-              <div><span className="font-medium">Tools:</span> {entry.smallTools.join(', ')}</div>
-            )}
+          <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div>
+                {(user.role === 'supervisor' || user.role === 'admin') && entry.code && (
+                  <div><span className="font-medium">Code:</span> {entry.code}</div>
+                )}
+                {entry.machineHours && (
+                  <div><span className="font-medium">Machine:</span> {entry.machineHours}</div>
+                )}
+                {entry.labourHours && (
+                  <div><span className="font-medium">Labour:</span> {entry.labourHours}</div>
+                )}
+                {entry.equipment && (
+                  <div><span className="font-medium">Equipment:</span> {entry.equipment}</div>
+                )}
+                {entry.smallTools.length > 0 && (
+                  <div><span className="font-medium">Tools:</span> {entry.smallTools.join(', ')}</div>
+                )}
+              </div>
+              {entry.notes && (
+                <div className="text-yellow-600 dark:text-yellow-500">
+                  {entry.notes}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -163,63 +169,127 @@ const WorkEntrySection = ({
       {/* Show content only if not collapsed */}
       {!entry.collapsed && (
         <>
-      {/* Code Dropdown */}
-      <div>
-        <select
-          value={entry.code}
-          onChange={handleCodeChange}
-          disabled={isLocked || user.role === 'field'}
-          className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
-        >
-          <option value="">Select Code</option>
-          {codeOptionsWithDetails.map(codeOption => (
-            <option key={codeOption.name} value={codeOption.name}>
-              {codeOption.name}{codeOption.description ? ` - ${codeOption.description}` : ''}
-            </option>
-          ))}
-        </select>
-      </div>
+        {/* Code Dropdown - Only for supervisors and admins */}
+        {(user.role === 'supervisor' || user.role === 'admin') && (
+          <div>
+            <select
+              value={entry.code}
+              onChange={handleCodeChange}
+              disabled={isLocked}
+              className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+            >
+              <option value="">Select Code</option>
+              {codeOptionsWithDetails.map(codeOption => (
+                <option key={codeOption.name} value={codeOption.name}>
+                  {codeOption.name}{codeOption.description ? ` - ${codeOption.description}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-      {/* Machine & Labour Hours */}
-      <div className="flex gap-2 sm:gap-4 overflow-x-auto">
-        {/* Machine Hours */}
-        <div className="flex flex-col flex-shrink-0 min-w-0">
-          <label className="block text-xs font-medium text-yellow-600 dark:text-yellow-600 mb-1 whitespace-nowrap">
-            Machine Hrs
-          </label>
-          <input
-            type="text"
-            value={entry.machineHours}
-            onChange={handleMachineHoursChange}
-            disabled={isLocked}
-            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
-              !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
-            }`}
-            maxLength={5}
-            inputMode="decimal"
-            placeholder="0"
-          />
+        {/* Machine & Labour Hours */}
+        <div className="flex gap-2 sm:gap-4 overflow-x-auto">
+          {/* Machine Hours */}
+          <div className="flex flex-col flex-shrink-0 min-w-0">
+            <label className="block text-xs font-medium text-yellow-600 dark:text-yellow-600 mb-1 whitespace-nowrap">
+              Machine Hrs
+            </label>
+            <input
+              type="text"
+              value={entry.machineHours}
+              onChange={handleMachineHoursChange}
+              disabled={isLocked}
+              className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+                !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
+              }`}
+              maxLength={5}
+              inputMode="decimal"
+              placeholder="0"
+            />
+          </div>
+
+          {/* Labour Hours */}
+          <div className="flex flex-col flex-shrink-0 min-w-0">
+            <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
+              Labour Hrs
+            </label>
+            <input
+              type="text"
+              value={entry.labourHours}
+              onChange={handleLabourHoursChange}
+              disabled={isLocked}
+              className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+                !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
+              }`}
+              maxLength={5}
+              inputMode="decimal"
+              placeholder="0"
+            />
+          </div>
         </div>
 
-        {/* Labour Hours */}
-        <div className="flex flex-col flex-shrink-0 min-w-0">
-          <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
-            Labour Hrs
-          </label>
-          <input
-            type="text"
-            value={entry.labourHours}
-            onChange={handleLabourHoursChange}
+        {/* Equipment Dropdown */}
+        <div>
+          <select
+            value={entry.equipment}
+            onChange={handleEquipmentChange}
             disabled={isLocked}
-            className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
-              !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
-            }`}
-            maxLength={5}
-            inputMode="decimal"
-            placeholder="0"
-          />
+            className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+          >
+            <option value="">Select Equipment</option>
+            {equipmentOptions.map(equipmentOption => (
+              <option key={equipmentOption.name} value={equipmentOption.name}>
+                {equipmentOption.name}{equipmentOption.description ? ` - ${equipmentOption.description}` : ''}
+              </option>
+            ))}
+          </select>
         </div>
-      </div>
+
+        {/* Small Tools Dropdown */}
+        <div>
+          {/* Selected Tools Display */}
+          {entry.smallTools.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {entry.smallTools.map((tool, index) => (
+                <div
+                  key={index}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 border border-yellow-400 dark:border-yellow-700 rounded text-gray-800 dark:text-yellow-100 text-sm"
+                >
+                  {tool}
+                  <button
+                    type="button"
+                    onClick={() => removeSmallTool(entry.id, tool)}
+                    disabled={isLocked}
+                    className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-200 disabled:opacity-50"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Add Tool Dropdown */}
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) {
+                addSmallTool(entry.id, e.target.value);
+                e.target.value = '';
+              }
+            }}
+            disabled={isLocked}
+            className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+          >
+            <option value="">Select Small Tools</option>
+            {smallToolsOptions.filter(option => !entry.smallTools.includes(option)).map(smallToolsOption => (
+              <option key={smallToolsOption} value={smallToolsOption}>
+                {smallToolsOption}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Task Description */}
         <div className="flex flex-col">
@@ -235,68 +305,6 @@ const WorkEntrySection = ({
             placeholder="Add any notes about this time entry..."
           />
         </div>
-
-      {/* Equipment Dropdown */}
-      <div>
-        <select
-          value={entry.equipment}
-          onChange={handleEquipmentChange}
-          disabled={isLocked}
-          className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
-        >
-          <option value="">Select Equipment</option>
-          {equipmentOptions.map(equipmentOption => (
-            <option key={equipmentOption.name} value={equipmentOption.name}>
-              {equipmentOption.name}{equipmentOption.description ? ` - ${equipmentOption.description}` : ''}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Small Tools Dropdown */}
-      <div>
-        {/* Selected Tools Display */}
-        {entry.smallTools.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2">
-            {entry.smallTools.map((tool, index) => (
-              <div
-                key={index}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 border border-yellow-400 dark:border-yellow-700 rounded text-gray-800 dark:text-yellow-100 text-sm"
-              >
-                {tool}
-                <button
-                  type="button"
-                  onClick={() => removeSmallTool(entry.id, tool)}
-                  disabled={isLocked}
-                  className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-200 disabled:opacity-50"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {/* Add Tool Dropdown */}
-        <select
-          value=""
-          onChange={(e) => {
-            if (e.target.value) {
-              addSmallTool(entry.id, e.target.value);
-              e.target.value = '';
-            }
-          }}
-          disabled={isLocked}
-          className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
-        >
-          <option value="">Select Small Tools</option>
-          {smallToolsOptions.filter(option => !entry.smallTools.includes(option)).map(smallToolsOption => (
-            <option key={smallToolsOption} value={smallToolsOption}>
-              {smallToolsOption}
-            </option>
-          ))}
-        </select>
-      </div>
         </>
       )}
     </div>
@@ -630,12 +638,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       return;
     }
 
-    // Validate that total hours match the sum of machine and labour hours
-    if (!hoursMatch) {
-      showAlert(`Total hours (${hours}) must match the sum of machine and labour hours (${totalMachineLabourHours}). Please check your entries.`);
-      return;
-    }
-
+    // Hours matching validation removed for save/update
     const [inHours, inMinutes] = clockIn.split(':').map(Number);
     const [outHours, outMinutes] = clockOut.split(':').map(Number);
     
@@ -853,7 +856,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const showButtons = (canEdit && !isLocked) || (!entry && selectedEntryId === null);
 
   return (
-    <div className={`bg-[#fffff0] dark:bg-black relative ${isInline ? 'w-full' : 'border border-yellow-600 rounded-lg p-6'}`}>
+    <div className={`bg-[#fffff0] dark:bg-black relative ${isInline ? 'w-full' : 'border border-yellow-600 rounded-lg p-2'}`}>
       {/* X Button in Top Right Corner - hidden when showCancelButton is true */}
       {!showCancelButton && (
         <button

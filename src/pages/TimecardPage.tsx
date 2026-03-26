@@ -225,12 +225,12 @@ export default function TimecardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-4">
+    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
       <div className="max-w-6xl mx-auto">
         
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-2">
           {/* Calendar */}
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-6">
+          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
               <button
@@ -323,7 +323,7 @@ export default function TimecardPage() {
 
           {/* Time Cards Display */}
           {selectedDate && (
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-6">
+            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
                   Time Entries for {format(selectedDate, 'MMM d, yyyy')}
@@ -341,7 +341,7 @@ export default function TimecardPage() {
 
               {/* Filters for Admins and Supervisors */}
               {(user?.role === 'admin' || user?.role === 'supervisor') && (
-                <div className="mb-6 grid grid-cols-2 gap-4">
+                <div className="mb-6 grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
                       Site
@@ -564,7 +564,7 @@ export default function TimecardPage() {
                                           {expandedEntries.has(entry.id || `your-${index}`) && (
                                             <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-700 space-y-2">
                                               {/* Time Details */}
-                                              <div className="flex items-center gap-4 text-xs text-yellow-700 dark:text-yellow-600">
+                                              <div className="flex items-center gap-2 text-xs text-yellow-700 dark:text-yellow-600">
                                                 {entry.clockIn && (
                                                   <span>
                                                     In: {(() => {
@@ -594,7 +594,7 @@ export default function TimecardPage() {
                                                     <div key={idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
                                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                         <div>
-                                                          {workEntry.code && (
+                                                          {(user?.role === 'supervisor' || user?.role === 'admin') && workEntry.code && (
                                                             <div className="font-medium text-yellow-800 dark:text-yellow-300">
                                                               {workEntry.code}
                                                             </div>
@@ -636,7 +636,7 @@ export default function TimecardPage() {
                                                 <div className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
                                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                     <div>
-                                                      {entry.code && (
+                                                      {(user?.role === 'supervisor' || user?.role === 'admin') && entry.code && (
                                                         <div className="font-medium text-yellow-800 dark:text-yellow-300">
                                                           {entry.code}
                                                         </div>
@@ -791,7 +791,7 @@ export default function TimecardPage() {
                                         {expandedEntries.has(entry.id || `other-${index}`) && (
                                           <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-700 space-y-2">
                                             {/* Time Details */}
-                                            <div className="flex items-center gap-4 text-xs text-yellow-700 dark:text-yellow-600">
+                                            <div className="flex items-center gap-2 text-xs text-yellow-700 dark:text-yellow-600">
                                               {entry.clockIn && (
                                                 <span>
                                                   In: {(() => {
@@ -821,7 +821,7 @@ export default function TimecardPage() {
                                                   <div key={idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                       <div>
-                                                        {workEntry.code && (
+                                                        {(user?.role === 'supervisor' || user?.role === 'admin') && workEntry.code && (
                                                           <div className="font-medium text-yellow-800 dark:text-yellow-300">
                                                             {workEntry.code}
                                                           </div>
@@ -863,7 +863,7 @@ export default function TimecardPage() {
                                               <div className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                                   <div>
-                                                    {entry.code && (
+                                                    {(user?.role === 'supervisor' || user?.role === 'admin') && entry.code && (
                                                       <div className="font-medium text-yellow-800 dark:text-yellow-300">
                                                         {entry.code}
                                                       </div>
@@ -925,7 +925,7 @@ export default function TimecardPage() {
 
 
           {!selectedDate && (
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-6">
+            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
               <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-4">Select a Date</h3>
               <p className="text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view or edit time entries.</p>
             </div>

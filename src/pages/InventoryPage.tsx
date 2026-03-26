@@ -85,23 +85,20 @@ function InventoryPage() {
     
     return matchesSearch && matchesCategory;
   }).sort((a, b) => {
-    // If "All Categories" is selected, sort by category first, then by name
     if (selectedCategory === 'all') {
-      // Get category names for sorting
       const getCategoryName = (categoryId: string) => {
         const category = categories.find(cat => cat.id === categoryId);
-        return category ? category.name.toLowerCase() : categoryId.toLowerCase();
+        return category ? category.name : categoryId;
       };
-      
       const categoryA = getCategoryName(a.category);
       const categoryB = getCategoryName(b.category);
-      
       if (categoryA !== categoryB) {
+        const numA = parseFloat(categoryA);
+        const numB = parseFloat(categoryB);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
         return categoryA.localeCompare(categoryB);
       }
     }
-    
-    // Sort by name
     return a.name.localeCompare(b.name);
   });
 

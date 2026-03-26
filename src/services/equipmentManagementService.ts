@@ -5,7 +5,12 @@ export interface Equipment {
   id: string;
   name: string;
   description?: string;
+  serialNumber?: string;
+  category?: string;
+  site?: string;
   isActive: boolean;
+  showInInventory: boolean;
+  showInTimecard: boolean;
   createdAt: Date;
   updatedAt: Date;
   createdBy?: string;
@@ -37,7 +42,12 @@ export class EquipmentManagementService {
           id: docSnap.id,
           name: data.name || '',
           description: data.description || '',
+          serialNumber: data.serialNumber || '',
+          category: data.category || '',
+          site: data.site || '',
           isActive: data.isActive ?? true,
+          showInInventory: data.showInInventory ?? true,
+          showInTimecard: data.showInTimecard ?? true,
           createdAt,
           updatedAt,
           createdBy: data.createdBy
@@ -52,6 +62,16 @@ export class EquipmentManagementService {
   async getActiveEquipment(): Promise<Equipment[]> {
     const all = await this.getAllEquipment();
     return all.filter(item => item.isActive);
+  }
+
+  async getInventoryEquipment(): Promise<Equipment[]> {
+    const all = await this.getAllEquipment();
+    return all.filter(item => item.isActive && item.showInInventory);
+  }
+
+  async getTimecardEquipment(): Promise<Equipment[]> {
+    const all = await this.getAllEquipment();
+    return all.filter(item => item.isActive && item.showInTimecard);
   }
 
   async addEquipment(data: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {

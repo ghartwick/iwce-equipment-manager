@@ -1,6 +1,7 @@
 export interface Equipment {
   id: string;
   name: string;
+  description?: string;
   employee: string;
   site: string;
   category: string;

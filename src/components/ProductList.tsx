@@ -136,7 +136,14 @@ export function ProductList({
                   return groups;
                 }, {} as Record<string, Equipment[]>);
 
-                return Object.entries(groupedProducts).map(([categoryName, categoryProducts]) => (
+                const sortedGroups = Object.entries(groupedProducts).sort(([a], [b]) => {
+                  const numA = parseFloat(a);
+                  const numB = parseFloat(b);
+                  if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                  return a.localeCompare(b);
+                });
+
+                return sortedGroups.map(([categoryName, categoryProducts]) => (
                   <React.Fragment key={categoryName}>
                     {/* Category Heading */}
                     <tr>
@@ -162,8 +169,13 @@ export function ProductList({
                         >
                           <td className="w-[70%] px-2 py-4">
                             <div className="max-w-xs">
-                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>{product.name}</div>
-                              <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600">
+                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
+                                {product.name}
+                                {product.description && (
+                                  <span className="text-gray-600 dark:text-gray-400 ml-2">- {product.description}</span>
+                                )}
+                              </div>
+                              <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600 mt-1">
                                 {product.employee && <div className="break-words">{product.employee}</div>}
                                 {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
                                 {product.repairDescription && (
@@ -184,7 +196,7 @@ export function ProductList({
                                     }
                                   }}
                                   className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
-                                  title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
+                                  title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
                                 >
                                   <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
                                 </button>
@@ -232,8 +244,13 @@ export function ProductList({
                         >
                           <td className="w-[70%] px-2 py-4">
                             <div className="max-w-xs">
-                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>{product.name}</div>
-                              <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600">
+                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
+                                {product.name}
+                                {product.description && (
+                                  <span className="text-gray-600 dark:text-gray-400 ml-2">- {product.description}</span>
+                                )}
+                              </div>
+                              <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600 mt-1">
                                 {product.employee && <div className="break-words">{product.employee}</div>}
                                 {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
                                 {product.repairDescription && (
@@ -254,7 +271,7 @@ export function ProductList({
                                     }
                                   }}
                                   className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
-                                  title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
+                                  title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
                                 >
                                   <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
                                 </button>

@@ -29,19 +29,25 @@ export function MobileProductList({
     );
   }
 
-  // If no categories, create a default "Uncategorized" category
-  const categoriesToUse = categories.length > 0 ? categories : [
+  // Sort categories numerically first, then alphabetically
+  const sortedCategories = [...(categories.length > 0 ? categories : [
     { id: 'uncategorized', name: 'Uncategorized', description: 'Items without category', color: '#6B7280' }
-  ];
+  ])].sort((a, b) => {
+    const numA = parseFloat(a.name);
+    const numB = parseFloat(b.name);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return a.name.localeCompare(b.name);
+  });
 
   return (
     <>
     <div data-product-list className="divide-y divide-yellow-200 dark:divide-yellow-800">
       {/* Group products by category */}
-      {categoriesToUse.map((category) => {
-        // Try both exact match and case-insensitive match
+      {sortedCategories.map((category) => {
+        // Match by category ID (new) or name (legacy)
         const categoryProducts = products.filter(product => 
-          product.category === category.name || 
+          product.category === category.id ||
+          product.category === category.name ||
           product.category?.toLowerCase() === category.name?.toLowerCase()
         );
         
@@ -82,7 +88,7 @@ export function MobileProductList({
                           }
                         }}
                         className="p-2 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
-                        title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
+                        title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -128,14 +134,15 @@ export function MobileProductList({
       
       {/* Dynamic categories based on actual product categories */}
       {(() => {
-        const matchedProducts = categoriesToUse.flatMap(category => 
+        const matchedProducts = sortedCategories.flatMap((category: Category) => 
           products.filter(product => 
+            product.category === category.id ||
             product.category === category.name || 
             product.category?.toLowerCase() === category.name?.toLowerCase()
           )
         );
         const unmatchedProducts = products.filter(product => 
-          !matchedProducts.find(mp => mp.id === product.id)
+          !matchedProducts.find((mp: Equipment) => mp.id === product.id)
         );
         
         if (unmatchedProducts.length > 0) {
@@ -208,7 +215,7 @@ export function MobileProductList({
                               }
                             }}
                             className="p-2 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
-                            title={selectedEquipmentId === product.id ? "Close edit form" : "Edit equipment"}
+                            title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
                           >
                             <Pencil className="h-4 w-4" />
                           </button>

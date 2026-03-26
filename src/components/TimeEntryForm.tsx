@@ -483,7 +483,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         const smallTools = await smallToolsManagementService.getActiveSmallTools();
         setSmallToolsOptionsState(smallTools.map(tool => tool.name));
         
-        const equipment = await equipmentManagementService.getActiveEquipment();
+        const equipment = await equipmentManagementService.getTimecardEquipment();
         setEquipmentOptionsState(equipment.map(item => ({ name: item.name, description: item.description || '' })));
       } catch (error) {
         console.error('Failed to load dropdown options:', error);

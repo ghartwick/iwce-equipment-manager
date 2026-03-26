@@ -5,17 +5,19 @@ import { Equipment, Category } from '../types';
 import { EquipmentLog } from './EquipmentLog';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
+import { getCategories } from '../services/firebaseService';
 
 interface ProductFormProps {
-  categories: Category[];
   product?: Equipment | null;
   onSubmit: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
   onDelete?: () => void;
   userRole?: 'admin' | 'supervisor' | 'field';
+  categories?: Category[];
+  allowFullEdit?: boolean;
 }
 
-export function ProductForm({ categories, product, onSubmit, onCancel, onDelete, userRole }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false }: ProductFormProps) {
   const [formData, setFormData] = useState({
     name: '',
     employee: '',
@@ -47,28 +49,11 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   const [showCustomSite, setShowCustomSite] = useState(false);
   const [customSite, setCustomSite] = useState('');
   const [users, setUsers] = useState<AppUser[]>([]);
-
-  // Sort categories alphabetically and numerically
-  const sortedCategories = [...categories].sort((a, b) => {
-    const nameA = a.name.toLowerCase();
-    const nameB = b.name.toLowerCase();
-    
-    // Try numeric comparison first
-    const numA = parseFloat(nameA);
-    const numB = parseFloat(nameB);
-    
-    if (!isNaN(numA) && !isNaN(numB)) {
-      return numA - numB;
-    }
-    
-    // Fall back to alphabetical comparison
-    return nameA.localeCompare(nameB);
-  });
+  const [fetchedCategories, setFetchedCategories] = useState<Category[]>([]);
+  const categories = categoriesProp && categoriesProp.length > 0 ? categoriesProp : fetchedCategories;
 
   const isEditing = !!product;
-  const formTitle = isEditing ? 'Edit Equipment' : 'Add Equipment';
-  const isAdmin = userRole === 'admin';
-  const canEditRestrictedFields = isAdmin || !isEditing; // Admins can edit, anyone can add
+  const formTitle = isEditing ? (allowFullEdit ? 'Edit Equipment' : 'Change Location') : 'Add Equipment';
 
   // Sort sites alphabetically
   const sortedSites = [...sites].sort((a, b) => a.name.localeCompare(b.name));
@@ -77,16 +62,23 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [activeSites, allUsers] = await Promise.all([
+        const [activeSites, allUsers, loadedCategories] = await Promise.all([
           siteManagementService.getActiveSites(),
-          userManagementService.getAllUsers()
+          userManagementService.getAllUsers(),
+          getCategories()
         ]);
         setSites(activeSites);
-        // Filter for active users (field, admin, supervisor) and sort by name
         const activeUsers = allUsers
           .filter(user => user.isActive && (user.role === 'field' || user.role === 'admin' || user.role === 'supervisor'))
           .sort((a, b) => a.name.localeCompare(b.name));
         setUsers(activeUsers);
+        const sortedCats = [...loadedCategories].sort((a, b) => {
+          const numA = parseFloat(a.name);
+          const numB = parseFloat(b.name);
+          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+          return a.name.localeCompare(b.name);
+        });
+        setFetchedCategories(sortedCats);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -159,29 +151,9 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
         [field]: value,
         repairDescription: '' 
       }));
-    } else if (field === 'equipmentType') {
-      if (value === 'field') {
-        // Clear site when switching to field tools
-        setFormData(prev => ({ 
-          ...prev, 
-          [field]: value,
-          site: ''
-        }));
-        setShowCustomSite(false);
-        setCustomSite('');
-      } else if (value === 'heavy') {
-        // Clear employee when switching to heavy equipment
-        setFormData(prev => ({ 
-          ...prev, 
-          [field]: value,
-          employee: ''
-        }));
-      }
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
-    
-    console.log('FormData after change should be:', field === 'repair' ? value : (formData as any)[field]);
   };
 
   return (
@@ -226,9 +198,9 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               required
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
-              disabled={isEditing && !canEditRestrictedFields}
+              disabled={isEditing && !allowFullEdit}
               className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
-                isEditing && !canEditRestrictedFields
+                isEditing && !allowFullEdit
                   ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                   : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
               }`}
@@ -241,9 +213,9 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
               type="text"
               value={formData.serialNumber}
               onChange={(e) => handleInputChange('serialNumber', e.target.value)}
-              disabled={isEditing && !canEditRestrictedFields}
+              disabled={isEditing && !allowFullEdit}
               className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
-                isEditing && !canEditRestrictedFields
+                isEditing && !allowFullEdit
                   ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                   : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
               }`}
@@ -252,92 +224,74 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
           </div>
 
           <div>
-            <select
-              required
-              value={formData.category}
-              onChange={(e) => handleInputChange('category', e.target.value)}
-              disabled={isEditing && !canEditRestrictedFields}
-              className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
-                isEditing && !canEditRestrictedFields
-                  ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
-              }`}
-            >
-              <option value="">Category</option>
-              {sortedCategories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <select
+                required={!isEditing}
+                disabled={isEditing && product?.equipmentType === 'heavy'}
+                value={formData.category}
+                onChange={(e) => handleInputChange('category', e.target.value)}
+                className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
+                  isEditing && product?.equipmentType === 'heavy'
+                    ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                }`}
+              >
+                <option value="">Category</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {userRole === 'admin' && (
-          <div>
-            <select
-              value={formData.equipmentType}
-              onChange={(e) => handleInputChange('equipmentType', e.target.value)}
-              disabled={isEditing && !canEditRestrictedFields}
-              className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
-                isEditing && !canEditRestrictedFields
-                  ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
-              }`}
-            >
-              <option value="field">Field Tools</option>
-              <option value="heavy">Heavy Equipment</option>
-            </select>
-          </div>
-        )}
+          {(!isEditing || product?.equipmentType !== 'heavy') && (
+            <div>
+              <select
+                value={formData.employee}
+                onChange={(e) => handleInputChange('employee', e.target.value)}
+                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+              >
+                <option value="">Employee</option>
+                <option value="Office">Office</option>
+                <option value="Broken">Broken</option>
+                <option value="Out For Repair">Out For Repair</option>
+                <option value="Missing">Missing</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.name}>
+                    {user.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {formData.equipmentType === 'field' && (
-          <div>
-            <select
-              value={formData.employee}
-              onChange={(e) => handleInputChange('employee', e.target.value)}
-              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-            >
-              <option value="">Employee</option>
-              <option value="Office">Office</option>
-              <option value="Broken">Broken</option>
-              <option value="Out For Repair">Out For Repair</option>
-              <option value="Missing">Missing</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.name}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-          {formData.equipmentType === 'heavy' && (
-          <div>
-            <select
-              value={showCustomSite ? 'OTHER' : formData.site}
-              onChange={(e) => handleSiteChange(e.target.value)}
-              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-            >
-              <option value="">Site</option>
-              {sortedSites.map((site) => (
-                <option key={site.id} value={site.name}>
-                  {site.name}
-                </option>
-              ))}
-              <option value="OTHER">Other (type custom site)</option>
-            </select>
-            {showCustomSite && (
-              <input
-                type="text"
-                value={customSite}
-                onChange={(e) => handleCustomSiteChange(e.target.value)}
-                placeholder="Enter custom site name"
-                className="w-full mt-2 px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-                autoFocus
-              />
-            )}
-          </div>
-        )}
+          {isEditing && product?.equipmentType === 'heavy' && (
+            <div>
+              <select
+                value={showCustomSite ? 'OTHER' : formData.site}
+                onChange={(e) => handleSiteChange(e.target.value)}
+                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+              >
+                <option value="">Site</option>
+                {sortedSites.map((site) => (
+                  <option key={site.id} value={site.name}>
+                    {site.name}
+                  </option>
+                ))}
+                <option value="OTHER">Other (type custom site)</option>
+              </select>
+              {showCustomSite && (
+                <input
+                  type="text"
+                  value={customSite}
+                  onChange={(e) => handleCustomSiteChange(e.target.value)}
+                  placeholder="Enter custom site name"
+                  className="w-full mt-2 px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                  autoFocus
+                />
+              )}
+            </div>
+          )}
 
           <div>
             <div className="flex items-center space-x-3">
@@ -351,13 +305,15 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
                   onChange={(e) => handleInputChange('repair', e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-200 dark:bg-black border border-yellow-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                <div className="w-11 h-6 bg-gray-200 dark:bg-black border border-yellow-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[&quot;&quot;] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
                 <span className="ml-3 text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300">
                   {formData.repair ? 'Yes' : 'No'}
                 </span>
               </label>
             </div>
           </div>
+        </div>
+
 
         {formData.repair && (
           <div className="mt-2 sm:mt-3">
@@ -370,9 +326,8 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
             />
           </div>
         )}
-      </div>
 
-      <div className="flex justify-end space-x-2 pt-4">
+        <div className="flex justify-end space-x-2 pt-4">
         {onDelete && product && userRole === 'admin' && (
           <button
             type="button"
@@ -399,7 +354,7 @@ export function ProductForm({ categories, product, onSubmit, onCancel, onDelete,
         >
           {isEditing ? 'Update' : 'Add'} Equipment
         </button>
-      </div>
+        </div>
       </form>
       
       {/* Equipment Log - Shows when log button is clicked */}

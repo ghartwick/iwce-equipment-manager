@@ -5,6 +5,9 @@ import InventoryPage from './pages/InventoryPage';
 import TimecardPage from './pages/TimecardPage';
 import TimecardEditPage from './pages/TimecardEditPage';
 import EquipmentPage from './pages/EquipmentPage';
+import HeavyEquipmentManagementPage from './pages/HeavyEquipmentManagementPage';
+import FieldToolsManagementPage from './pages/FieldToolsManagementPage';
+import SmallToolsManagementPage from './pages/SmallToolsManagementPage';
 import Layout from './components/Layout';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -61,6 +64,27 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <EquipmentPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/manage/heavy-equipment" element={
+          isAuthenticated ? (
+            <Layout>
+              <HeavyEquipmentManagementPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/manage/field-tools" element={
+          isAuthenticated ? (
+            <Layout>
+              <FieldToolsManagementPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/manage/small-tools" element={
+          isAuthenticated ? (
+            <Layout>
+              <SmallToolsManagementPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

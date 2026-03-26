@@ -13,6 +13,7 @@ import {
   addAlert as _addAlert,
   deleteAlert as _deleteAlert
 } from '../services/firebaseService';
+import { equipmentManagementService } from '../services/equipmentManagementService';
 
 export function useInventory(refreshKey?: number) {
   const [products, setProducts] = useState<Equipment[]>([]);
@@ -29,21 +30,23 @@ export function useInventory(refreshKey?: number) {
       setLoading(true);
       
       // Load data from Firebase
-      const [loadedProducts, loadedCategories, loadedAlerts] = await Promise.all([
+      const [loadedProducts, loadedCategories, loadedAlerts, heavyEquipment] = await Promise.all([
         getEquipment(),
         getCategories(),
-        getAlerts()
+        getAlerts(),
+        equipmentManagementService.getInventoryEquipment()
       ]);
       
-      // Clean up products with invalid category references
+      // Build sets for both IDs and names to support legacy (name-stored) and new (ID-stored) categories
       const validCategoryIds = new Set(loadedCategories.map(cat => cat.id));
+      const validCategoryNames = new Set(loadedCategories.map(cat => cat.name));
       
-      const cleanedProducts = loadedProducts.map(product => {
+      // Filter small tools (equipmentType !== 'heavy')
+      const smallTools = loadedProducts.filter(product => (product as any).equipmentType !== 'heavy');
+      
+      const cleanedSmallTools = smallTools.map(product => {
         const { supplier, minStockLevel, quantity, price, location, tags, description, ...cleanedProduct } = product as any;
-        const hasValidCategory = validCategoryIds.has(product.category);
-        
-        if (!hasValidCategory) {
-        }
+        const hasValidCategory = validCategoryIds.has(product.category) || validCategoryNames.has(product.category);
         
         return {
           ...cleanedProduct,
@@ -51,14 +54,35 @@ export function useInventory(refreshKey?: number) {
           site: (product as any).site || '',
           repair: (product as any).repair || false,
           repairDescription: (product as any).repairDescription || '',
-          category: hasValidCategory ? product.category : ''
+          category: hasValidCategory ? product.category : 'Small Tools',
+          equipmentType: 'field' as const
         };
       });
       
-      // Generate repair alerts for equipment that needs repair
-      const repairAlerts = generateRepairAlerts(cleanedProducts, loadedAlerts);
+      // Convert heavy equipment to match inventory format
+      const convertedHeavyEquipment = heavyEquipment.map(equipment => ({
+        id: equipment.id,
+        name: equipment.name,
+        description: equipment.description || '',
+        serialNumber: equipment.serialNumber || '',
+        category: equipment.category || 'Heavy Equipment',
+        employee: '',
+        site: equipment.site || '',
+        repair: false,
+        repairDescription: '',
+        equipmentType: 'heavy' as const,
+        createdAt: equipment.createdAt.toISOString(),
+        updatedAt: equipment.updatedAt.toISOString(),
+        lastModifiedBy: equipment.createdBy || 'System'
+      }));
       
-      setProducts(cleanedProducts);
+      // Merge small tools and heavy equipment
+      const allProducts = [...cleanedSmallTools, ...convertedHeavyEquipment];
+      
+      // Generate repair alerts for equipment that needs repair
+      const repairAlerts = generateRepairAlerts(allProducts, loadedAlerts);
+      
+      setProducts(allProducts);
       setCategories(loadedCategories);
       setAlerts(repairAlerts);
     } catch (error) {
@@ -112,6 +136,12 @@ export function useInventory(refreshKey?: number) {
 
   const addProduct = async (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      // Only add small tools to the inventory database
+      // Heavy equipment should be added through the Equipment Management component
+      if (product.equipmentType === 'heavy') {
+        throw new Error('Heavy equipment must be added through the Equipment Management page');
+      }
+      
       await addEquipment(product);
       
       await loadData(); // Refresh data from Firebase
@@ -123,8 +153,16 @@ export function useInventory(refreshKey?: number) {
 
   const updateProduct = async (id: string, updates: Partial<Equipment>) => {
     try {
-      await updateEquipment(id, updates);
-      await loadData(); // Refresh data from Firebase
+      const product = products.find(p => p.id === id);
+      
+      if (product?.equipmentType === 'heavy') {
+        // Route heavy equipment site updates through equipmentManagementService
+        await equipmentManagementService.updateEquipment(id, { site: updates.site });
+      } else {
+        await updateEquipment(id, updates);
+      }
+      
+      await loadData();
     } catch (error) {
       console.error('Error updating product:', error);
     }
@@ -132,6 +170,13 @@ export function useInventory(refreshKey?: number) {
 
   const deleteProduct = async (id: string) => {
     try {
+      // Check if this is heavy equipment by checking if it exists in our merged list
+      const product = products.find(p => p.id === id);
+      
+      if (product?.equipmentType === 'heavy') {
+        throw new Error('Heavy equipment must be deleted through the Equipment Management page');
+      }
+      
       await deleteEquipment(id);
       await loadData(); // Refresh data from Firebase
     } catch (error) {

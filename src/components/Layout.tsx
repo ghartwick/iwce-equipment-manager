@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon } from 'lucide-react';
 import { UserManagement } from './UserManagement';
 import { SiteManagement } from './SiteManagement';
-import { SmallToolsManagement } from './SmallToolsManagement';
-import { EquipmentManagement } from './EquipmentManagement';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,12 +14,11 @@ function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showSiteManagement, setShowSiteManagement] = useState(false);
-  const [showSmallToolsManagement, setShowSmallToolsManagement] = useState(false);
-  const [showEquipmentManagement, setShowEquipmentManagement] = useState(false);
 
   const navigation = [
     { name: 'Inventory', href: '/inventory', icon: Package },
@@ -67,12 +64,7 @@ function Layout({ children }: LayoutProps) {
     }
   };
 
-  const handleAddProduct = () => {
-    // Dispatch global event for InventoryPage to handle
-    window.dispatchEvent(new CustomEvent('addProduct'));
-    console.log('Add equipment event dispatched');
-  };
-
+  
   const handleToggleAlerts = () => {
     // This will be handled by the InventoryPage component
     const event = new CustomEvent('toggleAlerts');
@@ -210,8 +202,8 @@ function Layout({ children }: LayoutProps) {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setShowSmallToolsManagement(true);
                                 setShowUserMenu(false);
+                                navigate('/manage/small-tools');
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
@@ -221,24 +213,24 @@ function Layout({ children }: LayoutProps) {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setShowEquipmentManagement(true);
                                 setShowUserMenu(false);
+                                navigate('/manage/heavy-equipment');
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <Truck className="h-4 w-4" />
-                              <span>Manage Equipment</span>
+                              <span>Manage Heavy Equipment</span>
                             </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleAddProduct();
                                 setShowUserMenu(false);
+                                navigate('/manage/field-tools');
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <Plus className="h-4 w-4" />
-                              <span>Add Equipment</span>
+                              <span>Manage Field Tools</span>
                             </button>
                           </>
                         )}
@@ -314,18 +306,14 @@ function Layout({ children }: LayoutProps) {
                         <span>{item.name}</span>
                       </Link>
                       
-                      {/* Add Equipment button - appears under Inventory for admins */}
+                      {/* Manage Field Tools button - appears under Inventory for admins */}
                       {item.name === 'Inventory' && user && user.role === 'admin' && (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddProduct();
-                            setShowMobileMenu(false);
-                          }}
+                          onClick={() => { setShowMobileMenu(false); navigate('/manage/field-tools'); }}
                           className="flex items-center space-x-3 w-full p-3 mt-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                         >
                           <Plus className="h-5 w-5" />
-                          <span>Add Equipment</span>
+                          <span>Manage Field Tools</span>
                         </button>
                       )}
                     </div>
@@ -407,21 +395,6 @@ function Layout({ children }: LayoutProps) {
       )}
 
 
-      {/* Small Tools Management Modal */}
-      {showSmallToolsManagement && user && (
-        <SmallToolsManagement
-          currentUser={user}
-          onClose={() => setShowSmallToolsManagement(false)}
-        />
-      )}
-
-      {/* Equipment Management Modal */}
-      {showEquipmentManagement && user && (
-        <EquipmentManagement
-          currentUser={user}
-          onClose={() => setShowEquipmentManagement(false)}
-        />
-      )}
     </div>
   );
 }

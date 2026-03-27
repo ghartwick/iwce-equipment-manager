@@ -42,7 +42,7 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
   const filteredTools = fieldTools.filter(tool => {
     const matchesSearch = tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          tool.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tool.employee.toLowerCase().includes(searchTerm.toLowerCase());
+                         (tool.employee?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesAlert = !showAlertsOnly || tool.repair || tool.employee === 'Missing';
     const matchesMissing = !showMissingOnly || tool.employee === 'Missing';
     return matchesSearch && matchesAlert && matchesMissing;
@@ -202,7 +202,7 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
                       categories.find(c => c.id === cat)?.name || cat || 'Uncategorized';
 
                     const grouped = filteredTools.reduce((acc, tool) => {
-                      const name = getCategoryName(tool.category);
+                      const name = getCategoryName(tool.category || '');
                       if (!acc[name]) acc[name] = [];
                       acc[name].push(tool);
                       return acc;

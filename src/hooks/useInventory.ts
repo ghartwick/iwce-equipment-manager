@@ -14,12 +14,15 @@ import {
   deleteAlert as _deleteAlert
 } from '../services/firebaseService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
+import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
+import { useAuth } from './useAuth';
 
 export function useInventory(refreshKey?: number) {
   const [products, setProducts] = useState<Equipment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     loadData();
@@ -46,7 +49,7 @@ export function useInventory(refreshKey?: number) {
       
       const cleanedSmallTools = smallTools.map(product => {
         const { supplier, minStockLevel, quantity, price, location, tags, description, ...cleanedProduct } = product as any;
-        const hasValidCategory = validCategoryIds.has(product.category) || validCategoryNames.has(product.category);
+        const hasValidCategory = validCategoryIds.has(product.category || '') || validCategoryNames.has(product.category || '');
         
         return {
           ...cleanedProduct,
@@ -142,9 +145,21 @@ export function useInventory(refreshKey?: number) {
         throw new Error('Heavy equipment must be added through the Equipment Management page');
       }
       
-      await addEquipment(product);
+      const newId = await addEquipment(product);
       
-      await loadData(); // Refresh data from Firebase
+      // Log the creation to history
+      if (user) {
+        await equipmentHistoryFirebaseService.addHistory({
+          equipmentId: newId,
+          equipmentName: product.name,
+          action: 'created',
+          timestamp: new Date(),
+          user: user.name || 'Unknown User',
+          userRole: user.role || 'field'
+        });
+      }
+      
+      await loadData();
     } catch (error) {
       console.error('Error adding product:', error);
       throw error;
@@ -155,8 +170,67 @@ export function useInventory(refreshKey?: number) {
     try {
       const product = products.find(p => p.id === id);
       
-      console.log('Updating product:', id, 'Type:', product?.equipmentType);
-      console.log('Updates:', updates);
+            
+      // Log the changes to history
+      if (product && user) {
+        const changes: { field: string; oldValue: string; newValue: string }[] = [];
+        
+        // Check each field for changes (excluding timestamp fields)
+        Object.keys(updates).forEach(key => {
+          // Skip timestamp fields as they're updated automatically
+          if (key === 'updatedAt' || key === 'createdAt') return;
+          
+          const oldValue = product[key as keyof Equipment];
+          const newValue = updates[key as keyof Equipment];
+          
+          // Special handling for notes array
+          if (key === 'notes' && Array.isArray(newValue)) {
+            const oldNotes = Array.isArray(oldValue) ? oldValue : [];
+            const newNotes = newValue;
+            
+            // Check for added notes
+            newNotes.forEach(newNote => {
+              if (!oldNotes.some(oldNote => oldNote.id === newNote.id)) {
+                changes.push({
+                  field: 'notes',
+                  oldValue: '',
+                  newValue: `Added note: "${newNote.text}" by ${newNote.createdBy}`
+                });
+              }
+            });
+            
+            // Check for deleted notes
+            oldNotes.forEach(oldNote => {
+              if (!newNotes.some(newNote => newNote.id === oldNote.id)) {
+                changes.push({
+                  field: 'notes',
+                  oldValue: `Deleted note: "${oldNote.text}" by ${oldNote.createdBy}`,
+                  newValue: ''
+                });
+              }
+            });
+          } else if (oldValue !== newValue && newValue !== undefined) {
+            changes.push({
+              field: key,
+              oldValue: String(oldValue || ''),
+              newValue: String(newValue)
+            });
+          }
+        });
+        
+        // Add history entry if there are changes
+        if (changes.length > 0) {
+          await equipmentHistoryFirebaseService.addHistory({
+            equipmentId: id,
+            equipmentName: product.name,
+            action: 'updated',
+            timestamp: new Date(),
+            user: user.name || 'Unknown User',
+            userRole: user.role || 'field',
+            changes
+          });
+        }
+      }
       
       if (product?.equipmentType === 'heavy') {
         // Route heavy equipment updates through equipmentManagementService
@@ -171,10 +245,8 @@ export function useInventory(refreshKey?: number) {
         if (updates.repair !== undefined) heavyUpdates.repair = updates.repair;
         if (updates.repairDescription !== undefined) heavyUpdates.repairDescription = updates.repairDescription;
         
-        console.log('Heavy equipment updates:', heavyUpdates);
-        await equipmentManagementService.updateEquipment(id, heavyUpdates);
+                await equipmentManagementService.updateEquipment(id, heavyUpdates);
       } else {
-        console.log('Small tool updates:', updates);
         await updateEquipment(id, updates);
       }
       

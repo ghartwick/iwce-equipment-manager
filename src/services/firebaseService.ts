@@ -14,12 +14,13 @@ export const getEquipment = async (): Promise<Equipment[]> => {
   return equipment;
 };
 
-export const addEquipment = async (equipment: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
-  await addDoc(collection(db, 'fieldTools'), {
+export const addEquipment = async (equipment: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
+  const docRef = await addDoc(collection(db, 'fieldTools'), {
     ...equipment,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
+  return docRef.id;
 };
 
 export const updateEquipment = async (id: string, equipment: Partial<Equipment>): Promise<void> => {

@@ -16,30 +16,36 @@ function InventoryPageClean({}: InventoryPageCleanProps) {
   const [showLog, setShowLog] = useState(false);
   
   // Mock data for testing
-  const mockProducts: Equipment[] = [
+  const mockEquipment: Equipment[] = [
     {
       id: 'eq-1',
-      name: 'Radio Set 1',
-      serialNumber: 'RS001',
-      category: 'Radio Equipment',
+      name: 'Excavator CAT 320',
+      serialNumber: 'CAT320001',
+      category: 'Heavy Equipment',
       employee: 'John Doe',
       site: 'Site A',
       equipmentType: 'heavy',
       repair: false,
-      repairDescription: 'No issues',
+      repairDescription: '',
+      isActive: true,
+      showInInventory: true,
+      showInTimecard: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     },
     {
-      id: 'eq-2', 
-      name: 'Radio Set 2',
-      serialNumber: 'RS002',
-      category: 'Radio Equipment',
+      id: 'eq-2',
+      name: 'Laser Level Hilti PRI 40',
+      serialNumber: 'HILTIPRI401',
+      category: 'Laser Tools',
       employee: 'Jane Smith',
       site: 'Site B',
       equipmentType: 'field',
       repair: true,
-      repairDescription: 'Needs maintenance',
+      repairDescription: 'Needs calibration',
+      isActive: true,
+      showInInventory: true,
+      showInTimecard: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
@@ -56,7 +62,7 @@ function InventoryPageClean({}: InventoryPageCleanProps) {
     console.log('=== TESTING FIREBASE HISTORY ===');
     
     // Use mock data to test
-    const testEquipment = mockProducts[0];
+    const testEquipment = mockEquipment[0];
     const mockUser = { username: 'Admin', role: 'admin' };
     
     console.log('Test equipment:', testEquipment);
@@ -112,7 +118,7 @@ function InventoryPageClean({}: InventoryPageCleanProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-yellow-800">
-            {mockProducts.map((product) => (
+            {mockEquipment.map((product: Equipment) => (
               <tr key={product.id} className="hover:bg-yellow-900 hover:bg-opacity-10">
                 <td className="px-3 py-2 whitespace-nowrap text-sm text-yellow-100">{product.name}</td>
                 <td className="px-3 py-2 whitespace-nowrap text-sm text-yellow-300">{product.serialNumber}</td>

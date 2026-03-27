@@ -15,7 +15,7 @@ export function exportToExcel(equipment: Equipment[], filename: string = 'equipm
     'Equipment Name': item.name,
     'Employee': item.employee || '',
     'Site': item.site || '',
-    'Category': categoryMap.get(item.category) || item.category || '', // Convert ID to name
+    'Category': categoryMap.get(item.category || '') || item.category || '', // Convert ID to name
     'Serial Number': item.serialNumber,
     'Alert Status': item.repair ? 'Yes' : 'No',
     'Alert Description': item.repairDescription || '',

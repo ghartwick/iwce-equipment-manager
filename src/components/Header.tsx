@@ -64,7 +64,7 @@ export function Header({ user, onAddProduct, onToggleAlerts, alertCount, onLogou
       ]);
 
       const validCategoryIds = new Set(allCategories.map(cat => cat.id));
-      const orphanedEquipment = allEquipment.filter(eq => !validCategoryIds.has(eq.category));
+      const orphanedEquipment = allEquipment.filter(eq => !validCategoryIds.has(eq.category || ''));
 
       if (orphanedEquipment.length === 0) {
         alert('No orphaned equipment found. All equipment entries have valid categories.');

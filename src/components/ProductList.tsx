@@ -128,7 +128,7 @@ export function ProductList({
               // Group by category with headings
               (() => {
                 const groupedProducts = products.reduce((groups, product) => {
-                  const category = categories.find(cat => cat.id === product.category)?.name || product.category;
+                  const category = categories.find(cat => cat.id === product.category)?.name || product.category || 'Uncategorized';
                   if (!groups[category]) {
                     groups[category] = [];
                   }

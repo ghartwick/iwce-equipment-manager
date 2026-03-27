@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Clock, QrCode, Download } from 'lucide-react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
-import { Equipment, Category } from '../types';
+import { Equipment, Category, EquipmentNote } from '../types';
 import { EquipmentLog } from './EquipmentLog';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
 import { getCategories } from '../services/firebaseService';
+import { useAuth } from '../hooks/useAuth';
 
 interface ProductFormProps {
   product?: Equipment | null;
@@ -15,9 +16,12 @@ interface ProductFormProps {
   userRole?: 'admin' | 'supervisor' | 'field';
   categories?: Category[];
   allowFullEdit?: boolean;
+  allowNoteOnlyUpdate?: boolean;
 }
 
-export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false, allowNoteOnlyUpdate = false }: ProductFormProps) {
+  const formRef = React.useRef<HTMLFormElement>(null);
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -33,6 +37,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
 
   const [showLog, setShowLog] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [notes, setNotes] = useState<EquipmentNote[]>([]);
+  const [newNote, setNewNote] = useState('');
 
   const getEquipmentUrl = (id: string) =>
     `${window.location.origin}/inventory/equipment/${id}`;
@@ -111,6 +117,9 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         setShowCustomSite(false);
         setCustomSite('');
       }
+      
+      // Load notes
+      setNotes(product.notes || []);
     }
   }, [product, sites]);
 
@@ -119,13 +128,15 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     
     if (isSubmitting) return;
     
+    // Immediately set submitting state to prevent double clicks
+    setIsSubmitting(true);
+    
     // Validate custom site if "Other" is selected
     if (showCustomSite && !customSite.trim()) {
       alert('Please enter a custom site name');
+      setIsSubmitting(false); // Reset state on validation error
       return;
     }
-    
-    setIsSubmitting(true);
     
     // Only set repair flag based on employee if it's Out For Repair or Broken
     // Otherwise, respect the manual repair toggle
@@ -139,19 +150,97 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     
     const submitData = {
       ...formData,
-      repair: repairFlag
+      repair: repairFlag,
+      notes: notes,
+      isActive: true,
+      showInInventory: true,
+      showInTimecard: true
     };
     
-    console.log('Submitting form data:', submitData);
-    
+        
     try {
       await onSubmit(submitData);
-      // Reset submitting state after successful submission
+      // Reset form after successful submission
+      formRef.current?.reset();
+      // Reset submitting state to allow proper component unmounting
       setIsSubmitting(false);
     } catch (error) {
       console.error('Error in form submission:', error);
       alert('Error submitting form: ' + (error as Error).message);
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (isSubmitting) return;
+    onCancel();
+  };
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
+    
+    const note: EquipmentNote = {
+      id: Date.now().toString(),
+      text: newNote.trim(),
+      createdAt: new Date().toISOString(),
+      createdBy: user?.name || 'Unknown User',
+      createdByRole: user?.role || userRole || 'field'
+    };
+    
+    const updatedNotes = [...notes, note];
+    setNotes(updatedNotes);
+    setNewNote('');
+    
+    // If editing an existing product, update it with the new note
+    if (isEditing && product) {
+      try {
+        if (allowNoteOnlyUpdate) {
+          // Direct service call to avoid triggering navigation
+          const { equipmentManagementService } = await import('../services/equipmentManagementService');
+          await equipmentManagementService.updateEquipment(product.id, {
+            notes: updatedNotes
+          } as any);
+        } else {
+          await onSubmit({
+            ...product,
+            notes: updatedNotes
+          });
+        }
+      } catch (error) {
+        console.error('Error updating equipment with note:', error);
+        // Revert the note if update failed
+        setNotes(notes);
+        setNewNote(newNote.trim());
+      }
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (userRole !== 'admin') return;
+    
+    const updatedNotes = notes.filter(note => note.id !== noteId);
+    setNotes(updatedNotes);
+    
+    // If editing an existing product, update it without the deleted note
+    if (isEditing && product) {
+      try {
+        if (allowNoteOnlyUpdate) {
+          // Direct service call to avoid triggering navigation
+          const { equipmentManagementService } = await import('../services/equipmentManagementService');
+          await equipmentManagementService.updateEquipment(product.id, {
+            notes: updatedNotes
+          } as any);
+        } else {
+          await onSubmit({
+            ...product,
+            notes: updatedNotes
+          });
+        }
+      } catch (error) {
+        console.error('Error updating equipment after deleting note:', error);
+        // Revert the note if update failed
+        setNotes(notes);
+      }
     }
   };
 
@@ -194,13 +283,15 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         <div className="flex items-center space-x-2">
           {isEditing && (
             <>
-              <button
-                onClick={() => setShowQR(!showQR)}
-                className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
-                title="Show QR code"
-              >
-                <QrCode className="h-4 w-4 sm:h-5 sm:w-5" />
-              </button>
+              {allowFullEdit && (
+                <button
+                  onClick={() => setShowQR(!showQR)}
+                  className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                  title="Show QR code"
+                >
+                  <QrCode className="h-4 w-4 sm:h-5 sm:w-5" />
+                </button>
+              )}
               <button
                 onClick={() => setShowLog(!showLog)}
                 className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
@@ -211,7 +302,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             </>
           )}
           <button
-            onClick={onCancel}
+            onClick={handleCancel}
             className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
           >
             <X className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -219,7 +310,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div>
             <input
@@ -338,6 +429,54 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             </div>
           )}
 
+          {/* Notes Section */}
+          {isEditing && (
+            <div className="md:col-span-2">
+              <div className="space-y-2 mb-3">
+                {[...notes].reverse().map((note) => (
+                  <div key={note.id} className="flex items-start justify-between p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
+                    <div className="flex items-start space-x-2 flex-1">
+                      <span className="text-yellow-600 dark:text-yellow-400 mt-0.5">•</span>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-900 dark:text-yellow-100">{note.text}</p>
+                        <p className="text-xs text-gray-500 dark:text-yellow-600 mt-1">
+                          {note.createdBy} • {new Date(note.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    {userRole === 'admin' && (
+                      <button
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="Add a note..."
+                  className="flex-1 px-3 py-2 border border-yellow-600 rounded-md outline-none text-sm bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNote())}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddNote}
+                  disabled={!newNote.trim()}
+                  className="px-4 py-2 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Note
+                </button>
+              </div>
+            </div>
+          )}
+
           {allowFullEdit && (
             <div>
               <div className="flex items-center space-x-3">
@@ -390,10 +529,11 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         )}
         <button
           type="button"
-          onClick={onCancel}
-          className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 text-sm font-medium"
+          onClick={handleCancel}
+          disabled={isSubmitting}
+          className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Cancel
+          {allowFullEdit ? 'Cancel' : 'Close'}
         </button>
         <button
           type="submit"
@@ -407,12 +547,15 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       
       {/* Equipment Log - Shows when log button is clicked */}
       {showLog && isEditing && (
-        <div className="mt-4">
-          <EquipmentLog
-            equipment={product}
-            onClose={() => setShowLog(false)}
-          />
-        </div>
+        <>
+          <div className="border-t border-yellow-600 dark:border-yellow-400 mt-4 mb-4"></div>
+          <div>
+            <EquipmentLog
+              equipment={product}
+              onClose={() => setShowLog(false)}
+            />
+          </div>
+        </>
       )}
 
       {/* QR Code Modal */}

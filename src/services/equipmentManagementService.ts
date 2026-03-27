@@ -9,6 +9,7 @@ export interface Equipment {
   category?: string;
   site?: string;
   employee?: string;
+  equipmentType: 'heavy' | 'field';
   repair: boolean;
   repairDescription?: string;
   isActive: boolean;
@@ -49,8 +50,10 @@ export class EquipmentManagementService {
           category: data.category || '',
           site: data.site || '',
           employee: data.employee || '',
+          equipmentType: 'heavy' as const,
           repair: data.repair ?? false,
           repairDescription: data.repairDescription || '',
+          notes: data.notes || [],
           isActive: data.isActive ?? true,
           showInInventory: data.showInInventory ?? true,
           showInTimecard: data.showInTimecard ?? true,

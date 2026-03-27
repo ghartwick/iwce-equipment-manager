@@ -14,9 +14,6 @@ export default function EquipmentPage() {
   const [equipment, setEquipment] = useState<Equipment | null>(null);
 
   useEffect(() => {
-    // Save current scroll position when entering edit mode
-    sessionStorage.setItem('inventoryScrollPosition', window.scrollY.toString());
-    
     if (!loading && equipmentId) {
       const found = products.find(p => p.id === equipmentId);
       setEquipment(found || null);
@@ -25,11 +22,9 @@ export default function EquipmentPage() {
 
   const handleEdit = async (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!equipment) return;
-    console.log('Updating equipment:', equipment.id);
     try {
       await updateProduct(equipment.id, { ...productData, updatedAt: new Date().toISOString() });
-      console.log('Update successful, navigating back');
-      navigate(-1);
+      navigate('/inventory');
     } catch (error) {
       console.error('Update failed:', error);
       throw error;
@@ -67,8 +62,9 @@ export default function EquipmentPage() {
           categories={categories}
           product={equipment}
           onSubmit={handleEdit}
-          onCancel={() => navigate(-1)}
+          onCancel={() => navigate('/inventory')}
           userRole={user?.role || 'field'}
+          allowNoteOnlyUpdate={true}
         />
       </div>
     </main>

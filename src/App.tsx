@@ -70,10 +70,10 @@ function App() {
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.site.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (product.employee?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (product.site?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (product.repair ? 'yes' : 'no').includes(searchTerm.toLowerCase()) ||
-                         (product.repair && product.repairDescription.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (product.repair && (product.repairDescription?.toLowerCase() || '').includes(searchTerm.toLowerCase()));
     
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     

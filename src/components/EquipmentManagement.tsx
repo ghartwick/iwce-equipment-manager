@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, Edit2, Trash2, Clock, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { equipmentManagementService, Equipment } from '../services/equipmentManagementService';
+import { equipmentManagementService } from '../services/equipmentManagementService';
 import { getCategories } from '../services/firebaseService';
 import { siteManagementService, Site } from '../services/siteManagementService';
-import { Category } from '../types';
+import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
+import { EquipmentLog } from './EquipmentLog';
+import { Category, Equipment } from '../types';
 import { parseExcelFile } from '../utils/excelImport';
 
 interface EquipmentManagementProps {
@@ -62,7 +64,20 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
 
   const loadEquipment = async () => {
     try {
-      setEquipment(await equipmentManagementService.getAllEquipment());
+      const serviceEquipment = await equipmentManagementService.getAllEquipment();
+      // Convert Date objects to strings and ensure all required fields
+      const convertedEquipment: Equipment[] = serviceEquipment.map(item => ({
+        ...item,
+        employee: item.employee || '',
+        site: item.site || '',
+        category: item.category || '',
+        serialNumber: item.serialNumber || '',
+        repairDescription: item.repairDescription || '',
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+        notes: []
+      }));
+      setEquipment(convertedEquipment);
     } catch (err: any) {
       setError(`Failed to load equipment: ${err?.message || 'Unknown error'}`);
     } finally {
@@ -85,11 +100,54 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
     setSuccess(null);
     try {
       if (editingItem) {
+        // Log the changes to history
+        const changes: { field: string; oldValue: string; newValue: string }[] = [];
+        
+        // Check each field for changes
+        Object.keys(formData).forEach(key => {
+          const oldValue = editingItem[key as keyof typeof formData];
+          const newValue = formData[key as keyof typeof formData];
+          
+          if (oldValue !== newValue) {
+            changes.push({
+              field: key,
+              oldValue: String(oldValue || ''),
+              newValue: String(newValue)
+            });
+          }
+        });
+        
+        // Add history entry if there are changes
+        if (changes.length > 0 && currentUser) {
+          await equipmentHistoryFirebaseService.addHistory({
+            equipmentId: editingItem.id,
+            equipmentName: formData.name,
+            action: 'updated',
+            timestamp: new Date(),
+            user: currentUser.username,
+            userRole: currentUser.role || 'admin',
+            changes
+          });
+        }
+        
         await equipmentManagementService.updateEquipment(editingItem.id, formData);
         setSuccess('Equipment updated successfully');
         setEditingItem(null);
       } else {
-        await equipmentManagementService.addEquipment({ ...formData, createdBy: currentUser?.username });
+        const newId = await equipmentManagementService.addEquipment({ ...formData, equipmentType: 'heavy', createdBy: currentUser?.username });
+        
+        // Log the creation to history
+        if (currentUser) {
+          await equipmentHistoryFirebaseService.addHistory({
+            equipmentId: newId,
+            equipmentName: formData.name,
+            action: 'created',
+            timestamp: new Date(),
+            user: currentUser.username,
+            userRole: currentUser.role || 'admin'
+          });
+        }
+        
         setSuccess('Equipment added successfully');
         setShowAddForm(false);
       }
@@ -180,6 +238,7 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
           category: '',
           site: '',
           employee: '',
+          equipmentType: 'heavy',
           repair: false,
           repairDescription: '',
           isActive: true, 
@@ -588,15 +647,10 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
         {showLog && selectedItem && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" onClick={() => setShowLog(false)}>
             <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">Equipment History - {selectedItem.name}</h3>
-                <button onClick={() => setShowLog(false)} className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="text-sm text-gray-600 dark:text-yellow-600">
-                <p>Equipment history would be displayed here.</p>
-              </div>
+              <EquipmentLog 
+                equipment={selectedItem} 
+                onClose={() => setShowLog(false)} 
+              />
             </div>
           </div>
         )}

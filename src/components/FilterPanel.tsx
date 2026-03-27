@@ -237,20 +237,18 @@ export function FilterPanel({
               All Categories
             </button>
             {sortedCategories.map((category) => (
-              <div
+              <button
                 key={category.id}
-                className={`w-full px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors flex items-center justify-between group text-xs sm:text-sm ${
+                onClick={() => scrollToCategory(category.id)}
+                className={`relative group flex items-center justify-between w-full px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm ${
                   selectedCategory === category.id
                     ? 'bg-yellow-600 text-black'
                     : 'hover:bg-[#fffff0] dark:hover:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
                 }`}
               >
-                <button
-                  onClick={() => scrollToCategory(category.id)}
-                  className="flex items-center space-x-2 flex-1 text-left"
-                >
+                <div className="flex items-center space-x-2 flex-1">
                   <span>{category.name}</span>
-                </button>
+                </div>
                 {userRole === 'admin' && (
                   <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button
@@ -273,7 +271,7 @@ export function FilterPanel({
                     </button>
                   </div>
                 )}
-              </div>
+              </button>
             ))}
           </div>
         </>

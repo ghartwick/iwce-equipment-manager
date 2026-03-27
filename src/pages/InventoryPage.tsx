@@ -34,22 +34,25 @@ function InventoryPage() {
   const [showAlerts, setShowAlerts] = useState(false);
   const alertsRef = useRef<HTMLDivElement>(null);
 
+  const hasRestored = useRef(false);
+  
   // Restore scroll position and filter state when component mounts
   useEffect(() => {
-    const savedPosition = sessionStorage.getItem('inventoryScrollPosition');
-    const savedSearchTerm = sessionStorage.getItem('inventorySearchTerm');
-    const savedSelectedCategory = sessionStorage.getItem('inventorySelectedCategory');
+    if (hasRestored.current) return;
+    hasRestored.current = true;
+    
+    const savedPosition = localStorage.getItem('inventoryScrollPosition');
+    const savedSearchTerm = localStorage.getItem('inventorySearchTerm');
+    const savedSelectedCategory = localStorage.getItem('inventorySelectedCategory');
     
     // Restore search term
     if (savedSearchTerm) {
       setSearchTerm(savedSearchTerm);
-      sessionStorage.removeItem('inventorySearchTerm');
     }
     
     // Restore selected category
     if (savedSelectedCategory) {
       setSelectedCategory(savedSelectedCategory);
-      sessionStorage.removeItem('inventorySelectedCategory');
     }
     
     // Restore scroll position
@@ -58,16 +61,22 @@ function InventoryPage() {
       // Use setTimeout to ensure the page has rendered before scrolling
       setTimeout(() => {
         window.scrollTo(0, position);
-        sessionStorage.removeItem('inventoryScrollPosition');
       }, 100);
     }
+    
+    // Clear localStorage after a delay to ensure state is restored
+    setTimeout(() => {
+      localStorage.removeItem('inventoryScrollPosition');
+      localStorage.removeItem('inventorySearchTerm');
+      localStorage.removeItem('inventorySelectedCategory');
+    }, 200);
   }, []);
 
   // Save inventory state when navigating away
   useEffect(() => {
     const saveInventoryState = () => {
-      sessionStorage.setItem('inventorySearchTerm', searchTerm);
-      sessionStorage.setItem('inventorySelectedCategory', selectedCategory);
+      localStorage.setItem('inventorySearchTerm', searchTerm);
+      localStorage.setItem('inventorySelectedCategory', selectedCategory);
     };
     
     // Save state when component unmounts or when navigating
@@ -126,11 +135,11 @@ function InventoryPage() {
     };
     
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.site.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         getCategoryName(product.category).includes(searchTerm.toLowerCase()) ||
+                         (product.employee?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (product.site?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         getCategoryName(product.category || '').includes(searchTerm.toLowerCase()) ||
                          (product.repair ? 'yes' : 'no').includes(searchTerm.toLowerCase()) ||
-                         (product.repair && product.repairDescription.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (product.repair && (product.repairDescription?.toLowerCase() || '').includes(searchTerm.toLowerCase()));
     
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     
@@ -141,8 +150,8 @@ function InventoryPage() {
         const category = categories.find(cat => cat.id === categoryId);
         return category ? category.name : categoryId;
       };
-      const categoryA = getCategoryName(a.category);
-      const categoryB = getCategoryName(b.category);
+      const categoryA = getCategoryName(a.category || '');
+      const categoryB = getCategoryName(b.category || '');
       if (categoryA !== categoryB) {
         const numA = parseFloat(categoryA);
         const numB = parseFloat(categoryB);
@@ -181,6 +190,10 @@ function InventoryPage() {
 
   
   const handleEditClick = (product: Equipment) => {
+    // Save current state before navigating
+    localStorage.setItem('inventoryScrollPosition', window.scrollY.toString());
+    localStorage.setItem('inventorySearchTerm', searchTerm);
+    localStorage.setItem('inventorySelectedCategory', selectedCategory);
     navigate(`/inventory/equipment/${product.id}`);
   };
 

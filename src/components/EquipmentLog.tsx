@@ -76,7 +76,7 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
   }
 
   return (
-    <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-6">
+    <div className="bg-[#fffff0] dark:bg-black p-2 sm:p-3">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-yellow-600 dark:text-yellow-400 flex items-center space-x-2">
           <Clock className="h-5 w-5" />
@@ -96,7 +96,7 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
         <p className="text-yellow-700 dark:text-yellow-600 text-sm">Serial: {equipment.serialNumber}</p>
       </div>
 
-      <div className="space-y-3 max-h-96 overflow-y-auto">
+      <div className="space-y-3">
         {history.length === 0 ? (
           <div className="text-center py-8">
             <Clock className="h-12 w-12 text-gray-600 mx-auto mb-2" />

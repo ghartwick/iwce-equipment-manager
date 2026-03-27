@@ -19,7 +19,8 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
   const [showQR, setShowQR] = useState(false);
   const [selectedTool, setSelectedTool] = useState<Equipment | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAlertsOnly] = useState(false);
+  const [showAlertsOnly, setShowAlertsOnly] = useState(false);
+  const [showMissingOnly, setShowMissingOnly] = useState(false);
 
   // Use the inventory hook but we'll filter for field tools only
   const {
@@ -41,8 +42,25 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
     const matchesSearch = tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          tool.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          tool.employee.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAlert = !showAlertsOnly || tool.repair;
-    return matchesSearch && matchesAlert;
+    const matchesAlert = !showAlertsOnly || tool.repair || tool.employee === 'Missing';
+    const matchesMissing = !showMissingOnly || tool.employee === 'Missing';
+    return matchesSearch && matchesAlert && matchesMissing;
+  }).sort((a, b) => {
+    // Try to extract numbers from the beginning of the name
+    const numA = parseFloat(a.name);
+    const numB = parseFloat(b.name);
+    
+    // If both names start with numbers, sort numerically
+    if (!isNaN(numA) && !isNaN(numB)) {
+      return numA - numB;
+    }
+    
+    // If only one starts with a number, it comes first
+    if (!isNaN(numA)) return -1;
+    if (!isNaN(numB)) return 1;
+    
+    // If neither starts with a number, sort alphabetically
+    return a.name.localeCompare(b.name);
   });
 
   const handleAddTool = async (toolData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -51,15 +69,19 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
     setShowAddForm(false);
   };
 
-  const handleEditTool = (tool: Equipment) => {
-    setEditingTool(tool);
-    setShowAddForm(false);
-  };
-
+  
   const handleUpdateTool = async (toolData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!editingTool) return;
-    await updateProduct(editingTool.id, toolData);
-    setEditingTool(null);
+    try {
+      await updateProduct(editingTool.id, toolData);
+      setEditingTool(null);
+      // Force a refresh to ensure the UI updates
+      setTimeout(() => window.location.reload(), 100);
+    } catch (error) {
+      console.error('Error updating tool:', error);
+      // Still close the form even on error
+      setEditingTool(null);
+    }
   };
 
   const handleDeleteTool = async (tool: Equipment) => {
@@ -106,7 +128,27 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 px-4 py-2 border border-yellow-600 rounded-lg bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
             />
-                        {currentUser?.role === 'admin' && (
+            <button
+              onClick={() => setShowAlertsOnly(!showAlertsOnly)}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                showAlertsOnly 
+                  ? 'bg-red-600 text-white hover:bg-red-500' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300'
+              }`}
+            >
+              {showAlertsOnly ? 'Showing Alerts & Missing' : 'Show Alerts & Missing'}
+            </button>
+            <button
+              onClick={() => setShowMissingOnly(!showMissingOnly)}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                showMissingOnly 
+                  ? 'bg-gray-600 text-white hover:bg-gray-500' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300'
+              }`}
+            >
+              {showMissingOnly ? 'Showing Missing' : 'Show Missing'}
+            </button>
+            {currentUser?.role === 'admin' && (
               <button
                 onClick={() => setShowAddForm(true)}
                 className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
@@ -140,7 +182,7 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
             </div>
           ) : filteredTools.length === 0 ? (
             <div className="text-center py-8 text-yellow-600 dark:text-yellow-400">
-              {searchTerm || showAlertsOnly ? 'No field tools found matching your criteria.' : 'No field tools found.'}
+              {searchTerm || showAlertsOnly || showMissingOnly ? 'No field tools found matching your criteria.' : 'No field tools found.'}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -148,7 +190,7 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
                 <thead>
                   <tr className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
                     <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Name</th>
-                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Serial</th>
+                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Category</th>
                     <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">With</th>
                     <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Status</th>
                     <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Actions</th>
@@ -194,14 +236,22 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
                         {tools.map((tool) => (
                           <tr key={tool.id} className="border-t border-yellow-200 dark:border-yellow-800">
                             <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">{tool.name}</td>
-                            <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">{tool.serialNumber || '-'}</td>
+                            <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">{categories.find(c => c.id === tool.category)?.name || tool.category || 'Uncategorized'}</td>
                             <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">{tool.employee}</td>
                             <td className="px-4 py-2">
-                              {tool.repair && (
-                                <span className="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 text-xs rounded">
-                                  Alert
-                                </span>
-                              )}
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                tool.repair
+                                  ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
+                                  : tool.employee === 'Missing'
+                                  ? 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30 text-gray-600 dark:text-gray-300'
+                                  : tool.employee === 'Office'
+                                  ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
+                                  : tool.employee
+                                  ? 'bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-300'
+                                  : 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
+                              }`}>
+                                {tool.repair ? 'In Repair' : tool.employee === 'Missing' ? 'Missing' : tool.employee === 'Office' ? 'Office' : tool.employee ? 'In Use' : 'Available'}
+                              </span>
                             </td>
                             <td className="px-4 py-2">
                               <div className="flex space-x-2">
@@ -327,7 +377,7 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
             </div>
           ) : filteredTools.length === 0 ? (
             <div className="text-center py-8 text-yellow-600 dark:text-yellow-400">
-              {searchTerm || showAlertsOnly ? 'No field tools found matching your criteria.' : 'No field tools found.'}
+              {searchTerm || showAlertsOnly || showMissingOnly ? 'No field tools found matching your criteria.' : 'No field tools found.'}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -335,7 +385,7 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
                 <thead>
                   <tr className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
                     <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Name</th>
-                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Serial</th>
+                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Category</th>
                     <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">With</th>
                     <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Status</th>
                     <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Actions</th>
@@ -345,28 +395,29 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
                   {filteredTools.map((tool) => (
                     <tr key={tool.id} className="border-t border-yellow-200 dark:border-yellow-800">
                       <td className="px-4 py-2">
-                        <div className="flex items-center space-x-2">
-                          {tool.repair && <span className="text-red-500 text-xs">REPAIR</span>}
-                          <span className="text-gray-900 dark:text-yellow-100">{tool.name}</span>
-                        </div>
+                        <span className="text-gray-900 dark:text-yellow-100">{tool.name}</span>
                       </td>
-                      <td className="px-4 py-2 text-gray-600 dark:text-yellow-600">{tool.serialNumber || '-'}</td>
+                      <td className="px-4 py-2 text-gray-600 dark:text-yellow-600">{categories.find(c => c.id === tool.category)?.name || tool.category || 'Uncategorized'}</td>
                       <td className="px-4 py-2 text-gray-600 dark:text-yellow-600">{tool.employee || '-'}</td>
                       <td className="px-4 py-2">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${
                           tool.repair
                             ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
+                            : tool.employee === 'Missing'
+                            ? 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30 text-gray-600 dark:text-gray-300'
+                            : tool.employee === 'Office'
+                            ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
                             : tool.employee
                             ? 'bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-300'
                             : 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
                         }`}>
-                          {tool.repair ? 'In Repair' : tool.employee ? 'In Use' : 'Available'}
+                          {tool.repair ? 'In Repair' : tool.employee === 'Missing' ? 'Missing' : tool.employee === 'Office' ? 'Office' : tool.employee ? 'In Use' : 'Available'}
                         </span>
                       </td>
                       <td className="px-4 py-2">
                         <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => handleEditTool(tool)}
+                            onClick={() => setEditingTool(tool)}
                             className="p-1 text-yellow-600 hover:text-yellow-500"
                             title="Edit"
                           >

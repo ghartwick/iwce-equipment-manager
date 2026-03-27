@@ -20,7 +20,7 @@ export interface Equipment {
 }
 
 export class EquipmentManagementService {
-  private readonly COLLECTION_NAME = 'timesheetEquipment';
+  private readonly COLLECTION_NAME = 'heavyEquipment';
 
   async getAllEquipment(): Promise<Equipment[]> {
     try {

@@ -20,6 +20,7 @@ interface ProductFormProps {
 export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false }: ProductFormProps) {
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
     employee: '',
     site: '',
     category: '',
@@ -90,14 +91,15 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   useEffect(() => {
     if (product) {
       setFormData({
-        name: product.name,
-        employee: product.employee,
-        site: product.site,
-        category: product.category,
-        serialNumber: product.serialNumber,
+        name: product.name || '',
+        description: product.description || '',
+        employee: product.employee || '',
+        site: product.site || '',
+        category: product.category || '',
+        serialNumber: product.serialNumber || '',
         equipmentType: product.equipmentType || 'field',
-        repair: product.repair,
-        repairDescription: product.repairDescription,
+        repair: product.repair || false,
+        repairDescription: product.repairDescription || '',
       });
       
       // Check if the site is a custom site (not in the sites list)
@@ -125,10 +127,16 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     
     setIsSubmitting(true);
     
-    console.log('Submitting form data:', formData);
+    // Automatically set repair flag for Out For Repair or Broken
+    const submitData = {
+      ...formData,
+      repair: formData.employee === 'Out For Repair' || formData.employee === 'Broken' ? true : formData.repair
+    };
+    
+    console.log('Submitting form data:', submitData);
     
     try {
-      await onSubmit(formData);
+      await onSubmit(submitData);
       // Reset submitting state after successful submission
       setIsSubmitting(false);
     } catch (error) {
@@ -218,32 +226,47 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             />
           </div>
 
-          <div>
-            <input
-              type="text"
-              value={formData.serialNumber}
-              onChange={(e) => handleInputChange('serialNumber', e.target.value)}
-              disabled={isEditing && !allowFullEdit}
-              className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
-                isEditing && !allowFullEdit
-                  ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
-              }`}
-              placeholder="Serial Number"
-            />
-          </div>
+          {(!isEditing || product?.equipmentType !== 'field') && (
+            <div>
+              <input
+                type="text"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                disabled={isEditing && !allowFullEdit}
+                className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
+                  isEditing && !allowFullEdit
+                    ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                }`}
+                placeholder="Description"
+              />
+            </div>
+          )}
 
-          <div>
+          {(!isEditing || product?.equipmentType !== 'heavy') && (
+            <div>
+              <input
+                type="text"
+                value={formData.serialNumber}
+                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                disabled={isEditing && !allowFullEdit}
+                className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
+                  isEditing && !allowFullEdit
+                    ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                }`}
+                placeholder="Serial Number"
+              />
+            </div>
+          )}
+
+          {!isEditing && (
+            <div>
               <select
-                required={!isEditing}
-                disabled={isEditing && product?.equipmentType === 'heavy'}
+                required
                 value={formData.category}
                 onChange={(e) => handleInputChange('category', e.target.value)}
-                className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
-                  isEditing && product?.equipmentType === 'heavy'
-                    ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                    : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
-                }`}
+                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
               >
                 <option value="">Category</option>
                 {categories.map((cat) => (
@@ -253,6 +276,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                 ))}
               </select>
             </div>
+          )}
 
           {(!isEditing || product?.equipmentType !== 'heavy') && (
             <div>

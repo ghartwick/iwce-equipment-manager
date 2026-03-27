@@ -9,7 +9,7 @@ export default function EquipmentPage() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { products, categories, updateProduct, deleteProduct, loading } = useInventory();
+  const { products, categories, updateProduct, loading } = useInventory();
 
   const [equipment, setEquipment] = useState<Equipment | null>(null);
 
@@ -34,12 +34,6 @@ export default function EquipmentPage() {
       console.error('Update failed:', error);
       throw error;
     }
-  };
-
-  const handleDelete = async () => {
-    if (!equipment) return;
-    await deleteProduct(equipment.id);
-    navigate('/inventory');
   };
 
   if (loading) {
@@ -74,7 +68,6 @@ export default function EquipmentPage() {
           product={equipment}
           onSubmit={handleEdit}
           onCancel={() => navigate(-1)}
-          onDelete={user?.role === 'admin' ? handleDelete : undefined}
           userRole={user?.role || 'field'}
         />
       </div>

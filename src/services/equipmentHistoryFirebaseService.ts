@@ -33,20 +33,16 @@ class EquipmentHistoryFirebaseService {
     try {
       
       const historyCollection = collection(db, this.COLLECTION_NAME);
-      const docRef = await addDoc(historyCollection, {
+      await addDoc(historyCollection, {
         ...entry,
         timestamp: Timestamp.fromDate(entry.timestamp)
       });
       
-      console.log('Document saved successfully with ID:', docRef.id);
-      console.log('========================');
     } catch (error) {
-      console.error('=== FIREBASE SAVE ERROR ===');
       console.error('Failed to save history to Firebase:', error);
       if (error instanceof Error) {
         console.error('Error details:', error.message);
       }
-      console.log('============================');
     }
   }
 
@@ -65,11 +61,8 @@ class EquipmentHistoryFirebaseService {
       
       try {
         const querySnapshot = await getDocs(q);
-        console.log('Indexed query executed, found documents:', querySnapshot.docs.length);
-        
         const history = querySnapshot.docs.map(doc => {
           const data = doc.data();
-          console.log('Document data:', data);
           return {
             id: doc.id,
             equipmentId: data.equipmentId,
@@ -86,12 +79,10 @@ class EquipmentHistoryFirebaseService {
         
       } catch (indexError) {
         console.log('Indexed query failed, trying fallback query...');
-        console.log('Index error:', indexError);
         
         // Fallback: Get all documents and filter in JavaScript
         const fallbackQuery = query(historyCollection);
         const fallbackSnapshot = await getDocs(fallbackQuery);
-        console.log('Fallback query executed, total documents:', fallbackSnapshot.docs.length);
         
         const allHistory = fallbackSnapshot.docs.map(doc => {
           const data = doc.data();
@@ -116,10 +107,7 @@ class EquipmentHistoryFirebaseService {
       }
       
     } catch (error) {
-      console.error('=== FIREBASE RETRIEVE ERROR ===');
       console.error('Failed to retrieve history from Firebase:', error);
-      console.error('Error details:', error);
-      console.error('=============================');
       return [];
     }
   }

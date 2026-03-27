@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon } from 'lucide-react';
+import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, Database } from 'lucide-react';
 import { UserManagement } from './UserManagement';
 import { SiteManagement } from './SiteManagement';
+import { migrateToNewCollections } from '../utils/migrationUtils';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,6 +20,25 @@ function Layout({ children }: LayoutProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showSiteManagement, setShowSiteManagement] = useState(false);
+  const [migrating, setMigrating] = useState(false);
+
+  const handleMigrateDatabase = async () => {
+    if (!window.confirm('This will migrate all data to the new database collections (fieldTools, heavyEquipment, smallTools). This action cannot be undone. Proceed?')) return;
+    setMigrating(true);
+    try {
+      const result = await migrateToNewCollections();
+      if (result.errors.length > 0) {
+        alert(`Migration completed with errors:\nField Tools: ${result.fieldToolsMigrated}\nHeavy Equipment: ${result.heavyEquipmentMigrated}\nErrors:\n${result.errors.join('\n')}`);
+      } else {
+        alert(`Migration successful!\nField Tools migrated: ${result.fieldToolsMigrated}\nHeavy Equipment migrated: ${result.heavyEquipmentMigrated}`);
+      }
+      window.location.reload();
+    } catch (e: any) {
+      alert('Migration failed: ' + e.message);
+    } finally {
+      setMigrating(false);
+    }
+  };
 
   const navigation = [
     { name: 'Inventory', href: '/inventory', icon: Package },
@@ -172,20 +192,7 @@ function Layout({ children }: LayoutProps) {
                       </div>
                       
                       <div className="p-2">
-                        {/* User Management - Available to all users */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowUserManagement(true);
-                            setShowUserMenu(false);
-                          }}
-                          className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
-                        >
-                          <Users className="h-4 w-4" />
-                          <span>User Management</span>
-                        </button>
-
-                        {/* Admin-only Site and Code Management */}
+                        {/* Admin-only Management Items */}
                         {user.role === 'admin' && (
                           <>
                             <button
@@ -198,17 +205,6 @@ function Layout({ children }: LayoutProps) {
                             >
                               <MapPin className="h-4 w-4" />
                               <span>Manage Sites</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowUserMenu(false);
-                                navigate('/manage/small-tools');
-                              }}
-                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
-                            >
-                              <Wrench className="h-4 w-4" />
-                              <span>Manage Small Tools</span>
                             </button>
                             <button
                               onClick={(e) => {
@@ -232,7 +228,45 @@ function Layout({ children }: LayoutProps) {
                               <Plus className="h-4 w-4" />
                               <span>Manage Field Tools</span>
                             </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowUserMenu(false);
+                                navigate('/manage/small-tools');
+                              }}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
+                            >
+                              <Wrench className="h-4 w-4" />
+                              <span>Manage Small Tools</span>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowUserMenu(false);
+                                handleMigrateDatabase();
+                              }}
+                              disabled={migrating}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <Database className="h-4 w-4" />
+                              <span>{migrating ? 'Migrating...' : 'Migrate Database'}</span>
+                            </button>
                           </>
+                        )}
+                        
+                        {/* User Management - Admin, Supervisor, and Field Users */}
+                        {user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'field') && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowUserManagement(true);
+                              setShowUserMenu(false);
+                            }}
+                            className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
+                          >
+                            <Users className="h-4 w-4" />
+                            <span>User Management</span>
+                          </button>
                         )}
                         
                         {/* Theme Toggle */}
@@ -292,33 +326,58 @@ function Layout({ children }: LayoutProps) {
                 {navigation.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.name}>
-                      <Link
-                        to={item.href}
-                        onClick={() => setShowMobileMenu(false)}
-                        className={`flex items-center space-x-3 w-full p-3 rounded-lg transition-colors ${
-                          isActive(item.href)
-                            ? 'bg-yellow-200 dark:bg-yellow-900 dark:bg-opacity-70 border border-yellow-600 text-yellow-900 dark:text-yellow-100'
-                            : 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-opacity-70'
-                        }`}
-                      >
-                        <Icon className="h-5 w-5" />
-                        <span>{item.name}</span>
-                      </Link>
-                      
-                      {/* Manage Field Tools button - appears under Inventory for admins */}
-                      {item.name === 'Inventory' && user && user.role === 'admin' && (
-                        <button
-                          onClick={() => { setShowMobileMenu(false); navigate('/manage/field-tools'); }}
-                          className="flex items-center space-x-3 w-full p-3 mt-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
-                        >
-                          <Plus className="h-5 w-5" />
-                          <span>Manage Field Tools</span>
-                        </button>
-                      )}
-                    </div>
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => setShowMobileMenu(false)}
+                      className={`flex items-center space-x-3 w-full p-3 rounded-lg transition-colors ${
+                        isActive(item.href)
+                          ? 'bg-yellow-200 dark:bg-yellow-900 dark:bg-opacity-70 border border-yellow-600 text-yellow-900 dark:text-yellow-100'
+                          : 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-opacity-70'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span>{item.name}</span>
+                    </Link>
                   );
                 })}
+                
+                {/* Admin Management Items */}
+                {user && user.role === 'admin' && (
+                  <>
+                    <button
+                      onClick={() => { 
+                        setShowSiteManagement(true);
+                        setShowMobileMenu(false);
+                      }}
+                      className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
+                    >
+                      <MapPin className="h-5 w-5" />
+                      <span>Manage Sites</span>
+                    </button>
+                    <button
+                      onClick={() => { setShowMobileMenu(false); navigate('/manage/heavy-equipment'); }}
+                      className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
+                    >
+                      <Truck className="h-5 w-5" />
+                      <span>Manage Heavy Equipment</span>
+                    </button>
+                    <button
+                      onClick={() => { setShowMobileMenu(false); navigate('/manage/field-tools'); }}
+                      className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
+                    >
+                      <Plus className="h-5 w-5" />
+                      <span>Manage Field Tools</span>
+                    </button>
+                    <button
+                      onClick={() => { setShowMobileMenu(false); navigate('/manage/small-tools'); }}
+                      className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
+                    >
+                      <Wrench className="h-5 w-5" />
+                      <span>Manage Small Tools</span>
+                    </button>
+                  </>
+                )}
                 
                 {/* User Management - Admin, Supervisor, and Field Users */}
                 {user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'field') && (

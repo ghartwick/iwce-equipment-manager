@@ -4,7 +4,7 @@ import { Equipment, Category, StockAlert } from '../types';
 
 // Equipment CRUD operations
 export const getEquipment = async (): Promise<Equipment[]> => {
-  const q = query(collection(db, 'equipment'), orderBy('createdAt', 'desc'));
+  const q = query(collection(db, 'fieldTools'), orderBy('createdAt', 'desc'));
   const querySnapshot = await getDocs(q);
   const equipment = querySnapshot.docs.map(doc => ({
     id: doc.id,
@@ -15,7 +15,7 @@ export const getEquipment = async (): Promise<Equipment[]> => {
 };
 
 export const addEquipment = async (equipment: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
-  await addDoc(collection(db, 'equipment'), {
+  await addDoc(collection(db, 'fieldTools'), {
     ...equipment,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -23,7 +23,7 @@ export const addEquipment = async (equipment: Omit<Equipment, 'id' | 'createdAt'
 };
 
 export const updateEquipment = async (id: string, equipment: Partial<Equipment>): Promise<void> => {
-  const docRef = doc(db, 'equipment', id);
+  const docRef = doc(db, 'fieldTools', id);
   await updateDoc(docRef, {
     ...equipment,
     updatedAt: new Date().toISOString()
@@ -31,7 +31,7 @@ export const updateEquipment = async (id: string, equipment: Partial<Equipment>)
 };
 
 export const deleteEquipment = async (id: string): Promise<void> => {
-  await deleteDoc(doc(db, 'equipment', id));
+  await deleteDoc(doc(db, 'fieldTools', id));
 };
 
 // Category CRUD operations

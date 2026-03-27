@@ -18,6 +18,7 @@ export interface Equipment {
   createdAt: Date;
   updatedAt: Date;
   createdBy?: string;
+  parentId?: string;
 }
 
 export class EquipmentManagementService {
@@ -59,7 +60,8 @@ export class EquipmentManagementService {
           showInTimecard: data.showInTimecard ?? true,
           createdAt,
           updatedAt,
-          createdBy: data.createdBy
+          createdBy: data.createdBy,
+          parentId: data.parentId || undefined
         };
       }).filter(item => item.name.length > 0).sort((a, b) => a.name.localeCompare(b.name));
     } catch (error: any) {
@@ -75,12 +77,27 @@ export class EquipmentManagementService {
 
   async getInventoryEquipment(): Promise<Equipment[]> {
     const all = await this.getAllEquipment();
-    return all.filter(item => item.isActive && item.showInInventory);
+    // Only show original units (no parentId) in inventory
+    return all.filter(item => item.isActive && item.showInInventory && !item.parentId);
   }
 
   async getTimecardEquipment(): Promise<Equipment[]> {
     const all = await this.getAllEquipment();
     return all.filter(item => item.isActive && item.showInTimecard);
+  }
+
+  async getTimecardEquipmentBySite(site: string): Promise<Equipment[]> {
+    const all = await this.getAllEquipment();
+    const timecard = all.filter(item => item.isActive && item.showInTimecard);
+    if (!site) return timecard;
+    // Build a set of parent IDs located at this site
+    const parentIdsAtSite = new Set(
+      timecard.filter(item => !item.parentId && item.site === site).map(item => item.id)
+    );
+    return timecard.filter(item =>
+      (!item.parentId && item.site === site) ||
+      (item.parentId && parentIdsAtSite.has(item.parentId))
+    );
   }
 
   async addEquipment(data: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {

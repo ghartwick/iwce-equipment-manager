@@ -332,7 +332,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
   const [sitesData, setSitesData] = useState<Site[]>([]);
   const [smallToolsOptionsState, setSmallToolsOptionsState] = useState<string[]>([]);
-  const [equipmentOptionsState, setEquipmentOptionsState] = useState<{name: string; description?: string}[]>([]);
+  const [allEquipmentData, setAllEquipmentData] = useState<{id: string; name: string; description?: string; site?: string; parentId?: string}[]>([]);
   const [workEntries, setWorkEntries] = useState<WorkEntry[]>([
     {
       id: '1',
@@ -484,7 +484,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         setSmallToolsOptionsState(smallTools.map(tool => tool.name));
         
         const equipment = await equipmentManagementService.getTimecardEquipment();
-        setEquipmentOptionsState(equipment.map(item => ({ name: item.name, description: item.description || '' })));
+        const equipmentData = equipment.map(item => ({ id: item.id, name: item.name, description: item.description || '', site: item.site, parentId: item.parentId }));
+        setAllEquipmentData(equipmentData);
       } catch (error) {
         console.error('Failed to load dropdown options:', error);
       }
@@ -507,8 +508,19 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   // Use state-based small tools options
   const smallToolsOptions = useMemo(() => smallToolsOptionsState, [smallToolsOptionsState]);
 
-  // Use state-based equipment options
-  const equipmentOptions = useMemo(() => equipmentOptionsState, [equipmentOptionsState]);
+  // Use state-based equipment options, filtered by selected site
+  const equipmentOptions = useMemo(() => {
+    if (!job) return allEquipmentData;
+    // Find original units at the selected site
+    const parentIdsAtSite = new Set(
+      allEquipmentData.filter(item => !item.parentId && item.site === job).map(item => item.id)
+    );
+    const filtered = allEquipmentData.filter(item =>
+      (!item.parentId && item.site === job) ||
+      (item.parentId && parentIdsAtSite.has(item.parentId))
+    );
+    return filtered.length > 0 ? filtered : allEquipmentData;
+  }, [allEquipmentData, job]);
 
   useEffect(() => {
     if (entry) {

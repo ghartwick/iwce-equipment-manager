@@ -17,6 +17,7 @@ export interface Equipment {
   updatedAt: string;
   lastModifiedBy?: string;
   createdBy?: string;
+  parentId?: string;
 }
 
 export interface EquipmentNote {

@@ -15,7 +15,7 @@ interface EquipmentManagementProps {
   asPage?: boolean;
 }
 
-const EMPTY_FORM = { name: '', description: '', serialNumber: '', category: '', site: '', employee: '', repair: false, repairDescription: '', isActive: true, showInInventory: true, showInTimecard: true };
+const EMPTY_FORM = { name: '', description: '', serialNumber: '', category: '', site: '', employee: '', repair: false, repairDescription: '', isActive: true, showInInventory: true, showInTimecard: true, parentId: '' };
 
 export function EquipmentManagement({ onClose, currentUser, asPage = false }: EquipmentManagementProps) {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
@@ -172,6 +172,7 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
       isActive: item.isActive,
       showInInventory: item.showInInventory,
       showInTimecard: item.showInTimecard,
+      parentId: item.parentId || '',
     });
     setShowAddForm(false);
   };
@@ -357,16 +358,28 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
                       <option key={site.id} value={site.name}>{site.name}</option>
                     ))}
                   </select>
+                  <select
+                    value={formData.parentId}
+                    onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
+                    className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    <option value="">No Parent (Original Unit)</option>
+                    {equipment.filter(e => !e.parentId && e.id !== editingItem?.id).map((e) => (
+                      <option key={e.id} value={e.id}>{e.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex flex-wrap gap-4">
                   <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
                     <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                     <span>Active</span>
                   </label>
-                  <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                    <input type="checkbox" checked={formData.showInInventory} onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
-                    <span>Show in Inventory</span>
-                  </label>
+                  {!formData.parentId && (
+                    <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                      <input type="checkbox" checked={formData.showInInventory} onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                      <span>Show in Inventory</span>
+                    </label>
+                  )}
                   <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
                     <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                     <span>Show in Timecard</span>
@@ -406,13 +419,19 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
                 </thead>
                 <tbody>
                   {(() => {
-                    const grouped = filteredEquipment.reduce((acc, item) => {
+                    // First, separate parents and variants
+                    const parents = filteredEquipment.filter(item => !item.parentId);
+                    const variants = filteredEquipment.filter(item => item.parentId);
+                    
+                    // Group parents by category
+                    const grouped = parents.reduce((acc, item) => {
                       const name = getCategoryName(item.category || '');
                       if (!acc[name]) acc[name] = [];
                       acc[name].push(item);
                       return acc;
                     }, {} as Record<string, Equipment[]>);
 
+                    // Sort parents within each category
                     Object.keys(grouped).forEach(key => {
                       grouped[key].sort((a, b) => {
                         const numA = parseFloat(a.name), numB = parseFloat(b.name);
@@ -421,6 +440,7 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
                       });
                     });
 
+                    // Sort categories
                     const sortedGroups = Object.entries(grouped).sort(([a], [b]) => {
                       const numA = parseFloat(a), numB = parseFloat(b);
                       if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
@@ -436,13 +456,17 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
                             </span>
                           </td>
                         </tr>
-                        {items.map((item) => (
-                          <React.Fragment key={item.id}>
-                            <tr className="border-t border-yellow-200 dark:border-yellow-800">
-                              <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">
-                                {item.name}
-                                {!item.isActive && <span className="ml-2 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-500 text-xs rounded">Inactive</span>}
-                              </td>
+                        {items.map((item) => {
+                          // Find variants of this parent
+                          const itemVariants = variants.filter(v => v.parentId === item.id);
+                          return (
+                            <React.Fragment key={item.id}>
+                              {/* Parent row */}
+                              <tr className="border-t border-yellow-200 dark:border-yellow-800">
+                                <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">
+                                  {item.name}
+                                  {!item.isActive && <span className="ml-2 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-500 text-xs rounded">Inactive</span>}
+                                </td>
                               <td className="px-4 py-2">
                                 <select
                                   value={item.site || ''}
@@ -584,16 +608,28 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
                                             <option key={site.id} value={site.name}>{site.name}</option>
                                           ))}
                                         </select>
+                                        <select
+                                          value={formData.parentId}
+                                          onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
+                                          className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        >
+                                          <option value="">No Parent (Original Unit)</option>
+                                          {equipment.filter(e => !e.parentId && e.id !== editingItem?.id).map((e) => (
+                                            <option key={e.id} value={e.id}>{e.name}</option>
+                                          ))}
+                                        </select>
                                       </div>
                                       <div className="flex items-center space-x-6 text-sm">
                                         <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
                                           <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                           <span>Active</span>
                                         </label>
-                                        <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                          <input type="checkbox" checked={formData.showInInventory} onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
-                                          <span>Show in Inventory</span>
-                                        </label>
+                                        {!formData.parentId && (
+                                          <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                            <input type="checkbox" checked={formData.showInInventory} onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                            <span>Show in Inventory</span>
+                                          </label>
+                                        )}
                                         <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
                                           <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                           <span>Show in Timecard</span>
@@ -612,8 +648,182 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
                                 </td>
                               </tr>
                             )}
+                            {/* Indented variants */}
+                            {itemVariants.map(variant => (
+                              <React.Fragment key={variant.id}>
+                                <tr className="border-t border-yellow-100 dark:border-yellow-900">
+                                  <td className="px-4 py-2 text-gray-900 dark:text-yellow-100 pl-8">
+                                    <span className="text-gray-500 dark:text-gray-400 mr-2">↳</span>
+                                    {variant.name}
+                                    {!variant.isActive && <span className="ml-2 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-500 text-xs rounded">Inactive</span>}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                      {item.site || 'Unassigned'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    <span className="text-gray-400 text-sm">-</span>
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    <button
+                                      onClick={() => handleToggleTimecard(variant)}
+                                      className={`p-1 rounded transition-colors ${
+                                        variant.showInTimecard 
+                                          ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 dark:hover:bg-opacity-30' 
+                                          : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                      }`}
+                                      title={variant.showInTimecard ? 'Remove from timecard' : 'Add to timecard'}
+                                    >
+                                      {variant.showInTimecard ? '✓' : '-'}
+                                    </button>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {!variant.isActive ? (
+                                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs rounded">Inactive</span>
+                                    ) : (
+                                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                        variant.repair
+                                          ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
+                                          : variant.employee === 'Missing'
+                                          ? 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30 text-gray-600 dark:text-gray-300'
+                                          : variant.employee === 'Office'
+                                          ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
+                                          : variant.employee || variant.site
+                                          ? 'bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-300'
+                                          : 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
+                                      }`}>
+                                        {variant.repair ? 'In Repair' : variant.employee === 'Missing' ? 'Missing' : variant.employee === 'Office' ? 'Office' : (variant.employee || variant.site) ? 'In Use' : 'Available'}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <div className="flex space-x-1">
+                                      <button
+                                        onClick={() => handleEdit(variant)}
+                                        className="p-1 text-yellow-600 hover:text-yellow-500"
+                                        title={editingItem?.id === variant.id ? 'Cancel' : 'Edit'}
+                                      >
+                                        <Edit2 className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => { setSelectedItem(variant); setShowQR(true); }}
+                                        className="p-1 text-purple-600 hover:text-purple-500"
+                                        title="Show QR Code"
+                                      >
+                                        <QrCode className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => { setSelectedItem(variant); setShowLog(true); }}
+                                        className="p-1 text-blue-600 hover:text-blue-500"
+                                        title="View Log"
+                                      >
+                                        <Clock className="h-4 w-4" />
+                                      </button>
+                                      {currentUser?.role === 'admin' && (
+                                        <button
+                                          onClick={() => handleDelete(variant)}
+                                          className="p-1 text-red-600 hover:text-red-500"
+                                          title="Delete"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                                {editingItem?.id === variant.id && (
+                                  <tr>
+                                    <td colSpan={6} className="px-4 py-0">
+                                      <div className="p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg mt-2">
+                                        <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3">
+                                          Edit Heavy Equipment: {variant.name}
+                                        </h3>
+                                        <form onSubmit={handleSubmit} className="space-y-3">
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <input
+                                              type="text" required placeholder="Equipment Name"
+                                              value={formData.name}
+                                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                              className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                            />
+                                            <input
+                                              type="text" placeholder="Description"
+                                              value={formData.description}
+                                              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                              className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                            />
+                                            <input
+                                              type="text" placeholder="Serial Number"
+                                              value={formData.serialNumber}
+                                              onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
+                                              className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                            />
+                                            <select
+                                              value={formData.category}
+                                              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                              className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                            >
+                                              <option value="">Select Category</option>
+                                              {categories.map(cat => (
+                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                              ))}
+                                            </select>
+                                            <select
+                                              value={formData.site}
+                                              onChange={(e) => setFormData({ ...formData, site: e.target.value })}
+                                              className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                            >
+                                              <option value="">Select Site</option>
+                                              {sites.map(site => (
+                                                <option key={site.id} value={site.name}>{site.name}</option>
+                                              ))}
+                                            </select>
+                                            <select
+                                              value={formData.parentId}
+                                              onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
+                                              className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                            >
+                                              <option value="">No Parent (Original Unit)</option>
+                                              {equipment.filter(e => !e.parentId && e.id !== editingItem?.id).map((e) => (
+                                                <option key={e.id} value={e.id}>{e.name}</option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                          <div className="flex items-center space-x-6 text-sm">
+                                            <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                              <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                              <span>Active</span>
+                                            </label>
+                                            {!formData.parentId && (
+                                              <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                                <input type="checkbox" checked={formData.showInInventory} onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                                <span>Show in Inventory</span>
+                                              </label>
+                                            )}
+                                            <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                              <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                              <span>Show in Timecard</span>
+                                            </label>
+                                          </div>
+                                          <div className="flex space-x-2">
+                                            <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">
+                                              Update Equipment
+                                            </button>
+                                            <button type="button" onClick={cancelForm} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm">
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </form>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            ))}
                           </React.Fragment>
-                        ))}
+                          );
+                        })}
                       </React.Fragment>
                     ));
                   })()}

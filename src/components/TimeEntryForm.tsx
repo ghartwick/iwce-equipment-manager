@@ -328,6 +328,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const [job, setJob] = useState('');
   const [customSite, setCustomSite] = useState('');
   const [hours, setHours] = useState(0);
+  const [travelHours, setTravelHours] = useState('');
   const [jobOptions, setJobOptions] = useState<string[]>([]);
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
   const [sitesData, setSitesData] = useState<Site[]>([]);
@@ -445,25 +446,38 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         collapsed: false
       };
       
-      // Collapse the first entry when adding a new one
-      const updatedEntries = [...prev];
-      if (updatedEntries.length > 0) {
-        updatedEntries[0] = { ...updatedEntries[0], collapsed: true };
-      }
+      // Collapse all existing entries when adding a new one
+      const updatedEntries = prev.map(entry => ({ ...entry, collapsed: true }));
       
       return [...updatedEntries, newEntry];
     });
+    
+    // Scroll to the new entry after a brief delay to allow re-render
+    setTimeout(() => {
+      const newEntryElement = document.getElementById(`work-entry-${Date.now().toString()}`);
+      if (newEntryElement) {
+        newEntryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        // Fallback: scroll to the bottom of the work entries container
+        const container = document.getElementById('work-entries-container');
+        if (container) {
+          container.scrollTop = container.scrollHeight;
+        }
+      }
+    }, 100);
   };
 
+  // Generate time options for clock in/out (half-hour increments)
   const generateTimeOptions = () => {
     const options = [];
     for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 15) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-        const period = hour < 12 ? 'AM' : 'PM';
-        const displayString = `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
-        options.push({ value: timeString, label: displayString });
+      for (let minute = 0; minute < 60; minute += 30) {
+        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const displayTime = hour === 0 ? `12:${minute.toString().padStart(2, '0')} AM` : 
+                           hour === 12 ? `12:${minute.toString().padStart(2, '0')} PM` : 
+                           hour < 12 ? `${hour}:${minute.toString().padStart(2, '0')} AM` : 
+                           `${hour - 12}:${minute.toString().padStart(2, '0')} PM`;
+        options.push({ value: time, label: displayTime });
       }
     }
     return options;
@@ -540,6 +554,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       setClockOut(format(clockOutDate, 'HH:mm'));
       setJob(entry.job || '');
       setHours(entry.hours);
+      setTravelHours(entry.travelHours?.toString() || '');
       
       // Load work entries from existing entry or create default
       if (entry.workEntries && entry.workEntries.length > 0) {
@@ -585,6 +600,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       setClockOut('');
       setJob('');
       setHours(0);
+      setTravelHours('');
       setWorkEntries([{
         id: '1',
         notes: '',
@@ -694,6 +710,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       clockIn: clockInDate,
       clockOut: clockOutDate,
       hours,
+      travelHours: parseFloat(travelHours) || 0,
       job: job === 'Other' ? customSite.trim() : job,
       status: entry?.status || 'draft',
       isLocked: entry?.isLocked || false,
@@ -822,6 +839,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       clockIn: clockInDate,
       clockOut: clockOutDate,
       hours,
+      travelHours: parseFloat(travelHours) || 0,
       job: job === 'Other' ? customSite.trim() : job,
       status: 'submitted',
       submittedAt: new Date(),
@@ -994,6 +1012,37 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               </select>
             </div>
 
+            {/* Travel Hours */}
+            <div className="flex flex-col flex-shrink-0 min-w-0">
+              <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
+                Travel Hours
+              </label>
+              <input
+                type="text"
+                value={travelHours}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9.]/g, '');
+                  // Allow up to 5 characters (e.g., "99.99") and validate decimal places
+                  if (value.length <= 5) {
+                    // Check if decimal format is valid (max 2 decimal places)
+                    const parts = value.split('.');
+                    if (parts.length <= 2 && (parts[1] === undefined || parts[1].length <= 2)) {
+                      setTravelHours(value);
+                    }
+                  }
+                }}
+                disabled={isLocked}
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:outline-none transition-colors ${
+                  isLocked 
+                    ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
+                    : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
+                }`}
+                placeholder="0"
+                maxLength={5}
+                inputMode="decimal"
+              />
+            </div>
+
             {/* Total Hours */}
             <div className="flex flex-col flex-shrink-0 min-w-0">
               <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
@@ -1017,10 +1066,11 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         </div>
 
         {/* Work Entries */}
-        <div className="space-y-4">
+        <div id="work-entries-container" className="space-y-4">
           <h3 className="text-yellow-600 dark:text-yellow-400 font-medium">Work Entries</h3>
           {workEntries.map((entry, index) => (
-            <WorkEntrySection 
+            <div id={`work-entry-${entry.id}`}>
+              <WorkEntrySection 
               key={entry.id} 
               entry={entry} 
               entryIndex={index}
@@ -1036,6 +1086,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               smallToolsOptions={smallToolsOptions}
               user={user}
             />
+            </div>
           ))}
         </div>
 

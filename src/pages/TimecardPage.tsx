@@ -558,6 +558,11 @@ export default function TimecardPage() {
                                           )}
                                           <div className="font-medium text-yellow-700 dark:text-yellow-600">
                                             {entry.hours}
+                                            {entry.travelHours && entry.travelHours > 0 && (
+                                              <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">
+                                                (Travel: {entry.travelHours})
+                                              </span>
+                                            )}
                                           </div>
                                           
                                           {/* Expanded Details */}
@@ -785,6 +790,11 @@ export default function TimecardPage() {
                                         )}
                                         <div className="font-medium text-yellow-700 dark:text-yellow-600">
                                           {entry.hours}
+                                          {entry.travelHours && entry.travelHours > 0 && (
+                                            <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">
+                                              (Travel: {entry.travelHours})
+                                            </span>
+                                          )}
                                         </div>
                                         
                                         {/* Expanded Details */}

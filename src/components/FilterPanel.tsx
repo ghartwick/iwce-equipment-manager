@@ -137,7 +137,10 @@ export function FilterPanel({
 
   return (
     <div ref={panelRef} className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow p-2 sm:p-4">
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
+      <div 
+        className="flex items-center justify-between mb-2 sm:mb-3 cursor-pointer"
+        onClick={() => setIsCategoryFormCollapsed(!isCategoryFormCollapsed)}
+      >
         <div className="flex items-center space-x-2">
           <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600 dark:text-yellow-400" />
           <h3 className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-400">
@@ -147,8 +150,7 @@ export function FilterPanel({
                   </h3>
         </div>
         <div className="flex items-center space-x-1">
-          <button
-            onClick={() => setIsCategoryFormCollapsed(!isCategoryFormCollapsed)}
+          <div
             className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
             title={isCategoryFormCollapsed ? "Expand Category Form" : "Collapse Category Form"}
           >
@@ -157,10 +159,13 @@ export function FilterPanel({
             ) : (
               <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4" />
             )}
-          </button>
+          </div>
           {userRole === 'admin' && (
             <button
-              onClick={() => setShowAddCategory(!showAddCategory)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAddCategory(!showAddCategory);
+              }}
               className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
               title="Add Category"
             >
@@ -237,10 +242,10 @@ export function FilterPanel({
               All Categories
             </button>
             {sortedCategories.map((category) => (
-              <button
+              <div
                 key={category.id}
                 onClick={() => scrollToCategory(category.id)}
-                className={`relative group flex items-center justify-between w-full px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm ${
+                className={`relative group flex items-center justify-between w-full px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm cursor-pointer ${
                   selectedCategory === category.id
                     ? 'bg-yellow-600 text-black'
                     : 'hover:bg-[#fffff0] dark:hover:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
@@ -252,14 +257,18 @@ export function FilterPanel({
                 {userRole === 'admin' && (
                   <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button
-                      onClick={() => handleEditCategory(category.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditCategory(category.id);
+                      }}
                       className="p-1 text-yellow-500 hover:text-yellow-300"
                       title="Edit category"
                     >
                       <Edit2 className="h-2 w-2 sm:h-3 sm:w-3" />
                     </button>
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (window.confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
                           onDeleteCategory(category.id);
                         }
@@ -271,7 +280,7 @@ export function FilterPanel({
                     </button>
                   </div>
                 )}
-              </button>
+              </div>
             ))}
           </div>
         </>

@@ -514,15 +514,17 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
                                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                                     item.repair
                                       ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
-                                      : item.employee === 'Missing'
-                                      ? 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30 text-gray-600 dark:text-gray-300'
-                                      : item.employee === 'Office'
+                                      : item.site === 'Out for Repair'
+                                      ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
+                                      : item.site === 'Office'
                                       ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
-                                      : item.employee || item.site
+                                      : item.site === 'Shop'
+                                      ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
+                                      : item.site
                                       ? 'bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-300'
                                       : 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
                                   }`}>
-                                    {item.repair ? 'In Repair' : item.employee === 'Missing' ? 'Missing' : item.employee === 'Office' ? 'Office' : (item.employee || item.site) ? 'In Use' : 'Available'}
+                                    {item.repair ? 'Repair' : item.site === 'Out for Repair' ? 'Out for Repair' : item.site === 'Office' ? 'Office' : item.site === 'Shop' ? 'Available' : item.site ? 'In Use' : 'Available'}
                                   </span>
                                 )}
                               </td>
@@ -679,23 +681,7 @@ export function EquipmentManagement({ onClose, currentUser, asPage = false }: Eq
                                     </button>
                                   </td>
                                   <td className="px-4 py-2">
-                                    {!variant.isActive ? (
-                                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs rounded">Inactive</span>
-                                    ) : (
-                                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                        variant.repair
-                                          ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
-                                          : variant.employee === 'Missing'
-                                          ? 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30 text-gray-600 dark:text-gray-300'
-                                          : variant.employee === 'Office'
-                                          ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
-                                          : variant.employee || variant.site
-                                          ? 'bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-300'
-                                          : 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
-                                      }`}>
-                                        {variant.repair ? 'In Repair' : variant.employee === 'Missing' ? 'Missing' : variant.employee === 'Office' ? 'Office' : (variant.employee || variant.site) ? 'In Use' : 'Available'}
-                                      </span>
-                                    )}
+                                    {/* No status badge for variants */}
                                   </td>
                                   <td className="px-4 py-2">
                                     <div className="flex space-x-1">

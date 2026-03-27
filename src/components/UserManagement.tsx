@@ -25,7 +25,6 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<{
@@ -395,8 +394,10 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                   </button>
                                 )}
                                 
-                                {/* Edit User - Admin and Supervisor Only */}
-                                {(currentUser?.role === 'admin' || currentUser?.role === 'supervisor') && (
+                                {/* Edit User - Admin, Supervisor, and Field User (own account only) */}
+                                {(currentUser?.role === 'admin' || 
+                                  currentUser?.role === 'supervisor' || 
+                                  (currentUser?.role === 'field' && user.id === currentUser?.id)) && (
                                   <button
                                     onClick={() => handleEdit(user)}
                                     className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
@@ -463,26 +464,6 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
                                       required
                                       disabled={currentUser?.role !== 'admin'}
                                     />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-yellow-300 mb-1">Current Password</label>
-                                    <div className="relative">
-                                      <input
-                                        type={showCurrentPassword ? "text" : "password"}
-                                        value={editingUser?.password || ""}
-                                        readOnly
-                                        className="w-full px-3 py-2 pr-10 bg-gray-800 border border-gray-600 rounded-lg text-gray-400"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 transition-colors"
-                                        title={showCurrentPassword ? "Hide password" : "Show password"}
-                                      >
-                                        {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                      </button>
-                                    </div>
-                                    <p className="text-xs text-yellow-600 mt-1">Current password is shown for reference</p>
                                   </div>
                                   <div>
                                     <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">New Password</label>

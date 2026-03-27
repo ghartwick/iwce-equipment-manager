@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, MapPin, Wrench, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { Equipment, Category } from '../types';
 
 interface MobileProductListProps {
@@ -68,12 +68,12 @@ export function MobileProductList({
               return (
                 <React.Fragment key={product.id}>
                   <div 
-                    className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${product.repair ? 'bg-red-100 dark:bg-red-950' : 'bg-[#fffff0] dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                    className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? 'bg-red-100 dark:bg-red-950' : 'bg-[#fffff0] dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                   >
                     {/* Equipment Name - Primary */}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className={`text-sm font-medium ${product.repair ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-yellow-100'} break-words`}>
+                        <h3 className={`text-sm font-medium ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-yellow-100'} break-words`}>
                           {product.name}
                         </h3>
                         {product.description && (
@@ -101,31 +101,19 @@ export function MobileProductList({
                     <div className="space-y-2">
                       {/* Employee */}
                       {product.employee && (
-                        <div className="flex items-center space-x-2">
-                          <User className="h-3 w-3 text-yellow-600" />
+                        <div>
                           <span className="text-yellow-700 dark:text-yellow-300 text-xs">{product.employee}</span>
                         </div>
                       )}
 
                       {/* Site */}
                       {product.site && product.equipmentType === 'heavy' && (
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="h-3 w-3 text-yellow-600" />
+                        <div>
                           <span className="text-yellow-700 dark:text-yellow-300 text-xs">{product.site}</span>
                         </div>
                       )}
 
-                      {/* Repair Description */}
-                      {product.repair && (
-                        <div className="flex items-start space-x-2 mt-2 p-2 bg-red-900 bg-opacity-20 rounded">
-                          <Wrench className="h-3 w-3 text-red-500 mt-0.5" />
-                          <div>
-                            <span className="text-red-400 text-xs font-medium">Alert Details:</span>
-                            <p className="text-red-300 text-xs mt-1">{product.repairDescription || 'Equipment needs attention'}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                                          </div>
                   </div>
                   
                 </React.Fragment>
@@ -198,12 +186,12 @@ export function MobileProductList({
                   return (
                     <React.Fragment key={product.id}>
                       <div 
-                        className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${product.repair ? 'bg-red-100 dark:bg-red-950' : 'bg-[#fffff0] dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                        className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? 'bg-red-100 dark:bg-red-950' : 'bg-[#fffff0] dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                       >
                         {/* Equipment Name - Primary */}
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h3 className={`text-sm font-medium ${product.repair ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-yellow-100'} break-words`}>
+                            <h3 className={`text-sm font-medium ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-yellow-100'} break-words`}>
                               {product.name}
                             </h3>
                           </div>
@@ -228,31 +216,19 @@ export function MobileProductList({
                         <div className="space-y-2">
                           {/* Employee */}
                           {product.employee && (
-                            <div className="flex items-center space-x-2">
-                              <User className="h-3 w-3 text-yellow-600" />
+                            <div>
                               <span className="text-yellow-700 dark:text-yellow-300 text-xs">{product.employee}</span>
                             </div>
                           )}
 
                           {/* Site */}
                           {product.site && (
-                            <div className="flex items-center space-x-2">
-                              <MapPin className="h-3 w-3 text-yellow-600" />
+                            <div>
                               <span className="text-yellow-700 dark:text-yellow-300 text-xs">{product.site}</span>
                             </div>
                           )}
 
-                          {/* Repair Description */}
-                          {product.repair && product.repairDescription && (
-                            <div className="flex items-start space-x-2 mt-2 p-2 bg-red-900 bg-opacity-20 rounded">
-                              <Wrench className="h-3 w-3 text-red-500 mt-0.5" />
-                              <div>
-                                <span className="text-red-400 text-xs font-medium">Alert Details:</span>
-                                <p className="text-red-300 text-xs mt-1">{product.repairDescription}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                                                  </div>
                       </div>
                       
                                           </React.Fragment>

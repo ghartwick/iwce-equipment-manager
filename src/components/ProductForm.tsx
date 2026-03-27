@@ -127,10 +127,19 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     
     setIsSubmitting(true);
     
-    // Automatically set repair flag for Out For Repair or Broken
+    // Only set repair flag based on employee if it's Out For Repair or Broken
+    // Otherwise, respect the manual repair toggle
+    let repairFlag = formData.repair;
+    if (formData.employee === 'Out For Repair' || formData.employee === 'Broken') {
+      repairFlag = true;
+    } else if (formData.employee && formData.employee !== 'Office' && formData.employee !== 'Missing') {
+      // If employee is assigned but not a special status, repair should be false
+      repairFlag = false;
+    }
+    
     const submitData = {
       ...formData,
-      repair: formData.employee === 'Out For Repair' || formData.employee === 'Broken' ? true : formData.repair
+      repair: repairFlag
     };
     
     console.log('Submitting form data:', submitData);
@@ -162,15 +171,17 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     setFormData(prev => ({ ...prev, site: value }));
   };
 
-  const handleInputChange = (field: string, value: string | number | boolean) => {
-    if (field === 'repair' && value === false) {
-      setFormData(prev => ({ 
-        ...prev, 
-        [field]: value,
-        repairDescription: '' 
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // If repair is being turned off, clear employee if it's Out For Repair or Broken
+    if (field === 'repair' && !value) {
+      setFormData(prev => {
+        if (prev.employee === 'Out For Repair' || prev.employee === 'Broken') {
+          return { ...prev, repair: false, employee: '', repairDescription: '' };
+        }
+        return { ...prev, repair: false };
+      });
     }
   };
 
@@ -327,29 +338,31 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             </div>
           )}
 
-          <div>
-            <div className="flex items-center space-x-3">
-              <span className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300">
-                Alert
-              </span>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.repair}
-                  onChange={(e) => handleInputChange('repair', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 dark:bg-black border border-yellow-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[&quot;&quot;] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
-                <span className="ml-3 text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300">
-                  {formData.repair ? 'Yes' : 'No'}
+          {allowFullEdit && (
+            <div>
+              <div className="flex items-center space-x-3">
+                <span className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300">
+                  Alert
                 </span>
-              </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.repair}
+                    onChange={(e) => handleInputChange('repair', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-black border border-yellow-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[&quot;&quot;] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                  <span className="ml-3 text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300">
+                    {formData.repair ? 'Yes' : 'No'}
+                  </span>
+                </label>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
 
-        {formData.repair && (
+        {allowFullEdit && formData.repair && (
           <div className="mt-2 sm:mt-3">
             <textarea
               rows={3}

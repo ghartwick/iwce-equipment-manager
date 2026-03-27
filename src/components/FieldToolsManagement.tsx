@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Edit2, Trash2, Plus, Clock, QrCode } from 'lucide-react';
 import { Equipment } from '../types';
 import { useInventory } from '../hooks/useInventory';
@@ -15,6 +15,7 @@ interface FieldToolsManagementProps {
 export function FieldToolsManagement({ onClose, currentUser, asPage = false }: FieldToolsManagementProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTool, setEditingTool] = useState<Equipment | null>(null);
+  const editFormRef = useRef<HTMLDivElement>(null);
   const [showLog, setShowLog] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [selectedTool, setSelectedTool] = useState<Equipment | null>(null);
@@ -84,16 +85,20 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
     }
   };
 
+  const handleEdit = (tool: Equipment) => {
+    setEditingTool(tool);
+    // Scroll to the form after it renders
+    setTimeout(() => {
+      editFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
+
   const handleDeleteTool = async (tool: Equipment) => {
     if (window.confirm(`Are you sure you want to delete "${tool.name}"?`)) {
       await deleteProduct(tool.id);
     }
   };
 
-  const cancelForm = () => {
-    setShowAddForm(false);
-    setEditingTool(null);
-  };
 
   const handleViewLog = (tool: Equipment) => {
     setSelectedTool(tool);
@@ -159,18 +164,13 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
           </div>
 
           {/* Add/Edit Form */}
-          {(showAddForm || editingTool) && (
+          {showAddForm && (
             <div className="mb-4">
               <ProductForm
-                product={editingTool}
-                onSubmit={editingTool ? (data) => handleUpdateTool(data) : handleAddTool}
-                onCancel={() => {
-                  setShowAddForm(false);
-                  setEditingTool(null);
-                }}
-                onDelete={editingTool && currentUser?.role === 'admin' ? () => handleDeleteTool(editingTool) : undefined}
+                product={null}
+                onSubmit={handleAddTool}
+                onCancel={() => setShowAddForm(false)}
                 userRole={currentUser?.role === 'admin' ? 'admin' : currentUser?.role === 'supervisor' ? 'supervisor' : 'field'}
-                allowFullEdit={!!editingTool}
               />
             </div>
           )}
@@ -233,49 +233,67 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
                             </span>
                           </td>
                         </tr>
-                        {tools.map((tool) => (
-                          <tr key={tool.id} className="border-t border-yellow-200 dark:border-yellow-800">
-                            <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">{tool.name}</td>
-                            <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">{categories.find(c => c.id === tool.category)?.name || tool.category || 'Uncategorized'}</td>
-                            <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">{tool.employee}</td>
-                            <td className="px-4 py-2">
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                tool.repair
-                                  ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
-                                  : tool.employee === 'Missing'
-                                  ? 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30 text-gray-600 dark:text-gray-300'
-                                  : tool.employee === 'Office'
-                                  ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
-                                  : tool.employee
-                                  ? 'bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-300'
-                                  : 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
-                              }`}>
-                                {tool.repair ? 'In Repair' : tool.employee === 'Missing' ? 'Missing' : tool.employee === 'Office' ? 'Office' : tool.employee ? 'In Use' : 'Available'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2">
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => setEditingTool(tool)}
-                                  className="px-3 py-1 text-xs bg-yellow-600 text-black rounded hover:bg-yellow-500"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => { setSelectedTool(tool); setShowQR(true); }}
-                                  className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-500"
-                                >
-                                  QR
-                                </button>
-                                <button
-                                  onClick={() => { setSelectedTool(tool); setShowLog(true); }}
-                                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-500"
-                                >
-                                  History
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
+                          {tools.map((tool) => (
+                          <React.Fragment key={tool.id}>
+                            <tr className="border-t border-yellow-200 dark:border-yellow-800">
+                              <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">{tool.name}</td>
+                              <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">{categories.find(c => c.id === tool.category)?.name || tool.category || 'Uncategorized'}</td>
+                              <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">{tool.employee}</td>
+                              <td className="px-4 py-2">
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  tool.repair
+                                    ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
+                                    : tool.employee === 'Missing'
+                                    ? 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30 text-gray-600 dark:text-gray-300'
+                                    : tool.employee === 'Office'
+                                    ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
+                                    : tool.employee
+                                    ? 'bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-300'
+                                    : 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
+                                }`}>
+                                  {tool.repair ? 'Repair' : tool.employee === 'Missing' ? 'Missing' : tool.employee === 'Office' ? 'Office' : tool.employee ? 'In Use' : 'Available'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2">
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleEdit(tool)}
+                                    className="px-3 py-1 text-xs bg-yellow-600 text-black rounded hover:bg-yellow-500"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => { setSelectedTool(tool); setShowQR(true); }}
+                                    className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-500"
+                                  >
+                                    QR
+                                  </button>
+                                  <button
+                                    onClick={() => { setSelectedTool(tool); setShowLog(true); }}
+                                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-500"
+                                  >
+                                    History
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            {editingTool?.id === tool.id && (
+                              <tr>
+                                <td colSpan={5} className="px-0 py-0">
+                                  <div ref={editFormRef} className="p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700">
+                                    <ProductForm
+                                      product={editingTool}
+                                      onSubmit={handleUpdateTool}
+                                      onCancel={() => setEditingTool(null)}
+                                      onDelete={currentUser?.role === 'admin' ? () => handleDeleteTool(editingTool) : undefined}
+                                      userRole={currentUser?.role === 'admin' ? 'admin' : currentUser?.role === 'supervisor' ? 'supervisor' : 'field'}
+                                      allowFullEdit={true}
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         ))}
                       </React.Fragment>
                     ));
@@ -356,16 +374,15 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
             )}
           </div>
 
-          {/* Add/Edit Form */}
-          {(showAddForm || editingTool) && (
+          {/* Add Form */}
+          {showAddForm && (
             <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-30 rounded-lg">
               <ProductForm
                 categories={categories}
-                product={editingTool}
-                onSubmit={editingTool ? (data) => handleUpdateTool(data) : handleAddTool}
-                onCancel={cancelForm}
+                product={null}
+                onSubmit={handleAddTool}
+                onCancel={() => setShowAddForm(false)}
                 userRole={currentUser?.role === 'admin' ? 'admin' : currentUser?.role === 'supervisor' ? 'supervisor' : 'field'}
-                allowFullEdit={true}
               />
             </div>
           )}
@@ -393,14 +410,15 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
                 </thead>
                 <tbody>
                   {filteredTools.map((tool) => (
-                    <tr key={tool.id} className="border-t border-yellow-200 dark:border-yellow-800">
-                      <td className="px-4 py-2">
-                        <span className="text-gray-900 dark:text-yellow-100">{tool.name}</span>
-                      </td>
-                      <td className="px-4 py-2 text-gray-600 dark:text-yellow-600">{categories.find(c => c.id === tool.category)?.name || tool.category || 'Uncategorized'}</td>
-                      <td className="px-4 py-2 text-gray-600 dark:text-yellow-600">{tool.employee || '-'}</td>
-                      <td className="px-4 py-2">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    <React.Fragment key={tool.id}>
+                      <tr className="border-t border-yellow-200 dark:border-yellow-800">
+                        <td className="px-4 py-2">
+                          <span className="text-gray-900 dark:text-yellow-100">{tool.name}</span>
+                        </td>
+                        <td className="px-4 py-2 text-gray-600 dark:text-yellow-600">{categories.find(c => c.id === tool.category)?.name || tool.category || 'Uncategorized'}</td>
+                        <td className="px-4 py-2 text-gray-600 dark:text-yellow-600">{tool.employee || '-'}</td>
+                        <td className="px-4 py-2">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
                           tool.repair
                             ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
                             : tool.employee === 'Missing'
@@ -411,18 +429,18 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
                             ? 'bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-300'
                             : 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
                         }`}>
-                          {tool.repair ? 'In Repair' : tool.employee === 'Missing' ? 'Missing' : tool.employee === 'Office' ? 'Office' : tool.employee ? 'In Use' : 'Available'}
+                          {tool.repair ? 'Repair' : tool.employee === 'Missing' ? 'Missing' : tool.employee === 'Office' ? 'Office' : tool.employee ? 'In Use' : 'Available'}
                         </span>
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => setEditingTool(tool)}
-                            className="p-1 text-yellow-600 hover:text-yellow-500"
-                            title="Edit"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
+                        </td>
+                        <td className="px-4 py-2">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleEdit(tool)}
+                              className="p-1 text-yellow-600 hover:text-yellow-500"
+                              title="Edit"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
                           <button
                             onClick={() => handleViewLog(tool)}
                             className="p-1 text-blue-600 hover:text-blue-500"
@@ -449,6 +467,24 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
                         </div>
                       </td>
                     </tr>
+                      {editingTool?.id === tool.id && (
+                        <tr>
+                          <td colSpan={5} className="px-0 py-0">
+                            <div ref={editFormRef} className="p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700">
+                              <ProductForm
+                                categories={categories}
+                                product={editingTool}
+                                onSubmit={handleUpdateTool}
+                                onCancel={() => setEditingTool(null)}
+                                onDelete={currentUser?.role === 'admin' ? () => handleDeleteTool(editingTool) : undefined}
+                                userRole={currentUser?.role === 'admin' ? 'admin' : currentUser?.role === 'supervisor' ? 'supervisor' : 'field'}
+                                allowFullEdit={true}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

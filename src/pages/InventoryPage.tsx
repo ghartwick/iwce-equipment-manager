@@ -34,9 +34,25 @@ function InventoryPage() {
   const [showAlerts, setShowAlerts] = useState(false);
   const alertsRef = useRef<HTMLDivElement>(null);
 
-  // Restore scroll position when component mounts
+  // Restore scroll position and filter state when component mounts
   useEffect(() => {
     const savedPosition = sessionStorage.getItem('inventoryScrollPosition');
+    const savedSearchTerm = sessionStorage.getItem('inventorySearchTerm');
+    const savedSelectedCategory = sessionStorage.getItem('inventorySelectedCategory');
+    
+    // Restore search term
+    if (savedSearchTerm) {
+      setSearchTerm(savedSearchTerm);
+      sessionStorage.removeItem('inventorySearchTerm');
+    }
+    
+    // Restore selected category
+    if (savedSelectedCategory) {
+      setSelectedCategory(savedSelectedCategory);
+      sessionStorage.removeItem('inventorySelectedCategory');
+    }
+    
+    // Restore scroll position
     if (savedPosition) {
       const position = parseInt(savedPosition, 10);
       // Use setTimeout to ensure the page has rendered before scrolling
@@ -46,6 +62,22 @@ function InventoryPage() {
       }, 100);
     }
   }, []);
+
+  // Save inventory state when navigating away
+  useEffect(() => {
+    const saveInventoryState = () => {
+      sessionStorage.setItem('inventorySearchTerm', searchTerm);
+      sessionStorage.setItem('inventorySelectedCategory', selectedCategory);
+    };
+    
+    // Save state when component unmounts or when navigating
+    window.addEventListener('beforeunload', saveInventoryState);
+    
+    return () => {
+      window.removeEventListener('beforeunload', saveInventoryState);
+      saveInventoryState();
+    };
+  }, [searchTerm, selectedCategory]);
 
   // Handle custom events from Layout component
   useEffect(() => {
@@ -88,9 +120,15 @@ function InventoryPage() {
   }, [showAlerts]);
 
   const filteredProducts = products.filter(product => {
+    const getCategoryName = (categoryId: string) => {
+      const category = categories.find(cat => cat.id === categoryId);
+      return category ? category.name.toLowerCase() : categoryId.toLowerCase();
+    };
+    
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.site.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         getCategoryName(product.category).includes(searchTerm.toLowerCase()) ||
                          (product.repair ? 'yes' : 'no').includes(searchTerm.toLowerCase()) ||
                          (product.repair && product.repairDescription.toLowerCase().includes(searchTerm.toLowerCase()));
     

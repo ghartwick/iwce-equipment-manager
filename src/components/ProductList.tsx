@@ -161,15 +161,15 @@ export function ProductList({
                           onClick={() => onEdit?.(product)}
                           className={`
                             ${selectedEquipmentId === product.id 
-                              ? (product.repair ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
-                              : (product.repair ? "bg-red-100 dark:bg-red-950" : "bg-[#fffff0] dark:bg-black")
+                              ? ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
+                              : ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-100 dark:bg-red-950" : "bg-[#fffff0] dark:bg-black")
                             } 
                             transition-all duration-200 cursor-pointer hover:opacity-80
                           `}
                         >
                           <td className="w-[70%] px-2 py-4">
                             <div className="max-w-xs">
-                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
+                              <div className={`text-xs sm:text-sm font-medium ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
                                 {product.name}
                                 {product.description && (
                                   <span className="text-gray-600 dark:text-gray-400 ml-2">- {product.description}</span>
@@ -178,11 +178,6 @@ export function ProductList({
                               <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600 mt-1">
                                 {product.employee && <div className="break-words">{product.employee}</div>}
                                 {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
-                                {product.repair && (
-                                  <div className="text-xs text-red-400 mt-1 italic break-words">
-                                    Alert: {product.repairDescription || 'Equipment needs attention'}
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </td>
@@ -238,15 +233,15 @@ export function ProductList({
                           onClick={() => onEdit?.(product)}
                           className={`
                             ${selectedEquipmentId === product.id 
-                              ? (product.repair ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
-                              : (product.repair ? "bg-red-100 dark:bg-red-950" : "bg-[#fffff0] dark:bg-black")
+                              ? ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
+                              : ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-100 dark:bg-red-950" : "bg-[#fffff0] dark:bg-black")
                             } 
                             transition-all duration-200 cursor-pointer hover:opacity-80
                           `}
                         >
                           <td className="w-[70%] px-2 py-4">
                             <div className="max-w-xs">
-                              <div className={`text-xs sm:text-sm font-medium ${product.repair ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
+                              <div className={`text-xs sm:text-sm font-medium ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
                                 {product.name}
                                 {product.description && (
                                   <span className="text-gray-600 dark:text-gray-400 ml-2">- {product.description}</span>
@@ -255,11 +250,6 @@ export function ProductList({
                               <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600 mt-1">
                                 {product.employee && <div className="break-words">{product.employee}</div>}
                                 {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
-                                {product.repair && (
-                                  <div className="text-xs text-red-400 mt-1 italic break-words">
-                                    Alert: {product.repairDescription || 'Equipment needs attention'}
-                                  </div>
-                                )}
                               </div>
                             </div>
                           </td>

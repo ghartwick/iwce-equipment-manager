@@ -1052,10 +1052,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               />
             </div>
 
-            {/* Total Hours */}
+            {/* Worked Hours */}
             <div className="flex flex-col flex-shrink-0 min-w-0">
               <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
-                Total Hours
+                Worked Hours
               </label>
               <input
                 type="text"
@@ -1078,9 +1078,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         <div id="work-entries-container" className="space-y-4">
           <h3 className="text-yellow-600 dark:text-yellow-400 font-medium">Work Entries</h3>
           {workEntries.map((entry, index) => (
-            <div id={`work-entry-${entry.id}`}>
+            <div key={entry.id} id={`work-entry-${entry.id}`}>
               <WorkEntrySection 
-              key={entry.id} 
               entry={entry} 
               entryIndex={index}
               updateEntryField={updateEntryField}

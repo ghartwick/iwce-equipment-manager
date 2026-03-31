@@ -145,7 +145,7 @@ export default function TimecardPage() {
       case 'draft': return 'Saved';
       case 'submitted': return 'Submitted';
       case 'rejected': return 'Rejected';
-            default: return status;
+      default: return status || 'Draft';
     }
   };
 

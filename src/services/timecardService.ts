@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserManagementService } from './userManagementService';
 
@@ -23,6 +23,9 @@ export interface TimeEntry {
   entryNumber?: number;
   status: 'draft' | 'submitted' | 'rejected';
   submittedAt?: Date;
+  submittedBy?: string; // Original submitter
+  lastEditedBy?: string; // Last editor (supervisor/admin)
+  lastEditedAt?: Date; // When it was last edited by supervisor/admin
   isLocked: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -67,12 +70,18 @@ class TimecardService {
   }
 
   // Update time entry
-  async updateTimeEntry(id: string, updates: Partial<TimeEntry>): Promise<void> {
+  async updateTimeEntry(id: string, updates: Partial<TimeEntry>, editedBy?: string): Promise<void> {
     const docRef = doc(db, this.collection, id);
     const updateData: any = {
       ...updates,
       updatedAt: Timestamp.fromDate(new Date()),
     };
+
+    // If edited by supervisor/admin, track the edit
+    if (editedBy) {
+      updateData.lastEditedBy = editedBy;
+      updateData.lastEditedAt = Timestamp.fromDate(new Date());
+    }
 
     // Convert dates to timestamps only if they exist
     if (updates.date) {
@@ -91,6 +100,7 @@ class TimecardService {
       const submittedAt = (updates.submittedAt as any).toDate ? (updates.submittedAt as any).toDate() : updates.submittedAt;
       updateData.submittedAt = Timestamp.fromDate(submittedAt as Date);
     }
+    // Note: lastEditedAt is set above when editedBy is provided, so we don't need to handle it here
 
     await updateDoc(docRef, updateData);
   }
@@ -98,6 +108,31 @@ class TimecardService {
   // Delete time entry
   async deleteTimeEntry(id: string): Promise<void> {
     await deleteDoc(doc(db, this.collection, id));
+  }
+
+  // Get a single time entry by ID
+  async getTimeEntry(id: string): Promise<TimeEntry> {
+    const docRef = doc(db, this.collection, id);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      throw new Error('Time entry not found');
+    }
+    
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      ...data,
+      date: data.date.toDate(),
+      clockIn: data.clockIn.toDate(),
+      clockOut: data.clockOut.toDate(),
+      submittedAt: data.submittedAt?.toDate(),
+      submittedBy: data.submittedBy,
+      lastEditedBy: data.lastEditedBy,
+      lastEditedAt: data.lastEditedAt?.toDate(),
+      createdAt: data.createdAt.toDate(),
+      updatedAt: data.updatedAt.toDate(),
+    } as TimeEntry;
   }
 
   // Get time entries for a user
@@ -118,6 +153,9 @@ class TimecardService {
         clockIn: data.clockIn.toDate(),
         clockOut: data.clockOut.toDate(),
         submittedAt: data.submittedAt?.toDate(),
+        submittedBy: data.submittedBy,
+        lastEditedBy: data.lastEditedBy,
+        lastEditedAt: data.lastEditedAt?.toDate(),
         createdAt: data.createdAt.toDate(),
         updatedAt: data.updatedAt.toDate(),
       } as TimeEntry;
@@ -216,6 +254,9 @@ class TimecardService {
         clockIn: data.clockIn.toDate(),
         clockOut: data.clockOut.toDate(),
         submittedAt: data.submittedAt?.toDate(),
+        submittedBy: data.submittedBy,
+        lastEditedBy: data.lastEditedBy,
+        lastEditedAt: data.lastEditedAt?.toDate(),
         createdAt: data.createdAt.toDate(),
         updatedAt: data.updatedAt.toDate(),
       } as TimeEntry;
@@ -235,12 +276,34 @@ class TimecardService {
   }
 
   // Submit time entry
-  async submitTimeEntry(id: string): Promise<void> {
+  async submitTimeEntry(id: string, userId?: string): Promise<void> {
+    const entry = await this.getTimeEntry(id);
     await this.updateTimeEntry(id, {
       status: 'submitted',
       isLocked: true,
       submittedAt: new Date(),
+      submittedBy: userId || entry.userId,
     });
+  }
+
+  // Fix entries where userId was incorrectly changed (admin utility)
+  async fixOrphanedEntries(validUserIds: string[]): Promise<number> {
+    const q = query(collection(db, this.collection));
+    const snapshot = await getDocs(q);
+    let fixed = 0;
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      const needsFix =
+        // Case 1: userId is not a valid user but submittedBy is
+        (!validUserIds.includes(data.userId) && data.submittedBy && validUserIds.includes(data.submittedBy)) ||
+        // Case 2: userId doesn't match submittedBy (card was reassigned to wrong user)
+        (data.submittedBy && data.userId !== data.submittedBy && validUserIds.includes(data.submittedBy));
+      if (needsFix) {
+        await updateDoc(doc(db, this.collection, docSnap.id), { userId: data.submittedBy });
+        fixed++;
+      }
+    }
+    return fixed;
   }
 
   // Calculate hours between clock in and clock out

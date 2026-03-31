@@ -563,6 +563,11 @@ export default function TimecardPage() {
                                                 (Travel: {entry.travelHours})
                                               </span>
                                             )}
+                                            {entry.lastEditedBy && (
+                                              <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt, 'MMM d, yyyy HH:mm') : ''}`}>
+                                                Edited by {entry.lastEditedBy}
+                                              </span>
+                                            )}
                                           </div>
                                           
                                           {/* Expanded Details */}
@@ -793,6 +798,11 @@ export default function TimecardPage() {
                                           {entry.travelHours && entry.travelHours > 0 && (
                                             <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">
                                               (Travel: {entry.travelHours})
+                                            </span>
+                                          )}
+                                          {entry.lastEditedBy && (
+                                            <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt, 'MMM d, yyyy HH:mm') : ''}`}>
+                                              Edited by {entry.lastEditedBy}
                                             </span>
                                           )}
                                         </div>

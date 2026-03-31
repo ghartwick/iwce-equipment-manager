@@ -705,14 +705,15 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
     // Create clean entry data without any undefined/null values
     const cleanEntryData: any = {
-      userId: user.id,
+      // Preserve original userId for existing entries
+      userId: entry?.userId || user.id,
       date: selectedDate,
       clockIn: clockInDate,
       clockOut: clockOutDate,
       hours,
       travelHours: parseFloat(travelHours) || 0,
       job: job === 'Other' ? customSite.trim() : job,
-      status: entry?.status || 'draft',
+      // Don't set status here - let it be preserved from the existing entry if needed
       isLocked: entry?.isLocked || false,
     };
 
@@ -742,14 +743,22 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
     // Add optional fields only if they exist
     if (entry?.submittedAt) cleanEntryData.submittedAt = entry.submittedAt;
+    // Always preserve status for existing entries
+    if (entry?.status) cleanEntryData.status = entry.status;
+    if (entry?.isLocked !== undefined) cleanEntryData.isLocked = entry.isLocked;
+    if (entry?.submittedBy) cleanEntryData.submittedBy = entry.submittedBy;
+    if (entry?.lastEditedBy) cleanEntryData.lastEditedBy = entry.lastEditedBy;
+    if (entry?.lastEditedAt) cleanEntryData.lastEditedAt = entry.lastEditedAt;
 
-    // Final cleanup - remove any remaining undefined/null values but keep Date objects
-    const finalData = JSON.parse(JSON.stringify(cleanEntryData));
-    // Ensure date remains a Date object
-    finalData.date = selectedDate;
-    finalData.clockIn = clockInDate;
-    finalData.clockOut = clockOutDate;
-    if (entry?.submittedAt) finalData.submittedAt = entry.submittedAt;
+    // Create final data object without JSON stringify/parse to preserve all fields
+    const finalData: any = {
+      ...cleanEntryData,
+      date: selectedDate,
+      clockIn: clockInDate,
+      clockOut: clockOutDate,
+      // Add flag to indicate this is an update, not a submit
+      isUpdate: true,
+    };
 
     onSubmit(finalData);
   };

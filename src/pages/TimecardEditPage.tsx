@@ -11,7 +11,7 @@ export default function TimecardEditPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { canEditEntry, updateTimeEntry } = useTimecard();
+  const { canEditEntry, updateTimeEntry, submitTimeEntry } = useTimecard();
 
   const [entry, setEntry] = useState<TimeEntry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,8 +56,7 @@ export default function TimecardEditPage() {
     return u.name || u.username || '';
   };
 
-  const handleSubmit = async (entryData: any) => {
-    if (!user) return;
+  const handleSubmit = async (entryData: Partial<TimeEntry> & { isUpdate?: boolean }) => {
     try {
       if (entryId === 'new') {
         // Create new entry
@@ -65,11 +64,33 @@ export default function TimecardEditPage() {
       } else {
         // Update existing entry
         if (!entry) return;
-        // Preserve certain fields if supervisor editing
-        const filteredPreservedFields = user.role === 'supervisor' && entry.userId !== user.id
-          ? {}
-          : {};
-        await updateTimeEntry(entry.id!, { ...entryData, ...filteredPreservedFields });
+        
+        // Check if this is a submit action (only if isUpdate flag is not set)
+        const isSubmitting = entryData.status === 'submitted' && !entryData.isUpdate;
+        
+        if (isSubmitting) {
+          // For submit action, use submitTimeEntry to preserve original submitter
+          const submitUserId = entry.submittedBy || entry.userId;
+          await submitTimeEntry(entry.id!, submitUserId);
+        } else {
+          // For regular update
+          const isEditingOthersCard = entry.userId !== user?.id;
+          const editedBy = isEditingOthersCard ? user?.username : undefined;
+
+          // Remove the isUpdate flag before sending to the database
+          const { isUpdate, ...dataToUpdate } = entryData;
+
+          // Always preserve original critical fields when editing someone else's card
+          const preservedFields = isEditingOthersCard ? {
+            userId: entry.userId,
+            status: entry.status,
+            isLocked: entry.isLocked,
+            submittedAt: entry.submittedAt,
+            submittedBy: entry.submittedBy || entry.userId,
+          } : {};
+
+          await updateTimeEntry(entry.id!, { ...dataToUpdate, ...preservedFields }, editedBy);
+        }
       }
       navigate('/timecard');
     } catch (err: any) {

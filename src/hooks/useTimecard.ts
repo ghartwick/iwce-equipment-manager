@@ -62,14 +62,20 @@ export const useTimecard = () => {
   };
 
   // Update time entry
-  const updateTimeEntry = async (id: string, updates: Partial<TimeEntry>) => {
+  const updateTimeEntry = async (id: string, updates: Partial<TimeEntry>, editedBy?: string) => {
     try {
-      await timecardService.updateTimeEntry(id, updates);
+      await timecardService.updateTimeEntry(id, updates, editedBy);
       
       // Update local state
       setTimeEntries(prev => 
         prev.map(entry => 
-          entry.id === id ? { ...entry, ...updates, updatedAt: new Date() } : entry
+          entry.id === id ? { 
+            ...entry, 
+            ...updates, 
+            updatedAt: new Date(),
+            lastEditedBy: editedBy || entry.lastEditedBy,
+            lastEditedAt: editedBy ? new Date() : entry.lastEditedAt
+          } : entry
         )
       );
     } catch (err) {
@@ -92,15 +98,15 @@ export const useTimecard = () => {
   };
 
   // Submit time entry
-  const submitTimeEntry = async (id: string) => {
+  const submitTimeEntry = async (id: string, userId?: string) => {
     try {
-      await timecardService.submitTimeEntry(id);
+      await timecardService.submitTimeEntry(id, userId);
       
       // Update local state
       setTimeEntries(prev => 
         prev.map(entry => 
           entry.id === id 
-            ? { ...entry, status: 'submitted', isLocked: true, submittedAt: new Date(), updatedAt: new Date() }
+            ? { ...entry, status: 'submitted', isLocked: true, submittedAt: new Date(), updatedAt: new Date(), submittedBy: userId || entry.userId }
             : entry
         )
       );

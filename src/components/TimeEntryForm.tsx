@@ -713,7 +713,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       hours,
       travelHours: parseFloat(travelHours) || 0,
       job: job === 'Other' ? customSite.trim() : job,
-      // Don't set status here - let it be preserved from the existing entry if needed
+      status: entry?.status || 'draft',
       isLocked: entry?.isLocked || false,
     };
 

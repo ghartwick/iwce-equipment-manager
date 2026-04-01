@@ -656,7 +656,7 @@ export default function TimecardPage() {
                                               </span>
                                             )}
                                             {entry.lastEditedBy && (
-                                              <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt, 'MMM d, yyyy HH:mm') : ''}`}>
+                                              <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt instanceof Date ? entry.lastEditedAt : (entry.lastEditedAt as any).toDate(), 'MMM d, yyyy HH:mm') : ''}`}>
                                                 Edited by {entry.lastEditedBy}
                                               </span>
                                             )}
@@ -893,7 +893,7 @@ export default function TimecardPage() {
                                             </span>
                                           )}
                                           {entry.lastEditedBy && (
-                                            <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt, 'MMM d, yyyy HH:mm') : ''}`}>
+                                            <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt instanceof Date ? entry.lastEditedAt : (entry.lastEditedAt as any).toDate(), 'MMM d, yyyy HH:mm') : ''}`}>
                                               Edited by {entry.lastEditedBy}
                                             </span>
                                           )}

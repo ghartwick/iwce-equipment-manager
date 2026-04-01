@@ -384,7 +384,9 @@ class TimecardService {
       return true;
     }
     // Field users can only edit their own draft entries (not submitted or locked)
-    if (user.role === 'field' && entry.userId === user.id && entry.status === 'draft' && !entry.isLocked) return true;
+    // Treat undefined/null status as draft
+    const isDraft = !entry.status || entry.status === 'draft';
+    if (user.role === 'field' && entry.userId === user.id && isDraft && !entry.isLocked) return true;
     return false;
   }
 
@@ -392,8 +394,9 @@ class TimecardService {
   canViewEntry(entry: TimeEntry, user: User): boolean {
     // Admins and supervisors can always view entries
     if (user.role === 'admin' || user.role === 'supervisor') return true;
-    // Field users can only view their own draft entries (submitted entries are locked from view)
-    if (user.role === 'field' && entry.userId === user.id && entry.status === 'draft' && !entry.isLocked) return true;
+    // Field users can only view their own draft/unsaved entries
+    const isDraftOrUnsaved = !entry.status || entry.status === 'draft';
+    if (user.role === 'field' && entry.userId === user.id && isDraftOrUnsaved && !entry.isLocked) return true;
     return false;
   }
 

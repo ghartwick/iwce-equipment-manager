@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, MapPin } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, MapPin, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { Site, siteManagementService } from '../services/siteManagementService';
 
 interface SiteManagementProps {
@@ -23,6 +23,7 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
     description: '',
     isActive: true
   });
+  const [showInactive, setShowInactive] = useState(false);
  
 
   useEffect(() => {
@@ -98,6 +99,9 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
     site.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     site.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  const activeSites = filteredSites.filter(site => site.isActive);
+  const inactiveSites = filteredSites.filter(site => !site.isActive);
 
 
   if (loading) {
@@ -251,74 +255,127 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSites.map((site) => (
-                      <React.Fragment key={site.id}>
-                        <tr className={`border-b border-yellow-200 dark:border-yellow-800 ${
-                          site.isActive
-                            ? 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10'
-                            : 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30'
-                        }`}>
-                          <td className="px-4 py-3">
-                            <div>
-                              <div className={`font-medium ${site.isActive ? 'text-gray-900 dark:text-yellow-100' : 'text-gray-500 dark:text-gray-400'}`}>
-                                {site.name}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                Created: {site.createdAt.toLocaleDateString()}
-                                {site.createdBy && ` by ${site.createdBy}`}
-                              </div>
+                    {/* Active Sites */}
+                    {activeSites.map((site) => (
+                      <tr key={site.id} className="border-b border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10">
+                        <td className="px-4 py-3">
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-yellow-100">
+                              {site.name}
                             </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-sm ${site.isActive ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500'}`}>
-                              {site.description || '-'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <div className="flex items-center justify-center space-x-1">
-                              <span className="text-xs text-yellow-500">
-                                {(site.codes || []).length}
-                              </span>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Created: {site.createdAt.toLocaleDateString()}
+                              {site.createdBy && ` by ${site.createdBy}`}
                             </div>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <label className="inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={site.isActive}
-                                onChange={() => handleToggleActive(site)}
-                                className="sr-only"
-                              />
-                              <div className={`relative w-11 h-6 rounded-full transition-colors ${
-                                site.isActive ? 'bg-yellow-500' : 'bg-gray-300'
-                              }`}>
-                                <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full transition-transform ${
-                                  site.isActive ? 'translate-x-5' : 'translate-x-0'
-                                }`} />
-                              </div>
-                            </label>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-center space-x-2">
-                              <button
-                                onClick={() => handleEdit(site)}
-                                className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
-                                title="Edit site"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(site)}
-                                className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
-                                title="Delete site"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-yellow-700 dark:text-yellow-600">
+                            {site.description || '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-xs text-yellow-500">
+                            {(site.codes || []).length}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleToggleActive(site)}
+                            className="inline-flex items-center justify-center w-6 h-6 rounded bg-green-500 text-white hover:bg-green-600 transition-colors"
+                            title="Active"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => handleEdit(site)}
+                              className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
+                              title="Edit site"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(site)}
+                              className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
+                              title="Delete site"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    
+                    {/* Inactive Sites Section */}
+                    {inactiveSites.length > 0 && (
+                      <>
+                        <tr>
+                          <td colSpan={5} className="px-4 py-2 bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30">
+                            <button
+                              onClick={() => setShowInactive(!showInactive)}
+                              className="flex items-center space-x-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                            >
+                              {showInactive ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                              <span>Inactive Sites ({inactiveSites.length})</span>
+                            </button>
                           </td>
                         </tr>
-                      </React.Fragment>
-                    ))}
+                        {showInactive && inactiveSites.map((site) => (
+                          <tr key={site.id} className="border-b border-yellow-200 dark:border-yellow-800 bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30">
+                            <td className="px-4 py-3">
+                              <div>
+                                <div className="font-medium text-gray-500 dark:text-gray-400">
+                                  {site.name}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Created: {site.createdAt.toLocaleDateString()}
+                                  {site.createdBy && ` by ${site.createdBy}`}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-sm text-gray-500">
+                                {site.description || '-'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="text-xs text-gray-500">
+                                {(site.codes || []).length}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => handleToggleActive(site)}
+                                className="inline-flex items-center justify-center w-6 h-6 rounded border-2 border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors"
+                                title="Inactive (click to activate)"
+                              >
+                              </button>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center justify-center space-x-2">
+                                <button
+                                  onClick={() => handleEdit(site)}
+                                  className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
+                                  title="Edit site"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(site)}
+                                  className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
+                                  title="Delete site"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </>
+                    )}
                   </tbody>
                 </table>
               </div>

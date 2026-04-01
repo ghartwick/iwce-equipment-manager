@@ -16,6 +16,7 @@ export default function TimecardEditPage() {
   const [entry, setEntry] = useState<TimeEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const [userManagementService] = useState(() => new UserManagementService());
 
   useEffect(() => {
@@ -59,6 +60,19 @@ export default function TimecardEditPage() {
   const handleSubmit = async (entryData: Partial<TimeEntry> & { isUpdate?: boolean }) => {
     try {
       if (entryId === 'new') {
+        // For field users, check for duplicate (same user + date + site) before creating
+        if (user?.role === 'field') {
+          const job = (entryData as any).job;
+          const date = (entryData as any).date as Date;
+          if (job && date) {
+            const existing = await timecardService.findDuplicateEntry(user.id, date, job);
+            if (existing) {
+              setDuplicateError(`A time card for "${job}" already exists for this date. Redirecting to existing card...`);
+              setTimeout(() => navigate(`/timecard/edit/${existing.id}`), 1500);
+              return;
+            }
+          }
+        }
         // Create new entry
         await timecardService.createTimeEntry(entryData as Omit<TimeEntry, 'id' | 'createdAt' | 'updatedAt'>);
       } else {
@@ -136,6 +150,11 @@ export default function TimecardEditPage() {
   return (
     <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-4">
       <div className="max-w-5xl mx-auto">
+        {duplicateError && (
+          <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900 border border-yellow-500 rounded-lg text-yellow-800 dark:text-yellow-200 text-sm">
+            {duplicateError}
+          </div>
+        )}
         <TimeEntryForm
           selectedDate={entryDate}
           entry={entry || undefined}

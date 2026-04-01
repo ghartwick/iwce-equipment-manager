@@ -110,6 +110,28 @@ class TimecardService {
     await deleteDoc(doc(db, this.collection, id));
   }
 
+  // Find an existing entry for the same user, date, and site (to prevent duplicates)
+  async findDuplicateEntry(userId: string, date: Date, job: string): Promise<TimeEntry | null> {
+    const q = query(
+      collection(db, this.collection),
+      where('userId', '==', userId),
+      where('job', '==', job)
+    );
+    const snapshot = await getDocs(q);
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      const entryDate = data.date?.toDate ? data.date.toDate() : new Date(data.date);
+      const same =
+        entryDate.getFullYear() === date.getFullYear() &&
+        entryDate.getMonth() === date.getMonth() &&
+        entryDate.getDate() === date.getDate();
+      if (same) {
+        return { id: docSnap.id, ...data } as TimeEntry;
+      }
+    }
+    return null;
+  }
+
   // Get a single time entry by ID
   async getTimeEntry(id: string): Promise<TimeEntry> {
     const docRef = doc(db, this.collection, id);

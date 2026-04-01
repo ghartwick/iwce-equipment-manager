@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Edit2, Trash2, X, Check, MapPin, Upload, Code2, ChevronDown, ChevronUp } from 'lucide-react';
-import { Site, SiteCode, siteManagementService } from '../services/siteManagementService';
-import { parseExcelFile } from '../utils/excelImport';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit2, Trash2, X, MapPin } from 'lucide-react';
+import { Site, siteManagementService } from '../services/siteManagementService';
 
 interface SiteManagementProps {
   onClose: () => void;
@@ -10,10 +10,10 @@ interface SiteManagementProps {
 }
 
 export function SiteManagement({ onClose, currentUser, asPage = false }: SiteManagementProps) {
+  const navigate = useNavigate();
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,13 +23,7 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
     description: '',
     isActive: true
   });
-  const [editFormData, setEditFormData] = useState<{[key: string]: {name: string, description: string, isActive: boolean}}>({}); 
-  const [newCode, setNewCode] = useState('');
-  const [newCodeDescription, setNewCodeDescription] = useState('');
-  const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
-  const [showAddCode, setShowAddCode] = useState<string | null>(null);
-  const codeFileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
-  const [importingCodes, setImportingCodes] = useState<{[key: string]: boolean}>({});
+ 
 
   useEffect(() => {
     loadSites();
@@ -66,109 +60,10 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
     }
   };
 
-  const handleUpdateSite = async (siteId: string) => {
-    setError(null);
-    setSuccess(null);
-    const data = editFormData[siteId];
-    if (!data) return;
-
-    try {
-      await siteManagementService.updateSite(siteId, data);
-      setSuccess('Site updated successfully');
-      setEditingSiteId(null);
-      setEditFormData(prev => {
-        const newData = {...prev};
-        delete newData[siteId];
-        return newData;
-      });
-      await loadSites();
-    } catch (error) {
-      setError('Failed to update site');
-    }
-  };
-
   const handleEdit = (site: Site) => {
-    if (editingSiteId === site.id) {
-      // Close edit form
-      setEditingSiteId(null);
-      setEditFormData(prev => {
-        const newData = {...prev};
-        delete newData[site.id];
-        return newData;
-      });
-    } else {
-      // Open edit form
-      setEditingSiteId(site.id);
-      setEditFormData(prev => ({
-        ...prev,
-        [site.id]: {
-          name: site.name,
-          description: site.description || '',
-          isActive: site.isActive
-        }
-      }));
-      setShowAddForm(false);
-    }
+    navigate(`/admin/sites/edit/${site.id}`);
   };
 
-  const handleAddCode = async (siteId: string) => {
-    if (!newCode.trim()) return;
-    const site = sites.find(s => s.id === siteId);
-    if (!site) return;
-    const existingCodes: SiteCode[] = site.codes || [];
-    if (existingCodes.some(c => c.name === newCode.trim())) {
-      setError('This code already exists for this site.');
-      return;
-    }
-    try {
-      const newEntry: SiteCode = { name: newCode.trim(), description: newCodeDescription.trim() };
-      await siteManagementService.updateSite(siteId, { codes: [...existingCodes, newEntry] });
-      setNewCode('');
-      setNewCodeDescription('');
-      setSuccess('Code added successfully');
-      await loadSites();
-    } catch (err) {
-      setError('Failed to add code');
-    }
-  };
-
-  const handleRemoveCode = async (siteId: string, codeName: string) => {
-    const site = sites.find(s => s.id === siteId);
-    if (!site) return;
-    const updatedCodes = (site.codes || []).filter(c => c.name !== codeName);
-    try {
-      await siteManagementService.updateSite(siteId, { codes: updatedCodes });
-      setSuccess('Code removed successfully');
-      await loadSites();
-    } catch (err) {
-      setError('Failed to remove code');
-    }
-  };
-
-  const handleImportCodes = async (siteId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImportingCodes(prev => ({ ...prev, [siteId]: true }));
-    setError(null);
-    setSuccess(null);
-    try {
-      const rows = await parseExcelFile(file);
-      const site = sites.find(s => s.id === siteId);
-      if (!site) return;
-      const existingCodes: SiteCode[] = site.codes || [];
-      const newCodes: SiteCode[] = rows
-        .filter(row => !existingCodes.some(c => c.name === row.name))
-        .map(row => ({ name: row.name, description: row.description || '' }));
-      await siteManagementService.updateSite(siteId, { codes: [...existingCodes, ...newCodes] });
-      setSuccess(`Imported ${newCodes.length} code${newCodes.length !== 1 ? 's' : ''}`);
-      await loadSites();
-    } catch (err: any) {
-      setError(err.message || 'Failed to import codes.');
-    } finally {
-      setImportingCodes(prev => ({ ...prev, [siteId]: false }));
-      if (codeFileInputRefs.current[siteId]) codeFileInputRefs.current[siteId]!.value = '';
-    }
-  };
 
   const handleDelete = async (site: Site) => {
     if (!window.confirm(`Are you sure you want to delete "${site.name}"?`)) {
@@ -257,7 +152,7 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
           )}
 
           {/* Search and Actions */}
-          {!showAddForm && !editingSiteId && (
+          {!showAddForm && (
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <input
                 type="text"
@@ -319,7 +214,7 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
                     type="submit"
                     className="flex items-center space-x-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
                   >
-                    <Check className="h-4 w-4" />
+                    <span>Add</span>
                     <span>Add Site</span>
                   </button>
                   <button
@@ -381,7 +276,6 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
                           </td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center space-x-1">
-                              <Code2 className="h-3 w-3 text-yellow-500" />
                               <span className="text-xs text-yellow-500">
                                 {(site.codes || []).length}
                               </span>
@@ -407,14 +301,6 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-center space-x-2">
                               <button
-                                onClick={() => setExpandedSiteId(expandedSiteId === site.id ? null : site.id)}
-                                className="flex items-center space-x-1 px-3 py-1 text-xs bg-yellow-600 text-white rounded-lg hover:bg-yellow-500 transition-colors"
-                              >
-                                <Code2 className="h-3 w-3" />
-                                <span>Edit Codes</span>
-                                {expandedSiteId === site.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                              </button>
-                              <button
                                 onClick={() => handleEdit(site)}
                                 className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
                                 title="Edit site"
@@ -431,186 +317,6 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
                             </div>
                           </td>
                         </tr>
-                        {editingSiteId === site.id && editFormData[site.id] && (
-                          <tr className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20`}>
-                            <td colSpan={5} className="px-4 py-3">
-                              <div className="space-y-3">
-                                <h5 className="text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-3">Edit Site</h5>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  <div>
-                                    <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1">Site Name</label>
-                                    <input
-                                      type="text"
-                                      value={editFormData[site.id].name}
-                                      onChange={(e) => setEditFormData(prev => ({
-                                        ...prev,
-                                        [site.id]: { ...prev[site.id], name: e.target.value }
-                                      }))}
-                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                      required
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1">Description</label>
-                                    <input
-                                      type="text"
-                                      value={editFormData[site.id].description}
-                                      onChange={(e) => setEditFormData(prev => ({
-                                        ...prev,
-                                        [site.id]: { ...prev[site.id], description: e.target.value }
-                                      }))}
-                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <input
-                                    type="checkbox"
-                                    id={`isActive-${site.id}`}
-                                    checked={editFormData[site.id].isActive}
-                                    onChange={(e) => setEditFormData(prev => ({
-                                      ...prev,
-                                      [site.id]: { ...prev[site.id], isActive: e.target.checked }
-                                    }))}
-                                    className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
-                                  />
-                                  <label htmlFor={`isActive-${site.id}`} className="text-xs text-yellow-700 dark:text-yellow-300">Active</label>
-                                </div>
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={() => handleUpdateSite(site.id)}
-                                    className="flex items-center space-x-1 px-3 py-1.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm"
-                                  >
-                                    <Check className="h-3 w-3" />
-                                    <span>Update</span>
-                                  </button>
-                                  <button
-                                    onClick={() => handleEdit(site)}
-                                    className="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-sm"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                        {expandedSiteId === site.id && (
-                          <tr className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20`}>
-                            <td colSpan={5} className="px-4 py-3">
-                              <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-2">
-                                    <Code2 className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                                    <h5 className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
-                                      Site Codes for {site.name}
-                                    </h5>
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      setNewCode('');
-                                      setNewCodeDescription('');
-                                      setShowAddCode(site.id === showAddCode ? null : site.id);
-                                    }}
-                                    className="flex items-center space-x-1 px-3 py-1 text-xs bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
-                                  >
-                                    <Plus className="h-3 w-3" />
-                                    <span>Add Code</span>
-                                  </button>
-                                </div>
-
-                                {/* Existing Codes */}
-                                {(site.codes || []).length > 0 ? (
-                                  <div className="space-y-1 mb-3">
-                                    {(site.codes || []).map((code) => (
-                                      <div
-                                        key={code.name}
-                                        className="flex items-center justify-between px-3 py-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
-                                      >
-                                        <div>
-                                          <span className="text-gray-900 dark:text-yellow-100 text-sm font-medium">{code.name}</span>
-                                          {code.description && (
-                                            <span className="text-yellow-700 dark:text-yellow-600 text-xs ml-2">— {code.description}</span>
-                                          )}
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveCode(site.id, code.name)}
-                                          className="text-red-400 hover:text-red-300 ml-2 flex-shrink-0"
-                                          title="Remove code"
-                                        >
-                                          <Trash2 className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="text-xs text-yellow-600 mb-3">No codes assigned to this site yet.</p>
-                                )}
-
-                                {/* Add Code Form */}
-                                {showAddCode === site.id && (
-                                  <div className="p-3 bg-yellow-100 dark:bg-yellow-800 dark:bg-opacity-30 border border-yellow-300 dark:border-yellow-700 rounded-lg">
-                                    <div className="flex gap-2">
-                                      <input
-                                        type="text"
-                                        value={newCode}
-                                        onChange={(e) => setNewCode(e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            handleAddCode(site.id);
-                                          }
-                                        }}
-                                        placeholder="Code name"
-                                        className="flex-1 px-3 py-1.5 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                      />
-                                      <input
-                                        type="text"
-                                        value={newCodeDescription}
-                                        onChange={(e) => setNewCodeDescription(e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            handleAddCode(site.id);
-                                          }
-                                        }}
-                                        placeholder="Description (optional)"
-                                        className="flex-1 px-3 py-1.5 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                      />
-                                      <button
-                                        onClick={() => handleAddCode(site.id)}
-                                        className="flex items-center space-x-1 px-3 py-1.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm flex-shrink-0"
-                                      >
-                                        <Plus className="h-3 w-3" />
-                                        <span>Add</span>
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Import Codes */}
-                                <div className="flex items-center space-x-2">
-                                  <input
-                                    type="file"
-                                    accept=".xlsx,.xls,.csv"
-                                    ref={(el) => { codeFileInputRefs.current[site.id] = el; }}
-                                    onChange={(e) => handleImportCodes(site.id, e)}
-                                    className="hidden"
-                                  />
-                                  <button
-                                    onClick={() => codeFileInputRefs.current[site.id]?.click()}
-                                    disabled={importingCodes[site.id]}
-                                    className="flex items-center space-x-1 px-3 py-1.5 bg-yellow-700 text-yellow-100 rounded-lg hover:bg-yellow-600 transition-colors text-sm disabled:opacity-50"
-                                  >
-                                    <Upload className="h-3 w-3" />
-                                    <span>{importingCodes[site.id] ? 'Importing...' : 'Import Codes from Excel'}</span>
-                                  </button>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
                       </React.Fragment>
                     ))}
                   </tbody>

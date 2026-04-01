@@ -9,6 +9,7 @@ import HeavyEquipmentManagementPage from './pages/HeavyEquipmentManagementPage';
 import FieldToolsManagementPage from './pages/FieldToolsManagementPage';
 import SmallToolsManagementPage from './pages/SmallToolsManagementPage';
 import SiteManagementPage from './pages/SiteManagementPage';
+import { EditSitePage } from './pages/EditSitePage';
 import UserManagementPage from './pages/UserManagementPage';
 import Layout from './components/Layout';
 import { ThemeProvider } from './context/ThemeContext';
@@ -94,6 +95,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <SiteManagementPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/admin/sites/edit/:siteId" element={
+          isAuthenticated ? (
+            <Layout>
+              <EditSitePage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

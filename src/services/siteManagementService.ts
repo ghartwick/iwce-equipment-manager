@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export interface SiteCode {
@@ -44,6 +44,35 @@ export class SiteManagementService {
     } catch (error) {
       console.error('Error getting sites:', error);
       throw new Error('Failed to load sites');
+    }
+  }
+
+  // Get a single site by ID
+  async getSite(id: string): Promise<Site> {
+    try {
+      const siteDoc = doc(db, this.COLLECTION_NAME, id);
+      const snapshot = await getDoc(siteDoc);
+      
+      if (!snapshot.exists()) {
+        throw new Error('Site not found');
+      }
+      
+      const data = snapshot.data();
+      return {
+        id: snapshot.id,
+        name: data.name,
+        description: data.description || '',
+        codes: (data.codes || []).map((c: any) =>
+          typeof c === 'string' ? { name: c, description: '' } : c
+        ),
+        isActive: data.isActive ?? true,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+        createdBy: data.createdBy
+      };
+    } catch (error) {
+      console.error('Error getting site:', error);
+      throw error;
     }
   }
 

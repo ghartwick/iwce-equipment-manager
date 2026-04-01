@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit2, Trash2, X, Check, MapPin, Upload, Code2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Site, SiteCode, siteManagementService } from '../services/siteManagementService';
 import { parseExcelFile } from '../utils/excelImport';
@@ -27,6 +27,7 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
   const [newCode, setNewCode] = useState('');
   const [newCodeDescription, setNewCodeDescription] = useState('');
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
+  const [showAddCode, setShowAddCode] = useState<string | null>(null);
   const codeFileInputRefs = useRef<{[key: string]: HTMLInputElement | null}>({});
   const [importingCodes, setImportingCodes] = useState<{[key: string]: boolean}>({});
 
@@ -343,247 +344,282 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
                 {searchTerm ? 'No sites found matching your search.' : 'No sites found. Add your first site above.'}
               </div>
             ) : (
-              <div className="space-y-2">
-                {filteredSites.map((site) => (
-                  <div
-                    key={site.id}
-                    className={`p-4 rounded-lg border transition-colors ${
-                      site.isActive
-                        ? 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border-yellow-300 dark:border-yellow-700'
-                        : 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30 border-gray-300 dark:border-gray-700'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h4 className={`font-medium ${site.isActive ? 'text-gray-900 dark:text-yellow-100' : 'text-gray-500 dark:text-gray-400'}`}>
-                            {site.name}
-                          </h4>
-                          {!site.isActive && (
-                            <span className="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded">
-                              Inactive
-                            </span>
-                          )}
-                        </div>
-                        {site.description && (
-                          <p className={`text-sm mt-1 ${site.isActive ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500'}`}>
-                            {site.description}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-500 mt-2">
-                          Created: {site.createdAt.toLocaleDateString()}
-                          {site.createdBy && ` by ${site.createdBy}`}
-                        </p>
-                        {/* Codes count */}
-                        <div className="flex items-center space-x-1 mt-1">
-                          <Code2 className="h-3 w-3 text-yellow-500" />
-                          <span className="text-xs text-yellow-500">
-                            {(site.codes || []).length} code{(site.codes || []).length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2 ml-4">
-                        <button
-                          onClick={() => setExpandedSiteId(expandedSiteId === site.id ? null : site.id)}
-                          className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
-                          title="Manage codes"
-                        >
-                          {expandedSiteId === site.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </button>
-                        <button
-                          onClick={() => handleToggleActive(site)}
-                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                            site.isActive
-                              ? 'bg-gray-600 text-white hover:bg-gray-700'
-                              : 'bg-green-600 text-white hover:bg-green-700'
-                          }`}
-                          title={site.isActive ? 'Deactivate' : 'Activate'}
-                        >
-                          {site.isActive ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button
-                          onClick={() => handleEdit(site)}
-                          className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
-                          title="Edit site"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(site)}
-                          className="p-2 text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
-                          title="Delete site"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Inline Edit Form */}
-                    {editingSiteId === site.id && editFormData[site.id] && (
-                      <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
-                        <h5 className="text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-3">Edit Site</h5>
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
+                      <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Site Name</th>
+                      <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Description</th>
+                      <th className="px-4 py-2 text-center text-yellow-700 dark:text-yellow-300">Codes</th>
+                      <th className="px-4 py-2 text-center text-yellow-700 dark:text-yellow-300">Active</th>
+                      <th className="px-4 py-2 text-center text-yellow-700 dark:text-yellow-300">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSites.map((site) => (
+                      <React.Fragment key={site.id}>
+                        <tr className={`border-b border-yellow-200 dark:border-yellow-800 ${
+                          site.isActive
+                            ? 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10'
+                            : 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30'
+                        }`}>
+                          <td className="px-4 py-3">
                             <div>
-                              <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1">Site Name</label>
-                              <input
-                                type="text"
-                                value={editFormData[site.id].name}
-                                onChange={(e) => setEditFormData(prev => ({
-                                  ...prev,
-                                  [site.id]: { ...prev[site.id], name: e.target.value }
-                                }))}
-                                className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1">Description</label>
-                              <input
-                                type="text"
-                                value={editFormData[site.id].description}
-                                onChange={(e) => setEditFormData(prev => ({
-                                  ...prev,
-                                  [site.id]: { ...prev[site.id], description: e.target.value }
-                                }))}
-                                className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`isActive-${site.id}`}
-                              checked={editFormData[site.id].isActive}
-                              onChange={(e) => setEditFormData(prev => ({
-                                ...prev,
-                                [site.id]: { ...prev[site.id], isActive: e.target.checked }
-                              }))}
-                              className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
-                            />
-                            <label htmlFor={`isActive-${site.id}`} className="text-xs text-yellow-700 dark:text-yellow-300">Active</label>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleUpdateSite(site.id)}
-                              className="flex items-center space-x-1 px-3 py-1.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm"
-                            >
-                              <Check className="h-3 w-3" />
-                              <span>Update</span>
-                            </button>
-                            <button
-                              onClick={() => handleEdit(site)}
-                              className="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-sm"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Expanded Codes Section */}
-                    {expandedSiteId === site.id && (
-                      <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Code2 className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                          <h5 className="text-sm font-medium text-yellow-700 dark:text-yellow-300">Site Codes</h5>
-                        </div>
-
-                        {/* Existing Codes */}
-                        {(site.codes || []).length > 0 ? (
-                          <div className="space-y-1 mb-3">
-                            {(site.codes || []).map((code) => (
-                              <div
-                                key={code.name}
-                                className="flex items-center justify-between px-3 py-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
-                              >
-                                <div>
-                                  <span className="text-gray-900 dark:text-yellow-100 text-sm font-medium">{code.name}</span>
-                                  {code.description && (
-                                    <span className="text-yellow-700 dark:text-yellow-600 text-xs ml-2">— {code.description}</span>
-                                  )}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveCode(site.id, code.name)}
-                                  className="text-red-400 hover:text-red-300 ml-2 flex-shrink-0"
-                                  title="Remove code"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
+                              <div className={`font-medium ${site.isActive ? 'text-gray-900 dark:text-yellow-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                                {site.name}
                               </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-yellow-600 mb-3">No codes assigned to this site yet.</p>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Created: {site.createdAt.toLocaleDateString()}
+                                {site.createdBy && ` by ${site.createdBy}`}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`text-sm ${site.isActive ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500'}`}>
+                              {site.description || '-'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex items-center justify-center space-x-1">
+                              <Code2 className="h-3 w-3 text-yellow-500" />
+                              <span className="text-xs text-yellow-500">
+                                {(site.codes || []).length}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <label className="inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={site.isActive}
+                                onChange={() => handleToggleActive(site)}
+                                className="sr-only"
+                              />
+                              <div className={`relative w-11 h-6 rounded-full transition-colors ${
+                                site.isActive ? 'bg-yellow-500' : 'bg-gray-300'
+                              }`}>
+                                <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full transition-transform ${
+                                  site.isActive ? 'translate-x-5' : 'translate-x-0'
+                                }`} />
+                              </div>
+                            </label>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center space-x-2">
+                              <button
+                                onClick={() => setExpandedSiteId(expandedSiteId === site.id ? null : site.id)}
+                                className="flex items-center space-x-1 px-3 py-1 text-xs bg-yellow-600 text-white rounded-lg hover:bg-yellow-500 transition-colors"
+                              >
+                                <Code2 className="h-3 w-3" />
+                                <span>Edit Codes</span>
+                                {expandedSiteId === site.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              </button>
+                              <button
+                                onClick={() => handleEdit(site)}
+                                className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
+                                title="Edit site"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(site)}
+                                className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
+                                title="Delete site"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        {editingSiteId === site.id && editFormData[site.id] && (
+                          <tr className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20`}>
+                            <td colSpan={5} className="px-4 py-3">
+                              <div className="space-y-3">
+                                <h5 className="text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-3">Edit Site</h5>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1">Site Name</label>
+                                    <input
+                                      type="text"
+                                      value={editFormData[site.id].name}
+                                      onChange={(e) => setEditFormData(prev => ({
+                                        ...prev,
+                                        [site.id]: { ...prev[site.id], name: e.target.value }
+                                      }))}
+                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      required
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1">Description</label>
+                                    <input
+                                      type="text"
+                                      value={editFormData[site.id].description}
+                                      onChange={(e) => setEditFormData(prev => ({
+                                        ...prev,
+                                        [site.id]: { ...prev[site.id], description: e.target.value }
+                                      }))}
+                                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={`isActive-${site.id}`}
+                                    checked={editFormData[site.id].isActive}
+                                    onChange={(e) => setEditFormData(prev => ({
+                                      ...prev,
+                                      [site.id]: { ...prev[site.id], isActive: e.target.checked }
+                                    }))}
+                                    className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                                  />
+                                  <label htmlFor={`isActive-${site.id}`} className="text-xs text-yellow-700 dark:text-yellow-300">Active</label>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleUpdateSite(site.id)}
+                                    className="flex items-center space-x-1 px-3 py-1.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                    <span>Update</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleEdit(site)}
+                                    className="px-3 py-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors text-sm"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
                         )}
+                        {expandedSiteId === site.id && (
+                          <tr className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20`}>
+                            <td colSpan={5} className="px-4 py-3">
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <Code2 className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                                    <h5 className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                                      Site Codes for {site.name}
+                                    </h5>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setNewCode('');
+                                      setNewCodeDescription('');
+                                      setShowAddCode(site.id === showAddCode ? null : site.id);
+                                    }}
+                                    className="flex items-center space-x-1 px-3 py-1 text-xs bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                    <span>Add Code</span>
+                                  </button>
+                                </div>
 
-                        {/* Add Code Inputs */}
-                        <div className="space-y-2">
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={newCode}
-                              onChange={(e) => setNewCode(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  handleAddCode(site.id);
-                                }
-                              }}
-                              placeholder="Code name"
-                              className="flex-1 px-3 py-1.5 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                            />
-                            <input
-                              type="text"
-                              value={newCodeDescription}
-                              onChange={(e) => setNewCodeDescription(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  handleAddCode(site.id);
-                                }
-                              }}
-                              placeholder="Description (optional)"
-                              className="flex-1 px-3 py-1.5 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                            />
-                            <button
-                              onClick={() => handleAddCode(site.id)}
-                              className="flex items-center space-x-1 px-3 py-1.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm flex-shrink-0"
-                            >
-                              <Plus className="h-3 w-3" />
-                              <span>Add</span>
-                            </button>
-                          </div>
-                          {/* Import Codes from Excel */}
-                          <div>
-                            <input
-                              type="file"
-                              accept=".xlsx,.xls,.csv"
-                              ref={(el) => { codeFileInputRefs.current[site.id] = el; }}
-                              onChange={(e) => handleImportCodes(site.id, e)}
-                              className="hidden"
-                            />
-                            <button
-                              onClick={() => codeFileInputRefs.current[site.id]?.click()}
-                              disabled={importingCodes[site.id]}
-                              className="flex items-center space-x-1 px-3 py-1.5 bg-yellow-700 text-yellow-100 rounded-lg hover:bg-yellow-600 transition-colors text-sm disabled:opacity-50"
-                            >
-                              <Upload className="h-3 w-3" />
-                              <span>{importingCodes[site.id] ? 'Importing...' : 'Import Codes from Excel'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                                {/* Existing Codes */}
+                                {(site.codes || []).length > 0 ? (
+                                  <div className="space-y-1 mb-3">
+                                    {(site.codes || []).map((code) => (
+                                      <div
+                                        key={code.name}
+                                        className="flex items-center justify-between px-3 py-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
+                                      >
+                                        <div>
+                                          <span className="text-gray-900 dark:text-yellow-100 text-sm font-medium">{code.name}</span>
+                                          {code.description && (
+                                            <span className="text-yellow-700 dark:text-yellow-600 text-xs ml-2">— {code.description}</span>
+                                          )}
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveCode(site.id, code.name)}
+                                          className="text-red-400 hover:text-red-300 ml-2 flex-shrink-0"
+                                          title="Remove code"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-yellow-600 mb-3">No codes assigned to this site yet.</p>
+                                )}
+
+                                {/* Add Code Form */}
+                                {showAddCode === site.id && (
+                                  <div className="p-3 bg-yellow-100 dark:bg-yellow-800 dark:bg-opacity-30 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="text"
+                                        value={newCode}
+                                        onChange={(e) => setNewCode(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddCode(site.id);
+                                          }
+                                        }}
+                                        placeholder="Code name"
+                                        className="flex-1 px-3 py-1.5 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={newCodeDescription}
+                                        onChange={(e) => setNewCodeDescription(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddCode(site.id);
+                                          }
+                                        }}
+                                        placeholder="Description (optional)"
+                                        className="flex-1 px-3 py-1.5 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                      />
+                                      <button
+                                        onClick={() => handleAddCode(site.id)}
+                                        className="flex items-center space-x-1 px-3 py-1.5 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm flex-shrink-0"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        <span>Add</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Import Codes */}
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="file"
+                                    accept=".xlsx,.xls,.csv"
+                                    ref={(el) => { codeFileInputRefs.current[site.id] = el; }}
+                                    onChange={(e) => handleImportCodes(site.id, e)}
+                                    className="hidden"
+                                  />
+                                  <button
+                                    onClick={() => codeFileInputRefs.current[site.id]?.click()}
+                                    disabled={importingCodes[site.id]}
+                                    className="flex items-center space-x-1 px-3 py-1.5 bg-yellow-700 text-yellow-100 rounded-lg hover:bg-yellow-600 transition-colors text-sm disabled:opacity-50"
+                                  >
+                                    <Upload className="h-3 w-3" />
+                                    <span>{importingCodes[site.id] ? 'Importing...' : 'Import Codes from Excel'}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
         </div>
-    </>
+      </>
   );
 
   if (asPage) {

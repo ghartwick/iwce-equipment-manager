@@ -524,7 +524,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
   // Use state-based equipment options, filtered by selected site
   const equipmentOptions = useMemo(() => {
-    if (!job) return allEquipmentData;
+    if (!job) return [];
     // Find original units at the selected site
     const parentIdsAtSite = new Set(
       allEquipmentData.filter(item => !item.parentId && item.site === job).map(item => item.id)
@@ -533,8 +533,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       (!item.parentId && item.site === job) ||
       (item.parentId && parentIdsAtSite.has(item.parentId))
     );
-    return filtered.length > 0 ? filtered : allEquipmentData;
-  }, [allEquipmentData, job]);
+    return filtered.length > 0 ? filtered : [];
+  }, [job, allEquipmentData]);
 
   useEffect(() => {
     if (entry) {

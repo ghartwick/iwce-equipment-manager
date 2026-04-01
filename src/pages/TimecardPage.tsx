@@ -287,7 +287,7 @@ export default function TimecardPage() {
                       {(() => {
                         const dayEntries = getEntriesForDate(day);
                         const submittedCount = dayEntries.filter(entry => entry.status === 'submitted').length;
-                        const draftCount = dayEntries.filter(entry => entry.status === 'draft').length;
+                        const draftCount = dayEntries.filter(entry => !entry.status || entry.status === 'draft').length;
                         
                         return (
                           <>
@@ -535,7 +535,7 @@ export default function TimecardPage() {
                                                 {entry.status === 'submitted' ? (
                                                   <Check className="w-3 h-3" />
                                                 ) : (
-                                                  getStatusDisplay(entry.status).charAt(0)
+                                                  (getStatusDisplay(entry.status) || 'D').charAt(0)
                                                 )}
                                               </span>
                                               {canEditEntry(entry, user!) && (
@@ -772,7 +772,7 @@ export default function TimecardPage() {
                                               {entry.status === 'submitted' ? (
                                                 <Check className="w-3 h-3" />
                                               ) : (
-                                                getStatusDisplay(entry.status).charAt(0)
+                                                (getStatusDisplay(entry.status) || 'D').charAt(0)
                                               )}
                                             </span>
                                             {canEditEntry(entry, user!) && (

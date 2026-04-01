@@ -9,7 +9,7 @@ interface SiteManagementProps {
   asPage?: boolean;
 }
 
-export function SiteManagement({ onClose, currentUser, asPage = false }: SiteManagementProps) {
+export function SiteManagement({ currentUser, asPage = false }: SiteManagementProps) {
   const navigate = useNavigate();
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);

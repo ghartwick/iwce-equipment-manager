@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Edit2, Trash2, X, Check, Code2, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, Code2, Upload } from 'lucide-react';
 import { Code, codeManagementService } from '../services/codeManagementService';
 import { parseExcelFile } from '../utils/excelImport';
 
@@ -8,7 +8,7 @@ interface CodeManagementProps {
   currentUser: { username: string; role: string } | null;
 }
 
-export function CodeManagement({ onClose, currentUser }: CodeManagementProps) {
+export function CodeManagement({ currentUser }: CodeManagementProps) {
   const [codes, setCodes] = useState<Code[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);

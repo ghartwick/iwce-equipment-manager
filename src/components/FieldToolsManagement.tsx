@@ -12,7 +12,7 @@ interface FieldToolsManagementProps {
   asPage?: boolean;
 }
 
-export function FieldToolsManagement({ onClose, currentUser, asPage = false }: FieldToolsManagementProps) {
+export function FieldToolsManagement({ currentUser, asPage = false }: FieldToolsManagementProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTool, setEditingTool] = useState<Equipment | null>(null);
   const editFormRef = useRef<HTMLDivElement>(null);

@@ -9,7 +9,7 @@ interface SmallToolsManagementProps {
   asPage?: boolean;
 }
 
-export function SmallToolsManagement({ onClose, currentUser, asPage = false }: SmallToolsManagementProps) {
+export function SmallToolsManagement({ currentUser, asPage = false }: SmallToolsManagementProps) {
   const [tools, setTools] = useState<SmallTool[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);

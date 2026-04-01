@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Edit2, Trash2, X, Shield, Wrench, Check, X as XIcon, Users, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Edit2, Trash2, Shield, Wrench, Check, X as XIcon, Users, Eye, EyeOff } from 'lucide-react';
 import { AppUser, userManagementService } from '../services/userManagementService';
 
 interface User {
@@ -18,7 +18,7 @@ interface UserManagementProps {
   asPage?: boolean;
 }
 
-export function UserManagement({ onClose, currentUser, asPage = false }: UserManagementProps) {
+export function UserManagement({ currentUser, asPage = false }: UserManagementProps) {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);

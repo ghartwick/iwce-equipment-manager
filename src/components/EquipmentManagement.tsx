@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Upload, Edit2, Trash2, Clock, QrCode } from 'lucide-react';
+import { Upload, Edit2, Trash2, Clock, QrCode, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { equipmentManagementService } from '../services/equipmentManagementService';
 import { getCategories } from '../services/firebaseService';
@@ -18,7 +18,7 @@ interface EquipmentManagementProps {
 
 const EMPTY_FORM = { name: '', description: '', serialNumber: '', category: '', site: '', employee: '', repair: false, repairDescription: '', isActive: true, showInInventory: true, showInTimecard: true, parentId: '' };
 
-export function EquipmentManagement({ onClose, currentUser, asPage = false }: EquipmentManagementProps) {
+export function EquipmentManagement({ currentUser, asPage = false }: EquipmentManagementProps) {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [sites, setSites] = useState<Site[]>([]);

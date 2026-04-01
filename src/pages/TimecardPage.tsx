@@ -154,10 +154,11 @@ export default function TimecardPage() {
     if (!selectedDate || !user) return [];
     const allEntries = getEntriesForDate(selectedDate).filter(entry => canSeeEntry(entry, user!, supervisorUserIds));
     
-    // For admins/supervisors, show sites from all entries of other users (including drafts)
+    // For admins/supervisors, show sites from all entries (including own for admins)
     if (user?.role === 'admin' || user?.role === 'supervisor') {
-      const otherEntries = allEntries.filter(entry => entry.userId !== user?.id);
-      const sites = [...new Set(otherEntries.map(entry => entry.job).filter(Boolean))];
+      // Include all entries for admins, exclude own for supervisors
+      const entriesToShow = user?.role === 'admin' ? allEntries : allEntries.filter(entry => entry.userId !== user?.id);
+      const sites = [...new Set(entriesToShow.map(entry => entry.job).filter(Boolean))];
       return sites.sort();
     }
     
@@ -173,8 +174,9 @@ export default function TimecardPage() {
     
     // For admins/supervisors, show all employees who have any entry for this date
     if (user?.role === 'admin' || user?.role === 'supervisor') {
-      const otherEntries = allEntries.filter(entry => entry.userId !== user?.id);
-      const employeeIds = [...new Set(otherEntries.map(entry => entry.userId).filter(Boolean))];
+      // Include all entries (including current user's for admins)
+      const entriesToShow = user?.role === 'admin' ? allEntries : allEntries.filter(entry => entry.userId !== user?.id);
+      const employeeIds = [...new Set(entriesToShow.map(entry => entry.userId).filter(Boolean))];
       return employeeIds.map(id => users.find(u => u.id === id)).filter(Boolean) as AppUser[];
     }
     
@@ -395,7 +397,7 @@ export default function TimecardPage() {
                       className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     >
                       <option value="">None</option>
-                      {user?.role === 'supervisor' && (
+                      {(user?.role === 'supervisor' || user?.role === 'admin') && (
                         <option value="self">Your Time Card</option>
                       )}
                       <option value="all">All</option>
@@ -459,8 +461,8 @@ export default function TimecardPage() {
                       return filteredEntries.filter(entry => entry.userId === user?.id);
                     }
 
-                    // Show all other users' entries for supervisors/admins (including drafts)
-                    const otherUsersEntries = filteredEntries.filter(entry => entry.userId !== user?.id);
+                    // Show all entries for admins, other users' entries for supervisors (including drafts)
+                    const otherUsersEntries = user?.role === 'admin' ? filteredEntries : filteredEntries.filter(entry => entry.userId !== user?.id);
                     
                     // Check if "all" is explicitly selected for either filter
                     const showAll = (siteFilter === 'all') || (employeeFilter === 'all');
@@ -731,6 +733,8 @@ export default function TimecardPage() {
                               {(() => {
                                 if (siteFilter === 'all' || employeeFilter === 'all') {
                                   return 'All Time Cards';
+                                } else if (employeeFilter === 'self') {
+                                  return 'Your Time Card';
                                 } else if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
                                   const employeeName = getBestDisplayName(users.find(u => u.id === employeeFilter));
                                   return `${siteFilter} - ${employeeName}'s Time Cards`;

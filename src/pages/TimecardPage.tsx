@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
 import { UserManagementService, AppUser } from '../services/userManagementService';
+import { timecardService, TimeEntry } from '../services/timecardService';
 import { 
   format, 
   startOfMonth, 
@@ -171,12 +172,10 @@ export default function TimecardPage() {
     if (!selectedDate || !user) return [];
     const allEntries = getEntriesForDate(selectedDate).filter(entry => canSeeEntry(entry, user!, supervisorUserIds));
     
-    // For admins/supervisors, only show employees from submitted/approved entries of other users
+    // For admins/supervisors, show all employees who have any entry for this date
     if (user?.role === 'admin' || user?.role === 'supervisor') {
-      const submittedOtherEntries = allEntries.filter(entry => 
-        entry.userId !== user?.id && entry.status === 'submitted'
-      );
-      const employeeIds = [...new Set(submittedOtherEntries.map(entry => entry.userId).filter(Boolean))];
+      const otherEntries = allEntries.filter(entry => entry.userId !== user?.id);
+      const employeeIds = [...new Set(otherEntries.map(entry => entry.userId).filter(Boolean))];
       return employeeIds.map(id => users.find(u => u.id === id)).filter(Boolean) as AppUser[];
     }
     
@@ -209,6 +208,80 @@ export default function TimecardPage() {
       } catch (error) {
         alert('Error deleting time entry');
       }
+    }
+  };
+
+  // Calculate hours from clockIn/clockOut time-of-day only (same as form)
+  // Avoids cross-day timestamp bugs where stored dates span multiple days
+  const calcHours = (clockIn: any, clockOut: any): number | null => {
+    if (!clockIn || !clockOut) return null;
+    try {
+      const inDate = clockIn instanceof Date ? clockIn :
+        (clockIn && 'toDate' in clockIn && typeof (clockIn as any).toDate === 'function') ? (clockIn as any).toDate() : new Date(clockIn);
+      const outDate = clockOut instanceof Date ? clockOut :
+        (clockOut && 'toDate' in clockOut && typeof (clockOut as any).toDate === 'function') ? (clockOut as any).toDate() : new Date(clockOut);
+      // Compare time-of-day only, same approach as TimeEntryForm
+      const inRef = new Date(0);
+      inRef.setHours(inDate.getHours(), inDate.getMinutes(), 0, 0);
+      const outRef = new Date(0);
+      outRef.setHours(outDate.getHours(), outDate.getMinutes(), 0, 0);
+      const diff = outRef.getTime() - inRef.getTime();
+      if (diff <= 0) return null;
+      return Math.round((diff / (1000 * 60 * 60)) * 100) / 100;
+    } catch {
+      return null;
+    }
+  };
+
+  // Debug: Find all duplicates (admin only)
+  const handleFindDuplicates = async () => {
+    if (user?.role !== 'admin') return;
+    try {
+      const duplicates = await timecardService.findAllDuplicates();
+      console.group('Duplicate Time Entries Found:');
+      duplicates.forEach(({ key, entries }: { key: string; entries: TimeEntry[] }) => {
+        console.log(`\nDuplicate group: ${key}`);
+        entries.forEach((e: TimeEntry) => {
+          console.log(`  - ID: ${e.id}, Hours: ${e.hours}, Status: ${e.status}, Created: ${e.createdAt}`);
+        });
+      });
+      console.groupEnd();
+      alert(`Found ${duplicates.length} duplicate groups. Check console for details.`);
+    } catch (error) {
+      console.error('Error finding duplicates:', error);
+      alert('Error finding duplicates. Check console.');
+    }
+  };
+
+  // Debug: Fix invalid hours (admin only)
+  const handleFixInvalidHours = async () => {
+    if (user?.role !== 'admin' || !selectedDate) return;
+    try {
+      const entries = getEntriesForDate(selectedDate);
+      const invalidEntries = entries.filter(e => !e.hours || e.hours < 0 || e.hours > 24);
+      
+      if (invalidEntries.length === 0) {
+        alert('No entries with invalid hours found for this date.');
+        return;
+      }
+      
+      console.group('Entries with invalid hours:');
+      invalidEntries.forEach(e => {
+        console.log(`ID: ${e.id}, Hours: ${e.hours}, User: ${e.userId}`);
+      });
+      console.groupEnd();
+      
+      const proceed = confirm(`Found ${invalidEntries.length} entries with invalid hours. Fix them to 8 hours?`);
+      if (!proceed) return;
+      
+      for (const entry of invalidEntries) {
+        await timecardService.updateTimeEntry(entry.id!, { hours: 8 });
+      }
+      
+      alert(`Fixed ${invalidEntries.length} entries to 8 hours. Refresh to see changes.`);
+    } catch (error) {
+      console.error('Error fixing hours:', error);
+      alert('Error fixing hours. Check console.');
     }
   };
 
@@ -388,6 +461,24 @@ export default function TimecardPage() {
                   </div>
                 </div>
               )}
+              
+              {/* Debug button for admins */}
+              {user?.role === 'admin' && (
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={handleFindDuplicates}
+                    className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 font-medium"
+                  >
+                    Debug: Find Duplicates
+                  </button>
+                  <button
+                    onClick={handleFixInvalidHours}
+                    className="px-3 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 font-medium"
+                  >
+                    Fix Invalid Hours
+                  </button>
+                </div>
+              )}
 
               {/* Time Cards List */}
               <div className="space-y-4">
@@ -397,6 +488,7 @@ export default function TimecardPage() {
                   const filteredEntries = allEntries.filter(entry => 
                     entry.userId === user?.id || canSeeEntry(entry, user!, supervisorUserIds)
                   );
+                  
                   
                   const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'supervisor';
 
@@ -557,8 +649,8 @@ export default function TimecardPage() {
                                             </div>
                                           )}
                                           <div className="font-medium text-yellow-700 dark:text-yellow-600">
-                                            {entry.hours}
-                                            {entry.travelHours && entry.travelHours > 0 && (
+                                            {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
+                                            {(entry.travelHours ?? 0) > 0 && (
                                               <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">
                                                 (Travel: {entry.travelHours})
                                               </span>
@@ -794,8 +886,8 @@ export default function TimecardPage() {
                                           </div>
                                         )}
                                         <div className="font-medium text-yellow-700 dark:text-yellow-600">
-                                          {entry.hours}
-                                          {entry.travelHours && entry.travelHours > 0 && (
+                                          {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
+                                          {(entry.travelHours ?? 0) > 0 && (
                                             <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">
                                               (Travel: {entry.travelHours})
                                             </span>

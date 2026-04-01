@@ -72,8 +72,12 @@ class TimecardService {
   // Update time entry
   async updateTimeEntry(id: string, updates: Partial<TimeEntry>, editedBy?: string): Promise<void> {
     const docRef = doc(db, this.collection, id);
+    // Filter out undefined values to prevent Firestore errors
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined)
+    );
     const updateData: any = {
-      ...updates,
+      ...filteredUpdates,
       updatedAt: Timestamp.fromDate(new Date()),
     };
 
@@ -306,6 +310,44 @@ class TimecardService {
       submittedAt: new Date(),
       submittedBy: userId || entry.userId,
     });
+  }
+
+  // Find all duplicate entries for a user/date/site combination (admin utility)
+  async findAllDuplicates(): Promise<Array<{key: string, entries: TimeEntry[]}>> {
+    const q = query(collection(db, this.collection));
+    const snapshot = await getDocs(q);
+    const entries: TimeEntry[] = snapshot.docs.map(doc => {
+      const data = doc.data();
+      let dateObj;
+      if (data.date && 'toDate' in data.date && typeof (data.date as any).toDate === 'function') {
+        dateObj = (data.date as any).toDate();
+      } else {
+        dateObj = new Date(data.date);
+      }
+      return {
+        id: doc.id,
+        ...data,
+        date: dateObj,
+        clockIn: data.clockIn?.toDate ? data.clockIn.toDate() : new Date(data.clockIn),
+        clockOut: data.clockOut?.toDate ? data.clockOut.toDate() : new Date(data.clockOut),
+        submittedAt: data.submittedAt?.toDate ? data.submittedAt.toDate() : (data.submittedAt ? new Date(data.submittedAt) : undefined),
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt),
+      } as TimeEntry;
+    });
+
+    // Group by user+date+site
+    const groups = new Map<string, TimeEntry[]>();
+    entries.forEach(entry => {
+      const key = `${entry.userId}-${entry.date.toISOString().split('T')[0]}-${entry.job || 'no-site'}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(entry);
+    });
+
+    // Return only groups with more than 1 entry
+    return Array.from(groups.entries())
+      .filter(([_, entries]) => entries.length > 1)
+      .map(([key, entries]) => ({ key, entries }));
   }
 
   // Fix entries where userId was incorrectly changed (admin utility)

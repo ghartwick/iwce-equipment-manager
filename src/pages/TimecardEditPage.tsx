@@ -60,17 +60,18 @@ export default function TimecardEditPage() {
   const handleSubmit = async (entryData: Partial<TimeEntry> & { isUpdate?: boolean }) => {
     try {
       if (entryId === 'new') {
-        // For field users, check for duplicate (same user + date + site) before creating
-        if (user?.role === 'field') {
-          const job = (entryData as any).job;
-          const date = (entryData as any).date as Date;
-          if (job && date) {
-            const existing = await timecardService.findDuplicateEntry(user.id, date, job);
-            if (existing) {
-              setDuplicateError(`A time card for "${job}" already exists for this date. Redirecting to existing card...`);
-              setTimeout(() => navigate(`/timecard/edit/${existing.id}`), 1500);
-              return;
-            }
+        // Check for duplicate (same user + date + site) before creating for both field users and admins
+        const job = (entryData as any).job;
+        const date = (entryData as any).date as Date;
+        const targetUserId = (entryData as any).userId || user?.id;
+        if (job && date && targetUserId) {
+          const existing = await timecardService.findDuplicateEntry(targetUserId, date, job);
+          if (existing) {
+            const targetUser = users.find(u => u.id === targetUserId);
+            const targetName = targetUser ? (targetUser.name || targetUser.username) : 'user';
+            setDuplicateError(`A time card for "${job}" already exists for ${targetName} on this date. Redirecting to existing card...`);
+            setTimeout(() => navigate(`/timecard/edit/${existing.id}`), 1500);
+            return;
           }
         }
         // Create new entry

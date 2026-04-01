@@ -113,59 +113,6 @@ export class UserManagementService {
     }
   }
 
-  // Initialize default users if no users exist
-  async initializeDefaultUsers(): Promise<void> {
-    try {
-      const existingUsers = await this.getAllUsers();
-      
-      // Check if any of the default users already exist
-      const defaultUsernames = ['Admin', 'Supervisor', 'Field'];
-      const existingDefaultUsers = existingUsers.filter(user => 
-        defaultUsernames.includes(user.username)
-      );
-      
-      // Only create users if none of the default users exist
-      if (existingDefaultUsers.length === 0) {
-        console.log('No default users found, creating default users...');
-        
-        const defaultUsers: Omit<AppUser, 'id' | 'createdAt' | 'updatedAt'>[] = [
-          {
-            username: 'Admin',
-            password: 'Admin123', // In production, hash this
-            role: 'admin',
-            name: 'System Administrator',
-            isActive: true,
-          },
-          {
-            username: 'Supervisor',
-            password: 'Supervisor123', // In production, hash this
-            role: 'supervisor',
-            name: 'System Supervisor',
-            isActive: true,
-          },
-          {
-            username: 'Field',
-            password: 'Field123', // In production, hash this
-            role: 'field',
-            name: 'Field Technician',
-            isActive: true,
-          }
-        ];
-
-        for (const user of defaultUsers) {
-          await this.addUser(user);
-        }
-
-        console.log('Default users created successfully');
-      } else {
-        console.log('Default users already exist, skipping initialization');
-      }
-    } catch (error) {
-      console.error('Failed to initialize default users:', error);
-      // Don't throw error to prevent app from breaking
-      // Just log it and continue
-    }
-  }
 }
 
 export const userManagementService = new UserManagementService();

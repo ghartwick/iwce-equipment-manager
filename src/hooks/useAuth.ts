@@ -169,18 +169,6 @@ export function useAuth() {
     }
   };
 
-  // Initialize default users if needed (only for initial setup)
-  useEffect(() => {
-    const initializeUsers = async () => {
-      try {
-        await userManagementService.initializeDefaultUsers();
-      } catch (error) {
-        console.error('Failed to initialize default users:', error);
-      }
-    };
-
-    initializeUsers();
-  }, []);
 
   const clearError = (): void => {
     setAuthState(prev => ({ ...prev, error: null }));

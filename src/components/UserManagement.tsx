@@ -206,7 +206,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className={`p-6 ${asPage ? 'overflow-visible' : 'overflow-y-auto max-h-[calc(90vh-120px)]'}`}>
           {/* Alerts */}
           {error && (
             <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 dark:bg-opacity-30 border border-red-600 rounded-lg text-red-600 dark:text-red-300">

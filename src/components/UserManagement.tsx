@@ -26,6 +26,7 @@ export function UserManagement({ onClose, currentUser, asPage = false }: UserMan
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Form state
   const [formData, setFormData] = useState<{
@@ -170,6 +171,12 @@ export function UserManagement({ onClose, currentUser, asPage = false }: UserMan
     }
   };
 
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) {
     if (asPage) {
       return (
@@ -218,16 +225,25 @@ export function UserManagement({ onClose, currentUser, asPage = false }: UserMan
             </div>
           )}
 
-          {/* Add User Button - Admin Only */}
-          {!showAddForm && !editingUser && currentUser?.role === 'admin' && (
-            <div className="mb-6">
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
-              >
-                <UserPlus className="h-4 w-4" />
-                <span>Add New User</span>
-              </button>
+          {/* Search and Actions */}
+          {!showAddForm && !editingUser && (
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 px-4 py-2 border border-yellow-600 rounded-lg bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              />
+              {currentUser?.role === 'admin' && (
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span>Add User</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -327,11 +343,11 @@ export function UserManagement({ onClose, currentUser, asPage = false }: UserMan
           <div className="space-y-6">
             {/* Determine which users to show based on current user role */}
             {(() => {
-              let usersToShow = users;
+              let usersToShow = filteredUsers;
               
               if (currentUser?.role === 'supervisor' || currentUser?.role === 'field') {
                 // For supervisors and field users, only show their own profile
-                usersToShow = users.filter(user => user.id === currentUser.id);
+                usersToShow = filteredUsers.filter(user => user.id === currentUser.id);
               }
               
               return ['admin', 'supervisor', 'field'].map((role) => {
@@ -349,7 +365,7 @@ export function UserManagement({ onClose, currentUser, asPage = false }: UserMan
                         {role === 'admin' && <Shield className="h-5 w-5 text-red-400" />}
                         {role === 'supervisor' && <Users className="h-5 w-5 text-purple-400" />}
                         {role === 'field' && <Wrench className="h-5 w-5 text-blue-400" />}
-                        <span className="capitalize">{role}s ({roleUsers.length})</span>
+                        <span className="capitalize">{role}s {searchTerm && `(filtered: ${roleUsers.length}/${filteredUsers.filter(u => u.role === role).length})`}</span>
                         {(currentUser?.role === 'supervisor' || currentUser?.role === 'field') && (
                           <span className="text-xs text-yellow-700 dark:text-yellow-600 ml-2">(Your Profile Only)</span>
                         )}

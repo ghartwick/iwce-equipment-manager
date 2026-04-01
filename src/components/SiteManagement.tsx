@@ -16,6 +16,7 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
   const [editingSiteId, setEditingSiteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -197,6 +198,11 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
     setFormData({ name: '', description: '', isActive: true });
   };
 
+  const filteredSites = sites.filter(site =>
+    site.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    site.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
 
   if (loading) {
     if (asPage) {
@@ -236,7 +242,7 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className={`p-6 ${asPage ? 'overflow-visible' : 'overflow-y-auto max-h-[calc(90vh-120px)]'}`}>
           {/* Alerts */}
           {error && (
             <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 dark:bg-opacity-30 border border-red-600 rounded-lg text-red-600 dark:text-red-300">
@@ -249,16 +255,25 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
             </div>
           )}
 
-          {/* Add Site / Import Buttons */}
+          {/* Search and Actions */}
           {!showAddForm && !editingSiteId && (
-            <div className="mb-6 flex flex-wrap gap-3">
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Add New Site</span>
-              </button>
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <input
+                type="text"
+                placeholder="Search sites..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 px-4 py-2 border border-yellow-600 rounded-lg bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              />
+              {currentUser?.role === 'admin' && (
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Site</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -320,14 +335,16 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
 
           {/* Sites List */}
           <div className="space-y-2">
-            <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-3">Sites ({sites.length})</h3>
-            {sites.length === 0 ? (
+            <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-3">
+              Sites {searchTerm && `(filtered: ${filteredSites.length}/${sites.length})`}
+            </h3>
+            {filteredSites.length === 0 ? (
               <div className="text-center py-8 text-yellow-600">
-                No sites found. Add your first site above.
+                {searchTerm ? 'No sites found matching your search.' : 'No sites found. Add your first site above.'}
               </div>
             ) : (
               <div className="space-y-2">
-                {sites.map((site) => (
+                {filteredSites.map((site) => (
                   <div
                     key={site.id}
                     className={`p-4 rounded-lg border transition-colors ${

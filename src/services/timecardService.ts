@@ -226,17 +226,18 @@ class TimecardService {
       
       return {
         id: doc.id,
+        ...data,
         date: dateObj,
         clockIn: data.clockIn?.toDate ? data.clockIn.toDate() : new Date(data.clockIn),
         clockOut: data.clockOut?.toDate ? data.clockOut.toDate() : new Date(data.clockOut),
         submittedAt: data.submittedAt?.toDate ? data.submittedAt.toDate() : (data.submittedAt ? new Date(data.submittedAt) : undefined),
+        lastEditedAt: data.lastEditedAt?.toDate ? data.lastEditedAt.toDate() : undefined,
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
         updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt),
-        ...data,
       } as TimeEntry;
     });
     
-    // Filter: supervisor's own entries (all statuses) + submitted entries from others (but NOT from other supervisors)
+    // Filter: supervisor's own entries (all statuses) + submitted entries from field users (not other supervisors)
     const filteredEntries = entries.filter(entry => {
       // Always show supervisor's own entries
       if (entry.userId === supervisorId) return true;

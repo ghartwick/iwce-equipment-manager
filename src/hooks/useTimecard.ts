@@ -146,10 +146,10 @@ export const useTimecard = () => {
           return false;
         }
         
-        // Use timezone-agnostic comparison: compare year, month, and day
-        return entryDate.getFullYear() === date.getFullYear() &&
-               entryDate.getMonth() === date.getMonth() &&
-               entryDate.getDate() === date.getDate();
+        // Use UTC date components to avoid timezone shifts for entries stored at midnight UTC
+        return entryDate.getUTCFullYear() === date.getUTCFullYear() &&
+               entryDate.getUTCMonth() === date.getUTCMonth() &&
+               entryDate.getUTCDate() === date.getUTCDate();
       } catch (error) {
         // Skip entries with invalid dates
         return false;

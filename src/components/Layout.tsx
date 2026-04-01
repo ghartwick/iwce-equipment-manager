@@ -3,8 +3,6 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, Database } from 'lucide-react';
-import { UserManagement } from './UserManagement';
-import { SiteManagement } from './SiteManagement';
 import { migrateToNewCollections } from '../utils/migrationUtils';
 
 interface LayoutProps {
@@ -18,8 +16,6 @@ function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showUserManagement, setShowUserManagement] = useState(false);
-  const [showSiteManagement, setShowSiteManagement] = useState(false);
   const [migrating, setMigrating] = useState(false);
 
   const handleMigrateDatabase = async () => {
@@ -198,8 +194,8 @@ function Layout({ children }: LayoutProps) {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setShowSiteManagement(true);
                                 setShowUserMenu(false);
+                                navigate('/manage/sites');
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
@@ -259,8 +255,8 @@ function Layout({ children }: LayoutProps) {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setShowUserManagement(true);
                               setShowUserMenu(false);
+                              navigate('/manage/users');
                             }}
                             className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                           >
@@ -346,10 +342,7 @@ function Layout({ children }: LayoutProps) {
                 {user && user.role === 'admin' && (
                   <>
                     <button
-                      onClick={() => { 
-                        setShowSiteManagement(true);
-                        setShowMobileMenu(false);
-                      }}
+                      onClick={() => { setShowMobileMenu(false); navigate('/manage/sites'); }}
                       className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                     >
                       <MapPin className="h-5 w-5" />
@@ -382,11 +375,7 @@ function Layout({ children }: LayoutProps) {
                 {/* User Management - Admin, Supervisor, and Field Users */}
                 {user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'field') && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowUserManagement(true);
-                      setShowMobileMenu(false);
-                    }}
+                    onClick={() => { setShowMobileMenu(false); navigate('/manage/users'); }}
                     className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                   >
                     <Users className="h-5 w-5" />
@@ -437,21 +426,6 @@ function Layout({ children }: LayoutProps) {
       {/* Main Content */}
       {children}
 
-      {/* User Management Modal */}
-      {showUserManagement && user && (
-        <UserManagement
-          currentUser={user}
-          onClose={() => setShowUserManagement(false)}
-        />
-      )}
-
-      {/* Site Management Modal */}
-      {showSiteManagement && user && (
-        <SiteManagement
-          currentUser={user}
-          onClose={() => setShowSiteManagement(false)}
-        />
-      )}
 
 
     </div>

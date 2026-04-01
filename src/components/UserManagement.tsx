@@ -15,9 +15,10 @@ type FormDataRole = 'admin' | 'supervisor' | 'field';
 interface UserManagementProps {
   onClose: () => void;
   currentUser: User | null;
+  asPage?: boolean;
 }
 
-export function UserManagement({ onClose, currentUser }: UserManagementProps) {
+export function UserManagement({ onClose, currentUser, asPage = false }: UserManagementProps) {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -170,6 +171,17 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
   };
 
   if (loading) {
+    if (asPage) {
+      return (
+        <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+          <div className="max-w-5xl mx-auto">
+            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6">
+              <div className="text-yellow-600 dark:text-yellow-400">Loading users...</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6">
@@ -179,9 +191,8 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
     );
   }
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+  const inner = (
+    <>
         {/* Header */}
         <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">User Management</h2>
@@ -550,6 +561,25 @@ export function UserManagement({ onClose, currentUser }: UserManagementProps) {
             })()}
           </div>
         </div>
+    </>
+  );
+
+  if (asPage) {
+    return (
+      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
+            {inner}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+        {inner}
       </div>
     </div>
   );

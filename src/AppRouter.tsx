@@ -8,6 +8,8 @@ import EquipmentPage from './pages/EquipmentPage';
 import HeavyEquipmentManagementPage from './pages/HeavyEquipmentManagementPage';
 import FieldToolsManagementPage from './pages/FieldToolsManagementPage';
 import SmallToolsManagementPage from './pages/SmallToolsManagementPage';
+import SiteManagementPage from './pages/SiteManagementPage';
+import UserManagementPage from './pages/UserManagementPage';
 import Layout from './components/Layout';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -85,6 +87,20 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <SmallToolsManagementPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/manage/sites" element={
+          isAuthenticated ? (
+            <Layout>
+              <SiteManagementPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/manage/users" element={
+          isAuthenticated ? (
+            <Layout>
+              <UserManagementPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

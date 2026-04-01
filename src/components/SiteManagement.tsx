@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, MapPin, Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, ChevronDown, ChevronRight } from 'lucide-react';
 import { Site, siteManagementService } from '../services/siteManagementService';
 
 interface SiteManagementProps {
@@ -128,17 +128,11 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
   const inner = (
     <>
         {/* Header */}
-        <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex justify-between items-center">
+        <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700">
           <div className="flex items-center space-x-2">
             <MapPin className="h-6 w-6 text-yellow-600 dark:text-yellow-300" />
             <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">Site Management</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
-          >
-            <X className="h-6 w-6" />
-          </button>
         </div>
 
         {/* Content */}
@@ -258,7 +252,7 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
                     {/* Active Sites */}
                     {activeSites.map((site) => (
                       <tr key={site.id} className="border-b border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10">
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2">
                           <div>
                             <div className="font-medium text-gray-900 dark:text-yellow-100">
                               {site.name}
@@ -269,37 +263,41 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2">
                           <span className="text-sm text-yellow-700 dark:text-yellow-600">
                             {site.description || '-'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-2 text-center">
                           <span className="text-xs text-yellow-500">
                             {(site.codes || []).length}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-2 text-center">
                           <button
                             onClick={() => handleToggleActive(site)}
-                            className="inline-flex items-center justify-center w-6 h-6 rounded bg-green-500 text-white hover:bg-green-600 transition-colors"
-                            title="Active"
+                            className={`p-1 rounded transition-colors ${
+                              site.isActive 
+                                ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 dark:hover:bg-opacity-30' 
+                                : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            }`}
+                            title={site.isActive ? 'Active (click to deactivate)' : 'Inactive (click to activate)'}
                           >
-                            <Check className="h-4 w-4" />
+                            {site.isActive ? '✓' : '-'}
                           </button>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-center space-x-2">
+                        <td className="px-4 py-2">
+                          <div className="flex space-x-1">
                             <button
                               onClick={() => handleEdit(site)}
-                              className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
+                              className="p-1 text-yellow-600 hover:text-yellow-500"
                               title="Edit site"
                             >
                               <Edit2 className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(site)}
-                              className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
+                              className="p-1 text-red-600 hover:text-red-500"
                               title="Delete site"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -325,7 +323,7 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
                         </tr>
                         {showInactive && inactiveSites.map((site) => (
                           <tr key={site.id} className="border-b border-yellow-200 dark:border-yellow-800 bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30">
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-2">
                               <div>
                                 <div className="font-medium text-gray-500 dark:text-gray-400">
                                   {site.name}
@@ -336,36 +334,41 @@ export function SiteManagement({ onClose, currentUser, asPage = false }: SiteMan
                                 </div>
                               </div>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-2">
                               <span className="text-sm text-gray-500">
                                 {site.description || '-'}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-center">
+                            <td className="px-4 py-2 text-center">
                               <span className="text-xs text-gray-500">
                                 {(site.codes || []).length}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-center">
+                            <td className="px-4 py-2 text-center">
                               <button
                                 onClick={() => handleToggleActive(site)}
-                                className="inline-flex items-center justify-center w-6 h-6 rounded border-2 border-gray-300 text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors"
-                                title="Inactive (click to activate)"
+                                className={`p-1 rounded transition-colors ${
+                                  site.isActive 
+                                    ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 dark:hover:bg-opacity-30' 
+                                    : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                }`}
+                                title={site.isActive ? 'Active (click to deactivate)' : 'Inactive (click to activate)'}
                               >
+                                {site.isActive ? '✓' : '-'}
                               </button>
                             </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center justify-center space-x-2">
+                            <td className="px-4 py-2">
+                              <div className="flex space-x-1">
                                 <button
                                   onClick={() => handleEdit(site)}
-                                  className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
+                                  className="p-1 text-yellow-600 hover:text-yellow-500"
                                   title="Edit site"
                                 >
                                   <Edit2 className="h-4 w-4" />
                                 </button>
                                 <button
                                   onClick={() => handleDelete(site)}
-                                  className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
+                                  className="p-1 text-red-600 hover:text-red-500"
                                   title="Delete site"
                                 >
                                   <Trash2 className="h-4 w-4" />

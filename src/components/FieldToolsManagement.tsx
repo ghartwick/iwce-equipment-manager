@@ -115,11 +115,8 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
   const modalContent = (
     <>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
+        <div className="px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
           <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">Manage Field Tools</h2>
-          <button onClick={onClose} className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300">
-            <X className="h-6 w-6" />
-          </button>
         </div>
 
         {/* Content */}
@@ -345,11 +342,8 @@ export function FieldToolsManagement({ onClose, currentUser, asPage = false }: F
   const pageContent = (
     <>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
+        <div className="px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
           <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">Manage Field Tools</h2>
-          <button onClick={onClose} className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300">
-            <X className="h-6 w-6" />
-          </button>
         </div>
 
         {/* Content */}

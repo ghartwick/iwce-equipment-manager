@@ -61,7 +61,7 @@ export function EditSitePage() {
         codes
       });
       setSuccess('Site updated successfully');
-      setTimeout(() => navigate('/admin/sites'), 1500);
+      setTimeout(() => navigate('/manage/sites'), 1500);
     } catch (error: any) {
       setError(error?.message || 'Failed to update site');
     }
@@ -148,7 +148,7 @@ export function EditSitePage() {
           <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate('/admin/sites')}
+                onClick={() => navigate('/manage/sites')}
                 className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />

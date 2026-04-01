@@ -149,7 +149,7 @@ class TimecardService {
     return {
       id: docSnap.id,
       ...data,
-      date: data.date.toDate(),
+      date: this.normalizeDate(data.date),
       clockIn: data.clockIn.toDate(),
       clockOut: data.clockOut.toDate(),
       submittedAt: data.submittedAt?.toDate(),
@@ -159,6 +159,13 @@ class TimecardService {
       createdAt: data.createdAt.toDate(),
       updatedAt: data.updatedAt.toDate(),
     } as TimeEntry;
+  }
+
+  // Normalize a Firestore date to local noon using its UTC date components
+  // This ensures entries stored at midnight UTC show on the correct local calendar day
+  private normalizeDate(raw: any): Date {
+    const d = raw?.toDate ? raw.toDate() : (raw instanceof Date ? raw : new Date(raw));
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0);
   }
 
   // Get time entries for a user
@@ -175,7 +182,7 @@ class TimecardService {
       return {
         ...data,
         id: doc.id,
-        date: data.date.toDate(),
+        date: this.normalizeDate(data.date),
         clockIn: data.clockIn.toDate(),
         clockOut: data.clockOut.toDate(),
         submittedAt: data.submittedAt?.toDate(),
@@ -217,17 +224,11 @@ class TimecardService {
     
     const entries = querySnapshot.docs.map(doc => {
       const data = doc.data();
-      let dateObj;
-      if (data.date && 'toDate' in data.date && typeof (data.date as any).toDate === 'function') {
-        dateObj = (data.date as any).toDate();
-      } else {
-        dateObj = new Date(data.date);
-      }
       
       return {
         id: doc.id,
         ...data,
-        date: dateObj,
+        date: this.normalizeDate(data.date),
         clockIn: data.clockIn?.toDate ? data.clockIn.toDate() : new Date(data.clockIn),
         clockOut: data.clockOut?.toDate ? data.clockOut.toDate() : new Date(data.clockOut),
         submittedAt: data.submittedAt?.toDate ? data.submittedAt.toDate() : (data.submittedAt ? new Date(data.submittedAt) : undefined),
@@ -277,7 +278,7 @@ class TimecardService {
       return {
         id: doc.id,
         ...data,
-        date: data.date.toDate(),
+        date: this.normalizeDate(data.date),
         clockIn: data.clockIn.toDate(),
         clockOut: data.clockOut.toDate(),
         submittedAt: data.submittedAt?.toDate(),

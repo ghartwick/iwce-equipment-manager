@@ -146,10 +146,11 @@ export const useTimecard = () => {
           return false;
         }
         
-        // Use UTC date components to avoid timezone shifts for entries stored at midnight UTC
-        return entryDate.getUTCFullYear() === date.getUTCFullYear() &&
-               entryDate.getUTCMonth() === date.getUTCMonth() &&
-               entryDate.getUTCDate() === date.getUTCDate();
+        // Compare year, month, and day in local time
+        // Entry dates are normalized to local noon by the service layer
+        return entryDate.getFullYear() === date.getFullYear() &&
+               entryDate.getMonth() === date.getMonth() &&
+               entryDate.getDate() === date.getDate();
       } catch (error) {
         // Skip entries with invalid dates
         return false;

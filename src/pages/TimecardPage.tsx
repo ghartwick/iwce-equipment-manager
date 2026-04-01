@@ -4,7 +4,6 @@ import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
 import { UserManagementService, AppUser } from '../services/userManagementService';
-import { timecardService, TimeEntry } from '../services/timecardService';
 import { 
   format, 
   startOfMonth, 
@@ -233,58 +232,6 @@ export default function TimecardPage() {
     }
   };
 
-  // Debug: Find all duplicates (admin only)
-  const handleFindDuplicates = async () => {
-    if (user?.role !== 'admin') return;
-    try {
-      const duplicates = await timecardService.findAllDuplicates();
-      console.group('Duplicate Time Entries Found:');
-      duplicates.forEach(({ key, entries }: { key: string; entries: TimeEntry[] }) => {
-        console.log(`\nDuplicate group: ${key}`);
-        entries.forEach((e: TimeEntry) => {
-          console.log(`  - ID: ${e.id}, Hours: ${e.hours}, Status: ${e.status}, Created: ${e.createdAt}`);
-        });
-      });
-      console.groupEnd();
-      alert(`Found ${duplicates.length} duplicate groups. Check console for details.`);
-    } catch (error) {
-      console.error('Error finding duplicates:', error);
-      alert('Error finding duplicates. Check console.');
-    }
-  };
-
-  // Debug: Fix invalid hours (admin only)
-  const handleFixInvalidHours = async () => {
-    if (user?.role !== 'admin' || !selectedDate) return;
-    try {
-      const entries = getEntriesForDate(selectedDate);
-      const invalidEntries = entries.filter(e => !e.hours || e.hours < 0 || e.hours > 24);
-      
-      if (invalidEntries.length === 0) {
-        alert('No entries with invalid hours found for this date.');
-        return;
-      }
-      
-      console.group('Entries with invalid hours:');
-      invalidEntries.forEach(e => {
-        console.log(`ID: ${e.id}, Hours: ${e.hours}, User: ${e.userId}`);
-      });
-      console.groupEnd();
-      
-      const proceed = confirm(`Found ${invalidEntries.length} entries with invalid hours. Fix them to 8 hours?`);
-      if (!proceed) return;
-      
-      for (const entry of invalidEntries) {
-        await timecardService.updateTimeEntry(entry.id!, { hours: 8 });
-      }
-      
-      alert(`Fixed ${invalidEntries.length} entries to 8 hours. Refresh to see changes.`);
-    } catch (error) {
-      console.error('Error fixing hours:', error);
-      alert('Error fixing hours. Check console.');
-    }
-  };
-
   const toggleEntryExpanded = (entryId: string) => {
     setExpandedEntries(prev => {
       const newSet = new Set(prev);
@@ -462,24 +409,6 @@ export default function TimecardPage() {
                 </div>
               )}
               
-              {/* Debug button for admins */}
-              {user?.role === 'admin' && (
-                <div className="mt-2 flex gap-2">
-                  <button
-                    onClick={handleFindDuplicates}
-                    className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 font-medium"
-                  >
-                    Debug: Find Duplicates
-                  </button>
-                  <button
-                    onClick={handleFixInvalidHours}
-                    className="px-3 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 font-medium"
-                  >
-                    Fix Invalid Hours
-                  </button>
-                </div>
-              )}
-
               {/* Time Cards List */}
               <div className="space-y-4">
                 {(() => {

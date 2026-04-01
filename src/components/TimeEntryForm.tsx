@@ -843,7 +843,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
     // Create clean entry data without any undefined/null values
     const cleanEntryData: any = {
-      userId: user.id,
+      userId: entry?.userId || user.id,
       date: selectedDate,
       clockIn: clockInDate,
       clockOut: clockOutDate,

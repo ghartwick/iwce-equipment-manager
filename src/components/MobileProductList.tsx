@@ -57,7 +57,7 @@ export function MobileProductList({
           <div key={category.id}>
             {/* Category Header */}
             <div className="sticky top-0 bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30 z-10 p-3 border-b border-yellow-700">
-              <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
+              <h3 className="text-sm font-semibold text-yellow-100 dark:text-yellow-300">
                 {category.name} ({categoryProducts.length})
               </h3>
             </div>
@@ -177,7 +177,7 @@ export function MobileProductList({
             return (
               <div key={categoryName}>
                 <div id={`category-${categoryId}`} className="sticky top-0 bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30 z-10 p-3 border-b border-yellow-700">
-                  <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
+                  <h3 className="text-sm font-semibold text-yellow-100 dark:text-yellow-300">
                     {displayCategoryName} ({categoryProducts.length})
                   </h3>
                 </div>

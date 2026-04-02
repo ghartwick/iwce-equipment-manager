@@ -147,8 +147,8 @@ export function ProductList({
                   <React.Fragment key={categoryName}>
                     {/* Category Heading */}
                     <tr>
-                      <td colSpan={2} className="px-4 py-2 bg-yellow-700 bg-opacity-40 border-b border-yellow-700">
-                        <h3 className="text-sm font-semibold text-yellow-600 uppercase tracking-wide">
+                      <td colSpan={2} className="px-4 py-2 bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30 border-b border-yellow-700">
+                        <h3 className="text-sm font-semibold text-yellow-100 dark:text-yellow-300 uppercase tracking-wide">
                           {categoryName}
                         </h3>
                       </td>
@@ -219,7 +219,7 @@ export function ProductList({
                   <React.Fragment>
                     {/* Single Category Heading */}
                     <tr>
-                      <td colSpan={2} className="px-4 py-2 bg-yellow-700 bg-opacity-40 border-b border-yellow-700">
+                      <td colSpan={2} className="px-4 py-2 bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30 border-b border-yellow-700">
                         <h3 className="text-sm font-semibold text-yellow-300 uppercase tracking-wide">
                           {categoryName}
                         </h3>

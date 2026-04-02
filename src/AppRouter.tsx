@@ -1,18 +1,31 @@
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { LoginPage } from './components/LoginPage';
-import InventoryPage from './pages/InventoryPage';
-import TimecardPage from './pages/TimecardPage';
-import TimecardEditPage from './pages/TimecardEditPage';
-import EquipmentPage from './pages/EquipmentPage';
-import HeavyEquipmentManagementPage from './pages/HeavyEquipmentManagementPage';
-import FieldToolsManagementPage from './pages/FieldToolsManagementPage';
-import SmallToolsManagementPage from './pages/SmallToolsManagementPage';
-import SiteManagementPage from './pages/SiteManagementPage';
-import { EditSitePage } from './pages/EditSitePage';
-import UserManagementPage from './pages/UserManagementPage';
 import Layout from './components/Layout';
 import { ThemeProvider } from './context/ThemeContext';
+
+// Lazy-load page components for code splitting
+const InventoryPage = React.lazy(() => import('./pages/InventoryPage'));
+const TimecardPage = React.lazy(() => import('./pages/TimecardPage'));
+const TimecardEditPage = React.lazy(() => import('./pages/TimecardEditPage'));
+const EquipmentPage = React.lazy(() => import('./pages/EquipmentPage'));
+const HeavyEquipmentManagementPage = React.lazy(() => import('./pages/HeavyEquipmentManagementPage'));
+const FieldToolsManagementPage = React.lazy(() => import('./pages/FieldToolsManagementPage'));
+const SmallToolsManagementPage = React.lazy(() => import('./pages/SmallToolsManagementPage'));
+const SiteManagementPage = React.lazy(() => import('./pages/SiteManagementPage'));
+const EditSitePage = React.lazy(() => import('./pages/EditSitePage').then(m => ({ default: m.EditSitePage })));
+const UserManagementPage = React.lazy(() => import('./pages/UserManagementPage'));
+
+// Loading fallback for lazy-loaded pages
+const PageLoader = () => (
+  <div className="min-h-screen bg-yellow-100 dark:bg-black flex items-center justify-center">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 dark:border-yellow-400 mx-auto mb-4"></div>
+      <div className="text-lg text-yellow-600 dark:text-yellow-400">Loading...</div>
+    </div>
+  </div>
+);
 
 function AppRouter() {
   const { isAuthenticated, isLoading, login, error: authError } = useAuth();
@@ -39,6 +52,7 @@ function AppRouter() {
   return (
     <ThemeProvider>
     <Router>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={!isAuthenticated ? <LoginPage onLogin={handleLogin} error={authError || undefined} /> : <Navigate to="/inventory" replace />} />
         <Route path="/" element={<Navigate to="/inventory" replace />} />
@@ -113,6 +127,7 @@ function AppRouter() {
           ) : <Navigate to="/login" replace />
         } />
       </Routes>
+      </Suspense>
     </Router>
     </ThemeProvider>
   );

@@ -1021,6 +1021,27 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               </select>
             </div>
 
+            {/* Worked Hours */}
+            <div className="flex flex-col flex-shrink-0 min-w-0">
+              <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
+                Worked Hours
+              </label>
+              <input
+                type="text"
+                value={hours}
+                readOnly
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-gray-900 dark:text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
+                  isLocked 
+                    ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-20 border-red-600 text-red-600 dark:text-red-300' 
+                    : 'bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-20 border rounded-lg'
+                } ${
+                  !isLocked && !hoursMatch ? 'border-red-500' : 
+                  !isLocked ? 'border-yellow-400 dark:border-yellow-800' : ''
+                }`}
+                maxLength={3}
+              />
+            </div>
+
             {/* Travel Hours */}
             <div className="flex flex-col flex-shrink-0 min-w-0">
               <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
@@ -1049,27 +1070,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 placeholder="0"
                 maxLength={5}
                 inputMode="decimal"
-              />
-            </div>
-
-            {/* Worked Hours */}
-            <div className="flex flex-col flex-shrink-0 min-w-0">
-              <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-1 whitespace-nowrap">
-                Worked Hours
-              </label>
-              <input
-                type="text"
-                value={hours}
-                readOnly
-                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-gray-900 dark:text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
-                  isLocked 
-                    ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-20 border-red-600 text-red-600 dark:text-red-300' 
-                    : 'bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-20 border rounded-lg'
-                } ${
-                  !isLocked && !hoursMatch ? 'border-red-500' : 
-                  !isLocked ? 'border-yellow-400 dark:border-yellow-800' : ''
-                }`}
-                maxLength={3}
               />
             </div>
         </div>

@@ -580,12 +580,12 @@ export default function TimecardPage() {
                                             </div>
                                           )}
                                           <div className="font-medium text-yellow-700 dark:text-yellow-600">
-                                            {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
-                                            {(entry.travelHours ?? 0) > 0 && (
-                                              <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">
-                                                (Travel: {entry.travelHours})
-                                              </span>
-                                            )}
+                                            <span className="text-sm">
+                                              Worked {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
+                                              {(entry.travelHours ?? 0) > 0 && (
+                                                <> + Travel {entry.travelHours}</>
+                                              )} = Total {((calcHours(entry.clockIn, entry.clockOut) ?? entry.hours) + (entry.travelHours ?? 0)).toFixed(2)}
+                                            </span>
                                             {entry.lastEditedBy && (
                                               <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt instanceof Date ? entry.lastEditedAt : (entry.lastEditedAt as any).toDate(), 'MMM d, yyyy HH:mm') : ''}`}>
                                                 Edited by {entry.lastEditedBy}
@@ -819,12 +819,12 @@ export default function TimecardPage() {
                                           </div>
                                         )}
                                         <div className="font-medium text-yellow-700 dark:text-yellow-600">
-                                          {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
-                                          {(entry.travelHours ?? 0) > 0 && (
-                                            <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">
-                                              (Travel: {entry.travelHours})
-                                            </span>
-                                          )}
+                                          <span className="text-sm">
+                                            Worked {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
+                                            {(entry.travelHours ?? 0) > 0 && (
+                                              <> + Travel {entry.travelHours}</>
+                                            )} = Total {((calcHours(entry.clockIn, entry.clockOut) ?? entry.hours) + (entry.travelHours ?? 0)).toFixed(2)}
+                                          </span>
                                           {entry.lastEditedBy && (
                                             <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt instanceof Date ? entry.lastEditedAt : (entry.lastEditedAt as any).toDate(), 'MMM d, yyyy HH:mm') : ''}`}>
                                               Edited by {entry.lastEditedBy}

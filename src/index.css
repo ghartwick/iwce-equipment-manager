@@ -3,14 +3,53 @@
 @tailwind utilities;
 
 @layer base {
+  /* ===== LIGHT MODE COLOR PALETTE =====
+     Edit these values to change light mode colors.
+     Format: R G B (space-separated, no commas)
+     
+     Your palette:
+       #f9f4e7  #e8dcc8  #c8b59a  #a18a6f  #756150
+  */
+  :root {
+    --yellow-50:  250 247 240;   /* #faf7f0 - very light hover bg */
+    --yellow-100: 249 244 231;   /* #f9f4e7 - page background */
+    --yellow-200: 232 220 200;   /* #e8dcc8 - card/surface background */
+    --yellow-300: 220 206 176;   /* #dcceb0 - light border */
+    --yellow-400: 200 181 154;   /* #c8b59a - medium border/accent */
+    --yellow-500: 161 138 111;   /* #a18a6f - buttons, focus rings */
+    --yellow-600: 139 117 96;    /* #8b7560 - primary border, secondary text */
+    --yellow-700: 117 97 80;     /* #756150 - primary text, headers */
+    --yellow-800: 95 77 65;      /* #5f4d41 - strong text */
+    --yellow-900: 74 60 51;      /* #4a3c33 - dark bg (separators) */
+    --yellow-950: 58 47 40;      /* #3a2f28 - darkest */
+  }
+
+  /* ===== DARK MODE COLOR PALETTE =====
+     Edit these values to change dark mode colors.
+     These are the original Tailwind yellow values.
+  */
+  .dark {
+    --yellow-50:  254 252 232;   /* #fefce8 */
+    --yellow-100: 254 249 195;   /* #fef9c3 */
+    --yellow-200: 254 240 138;   /* #fef08a */
+    --yellow-300: 253 224 71;    /* #fde047 */
+    --yellow-400: 250 204 21;    /* #facc15 */
+    --yellow-500: 234 179 8;     /* #eab308 */
+    --yellow-600: 202 138 4;     /* #ca8a04 */
+    --yellow-700: 161 98 7;      /* #a16207 */
+    --yellow-800: 133 77 14;     /* #854d0e */
+    --yellow-900: 113 63 18;     /* #713f12 */
+    --yellow-950: 66 32 6;       /* #422006 */
+  }
+
   body {
-    background-color: #f0e0c8;
+    background-color: #f9f4e7;
     background-image: 
-      radial-gradient(circle at 25% 25%, rgba(120, 80, 40, 0.07) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, rgba(120, 80, 40, 0.06) 0%, transparent 50%),
-      radial-gradient(circle at 50% 50%, rgba(120, 80, 40, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 10% 90%, rgba(120, 80, 40, 0.06) 0%, transparent 50%),
-      radial-gradient(circle at 90% 10%, rgba(120, 80, 40, 0.07) 0%, transparent 50%);
+      radial-gradient(circle at 25% 25%, rgba(161, 138, 111, 0.07) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(200, 181, 154, 0.06) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(232, 220, 200, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 10% 90%, rgba(117, 97, 80, 0.06) 0%, transparent 50%),
+      radial-gradient(circle at 90% 10%, rgba(161, 138, 111, 0.07) 0%, transparent 50%);
   }
   
   .dark body {

@@ -107,9 +107,9 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
   if (loading) {
     if (asPage) {
       return (
-        <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+        <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
           <div className="max-w-5xl mx-auto">
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6">
+            <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg p-6">
               <div className="text-yellow-600 dark:text-yellow-400">Loading sites...</div>
             </div>
           </div>
@@ -118,7 +118,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
     }
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6">
+        <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg p-6">
           <div className="text-yellow-600 dark:text-yellow-400">Loading sites...</div>
         </div>
       </div>
@@ -128,10 +128,10 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
   const inner = (
     <>
         {/* Header */}
-        <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700">
+        <div className="bg-yellow-700 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700">
           <div className="flex items-center space-x-2">
-            <MapPin className="h-6 w-6 text-yellow-600 dark:text-yellow-300" />
-            <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">Site Management</h2>
+            <MapPin className="h-6 w-6 text-yellow-100 dark:text-yellow-300" />
+            <h2 className="text-xl font-semibold text-yellow-100 dark:text-yellow-300">Site Management</h2>
           </div>
         </div>
 
@@ -157,7 +157,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
                 placeholder="Search sites..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 px-4 py-2 border border-yellow-600 rounded-lg bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                className="flex-1 px-4 py-2 border border-yellow-600 rounded-lg bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
               />
               {currentUser?.role === 'admin' && (
                 <button
@@ -183,7 +183,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                       required
                     />
                   </div>
@@ -193,7 +193,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
                       type="text"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     />
                   </div>
                 </div>
@@ -240,12 +240,12 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
-                      <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Site Name</th>
-                      <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Description</th>
-                      <th className="px-4 py-2 text-center text-yellow-700 dark:text-yellow-300">Codes</th>
-                      <th className="px-4 py-2 text-center text-yellow-700 dark:text-yellow-300">Active</th>
-                      <th className="px-4 py-2 text-center text-yellow-700 dark:text-yellow-300">Actions</th>
+                    <tr className="bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30">
+                      <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Site Name</th>
+                      <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Description</th>
+                      <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Codes</th>
+                      <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Active</th>
+                      <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -390,9 +390,9 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
 
   if (asPage) {
     return (
-      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+      <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
+          <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
             {inner}
           </div>
         </div>
@@ -402,7 +402,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden">
         {inner}
       </div>
     </div>

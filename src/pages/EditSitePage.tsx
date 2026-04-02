@@ -118,9 +118,9 @@ export function EditSitePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+      <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6">
+          <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg p-6">
             <div className="text-yellow-600 dark:text-yellow-400">Loading site...</div>
           </div>
         </div>
@@ -130,9 +130,9 @@ export function EditSitePage() {
 
   if (!site) {
     return (
-      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+      <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6">
+          <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg p-6">
             <div className="text-red-600 dark:text-red-400">Site not found</div>
           </div>
         </div>
@@ -141,20 +141,20 @@ export function EditSitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+    <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
       <div className="max-w-5xl mx-auto">
-        <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
+        <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
           {/* Header */}
-          <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex justify-between items-center">
+          <div className="bg-yellow-700 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/manage/sites')}
-                className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
+                className="p-2 text-yellow-100 dark:text-yellow-400 hover:text-yellow-200 dark:hover:text-yellow-300 transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <div className="flex items-center space-x-2">
-                <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">Edit Site</h2>
+                <h2 className="text-xl font-semibold text-yellow-100 dark:text-yellow-300">Edit Site</h2>
               </div>
             </div>
             <div className="flex space-x-2">
@@ -192,7 +192,7 @@ export function EditSitePage() {
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     required
                   />
                 </div>
@@ -202,7 +202,7 @@ export function EditSitePage() {
                     type="text"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                 </div>
               </div>
@@ -258,14 +258,14 @@ export function EditSitePage() {
                       value={newCode}
                       onChange={(e) => setNewCode(e.target.value)}
                       placeholder="Code name"
-                      className="px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     />
                     <input
                       type="text"
                       value={newCodeDescription}
                       onChange={(e) => setNewCodeDescription(e.target.value)}
                       placeholder="Description (optional)"
-                      className="px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      className="px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     />
                   </div>
                   <div className="mt-3 flex space-x-2">

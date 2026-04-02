@@ -176,7 +176,7 @@ const WorkEntrySection = ({
               value={entry.code}
               onChange={handleCodeChange}
               disabled={isLocked}
-              className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+              className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
             >
               <option value="">Select Code</option>
               {codeOptionsWithDetails.map(codeOption => (
@@ -200,7 +200,7 @@ const WorkEntrySection = ({
               value={entry.machineHours}
               onChange={handleMachineHoursChange}
               disabled={isLocked}
-              className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+              className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
                 !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
               }`}
               maxLength={5}
@@ -219,7 +219,7 @@ const WorkEntrySection = ({
               value={entry.labourHours}
               onChange={handleLabourHoursChange}
               disabled={isLocked}
-              className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+              className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
                 !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
               }`}
               maxLength={5}
@@ -235,7 +235,7 @@ const WorkEntrySection = ({
             value={entry.equipment}
             onChange={handleEquipmentChange}
             disabled={isLocked}
-            className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+            className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
           >
             <option value="">Select Equipment</option>
             {equipmentOptions.map(equipmentOption => (
@@ -280,7 +280,7 @@ const WorkEntrySection = ({
               }
             }}
             disabled={isLocked}
-            className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+            className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
           >
             <option value="">Select Small Tools</option>
             {smallToolsOptions.filter(option => !entry.smallTools.includes(option)).map(smallToolsOption => (
@@ -301,7 +301,7 @@ const WorkEntrySection = ({
             onChange={handleNotesChange}
             disabled={isLocked}
             rows={3}
-            className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 resize-none"
+            className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50 resize-none"
             placeholder="Add any notes about this time entry..."
           />
         </div>
@@ -895,7 +895,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const showButtons = (canEdit && !isLocked) || (!entry && selectedEntryId === null);
 
   return (
-    <div className={`bg-[#fffff0] dark:bg-black relative ${isInline ? 'w-full' : 'border border-yellow-600 rounded-lg p-2'}`}>
+    <div className={`bg-yellow-200 dark:bg-black relative ${isInline ? 'w-full' : 'border border-yellow-600 rounded-lg p-2'}`}>
       {/* X Button in Top Right Corner - hidden when showCancelButton is true */}
       {!showCancelButton && (
         <button
@@ -931,7 +931,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               }
             }}
             disabled={isLocked}
-            className={`w-full px-3 py-2 bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+            className={`w-full px-3 py-2 bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
               isLocked 
                 ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                 : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
@@ -958,7 +958,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 onChange={(e) => setCustomSite(e.target.value)}
                 disabled={isLocked}
                 placeholder="Enter site name"
-                className={`w-full px-3 py-2 bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-full px-3 py-2 bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                     : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
@@ -980,7 +980,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 value={clockIn}
                 onChange={(e) => setClockIn(e.target.value)}
                 disabled={isLocked}
-                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                     : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
@@ -1005,7 +1005,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 value={clockOut}
                 onChange={(e) => setClockOut(e.target.value)}
                 disabled={isLocked}
-                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                     : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
@@ -1062,7 +1062,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                   }
                 }}
                 disabled={isLocked}
-                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-[#fffff0] dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:outline-none transition-colors ${
+                className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:outline-none transition-colors ${
                   isLocked 
                     ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                     : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'

@@ -235,7 +235,7 @@ function InventoryPage() {
         )}
 
         {/* Desktop Equipment Table - Original Design */}
-        <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
+        <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
             <div className="p-6">
               {/* Search Field - Above */}
               <div className="mb-4">
@@ -289,7 +289,7 @@ function InventoryPage() {
 
           {/* Forms Section - Admin Only */}
           {showAddForm && user?.role === 'admin' && (
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2 sm:p-3">
+            <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2 sm:p-3">
               <ProductForm
                 categories={categories}
                 product={null}
@@ -301,7 +301,7 @@ function InventoryPage() {
           )}
 
           {/* Mobile Equipment Table - Optimized */}
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
+          <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
             <div className="p-2 sm:p-3">
               <div className="flex flex-col space-y-2">
                 {/* Search - Mobile Full Width */}

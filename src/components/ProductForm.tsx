@@ -275,7 +275,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   };
 
   return (
-    <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-3 sm:p-4">
+    <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-3 sm:p-4">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
           {formTitle}
@@ -322,7 +322,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
               className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
                 isEditing && !allowFullEdit
                   ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                  : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
               }`}
               placeholder="Equipment Name"
             />
@@ -338,7 +338,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                 className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
                   isEditing && !allowFullEdit
                     ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                    : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                    : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
                 }`}
                 placeholder="Description"
               />
@@ -355,7 +355,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                 className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
                   isEditing && !allowFullEdit
                     ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                    : 'border-yellow-600 bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                    : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
                 }`}
                 placeholder="Serial Number"
               />
@@ -368,7 +368,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                 required
                 value={formData.category}
                 onChange={(e) => handleInputChange('category', e.target.value)}
-                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
               >
                 <option value="">Category</option>
                 {categories.map((cat) => (
@@ -385,7 +385,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
               <select
                 value={formData.employee}
                 onChange={(e) => handleInputChange('employee', e.target.value)}
-                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
               >
                 <option value="">Employee</option>
                 <option value="Office">Office</option>
@@ -406,7 +406,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
               <select
                 value={showCustomSite ? 'OTHER' : formData.site}
                 onChange={(e) => handleSiteChange(e.target.value)}
-                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
               >
                 <option value="">Site</option>
                 {sortedSites.map((site) => (
@@ -422,7 +422,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                   value={customSite}
                   onChange={(e) => handleCustomSiteChange(e.target.value)}
                   placeholder="Enter custom site name"
-                  className="w-full mt-2 px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                  className="w-full mt-2 px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
                   autoFocus
                 />
               )}
@@ -462,7 +462,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
                   placeholder="Add a note..."
-                  className="flex-1 px-3 py-2 border border-yellow-600 rounded-md outline-none text-sm bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                  className="flex-1 px-3 py-2 border border-yellow-600 rounded-md outline-none text-sm bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNote())}
                 />
                 <button
@@ -508,7 +508,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
               value={formData.repairDescription}
               onChange={(e) => handleInputChange('repairDescription', e.target.value)}
               placeholder="Describe the alert or issue details..."
-              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
             />
           </div>
         )}
@@ -561,7 +561,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       {/* QR Code Modal */}
       {showQR && product?.id && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" onClick={() => setShowQR(false)}>
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6 w-80" onClick={e => e.stopPropagation()}>
+          <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6 w-80" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">{product.name}</h3>
               <button onClick={() => setShowQR(false)} className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500">

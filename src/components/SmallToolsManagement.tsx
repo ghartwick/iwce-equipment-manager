@@ -141,7 +141,7 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg p-6">
+        <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg p-6">
           <div className="text-yellow-400">Loading small tools...</div>
         </div>
       </div>
@@ -151,8 +151,7 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
   const inner = (
     <>
         {/* Header */}
-        <div className="px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
-          <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">Small Tools Management</h2>
+        <div className="px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-700 dark:bg-yellow-900 dark:bg-opacity-30"><h2 className="text-xl font-semibold text-yellow-100 dark:text-yellow-300">Small Tools Management</h2>
         </div>
 
         {/* Content */}
@@ -335,8 +334,7 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
   const pageContent = (
     <>
         {/* Header */}
-        <div className="px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
-          <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">Small Tools Management</h2>
+        <div className="px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-700 dark:bg-yellow-900 dark:bg-opacity-30"><h2 className="text-xl font-semibold text-yellow-100 dark:text-yellow-300">Small Tools Management</h2>
         </div>
 
         {/* Content */}
@@ -362,11 +360,11 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
             <div className="overflow-x-auto">
               <table className="w-full max-w-[100vw]">
                 <thead>
-                  <tr className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
-                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Name</th>
-                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Description</th>
-                    <th className="px-4 py-2 text-center text-yellow-700 dark:text-yellow-300">Status</th>
-                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Actions</th>
+                  <tr className="bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30">
+                    <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Name</th>
+                    <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Description</th>
+                    <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Status</th>
+                    <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -378,7 +376,7 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-2 py-1 border border-yellow-600 rounded bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100"
+                            className="w-full px-2 py-1 border border-yellow-600 rounded bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
                           />
                         ) : (
                           <span className={tool.isActive ? 'text-gray-900 dark:text-yellow-100' : 'text-gray-400 line-through'}>
@@ -392,7 +390,7 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
                             type="text"
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full px-2 py-1 border border-yellow-600 rounded bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100"
+                            className="w-full px-2 py-1 border border-yellow-600 rounded bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
                           />
                         ) : (
                           <span className="text-gray-600 dark:text-yellow-600">{tool.description || '-'}</span>
@@ -479,9 +477,9 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
 
   if (asPage) {
     return (
-      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+      <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
+          <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
             {pageContent}
           </div>
         </div>
@@ -491,7 +489,7 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden">
         {inner}
       </div>
     </div>

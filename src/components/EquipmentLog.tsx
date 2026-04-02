@@ -76,7 +76,7 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
   }
 
   return (
-    <div className="bg-[#fffff0] dark:bg-black p-2 sm:p-3">
+    <div className="bg-yellow-200 dark:bg-black p-2 sm:p-3">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-yellow-600 dark:text-yellow-400 flex items-center space-x-2">
           <Clock className="h-5 w-5" />

@@ -56,7 +56,7 @@ export function MobileProductList({
         return (
           <div key={category.id}>
             {/* Category Header */}
-            <div className="sticky top-0 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 z-10 p-3 border-b border-yellow-700">
+            <div className="sticky top-0 bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30 z-10 p-3 border-b border-yellow-700">
               <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
                 {category.name} ({categoryProducts.length})
               </h3>
@@ -68,7 +68,7 @@ export function MobileProductList({
               return (
                 <React.Fragment key={product.id}>
                   <div 
-                    className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? 'bg-red-100 dark:bg-red-950' : 'bg-[#fffff0] dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                    className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? 'bg-red-100 dark:bg-red-950' : 'bg-yellow-200 dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                   >
                     {/* Equipment Name - Primary */}
                     <div className="flex items-start justify-between">
@@ -176,7 +176,7 @@ export function MobileProductList({
             
             return (
               <div key={categoryName}>
-                <div id={`category-${categoryId}`} className="sticky top-0 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 z-10 p-3 border-b border-yellow-700">
+                <div id={`category-${categoryId}`} className="sticky top-0 bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30 z-10 p-3 border-b border-yellow-700">
                   <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
                     {displayCategoryName} ({categoryProducts.length})
                   </h3>
@@ -186,7 +186,7 @@ export function MobileProductList({
                   return (
                     <React.Fragment key={product.id}>
                       <div 
-                        className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? 'bg-red-100 dark:bg-red-950' : 'bg-[#fffff0] dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                        className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? 'bg-red-100 dark:bg-red-950' : 'bg-yellow-200 dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                       >
                         {/* Equipment Name - Primary */}
                         <div className="flex items-start justify-between">

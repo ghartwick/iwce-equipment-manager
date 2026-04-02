@@ -119,7 +119,7 @@ export default function TimecardEditPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-yellow-100 dark:bg-black flex items-center justify-center">
         <div className="text-yellow-600 dark:text-yellow-400">Loading...</div>
       </div>
     );
@@ -127,7 +127,7 @@ export default function TimecardEditPage() {
 
   if (!entry && entryId !== 'new') {
     return (
-      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-yellow-100 dark:bg-black flex items-center justify-center">
         <div className="text-red-500">Time card not found.</div>
       </div>
     );
@@ -149,7 +149,7 @@ export default function TimecardEditPage() {
   const ownerName = entry ? getBestDisplayName(users.find(u => u.id === entry.userId)) : user?.name || '';
 
   return (
-    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-4">
+    <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-4">
       <div className="max-w-5xl mx-auto">
         {duplicateError && (
           <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900 border border-yellow-500 rounded-lg text-yellow-800 dark:text-yellow-200 text-sm">

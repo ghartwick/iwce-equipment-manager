@@ -78,7 +78,7 @@ export function ProductList({
 
   if (products.length === 0) {
     return (
-      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow p-8 text-center">
+      <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow p-8 text-center">
         <Package className="h-12 w-12 text-yellow-600 dark:text-yellow-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-2">No equipment found</h3>
         <p className="text-yellow-600">Get started by adding your first equipment to the inventory.</p>
@@ -88,9 +88,9 @@ export function ProductList({
 
   return (
     <>
-    <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
+    <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
       {/* Header with export button */}
-      <div className="bg-[#fffff0] dark:bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
+      <div className="bg-yellow-200 dark:bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
         <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300">Equipment Inventory</h2>
         {userRole === 'admin' && (
           <div className="flex items-center space-x-2">
@@ -123,7 +123,7 @@ export function ProductList({
       
       <div className="overflow-x-auto">
         <table className="w-full max-w-[100vw]">
-          <tbody className="bg-[#fffff0] dark:bg-black divide-y divide-yellow-200 dark:divide-yellow-800">
+          <tbody className="bg-yellow-200 dark:bg-black divide-y divide-yellow-200 dark:divide-yellow-800">
             {showCategoryHeadings ? (
               // Group by category with headings
               (() => {
@@ -147,7 +147,7 @@ export function ProductList({
                   <React.Fragment key={categoryName}>
                     {/* Category Heading */}
                     <tr>
-                      <td colSpan={2} className="px-4 py-2 bg-yellow-900 bg-opacity-30 border-b border-yellow-700">
+                      <td colSpan={2} className="px-4 py-2 bg-yellow-700 bg-opacity-40 border-b border-yellow-700">
                         <h3 className="text-sm font-semibold text-yellow-600 uppercase tracking-wide">
                           {categoryName}
                         </h3>
@@ -162,7 +162,7 @@ export function ProductList({
                           className={`
                             ${selectedEquipmentId === product.id 
                               ? ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
-                              : ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-100 dark:bg-red-950" : "bg-[#fffff0] dark:bg-black")
+                              : ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-100 dark:bg-red-950" : "bg-yellow-200 dark:bg-black")
                             } 
                             transition-all duration-200 cursor-pointer hover:opacity-80
                           `}
@@ -219,7 +219,7 @@ export function ProductList({
                   <React.Fragment>
                     {/* Single Category Heading */}
                     <tr>
-                      <td colSpan={2} className="px-4 py-2 bg-yellow-900 bg-opacity-30 border-b border-yellow-700">
+                      <td colSpan={2} className="px-4 py-2 bg-yellow-700 bg-opacity-40 border-b border-yellow-700">
                         <h3 className="text-sm font-semibold text-yellow-300 uppercase tracking-wide">
                           {categoryName}
                         </h3>
@@ -234,7 +234,7 @@ export function ProductList({
                           className={`
                             ${selectedEquipmentId === product.id 
                               ? ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
-                              : ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-100 dark:bg-red-950" : "bg-[#fffff0] dark:bg-black")
+                              : ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-100 dark:bg-red-950" : "bg-yellow-200 dark:bg-black")
                             } 
                             transition-all duration-200 cursor-pointer hover:opacity-80
                           `}

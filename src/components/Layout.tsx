@@ -88,9 +88,9 @@ function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black transition-colors duration-200">
+    <div className="min-h-screen bg-yellow-100 dark:bg-black transition-colors duration-200">
       {/* Header - Matching Original Style */}
-      <header className="bg-[#f0e0c8] dark:bg-black border-b border-yellow-600 transition-colors duration-200">
+      <header className="bg-yellow-100 dark:bg-black border-b border-yellow-600 transition-colors duration-200">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between h-16">
             {/* Left Side - Logo + Title */}
@@ -163,7 +163,7 @@ function Layout({ children }: LayoutProps) {
                       e.stopPropagation();
                       setShowUserMenu(!showUserMenu);
                     }}
-                    className="flex items-center space-x-2 p-2 bg-[#f0e0c8] dark:bg-yellow-900 dark:bg-opacity-30 rounded-lg hover:bg-[#e8d0b8] dark:hover:bg-opacity-50 transition-colors"
+                    className="flex items-center space-x-2 p-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 rounded-lg hover:bg-[#e8d0b8] dark:hover:bg-opacity-50 transition-colors"
                     title="User Menu"
                   >
                     <User className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
@@ -171,7 +171,7 @@ function Layout({ children }: LayoutProps) {
                   </button>
 
                   {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-64 bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-lg z-50">
+                    <div className="absolute right-0 mt-2 w-64 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-lg z-50">
                       <div className="p-4 border-b border-yellow-200 dark:border-yellow-800">
                         <div className="flex items-center space-x-3">
                           <div className="h-10 w-10 bg-yellow-600 rounded-full flex items-center justify-center">

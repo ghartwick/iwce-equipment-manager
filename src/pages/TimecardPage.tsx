@@ -124,7 +124,7 @@ export default function TimecardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-yellow-100 dark:bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 dark:border-yellow-400 mx-auto mb-4"></div>
           <div className="text-lg text-yellow-600 dark:text-yellow-400">Loading timecard...</div>
@@ -247,12 +247,12 @@ export default function TimecardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+    <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
       <div className="max-w-5xl mx-auto">
         
         <div className="grid grid-cols-1 gap-2">
           {/* Calendar */}
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
+          <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
             {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
               <button
@@ -345,7 +345,7 @@ export default function TimecardPage() {
 
           {/* Time Cards Display */}
           {selectedDate && (
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
+            <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
                   Time Entries for {format(selectedDate, 'MMM d, yyyy')}
@@ -374,7 +374,7 @@ export default function TimecardPage() {
                         setSiteFilter(e.target.value);
                         setEmployeeFilter(''); // Reset employee filter when site filter changes
                       }}
-                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
+                      className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     >
                       <option value="">None</option>
                       <option value="all">All</option>
@@ -394,7 +394,7 @@ export default function TimecardPage() {
                         setEmployeeFilter(e.target.value);
                         setSiteFilter(''); // Reset site filter when employee filter changes
                       }}
-                      className="w-full px-3 py-2 bg-[#fffff0] dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
+                      className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     >
                       <option value="">None</option>
                       {(user?.role === 'supervisor' || user?.role === 'admin') && (
@@ -970,7 +970,7 @@ export default function TimecardPage() {
 
 
           {!selectedDate && (
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
+            <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
               <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-4">Select a Date</h3>
               <p className="text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view or edit time entries.</p>
             </div>

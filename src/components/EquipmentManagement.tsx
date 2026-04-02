@@ -262,8 +262,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
   const inner = (
     <>
         {/* Header */}
-        <div className="px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
-          <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">Manage Heavy Equipment</h2>
+        <div className="px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-700 dark:bg-yellow-900 dark:bg-opacity-30"><h2 className="text-xl font-semibold text-yellow-100 dark:text-yellow-300">Manage Heavy Equipment</h2>
         </div>
 
         <div className="p-4 overflow-y-auto">
@@ -287,7 +286,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
               placeholder="Search heavy equipment..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-2 border border-yellow-600 rounded-lg bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              className="flex-1 px-4 py-2 border border-yellow-600 rounded-lg bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
             />
             {currentUser?.role === 'admin' && (
               <>
@@ -406,13 +405,13 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
             <div className="overflow-x-auto">
               <table className="w-full max-w-[100vw]">
                 <thead>
-                  <tr className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30">
-                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Name</th>
-                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Site</th>
-                    <th className="px-4 py-2 text-center text-yellow-700 dark:text-yellow-300">Inventory</th>
-                    <th className="px-4 py-2 text-center text-yellow-700 dark:text-yellow-300">Timecard</th>
-                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Status</th>
-                    <th className="px-4 py-2 text-left text-yellow-700 dark:text-yellow-300">Actions</th>
+                  <tr className="bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30">
+                    <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Name</th>
+                    <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Site</th>
+                    <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Inventory</th>
+                    <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Timecard</th>
+                    <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Status</th>
+                    <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -448,7 +447,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                     return sortedGroups.map(([categoryName, items]) => (
                       <React.Fragment key={categoryName}>
                         <tr>
-                          <td colSpan={6} className="px-4 py-2 bg-yellow-900 bg-opacity-30 border-b border-yellow-700">
+                          <td colSpan={6} className="px-4 py-2 bg-yellow-700 bg-opacity-40 border-b border-yellow-700">
                             <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">
                               {categoryName} ({items.length})
                             </span>
@@ -469,7 +468,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                 <select
                                   value={item.site || ''}
                                   onChange={(e) => handleSiteChange(item, e.target.value)}
-                                  className="px-2 py-1 rounded bg-[#fffff0] dark:bg-black text-gray-900 dark:text-yellow-100 text-sm focus:ring-2 focus:ring-yellow-500"
+                                  className="px-2 py-1 rounded bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-sm focus:ring-2 focus:ring-yellow-500"
                                 >
                                   <option value="">Unassigned</option>
                                   {sites.map((site) => (
@@ -820,7 +819,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
         {/* QR Code Modal */}
         {showQR && selectedItem && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" onClick={() => setShowQR(false)}>
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6" onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">{selectedItem.name}</h3>
                 <button onClick={() => setShowQR(false)} className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500">
@@ -840,7 +839,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
         {/* Equipment Log Modal */}
         {showLog && selectedItem && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" onClick={() => setShowLog(false)}>
-            <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <EquipmentLog 
                 equipment={selectedItem} 
                 onClose={() => setShowLog(false)} 
@@ -853,9 +852,9 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
 
   if (asPage) {
     return (
-      <div className="min-h-screen bg-[#f0e0c8] dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+      <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
+          <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
             {inner}
           </div>
         </div>
@@ -865,7 +864,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] flex flex-col overflow-hidden">
         {inner}
       </div>
     </div>

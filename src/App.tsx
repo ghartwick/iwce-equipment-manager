@@ -44,7 +44,7 @@ function App() {
                            clickedElement.closest('svg.lucide-bell');
         
         // If the click is not on the bell button and not inside the alerts panel, close it
-        if (!isBellButton && !clickedElement.closest('.bg-[#fffff0].dark\\:bg-black.border.border-yellow-600')) {
+        if (!isBellButton && !clickedElement.closest('.bg-yellow-200.dark\\:bg-black.border.border-yellow-600')) {
           setShowAlerts(false);
         }
       }

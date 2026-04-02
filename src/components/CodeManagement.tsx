@@ -151,10 +151,10 @@ export function CodeManagement({ currentUser }: CodeManagementProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700">
+        <div className="bg-yellow-700 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700">
           <div className="flex items-center space-x-2">
-            <Code2 className="h-6 w-6 text-yellow-600 dark:text-yellow-300" />
-            <h2 className="text-xl font-semibold text-yellow-700 dark:text-yellow-300">Code Management</h2>
+            <Code2 className="h-6 w-6 text-yellow-100 dark:text-yellow-300" />
+            <h2 className="text-xl font-semibold text-yellow-100 dark:text-yellow-300">Code Management</h2>
           </div>
         </div>
 

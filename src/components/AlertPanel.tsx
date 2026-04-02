@@ -35,7 +35,7 @@ export function AlertPanel({ alerts, products, onClearAlert }: AlertPanelProps) 
 
   if (alerts.length === 0) {
     return (
-      <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow p-3 sm:p-6">
+      <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow p-3 sm:p-6">
         <div className="flex items-center space-x-2 mb-3 sm:mb-4">
           <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 dark:text-yellow-400" />
           <h3 className="text-base sm:text-lg font-medium text-yellow-600 dark:text-yellow-400">Equipment Alerts</h3>
@@ -46,7 +46,7 @@ export function AlertPanel({ alerts, products, onClearAlert }: AlertPanelProps) 
   }
 
   return (
-    <div className="bg-[#fffff0] dark:bg-black border border-yellow-600 rounded-lg shadow">
+    <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow">
       <div className="p-3 sm:p-6 border-b border-yellow-200 dark:border-yellow-800">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -65,7 +65,7 @@ export function AlertPanel({ alerts, products, onClearAlert }: AlertPanelProps) 
       >
         {groupedByDay.map((group) => (
           <div key={group.label}>
-            <div className="sticky top-0 px-3 py-1.5 sm:px-4 sm:py-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-50 border-b border-yellow-300 dark:border-yellow-700">
+            <div className="sticky top-0 px-3 py-1.5 sm:px-4 sm:py-2 bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-50 border-b border-yellow-300 dark:border-yellow-700">
               <p className="text-xs sm:text-sm font-semibold text-yellow-800 dark:text-yellow-300">{group.label}</p>
             </div>
             <div className="divide-y divide-yellow-200 dark:divide-yellow-800">

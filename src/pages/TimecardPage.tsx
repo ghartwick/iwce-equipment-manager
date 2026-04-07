@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
+import { InlineTimecardEdit } from '../components/InlineTimecardEdit';
 import { UserManagementService, AppUser } from '../services/userManagementService';
 import { 
   format, 
@@ -27,6 +28,7 @@ export default function TimecardPage() {
   const { 
     loading, 
     getEntriesForDate,
+    updateTimeEntry,
     deleteTimeEntry,
     canEditEntry,
     canViewEntry,
@@ -199,6 +201,11 @@ export default function TimecardPage() {
       employeeFilter,
     };
     navigate(`/timecard/edit/${entryId}`);
+  };
+
+  // Handle inline edit save
+  const handleInlineSave = async (entryId: string, updates: any, editedBy?: string) => {
+    await updateTimeEntry(entryId, updates, editedBy);
   };
 
   // Handle entry deletion
@@ -525,12 +532,16 @@ export default function TimecardPage() {
                                       <div
                                         className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
                                           canAccess 
-                                            ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600 cursor-pointer' 
+                                            ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600' 
                                             : 'border-gray-400 dark:border-gray-600 opacity-75'
                                         }`}
-                                        onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                       >
                                         <div className="space-y-2">
+                                          {/* Top row — clickable to navigate to edit page */}
+                                          <div
+                                            className={canAccess ? 'cursor-pointer' : ''}
+                                            onClick={() => canAccess && handleEntrySelect(entry.id!)}
+                                          >
                                           <div className="flex justify-between items-start">
                                             <span className="text-gray-900 dark:text-yellow-100 font-medium">
                                               {getBestDisplayName(users.find(u => u.id === entry.userId))}
@@ -592,118 +603,17 @@ export default function TimecardPage() {
                                               </span>
                                             )}
                                           </div>
+                                          </div>
                                           
-                                          {/* Expanded Details */}
+                                          {/* Expanded Details - Inline Editable */}
                                           {expandedEntries.has(entry.id || `your-${index}`) && (
-                                            <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-700 space-y-2">
-                                              {/* Time Details */}
-                                              <div className="flex items-center gap-2 text-xs text-yellow-700 dark:text-yellow-600">
-                                                {entry.clockIn && (
-                                                  <span>
-                                                    In: {(() => {
-                                                      const date = entry.clockIn instanceof Date ? entry.clockIn : 
-                                                        (entry.clockIn && 'toDate' in entry.clockIn && typeof (entry.clockIn as any).toDate === 'function') ? 
-                                                          (entry.clockIn as any).toDate() : new Date(entry.clockIn);
-                                                      return format(date, 'HH:mm');
-                                                    })()}
-                                                  </span>
-                                                )}
-                                                {entry.clockOut && (
-                                                  <span>
-                                                    Out: {(() => {
-                                                      const date = entry.clockOut instanceof Date ? entry.clockOut : 
-                                                        (entry.clockOut && 'toDate' in entry.clockOut && typeof (entry.clockOut as any).toDate === 'function') ? 
-                                                          (entry.clockOut as any).toDate() : new Date(entry.clockOut);
-                                                      return format(date, 'HH:mm');
-                                                    })()}
-                                                  </span>
-                                                )}
-                                              </div>
-                                              
-                                              {/* Work Entries */}
-                                              {entry.workEntries && entry.workEntries.length > 0 && (
-                                                <div className="space-y-1">
-                                                  {entry.workEntries.map((workEntry: any, idx: number) => (
-                                                    <div key={idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                        <div>
-                                                          {(user?.role === 'supervisor' || user?.role === 'admin') && workEntry.code && (
-                                                            <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                              {workEntry.code}
-                                                            </div>
-                                                          )}
-                                                          {workEntry.machineHours && (
-                                                            <div className="text-yellow-700 dark:text-yellow-400">
-                                                              Machine {workEntry.machineHours}
-                                                            </div>
-                                                          )}
-                                                          {workEntry.labourHours && (
-                                                            <div className="text-yellow-700 dark:text-yellow-400">
-                                                              Labour {workEntry.labourHours}
-                                                            </div>
-                                                          )}
-                                                          {workEntry.equipment && (
-                                                            <div className="text-yellow-700 dark:text-yellow-400">
-                                                              Equipment: {workEntry.equipment}
-                                                            </div>
-                                                          )}
-                                                          {workEntry.smallTools && workEntry.smallTools.length > 0 && (
-                                                            <div className="text-yellow-700 dark:text-yellow-400">
-                                                              Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
-                                                            </div>
-                                                          )}
-                                                        </div>
-                                                        {workEntry.notes && (
-                                                          <div className="text-yellow-600 dark:text-yellow-500">
-                                                            {workEntry.notes}
-                                                          </div>
-                                                        )}
-                                                      </div>
-                                                    </div>
-                                                  ))}
-                                                </div>
-                                              )}
-                                              
-                                              {/* Legacy single entry display */}
-                                              {!entry.workEntries && (entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.notes) && (
-                                                <div className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                    <div>
-                                                      {(user?.role === 'supervisor' || user?.role === 'admin') && entry.code && (
-                                                        <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                          {entry.code}
-                                                        </div>
-                                                      )}
-                                                      {entry.machineHours && (
-                                                        <div className="text-yellow-700 dark:text-yellow-400">
-                                                          Machine {entry.machineHours}
-                                                        </div>
-                                                      )}
-                                                      {entry.labourHours && (
-                                                        <div className="text-yellow-700 dark:text-yellow-400">
-                                                          Labour {entry.labourHours}
-                                                        </div>
-                                                      )}
-                                                      {entry.equipment && (
-                                                        <div className="text-yellow-700 dark:text-yellow-400">
-                                                          Equipment: {entry.equipment}
-                                                        </div>
-                                                      )}
-                                                      {entry.smallTools && (
-                                                        <div className="text-yellow-700 dark:text-yellow-400">
-                                                          Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
-                                                        </div>
-                                                      )}
-                                                    </div>
-                                                    {entry.notes && (
-                                                      <div className="text-yellow-600 dark:text-yellow-500">
-                                                        {entry.notes}
-                                                      </div>
-                                                    )}
-                                                  </div>
-                                                </div>
-                                              )}
-                                            </div>
+                                            <InlineTimecardEdit
+                                              entry={entry}
+                                              user={user!}
+                                              canEdit={canEditEntry(entry, user!)}
+                                              onSave={handleInlineSave}
+                                              calcHours={calcHours}
+                                            />
                                           )}
                                         </div>
                                         
@@ -764,12 +674,16 @@ export default function TimecardPage() {
                                     <div
                                       className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
                                         canAccess 
-                                          ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600 cursor-pointer' 
+                                          ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600' 
                                           : 'border-gray-400 dark:border-gray-600 opacity-75'
                                       }`}
-                                      onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                     >
                                       <div className="space-y-2">
+                                        {/* Top row — clickable to navigate to edit page */}
+                                        <div
+                                          className={canAccess ? 'cursor-pointer' : ''}
+                                          onClick={() => canAccess && handleEntrySelect(entry.id!)}
+                                        >
                                         <div className="flex justify-between items-start">
                                           <span className="text-gray-900 dark:text-yellow-100 font-medium">
                                             {getBestDisplayName(users.find(u => u.id === entry.userId))}
@@ -831,118 +745,17 @@ export default function TimecardPage() {
                                             </span>
                                           )}
                                         </div>
+                                        </div>
                                         
-                                        {/* Expanded Details */}
+                                        {/* Expanded Details - Inline Editable */}
                                         {expandedEntries.has(entry.id || `other-${index}`) && (
-                                          <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-700 space-y-2">
-                                            {/* Time Details */}
-                                            <div className="flex items-center gap-2 text-xs text-yellow-700 dark:text-yellow-600">
-                                              {entry.clockIn && (
-                                                <span>
-                                                  In: {(() => {
-                                                    const date = entry.clockIn instanceof Date ? entry.clockIn : 
-                                                      (entry.clockIn && 'toDate' in entry.clockIn && typeof (entry.clockIn as any).toDate === 'function') ? 
-                                                        (entry.clockIn as any).toDate() : new Date(entry.clockIn);
-                                                    return format(date, 'HH:mm');
-                                                  })()}
-                                                </span>
-                                              )}
-                                              {entry.clockOut && (
-                                                <span>
-                                                  Out: {(() => {
-                                                    const date = entry.clockOut instanceof Date ? entry.clockOut : 
-                                                      (entry.clockOut && 'toDate' in entry.clockOut && typeof (entry.clockOut as any).toDate === 'function') ? 
-                                                        (entry.clockOut as any).toDate() : new Date(entry.clockOut);
-                                                    return format(date, 'HH:mm');
-                                                  })()}
-                                                </span>
-                                              )}
-                                            </div>
-                                            
-                                            {/* Work Entries */}
-                                            {entry.workEntries && entry.workEntries.length > 0 && (
-                                              <div className="space-y-1">
-                                                {entry.workEntries.map((workEntry: any, idx: number) => (
-                                                  <div key={idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                      <div>
-                                                        {(user?.role === 'supervisor' || user?.role === 'admin') && workEntry.code && (
-                                                          <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                            {workEntry.code}
-                                                          </div>
-                                                        )}
-                                                        {workEntry.machineHours && (
-                                                          <div className="text-yellow-700 dark:text-yellow-400">
-                                                            Machine {workEntry.machineHours}
-                                                          </div>
-                                                        )}
-                                                        {workEntry.labourHours && (
-                                                          <div className="text-yellow-700 dark:text-yellow-400">
-                                                            Labour {workEntry.labourHours}
-                                                          </div>
-                                                        )}
-                                                        {workEntry.equipment && (
-                                                          <div className="text-yellow-700 dark:text-yellow-400">
-                                                            Equipment: {workEntry.equipment}
-                                                          </div>
-                                                        )}
-                                                        {workEntry.smallTools && workEntry.smallTools.length > 0 && (
-                                                          <div className="text-yellow-700 dark:text-yellow-400">
-                                                            Tools: {Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}
-                                                          </div>
-                                                        )}
-                                                      </div>
-                                                      {workEntry.notes && (
-                                                        <div className="text-yellow-600 dark:text-yellow-500">
-                                                          {workEntry.notes}
-                                                        </div>
-                                                      )}
-                                                    </div>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            )}
-                                            
-                                            {/* Legacy single entry display */}
-                                            {!entry.workEntries && (entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.notes) && (
-                                              <div className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                  <div>
-                                                    {(user?.role === 'supervisor' || user?.role === 'admin') && entry.code && (
-                                                      <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                                                        {entry.code}
-                                                      </div>
-                                                    )}
-                                                    {entry.machineHours && (
-                                                      <div className="text-yellow-700 dark:text-yellow-400">
-                                                        Machine {entry.machineHours}
-                                                      </div>
-                                                    )}
-                                                    {entry.labourHours && (
-                                                      <div className="text-yellow-700 dark:text-yellow-400">
-                                                        Labour {entry.labourHours}
-                                                      </div>
-                                                    )}
-                                                    {entry.equipment && (
-                                                      <div className="text-yellow-700 dark:text-yellow-400">
-                                                        Equipment: {entry.equipment}
-                                                      </div>
-                                                    )}
-                                                    {entry.smallTools && (
-                                                      <div className="text-yellow-700 dark:text-yellow-400">
-                                                        Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
-                                                      </div>
-                                                    )}
-                                                  </div>
-                                                  {entry.notes && (
-                                                    <div className="text-yellow-600 dark:text-yellow-500">
-                                                      {entry.notes}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
+                                          <InlineTimecardEdit
+                                            entry={entry}
+                                            user={user!}
+                                            canEdit={canEditEntry(entry, user!)}
+                                            onSave={handleInlineSave}
+                                            calcHours={calcHours}
+                                          />
                                         )}
                                       </div>
                                       

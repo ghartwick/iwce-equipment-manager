@@ -121,11 +121,23 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
 
               {entry.changes && entry.changes.length > 0 && (
                 <div className="mt-0.5 space-y-0">
-                  {entry.changes.filter(change => !['isActive', 'showInInventory', 'showInTimecard', 'parentId'].includes(change.field)).map((change, index) => (
-                    <div key={index} className="text-xs bg-gray-100 dark:bg-black dark:bg-opacity-30 rounded p-1">
-                      <span className="font-medium">{getFieldLabel(change.field)}:</span> <span className="text-green-600 dark:text-green-400">{change.newValue || '(empty)'}</span>
-                    </div>
-                  ))}
+                  {entry.changes.filter(change => !['isActive', 'showInInventory', 'showInTimecard', 'parentId'].includes(change.field)).map((change, index) => {
+                    // Special handling for deleted notes
+                    if (change.field === 'notes' && change.oldValue && change.newValue === '') {
+                      return (
+                        <div key={index} className="text-xs bg-gray-100 dark:bg-black dark:bg-opacity-30 rounded p-1">
+                          <span className="font-medium text-red-600 dark:text-red-400 line-through">{change.oldValue}</span>
+                        </div>
+                      );
+                    }
+                    
+                    // Regular field changes
+                    return (
+                      <div key={index} className="text-xs bg-gray-100 dark:bg-black dark:bg-opacity-30 rounded p-1">
+                        <span className="font-medium">{getFieldLabel(change.field)}:</span> <span className="text-green-600 dark:text-green-400">{change.newValue || '(empty)'}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

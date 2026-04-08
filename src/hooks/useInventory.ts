@@ -195,7 +195,7 @@ export function useInventory(refreshKey?: number) {
                 changes.push({
                   field: 'notes',
                   oldValue: '',
-                  newValue: `Added note: "${newNote.text}" by ${newNote.createdBy}`
+                  newValue: `"${newNote.text}"`
                 });
               }
             });
@@ -205,7 +205,7 @@ export function useInventory(refreshKey?: number) {
               if (!newNotes.some(newNote => newNote.id === oldNote.id)) {
                 changes.push({
                   field: 'notes',
-                  oldValue: `Deleted note: "${oldNote.text}" by ${oldNote.createdBy}`,
+                  oldValue: `"${oldNote.text}"`,
                   newValue: ''
                 });
               }

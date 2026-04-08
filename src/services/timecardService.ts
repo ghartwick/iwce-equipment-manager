@@ -2,6 +2,12 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, query, 
 import { db } from '../firebase';
 import { UserManagementService } from './userManagementService';
 
+export interface EquipmentEntry {
+  id: string;
+  equipment: string;
+  machineHours: number;
+}
+
 export interface TimeEntry {
   id?: string;
   userId: string;
@@ -13,6 +19,7 @@ export interface TimeEntry {
   workEntries?: WorkEntryData[];
   code?: string;
   equipment?: string;
+  equipmentEntries?: EquipmentEntry[]; // Legacy field - kept for backward compatibility
   productionQuantity?: number;
   machineHours?: number;
   labourHours?: number;
@@ -35,8 +42,9 @@ export interface WorkEntryData {
   id: string;
   notes?: string;
   code?: string;
-  equipment?: string;
-  machineHours?: number;
+  equipment?: string; // Legacy field - kept for backward compatibility
+  equipmentEntries?: EquipmentEntry[]; // New field for multiple equipment with individual machine hours
+  machineHours?: number; // Legacy field - kept for backward compatibility
   labourHours?: number;
   productionQuantity?: number;
   smallTools?: string[];

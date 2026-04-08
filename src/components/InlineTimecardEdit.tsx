@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Save, X } from 'lucide-react';
-import { TimeEntry, WorkEntryData } from '../services/timecardService';
+import { Save, X, Plus } from 'lucide-react';
+import { TimeEntry, WorkEntryData, EquipmentEntry } from '../services/timecardService';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
 import { smallToolsManagementService } from '../services/smallToolsManagementService';
@@ -98,9 +98,28 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
     setTravelHours(entry.travelHours?.toString() || '');
     setNotes(entry.notes || '');
     setWorkEntries(
-      entry.workEntries
-        ? entry.workEntries.map((we: any) => ({ ...we }))
-        : []
+      entry.workEntries && entry.workEntries.length > 0
+        ? entry.workEntries.map((we: any) => {
+            // Convert legacy equipment to equipmentEntries if needed
+            if (!we.equipmentEntries && we.equipment && Array.isArray(we.equipment)) {
+              we.equipmentEntries = we.equipment.map((eq: string, idx: number) => ({
+                id: Date.now().toString() + idx,
+                equipment: eq,
+                machineHours: we.machineHours || 0
+              }));
+            }
+            return { ...we };
+          })
+        : [{
+            id: '1',
+            notes: '',
+            code: '',
+            equipment: [],
+            equipmentEntries: [],
+            machineHours: 0,
+            labourHours: 0,
+            smallTools: []
+          }]
     );
   }, [entry]);
 
@@ -353,7 +372,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
       )}
 
       {/* Work Entries */}
-      {((isEditing ? workEntries : entry.workEntries) || []).length > 0 && (
+      {(isEditing || ((isEditing ? workEntries : entry.workEntries) || []).length > 0) && (
         <div className="space-y-1">
           {(isEditing ? workEntries : entry.workEntries || []).map((workEntry: any, idx: number) => (
             <div key={workEntry.id || idx} className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
@@ -444,53 +463,109 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                     </div>
                   )}
 
-                  {/* Equipment - filtered by site */}
-                  {(workEntry.equipment || isEditing) && (
+                  {/* Equipment Entries */}
+                  {(workEntry.equipmentEntries?.length > 0 || isEditing) && (
                     <div className="text-yellow-700 dark:text-yellow-400">
-                      <EditableField
-                        displayValue={workEntry.equipment ? `Equipment: ${Array.isArray(workEntry.equipment) ? workEntry.equipment.join(', ') : workEntry.equipment}` : 'Equipment: (click to set)'}
-                        isEditing={isEditing}
-                        editingField={editingField}
-                        fieldName={`equipment-${idx}`}
-                        onStartEdit={handleFieldClick}
-                        className="text-yellow-700 dark:text-yellow-400"
-                      >
-                        <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
-                          <span>Equipment:</span>
-                          {Array.isArray(workEntry.equipment) && workEntry.equipment.map((eq: string, eqIdx: number) => (
-                            <span key={eqIdx} className="inline-flex items-center gap-1 bg-yellow-200 dark:bg-yellow-800 px-1 rounded text-xs mr-1">
-                              {eq}
-                              <button onClick={() => {
-                                const updated = workEntry.equipment.filter((_: any, i: number) => i !== eqIdx);
-                                updateWorkEntry(idx, 'equipment', updated);
-                              }} className="text-red-500 hover:text-red-700">&times;</button>
-                            </span>
-                          ))}
-                          <select
-                            value=""
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                const current = Array.isArray(workEntry.equipment) ? workEntry.equipment : (workEntry.equipment ? [workEntry.equipment] : []);
-                                updateWorkEntry(idx, 'equipment', [...current, e.target.value]);
-                              }
-                            }}
-                            className="w-full px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
-                          >
-                            <option value="">Add equipment...</option>
-                            {filteredEquipment.map(e => (
-                              <option key={e.id} value={e.name}>{e.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </EditableField>
-                    </div>
-                  )}
+                    <EditableField
+                      displayValue={workEntry.equipmentEntries && workEntry.equipmentEntries.length > 0 ? 
+                        `${workEntry.equipmentEntries.map((e: EquipmentEntry) => `${e.equipment} - ${e.machineHours} hrs`).join(', ')}` : 
+                        'Equipment (click to set)'}
+                      isEditing={isEditing}
+                      editingField={editingField}
+                      fieldName={`equipment-${idx}`}
+                      onStartEdit={handleFieldClick}
+                    >
+                      <div className="space-y-1">
+                        {(workEntry.equipmentEntries && workEntry.equipmentEntries.length > 0 ? workEntry.equipmentEntries : [{ id: 'default', equipment: '', machineHours: 0 }]).map((equipEntry: EquipmentEntry, eqIdx: number) => (
+                          <div key={equipEntry.id} className="flex items-center gap-2">
+                            <select
+                              value={equipEntry.equipment}
+                              onChange={(e) => {
+                                let updated = [...(workEntry.equipmentEntries || [])];
+                                // If this is the default row and we're adding the first equipment, replace it
+                                if (equipEntry.id === 'default' && e.target.value) {
+                                  updated = [{ id: Date.now().toString(), equipment: e.target.value, machineHours: equipEntry.machineHours }];
+                                } else {
+                                  updated[eqIdx] = { ...updated[eqIdx], equipment: e.target.value };
+                                }
+                                updateWorkEntry(idx, 'equipmentEntries', updated);
+                                // Calculate the sum of all equipment machine hours
+                                const totalMachineHours = updated.reduce((sum, item) => {
+                                  const hours = parseFloat(item.machineHours) || 0;
+                                  return sum + hours;
+                                }, 0);
+                                updateWorkEntry(idx, 'machineHours', totalMachineHours.toString());
+                              }}
+                              className="flex-1 px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <option value="">Select Equipment</option>
+                              {filteredEquipment.map(e => (
+                                <option key={e.id} value={e.name}>{e.name}</option>
+                              ))}
+                            </select>
+                            <input
+                              type="text"
+                              value={equipEntry.machineHours}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/[^0-9.]/g, '');
+                                if (value.length <= 5) {
+                                  const parts = value.split('.');
+                                  if (parts.length <= 2 && (parts[1] === undefined || parts[1].length <= 2)) {
+                                    let updated = [...(workEntry.equipmentEntries || [])];
+                                    if (equipEntry.id === 'default' && value) {
+                                      updated = [{ id: Date.now().toString(), equipment: equipEntry.equipment, machineHours: value }];
+                                    } else if (equipEntry.id !== 'default') {
+                                      updated[eqIdx] = { ...updated[eqIdx], machineHours: value };
+                                    }
+                                    updateWorkEntry(idx, 'equipmentEntries', updated);
+                                    const totalMachineHours = updated.reduce((sum, item) => {
+                                      const hours = parseFloat(item.machineHours) || 0;
+                                      return sum + hours;
+                                    }, 0);
+                                    updateWorkEntry(idx, 'machineHours', totalMachineHours.toString());
+                                  }
+                                }
+                              }}
+                              placeholder="0"
+                              maxLength={5}
+                              inputMode="decimal"
+                              className="w-16 px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newEntry: EquipmentEntry = {
+                                  id: Date.now().toString(),
+                                  equipment: '',
+                                  machineHours: 0
+                                };
+                                const updated = [...(workEntry.equipmentEntries || []), newEntry];
+                                updateWorkEntry(idx, 'equipmentEntries', updated);
+                                const totalMachineHours = updated.reduce((sum, item) => {
+                                  const hours = parseFloat(item.machineHours) || 0;
+                                  return sum + hours;
+                                }, 0);
+                                updateWorkEntry(idx, 'machineHours', totalMachineHours.toString());
+                              }}
+                              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                              title="Add Equipment"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </EditableField>
+                  </div>
+                )}
 
                   {/* Small Tools */}
                   {(workEntry.smallTools?.length > 0 || isEditing) && (
                     <div className="text-yellow-700 dark:text-yellow-400">
                       <EditableField
-                        displayValue={workEntry.smallTools?.length > 0 ? `Tools: ${Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}` : 'Tools: (click to set)'}
+                        displayValue={workEntry.smallTools?.length > 0 ? `${Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}` : '(click to set)'}
                         isEditing={isEditing}
                         editingField={editingField}
                         fieldName={`smallTools-${idx}`}
@@ -498,7 +573,6 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                         className="text-yellow-700 dark:text-yellow-400"
                       >
                         <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
-                          <span>Tools:</span>
                           {Array.isArray(workEntry.smallTools) && workEntry.smallTools.map((tool: string, tIdx: number) => (
                             <span key={tIdx} className="inline-flex items-center gap-1 bg-yellow-200 dark:bg-yellow-800 px-1 rounded text-xs mr-1">
                               {tool}
@@ -573,11 +647,11 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                 <div className="text-yellow-700 dark:text-yellow-400">Labour {entry.labourHours}</div>
               )}
               {entry.equipment && (
-                <div className="text-yellow-700 dark:text-yellow-400">Equipment: {entry.equipment}</div>
+                <div className="text-yellow-700 dark:text-yellow-400">{entry.equipment}</div>
               )}
               {entry.smallTools && (
                 <div className="text-yellow-700 dark:text-yellow-400">
-                  Tools: {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
+                  {Array.isArray(entry.smallTools) ? entry.smallTools.join(', ') : entry.smallTools}
                 </div>
               )}
             </div>

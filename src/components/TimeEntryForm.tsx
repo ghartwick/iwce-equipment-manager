@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { TimeEntry, User } from '../services/timecardService';
 import { Site, siteManagementService } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
@@ -26,7 +26,8 @@ interface WorkEntry {
   id: string;
   notes: string;
   code: string;
-  equipment: string[];
+  equipment: string[]; // Legacy - kept for backward compatibility
+  equipmentEntries?: { id: string; equipment: string; machineHours: number }[];
   machineHours: string;
   labourHours: string;
   smallTools: string[];
@@ -40,8 +41,6 @@ const WorkEntrySection = ({
   updateEntryField, 
   addSmallTool, 
   removeSmallTool, 
-  addEquipment,
-  removeEquipment,
   removeEntry,
   toggleCollapse,
   isLocked,
@@ -56,8 +55,6 @@ const WorkEntrySection = ({
   updateEntryField: (entryId: string, field: keyof WorkEntry, value: any) => void;
   addSmallTool: (entryId: string, tool: string) => void;
   removeSmallTool: (entryId: string, toolToRemove: string) => void;
-  addEquipment: (entryId: string, equipment: string) => void;
-  removeEquipment: (entryId: string, equipmentToRemove: string) => void;
   removeEntry: (entryId: string) => void;
   toggleCollapse: (entryId: string) => void;
   isLocked: boolean;
@@ -76,23 +73,9 @@ const WorkEntrySection = ({
     updateEntryField(entry.id, 'code', e.target.value);
   };
   
-  const handleEquipmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    if (e.target.value) {
-      addEquipment(entry.id, e.target.value);
-      e.target.value = '';
-    }
-  };
-  
-  const handleMachineHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^0-9.]/g, '');
-    // Allow up to 5 characters (e.g., "99.99") and validate decimal places
-    if (value.length <= 5) {
-      // Check if decimal format is valid (max 2 decimal places)
-      const parts = value.split('.');
-      if (parts.length <= 2 && (parts[1] === undefined || parts[1].length <= 2)) {
-        updateEntryField(entry.id, 'machineHours', value);
-      }
-    }
+  const handleMachineHoursChange = () => {
+    // This field is now read-only and calculated from equipment entries
+    // So we don't allow direct editing
   };
   
   const handleLabourHoursChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,7 +92,8 @@ const WorkEntrySection = ({
   
 
   return (
-    <div className="bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-300 dark:border-yellow-800 rounded-lg p-2 space-y-4">
+    <div className="border border-yellow-400 dark:border-yellow-800 rounded-lg p-3 sm:p-4 bg-yellow-50 dark:bg-black bg-opacity-50">
+      {/* Header */}
       <div 
         className="cursor-pointer"
         onClick={() => !isLocked && toggleCollapse(entry.id)}
@@ -156,11 +140,20 @@ const WorkEntrySection = ({
                 {entry.labourHours && (
                   <div><span className="font-medium">Labour:</span> {entry.labourHours}</div>
                 )}
-                {entry.equipment.length > 0 && (
-                  <div><span className="font-medium">Equipment:</span> {entry.equipment.join(', ')}</div>
+                {(entry.equipmentEntries && entry.equipmentEntries.length > 0) && (
+                  <div>
+                    {entry.equipmentEntries.map((equipEntry, idx) => (
+                      <div key={idx}>
+                        {equipEntry.equipment} - {equipEntry.machineHours} hrs
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {entry.equipment.length > 0 && !entry.equipmentEntries && (
+                  <div>{entry.equipment.join(', ')}</div>
                 )}
                 {entry.smallTools.length > 0 && (
-                  <div><span className="font-medium">Tools:</span> {entry.smallTools.join(', ')}</div>
+                  <div>{entry.smallTools.join(', ')}</div>
                 )}
               </div>
               {entry.notes && (
@@ -178,7 +171,7 @@ const WorkEntrySection = ({
         <>
         {/* Code Dropdown - Only for supervisors and admins */}
         {(user.role === 'supervisor' || user.role === 'admin') && (
-          <div>
+          <div className="mb-3">
             <select
               value={entry.code}
               onChange={handleCodeChange}
@@ -196,7 +189,7 @@ const WorkEntrySection = ({
         )}
 
         {/* Machine & Labour Hours */}
-        <div className="flex gap-2 sm:gap-4 overflow-x-auto">
+        <div className="flex gap-2 sm:gap-4 overflow-x-auto mb-3">
           {/* Machine Hours */}
           <div className="flex flex-col flex-shrink-0 min-w-0">
             <label className="block text-xs font-medium text-yellow-600 dark:text-yellow-600 mb-1 whitespace-nowrap">
@@ -206,13 +199,15 @@ const WorkEntrySection = ({
               type="text"
               value={entry.machineHours}
               onChange={handleMachineHoursChange}
-              disabled={isLocked}
-              className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none ${
+              disabled={isLocked || true}
+              readOnly
+              className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-100 dark:bg-gray-800 border rounded-lg text-gray-700 dark:text-yellow-200 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none cursor-not-allowed ${
                 !hoursMatch ? 'border-red-500' : 'border-yellow-400 dark:border-yellow-800'
               }`}
               maxLength={5}
               inputMode="decimal"
               placeholder="0"
+              title="Auto-calculated from equipment hours"
             />
           </div>
 
@@ -236,48 +231,109 @@ const WorkEntrySection = ({
           </div>
         </div>
 
-        {/* Equipment Dropdown */}
-        <div>
-          {/* Selected Equipment Display */}
-          {entry.equipment.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {entry.equipment.map((equip, index) => (
-                <div
-                  key={index}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 border border-yellow-400 dark:border-yellow-700 rounded text-gray-800 dark:text-yellow-100 text-sm"
+        {/* Equipment Entries - Always visible */}
+        <div className="space-y-2 mb-3">
+          {(entry.equipmentEntries && entry.equipmentEntries.length > 0 ? entry.equipmentEntries : [{ id: 'default', equipment: '', machineHours: 0 }]).map((equipEntry, eqIdx) => (
+            <div key={equipEntry.id} className="flex items-center gap-2">
+              <select
+                value={equipEntry.equipment}
+                onChange={(e) => {
+                  let updated = [...(entry.equipmentEntries || [])];
+                  // If this is the default row and we're adding the first equipment, replace it
+                  if (equipEntry.id === 'default' && e.target.value) {
+                    updated = [{ id: Date.now().toString(), equipment: e.target.value, machineHours: typeof equipEntry.machineHours === 'number' ? equipEntry.machineHours : parseFloat(equipEntry.machineHours) || 0 }];
+                  } else {
+                    updated[eqIdx] = { ...updated[eqIdx], equipment: e.target.value };
+                  }
+                  updateEntryField(entry.id, 'equipmentEntries', updated);
+                  
+                  // Calculate the sum of all equipment machine hours
+                  const totalMachineHours = updated.reduce((sum, item) => {
+                    const hours = item.machineHours || 0;
+                    return sum + hours;
+                  }, 0);
+                  
+                  // Update the main machine hours field with the sum
+                  updateEntryField(entry.id, 'machineHours', totalMachineHours.toString());
+                }}
+                disabled={isLocked}
+                className="flex-1 min-w-0 max-w-48 sm:max-w-none px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
+              >
+                <option value="">Select Equipment</option>
+                {equipmentOptions.map(equipmentOption => (
+                  <option key={equipmentOption.name} value={equipmentOption.name}>
+                    {equipmentOption.name}{equipmentOption.description ? ` - ${equipmentOption.description}` : ''}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={equipEntry.machineHours}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9.]/g, '');
+                  // Allow up to 5 characters (e.g., "99.99") and validate decimal places
+                  if (value.length <= 5) {
+                    // Check if decimal format is valid (max 2 decimal places)
+                    const parts = value.split('.');
+                    if (parts.length <= 2 && (parts[1] === undefined || parts[1].length <= 2)) {
+                      let updated = [...(entry.equipmentEntries || [])];
+                      // If this is the default row and we're adding hours, replace it
+                      if (equipEntry.id === 'default' && value) {
+                        updated = [{ id: Date.now().toString(), equipment: equipEntry.equipment, machineHours: parseFloat(value) || 0 }];
+                      } else if (equipEntry.id !== 'default') {
+                        updated[eqIdx] = { ...updated[eqIdx], machineHours: parseFloat(value) || 0 };
+                      }
+                      updateEntryField(entry.id, 'equipmentEntries', updated);
+                      
+                      // Calculate the sum of all equipment machine hours
+                      const totalMachineHours = updated.reduce((sum, item) => {
+                        const hours = item.machineHours || 0;
+                        return sum + hours;
+                      }, 0);
+                      
+                      // Update the main machine hours field with the sum
+                      updateEntryField(entry.id, 'machineHours', totalMachineHours.toString());
+                    }
+                  }
+                }}
+                placeholder="0"
+                disabled={isLocked}
+                maxLength={5}
+                inputMode="decimal"
+                className="w-20 sm:w-32 px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:opacity-50 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <button
+                  type="button"
+                  onClick={() => {
+                    const newEntry = {
+                      id: Date.now().toString(),
+                      equipment: '',
+                      machineHours: 0
+                    };
+                    const updated = [...(entry.equipmentEntries || []), newEntry];
+                    updateEntryField(entry.id, 'equipmentEntries', updated);
+                    
+                    // Calculate the sum of all equipment machine hours
+                    const totalMachineHours = updated.reduce((sum, item) => {
+                      const hours = item.machineHours || 0;
+                      return sum + hours;
+                    }, 0);
+                    
+                    // Update the main machine hours field with the sum
+                    updateEntryField(entry.id, 'machineHours', totalMachineHours.toString());
+                  }}
+                  disabled={isLocked}
+                  className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 disabled:opacity-50"
+                  title="Add Equipment"
                 >
-                  {equip}
-                  <button
-                    type="button"
-                    onClick={() => removeEquipment(entry.id, equip)}
-                    disabled={isLocked}
-                    className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-200 disabled:opacity-50"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+                  <Plus className="w-4 h-4" />
+                </button>
             </div>
-          )}
-          
-          {/* Add Equipment Dropdown */}
-          <select
-            value=""
-            onChange={handleEquipmentChange}
-            disabled={isLocked}
-            className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400 disabled:opacity-50"
-          >
-            <option value="">Select Equipment</option>
-            {equipmentOptions.filter(option => !entry.equipment.includes(option.name)).map(equipmentOption => (
-              <option key={equipmentOption.name} value={equipmentOption.name}>
-                {equipmentOption.name}{equipmentOption.description ? ` - ${equipmentOption.description}` : ''}
-              </option>
-            ))}
-          </select>
+          ))}
         </div>
 
         {/* Small Tools Dropdown */}
-        <div>
+        <div className="mb-3">
           {/* Selected Tools Display */}
           {entry.smallTools.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
@@ -370,6 +426,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       notes: '',
       code: '',
       equipment: [],
+      equipmentEntries: [],
       machineHours: '',
       labourHours: '',
       smallTools: [],
@@ -393,26 +450,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   }, 0);
   const totalMachineLabourHours = totalMachineHours + totalLabourHours;
   const hoursMatch = Math.abs(totalMachineLabourHours - hours) < 0.01; // Allow for small floating point differences
-
-  // Add equipment to equipment array for specific entry
-  const addEquipment = useCallback((entryId: string, equipment: string) => {
-    setWorkEntries(prev => prev.map(entry => {
-      if (entry.id === entryId && equipment && !entry.equipment.includes(equipment)) {
-        return { ...entry, equipment: [...entry.equipment, equipment] };
-      }
-      return entry;
-    }));
-  }, []);
-
-  // Remove equipment from equipment array for specific entry
-  const removeEquipment = useCallback((entryId: string, equipmentToRemove: string) => {
-    setWorkEntries(prev => prev.map(entry => {
-      if (entry.id === entryId) {
-        return { ...entry, equipment: entry.equipment.filter(equip => equip !== equipmentToRemove) };
-      }
-      return entry;
-    }));
-  }, []);
 
   // Add tool to small tools array for specific entry
   const addSmallTool = useCallback((entryId: string, tool: string) => {
@@ -490,6 +527,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         notes: '',
         code: '',
         equipment: [],
+        equipmentEntries: [],
         machineHours: '',
         labourHours: '',
         smallTools: [],
@@ -609,23 +647,44 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       // Load work entries from existing entry or create default
       if (entry.workEntries && entry.workEntries.length > 0) {
         // Load from new workEntries structure
-        setWorkEntries(entry.workEntries.map(workEntry => ({
-          id: workEntry.id,
-          notes: workEntry.notes || '',
-          code: workEntry.code || '',
-          equipment: Array.isArray(workEntry.equipment) ? workEntry.equipment : (workEntry.equipment ? [workEntry.equipment] : []),
-          machineHours: workEntry.machineHours?.toString() || '',
-          labourHours: workEntry.labourHours?.toString() || '',
-          smallTools: workEntry.smallTools || [],
-          collapsed: true  // Always load collapsed for existing entries
-        })));
+        setWorkEntries(entry.workEntries.map(workEntry => {
+          // Convert legacy equipment to equipmentEntries if needed
+          let equipmentEntries = workEntry.equipmentEntries || [];
+          if (!equipmentEntries.length && workEntry.equipment && Array.isArray(workEntry.equipment)) {
+            equipmentEntries = workEntry.equipment.map((eq: string, idx: number) => ({
+              id: Date.now().toString() + idx,
+              equipment: eq,
+              machineHours: workEntry.machineHours || 0
+            }));
+          }
+          
+          return {
+            id: workEntry.id,
+            notes: workEntry.notes || '',
+            code: workEntry.code || '',
+            equipment: Array.isArray(workEntry.equipment) ? workEntry.equipment : (workEntry.equipment ? [workEntry.equipment] : []),
+            equipmentEntries: equipmentEntries,
+            machineHours: workEntry.machineHours?.toString() || '',
+            labourHours: workEntry.labourHours?.toString() || '',
+            smallTools: workEntry.smallTools || [],
+            collapsed: true  // Always load collapsed for existing entries
+          };
+        }));
       } else if (entry.notes || entry.code || entry.equipment || entry.machineHours || entry.labourHours || entry.smallTools) {
         // Load from legacy single entry structure
+        const legacyEquipment = entry.equipment ? [entry.equipment] : [];
+        const legacyEquipmentEntries = entry.equipmentEntries || (legacyEquipment.length > 0 && entry.equipment ? [{
+          id: '1',
+          equipment: entry.equipment,
+          machineHours: entry.machineHours || 0
+        }] : []);
+        
         setWorkEntries([{
           id: '1',
           notes: entry.notes || '',
           code: entry.code || '',
-          equipment: entry.equipment ? [entry.equipment] : [],
+          equipment: legacyEquipment,
+          equipmentEntries: legacyEquipmentEntries,
           machineHours: entry.machineHours?.toString() || '',
           labourHours: entry.labourHours?.toString() || '',
           smallTools: entry.smallTools ? (Array.isArray(entry.smallTools) ? entry.smallTools : [entry.smallTools]) : [],
@@ -638,10 +697,11 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
           notes: '',
           code: '',
           equipment: [],
+          equipmentEntries: [],
           machineHours: '',
           labourHours: '',
           smallTools: [],
-          collapsed: true
+          collapsed: false
         }]);
       }
     } else if (selectedDate) {
@@ -656,6 +716,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         notes: '',
         code: '',
         equipment: [],
+        equipmentEntries: [],
         machineHours: '',
         labourHours: '',
         smallTools: [],
@@ -739,6 +800,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         notes: entry.notes || null,
         code: entry.code || null,
         equipment: entry.equipment.length > 0 ? entry.equipment : null,
+        equipmentEntries: entry.equipmentEntries && entry.equipmentEntries.length > 0 ? entry.equipmentEntries.filter(e => e.id !== 'default') : null,
         machineHours: entry.machineHours ? parseFloat(entry.machineHours) : null,
         labourHours: entry.labourHours ? parseFloat(entry.labourHours) : null,
         smallTools: entry.smallTools.length > 0 ? entry.smallTools : null,
@@ -748,6 +810,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         entry.notes || 
         entry.code || 
         (entry.equipment && entry.equipment.length > 0) || 
+        (entry.equipmentEntries && entry.equipmentEntries.length > 0) ||
         entry.machineHours !== null || 
         entry.labourHours !== null ||
         (entry.smallTools && entry.smallTools.length > 0)
@@ -877,6 +940,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         notes: entry.notes || null,
         code: entry.code || null,
         equipment: entry.equipment.length > 0 ? entry.equipment : null,
+        equipmentEntries: entry.equipmentEntries && entry.equipmentEntries.length > 0 ? entry.equipmentEntries.filter(e => e.id !== 'default') : null,
         machineHours: entry.machineHours ? parseFloat(entry.machineHours) : null,
         labourHours: entry.labourHours ? parseFloat(entry.labourHours) : null,
         smallTools: entry.smallTools.length > 0 ? entry.smallTools : null,
@@ -886,6 +950,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         entry.notes || 
         entry.code || 
         (entry.equipment && entry.equipment.length > 0) || 
+        (entry.equipmentEntries && entry.equipmentEntries.length > 0) ||
         entry.machineHours !== null || 
         entry.labourHours !== null ||
         (entry.smallTools && entry.smallTools.length > 0)
@@ -1157,8 +1222,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               updateEntryField={updateEntryField}
               addSmallTool={addSmallTool}
               removeSmallTool={removeSmallTool}
-              addEquipment={addEquipment}
-              removeEquipment={removeEquipment}
               removeEntry={removeEntry}
               toggleCollapse={toggleCollapse}
               isLocked={isLocked || false}

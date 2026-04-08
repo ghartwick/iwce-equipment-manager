@@ -12,16 +12,17 @@ export function LoginPage({ onLogin, error }: LoginProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Force dark mode on the login page
+  // Apply saved theme on the login page
   useEffect(() => {
     const root = document.documentElement;
-    const wasDark = root.classList.contains('dark');
-    root.classList.add('dark');
-    return () => {
-      if (!wasDark) {
-        root.classList.remove('dark');
-      }
-    };
+    const storedTheme = localStorage.getItem('iwce-theme');
+    const shouldBeDark = storedTheme !== 'light'; // Default to dark if not set
+    
+    if (shouldBeDark) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

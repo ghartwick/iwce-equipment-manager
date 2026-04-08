@@ -24,7 +24,14 @@ export default function EquipmentPage() {
     if (!equipment) return;
     try {
       await updateProduct(equipment.id, { ...productData, updatedAt: new Date().toISOString() });
-      navigate('/inventory');
+      
+      // Check if only notes were updated (no other fields changed)
+      const notesOnly = Object.keys(productData).length === 1 && 'notes' in productData;
+      
+      // Only navigate back if it's not a notes-only update
+      if (!notesOnly) {
+        navigate('/inventory');
+      }
     } catch (error) {
       console.error('Update failed:', error);
       throw error;
@@ -64,7 +71,6 @@ export default function EquipmentPage() {
           onSubmit={handleEdit}
           onCancel={() => navigate('/inventory')}
           userRole={user?.role || 'field'}
-          allowNoteOnlyUpdate={true}
         />
       </div>
     </main>

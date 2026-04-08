@@ -16,10 +16,9 @@ interface ProductFormProps {
   userRole?: 'admin' | 'supervisor' | 'field';
   categories?: Category[];
   allowFullEdit?: boolean;
-  allowNoteOnlyUpdate?: boolean;
 }
 
-export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false, allowNoteOnlyUpdate = false }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false }: ProductFormProps) {
   const formRef = React.useRef<HTMLFormElement>(null);
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -194,23 +193,11 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     // If editing an existing product, update it with the new note
     if (isEditing && product) {
       try {
-        if (allowNoteOnlyUpdate) {
-          // Direct service call to avoid triggering navigation
-          if (product.equipmentType === 'heavy') {
-            const { equipmentManagementService } = await import('../services/equipmentManagementService');
-            await equipmentManagementService.updateEquipment(product.id, {
-              notes: updatedNotes
-            } as any);
-          } else {
-            const { updateEquipment } = await import('../services/firebaseService');
-            await updateEquipment(product.id, { notes: updatedNotes });
-          }
-        } else {
-          await onSubmit({
-            ...product,
-            notes: updatedNotes
-          });
-        }
+        // Always go through the normal update flow to track history
+        await onSubmit({
+          ...product,
+          notes: updatedNotes
+        });
       } catch (error) {
         console.error('Error updating equipment with note:', error);
         // Revert the note if update failed
@@ -229,23 +216,11 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     // If editing an existing product, update it without the deleted note
     if (isEditing && product) {
       try {
-        if (allowNoteOnlyUpdate) {
-          // Direct service call to avoid triggering navigation
-          if (product.equipmentType === 'heavy') {
-            const { equipmentManagementService } = await import('../services/equipmentManagementService');
-            await equipmentManagementService.updateEquipment(product.id, {
-              notes: updatedNotes
-            } as any);
-          } else {
-            const { updateEquipment } = await import('../services/firebaseService');
-            await updateEquipment(product.id, { notes: updatedNotes });
-          }
-        } else {
-          await onSubmit({
-            ...product,
-            notes: updatedNotes
-          });
-        }
+        // Always go through the normal update flow to track history
+        await onSubmit({
+          ...product,
+          notes: updatedNotes
+        });
       } catch (error) {
         console.error('Error updating equipment after deleting note:', error);
         // Revert the note if update failed

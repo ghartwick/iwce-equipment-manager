@@ -266,7 +266,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                 onChange={(e) => { setClockIn(e.target.value); markDirty(); }}
                 onBlur={() => setEditingField(null)}
                 autoFocus
-                className="px-1 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-50 dark:bg-black dark:text-yellow-100 focus:ring-1 focus:ring-yellow-500"
+                className="px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
                 onClick={(e) => e.stopPropagation()}
               />
             </span>
@@ -289,7 +289,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                 onChange={(e) => { setClockOut(e.target.value); markDirty(); }}
                 onBlur={() => setEditingField(null)}
                 autoFocus
-                className="px-1 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-50 dark:bg-black dark:text-yellow-100 focus:ring-1 focus:ring-yellow-500"
+                className="px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
                 onClick={(e) => e.stopPropagation()}
               />
             </span>
@@ -314,7 +314,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                 onChange={(e) => { setTravelHours(e.target.value); markDirty(); }}
                 onBlur={() => setEditingField(null)}
                 autoFocus
-                className="w-16 px-1 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-50 dark:bg-black dark:text-yellow-100 focus:ring-1 focus:ring-yellow-500"
+                className="w-16 px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 onClick={(e) => e.stopPropagation()}
               />
             </span>
@@ -339,7 +339,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                 value={job}
                 onChange={(e) => { setJob(e.target.value); markDirty(); setEditingField(null); }}
                 autoFocus
-                className="px-1 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-50 dark:bg-black dark:text-yellow-100 focus:ring-1 focus:ring-yellow-500"
+                className="px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
                 onClick={(e) => e.stopPropagation()}
               >
                 <option value="">Select site...</option>
@@ -374,7 +374,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                           value={workEntry.code || ''}
                           onChange={(e) => { updateWorkEntry(idx, 'code', e.target.value); setEditingField(null); }}
                           autoFocus
-                          className="w-full px-1 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-50 dark:bg-black dark:text-yellow-100 focus:ring-1 focus:ring-yellow-500"
+                          className="w-full px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <option value="">Select code...</option>
@@ -407,7 +407,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                             onChange={(e) => updateWorkEntry(idx, 'machineHours', e.target.value ? parseFloat(e.target.value) : undefined)}
                             onBlur={() => setEditingField(null)}
                             autoFocus
-                            className="w-16 px-1 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-50 dark:bg-black dark:text-yellow-100 focus:ring-1 focus:ring-yellow-500"
+                            className="w-16 px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                             onClick={(e) => e.stopPropagation()}
                           />
                         </span>
@@ -436,7 +436,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                             onChange={(e) => updateWorkEntry(idx, 'labourHours', e.target.value ? parseFloat(e.target.value) : undefined)}
                             onBlur={() => setEditingField(null)}
                             autoFocus
-                            className="w-16 px-1 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-50 dark:bg-black dark:text-yellow-100 focus:ring-1 focus:ring-yellow-500"
+                            className="w-16 px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                             onClick={(e) => e.stopPropagation()}
                           />
                         </span>
@@ -474,7 +474,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                                 updateWorkEntry(idx, 'equipment', [...current, e.target.value]);
                               }
                             }}
-                            className="w-full px-1 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-50 dark:bg-black dark:text-yellow-100"
+                            className="w-full px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
                           >
                             <option value="">Add equipment...</option>
                             {filteredEquipment.map(e => (
@@ -516,7 +516,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                                 updateWorkEntry(idx, 'smallTools', [...current, e.target.value]);
                               }
                             }}
-                            className="w-full px-1 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-50 dark:bg-black dark:text-yellow-100"
+                            className="w-full px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
                           >
                             <option value="">Add tool...</option>
                             {smallToolsOptions.map(t => (
@@ -546,7 +546,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                         onBlur={() => setEditingField(null)}
                         autoFocus
                         rows={2}
-                        className="w-full px-1 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-50 dark:bg-black dark:text-yellow-100 focus:ring-1 focus:ring-yellow-500 resize-none"
+                        className="w-full px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 resize-none"
                         onClick={(e) => e.stopPropagation()}
                       />
                     </EditableField>

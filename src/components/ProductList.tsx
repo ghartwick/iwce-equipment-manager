@@ -1,7 +1,9 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Package, Download, Upload, Pencil } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { exportToExcel, importFromExcel } from '../utils/exportToExcel';
+import { Site } from '../services/siteManagementService';
+import { AppUser } from '../services/userManagementService';
 
 interface ProductListProps {
   products: Equipment[];
@@ -14,6 +16,9 @@ interface ProductListProps {
   showCategoryHeadings?: boolean; // New prop for category headings
   refreshData?: () => void; // Add refresh function
   onImportComplete?: () => void; // Add callback for import completion
+  sites?: Site[];
+  users?: AppUser[];
+  onInlineUpdate?: (productId: string, updates: Partial<Equipment>) => Promise<void>;
 }
 
 export function ProductList({
@@ -27,8 +32,39 @@ export function ProductList({
   showCategoryHeadings = false,
   refreshData,
   onImportComplete,
+  sites,
+  users,
+  onInlineUpdate,
 }: ProductListProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<'site' | 'employee' | null>(null);
+
+  const handleInlineFieldClick = (e: React.MouseEvent, productId: string, field: 'site' | 'employee') => {
+    e.stopPropagation();
+    if (!onInlineUpdate) return;
+    if (editingProductId === productId && editingField === field) {
+      setEditingProductId(null);
+      setEditingField(null);
+    } else {
+      setEditingProductId(productId);
+      setEditingField(field);
+    }
+  };
+
+  const handleInlineChange = async (productId: string, field: 'site' | 'employee', value: string) => {
+    if (!onInlineUpdate) return;
+    try {
+      await onInlineUpdate(productId, { [field]: value });
+    } catch (error) {
+      console.error('Error updating inline field:', error);
+    }
+    setEditingProductId(null);
+    setEditingField(null);
+  };
+
+  const sortedSites = sites ? [...sites].sort((a, b) => a.name.localeCompare(b.name)) : [];
+  const sortedUsers = users ? [...users].filter(u => u.isActive && (u.role === 'field' || u.role === 'admin' || u.role === 'supervisor')).sort((a, b) => a.name.localeCompare(b.name)) : [];
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -176,8 +212,67 @@ export function ProductList({
                                 )}
                               </div>
                               <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600 mt-1">
-                                {product.employee && <div className="break-words">{product.employee}</div>}
-                                {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
+                                {onInlineUpdate ? (
+                                  <>
+                                    {product.equipmentType !== 'heavy' && (
+                                      editingProductId === product.id && editingField === 'employee' ? (
+                                        <select
+                                          autoFocus
+                                          value={product.employee || ''}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => handleInlineChange(product.id, 'employee', e.target.value)}
+                                          onBlur={() => { setEditingProductId(null); setEditingField(null); }}
+                                          className="px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
+                                        >
+                                          <option value="">No Employee</option>
+                                          <option value="Office">Office</option>
+                                          <option value="Broken">Broken</option>
+                                          <option value="Out For Repair">Out For Repair</option>
+                                          <option value="Missing">Missing</option>
+                                          {sortedUsers.map((u) => (
+                                            <option key={u.id} value={u.name}>{u.name}</option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <div
+                                          className="break-words cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 px-0.5 rounded inline-block"
+                                          onClick={(e) => handleInlineFieldClick(e, product.id, 'employee')}
+                                        >
+                                          {product.employee || <span className="text-gray-400 dark:text-gray-600 italic">(set employee)</span>}
+                                        </div>
+                                      )
+                                    )}
+                                    {product.equipmentType === 'heavy' && (
+                                      editingProductId === product.id && editingField === 'site' ? (
+                                        <select
+                                          autoFocus
+                                          value={product.site || ''}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => handleInlineChange(product.id, 'site', e.target.value)}
+                                          onBlur={() => { setEditingProductId(null); setEditingField(null); }}
+                                          className="px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 mt-1"
+                                        >
+                                          <option value="">No Site</option>
+                                          {sortedSites.map((s) => (
+                                            <option key={s.id} value={s.name}>{s.name}</option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <div
+                                          className="break-words cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 px-0.5 rounded inline-block mt-0.5"
+                                          onClick={(e) => handleInlineFieldClick(e, product.id, 'site')}
+                                        >
+                                          {product.site || <span className="text-gray-400 dark:text-gray-600 italic">(set site)</span>}
+                                        </div>
+                                      )
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    {product.employee && <div className="break-words">{product.employee}</div>}
+                                    {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
+                                  </>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -185,7 +280,8 @@ export function ProductList({
                             <div className="flex justify-center">
                               <div className="flex justify-end w-3/4">
                                 <button
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     if (selectedEquipmentId === product.id) {
                                       onCancelEdit?.();
                                     } else if (onEdit) {
@@ -248,8 +344,67 @@ export function ProductList({
                                 )}
                               </div>
                               <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600 mt-1">
-                                {product.employee && <div className="break-words">{product.employee}</div>}
-                                {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
+                                {onInlineUpdate ? (
+                                  <>
+                                    {product.equipmentType !== 'heavy' && (
+                                      editingProductId === product.id && editingField === 'employee' ? (
+                                        <select
+                                          autoFocus
+                                          value={product.employee || ''}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => handleInlineChange(product.id, 'employee', e.target.value)}
+                                          onBlur={() => { setEditingProductId(null); setEditingField(null); }}
+                                          className="px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
+                                        >
+                                          <option value="">No Employee</option>
+                                          <option value="Office">Office</option>
+                                          <option value="Broken">Broken</option>
+                                          <option value="Out For Repair">Out For Repair</option>
+                                          <option value="Missing">Missing</option>
+                                          {sortedUsers.map((u) => (
+                                            <option key={u.id} value={u.name}>{u.name}</option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <div
+                                          className="break-words cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 px-0.5 rounded inline-block"
+                                          onClick={(e) => handleInlineFieldClick(e, product.id, 'employee')}
+                                        >
+                                          {product.employee || <span className="text-gray-400 dark:text-gray-600 italic">(set employee)</span>}
+                                        </div>
+                                      )
+                                    )}
+                                    {product.equipmentType === 'heavy' && (
+                                      editingProductId === product.id && editingField === 'site' ? (
+                                        <select
+                                          autoFocus
+                                          value={product.site || ''}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => handleInlineChange(product.id, 'site', e.target.value)}
+                                          onBlur={() => { setEditingProductId(null); setEditingField(null); }}
+                                          className="px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 mt-1"
+                                        >
+                                          <option value="">No Site</option>
+                                          {sortedSites.map((s) => (
+                                            <option key={s.id} value={s.name}>{s.name}</option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <div
+                                          className="break-words cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 px-0.5 rounded inline-block mt-0.5"
+                                          onClick={(e) => handleInlineFieldClick(e, product.id, 'site')}
+                                        >
+                                          {product.site || <span className="text-gray-400 dark:text-gray-600 italic">(set site)</span>}
+                                        </div>
+                                      )
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    {product.employee && <div className="break-words">{product.employee}</div>}
+                                    {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
+                                  </>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -257,7 +412,8 @@ export function ProductList({
                             <div className="flex justify-center">
                               <div className="flex justify-end w-3/4">
                                 <button
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     if (selectedEquipmentId === product.id) {
                                       onCancelEdit?.();
                                     } else if (onEdit) {

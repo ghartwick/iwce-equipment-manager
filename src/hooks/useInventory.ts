@@ -73,6 +73,7 @@ export function useInventory(refreshKey?: number) {
         site: equipment.site || '',
         repair: equipment.repair || false,
         repairDescription: equipment.repairDescription || '',
+        notes: (equipment as any).notes || [],
         equipmentType: 'heavy' as const,
         createdAt: equipment.createdAt.toISOString(),
         updatedAt: equipment.updatedAt.toISOString(),
@@ -244,6 +245,7 @@ export function useInventory(refreshKey?: number) {
         if (updates.employee !== undefined) heavyUpdates.employee = updates.employee;
         if (updates.repair !== undefined) heavyUpdates.repair = updates.repair;
         if (updates.repairDescription !== undefined) heavyUpdates.repairDescription = updates.repairDescription;
+        if (updates.notes !== undefined) heavyUpdates.notes = updates.notes;
         
                 await equipmentManagementService.updateEquipment(id, heavyUpdates);
       } else {

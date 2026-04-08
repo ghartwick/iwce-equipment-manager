@@ -10,6 +10,8 @@ import { SearchBar } from '../components/SearchBar';
 import { FilterPanel } from '../components/FilterPanel';
 import { Equipment } from '../types';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
+import { siteManagementService, Site } from '../services/siteManagementService';
+import { userManagementService, AppUser } from '../services/userManagementService';
 
 function InventoryPage() {
   const navigate = useNavigate();
@@ -19,6 +21,7 @@ function InventoryPage() {
     alerts,
     loading: inventoryLoading,
     addProduct,
+    updateProduct,
     clearAlert,
     addCategory,
     editCategory,
@@ -33,9 +36,28 @@ function InventoryPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAlerts, setShowAlerts] = useState(false);
   const alertsRef = useRef<HTMLDivElement>(null);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [appUsers, setAppUsers] = useState<AppUser[]>([]);
 
   const hasRestored = useRef(false);
-  
+
+  // Fetch sites and users for inline editing
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [loadedSites, loadedUsers] = await Promise.all([
+          siteManagementService.getActiveSites(),
+          userManagementService.getAllUsers(),
+        ]);
+        setSites(loadedSites);
+        setAppUsers(loadedUsers);
+      } catch (error) {
+        console.error('Error fetching sites/users:', error);
+      }
+    };
+    fetchData();
+  }, []);
+
   // Restore scroll position and filter state when component mounts
   useEffect(() => {
     if (hasRestored.current) return;
@@ -189,6 +211,14 @@ function InventoryPage() {
   };
 
   
+  const handleInlineUpdate = async (productId: string, updates: Partial<Equipment>) => {
+    try {
+      await updateProduct(productId, updates);
+    } catch (error) {
+      console.error('Error updating product inline:', error);
+    }
+  };
+
   const handleEditClick = (product: Equipment) => {
     // Save current state before navigating
     localStorage.setItem('inventoryScrollPosition', window.scrollY.toString());
@@ -268,6 +298,9 @@ function InventoryPage() {
                 showCategoryHeadings={true}
                 refreshData={refreshData}
                 onImportComplete={() => setSelectedCategory('all')}
+                sites={sites}
+                users={appUsers}
+                onInlineUpdate={handleInlineUpdate}
               />
             </div>
           </div>

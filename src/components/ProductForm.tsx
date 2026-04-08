@@ -196,10 +196,15 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       try {
         if (allowNoteOnlyUpdate) {
           // Direct service call to avoid triggering navigation
-          const { equipmentManagementService } = await import('../services/equipmentManagementService');
-          await equipmentManagementService.updateEquipment(product.id, {
-            notes: updatedNotes
-          } as any);
+          if (product.equipmentType === 'heavy') {
+            const { equipmentManagementService } = await import('../services/equipmentManagementService');
+            await equipmentManagementService.updateEquipment(product.id, {
+              notes: updatedNotes
+            } as any);
+          } else {
+            const { updateEquipment } = await import('../services/firebaseService');
+            await updateEquipment(product.id, { notes: updatedNotes });
+          }
         } else {
           await onSubmit({
             ...product,
@@ -226,10 +231,15 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       try {
         if (allowNoteOnlyUpdate) {
           // Direct service call to avoid triggering navigation
-          const { equipmentManagementService } = await import('../services/equipmentManagementService');
-          await equipmentManagementService.updateEquipment(product.id, {
-            notes: updatedNotes
-          } as any);
+          if (product.equipmentType === 'heavy') {
+            const { equipmentManagementService } = await import('../services/equipmentManagementService');
+            await equipmentManagementService.updateEquipment(product.id, {
+              notes: updatedNotes
+            } as any);
+          } else {
+            const { updateEquipment } = await import('../services/firebaseService');
+            await updateEquipment(product.id, { notes: updatedNotes });
+          }
         } else {
           await onSubmit({
             ...product,

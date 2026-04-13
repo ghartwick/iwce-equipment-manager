@@ -27,7 +27,7 @@ interface WorkEntry {
   notes: string;
   code: string;
   equipment: string[]; // Legacy - kept for backward compatibility
-  equipmentEntries?: { id: string; equipment: string; machineHours: number }[];
+  equipmentEntries?: { id: string; equipment: string; machineHours: number | string }[];
   machineHours: string;
   labourHours: string;
   smallTools: string[];
@@ -249,7 +249,7 @@ const WorkEntrySection = ({
                   
                   // Calculate the sum of all equipment machine hours
                   const totalMachineHours = updated.reduce((sum, item) => {
-                    const hours = item.machineHours || 0;
+                    const hours = typeof item.machineHours === 'string' ? parseFloat(item.machineHours) || 0 : item.machineHours || 0;
                     return sum + hours;
                   }, 0);
                   
@@ -268,7 +268,7 @@ const WorkEntrySection = ({
               </select>
               <input
                 type="text"
-                value={equipEntry.machineHours}
+                value={equipEntry.machineHours?.toString() || ''}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9.]/g, '');
                   // Allow up to 5 characters (e.g., "99.99") and validate decimal places
@@ -277,17 +277,20 @@ const WorkEntrySection = ({
                     const parts = value.split('.');
                     if (parts.length <= 2 && (parts[1] === undefined || parts[1].length <= 2)) {
                       let updated = [...(entry.equipmentEntries || [])];
+                      // Store as string during typing, convert to number on blur
+                      const displayValue = value;
+                      const numValue = parseFloat(value) || 0;
                       // If this is the default row and we're adding hours, replace it
                       if (equipEntry.id === 'default' && value) {
-                        updated = [{ id: Date.now().toString(), equipment: equipEntry.equipment, machineHours: parseFloat(value) || 0 }];
+                        updated = [{ id: Date.now().toString(), equipment: equipEntry.equipment, machineHours: displayValue.endsWith('.') ? displayValue : numValue }];
                       } else if (equipEntry.id !== 'default') {
-                        updated[eqIdx] = { ...updated[eqIdx], machineHours: parseFloat(value) || 0 };
+                        updated[eqIdx] = { ...updated[eqIdx], machineHours: displayValue.endsWith('.') ? displayValue : numValue };
                       }
                       updateEntryField(entry.id, 'equipmentEntries', updated);
                       
                       // Calculate the sum of all equipment machine hours
                       const totalMachineHours = updated.reduce((sum, item) => {
-                        const hours = item.machineHours || 0;
+                        const hours = typeof item.machineHours === 'string' ? parseFloat(item.machineHours) || 0 : item.machineHours || 0;
                         return sum + hours;
                       }, 0);
                       
@@ -295,6 +298,24 @@ const WorkEntrySection = ({
                       updateEntryField(entry.id, 'machineHours', totalMachineHours.toString());
                     }
                   }
+                }}
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  const numValue = parseFloat(value) || 0;
+                  let updated = [...(entry.equipmentEntries || [])];
+                  if (equipEntry.id === 'default' && value) {
+                    updated = [{ id: Date.now().toString(), equipment: equipEntry.equipment, machineHours: numValue }];
+                  } else if (equipEntry.id !== 'default') {
+                    updated[eqIdx] = { ...updated[eqIdx], machineHours: numValue };
+                  }
+                  updateEntryField(entry.id, 'equipmentEntries', updated);
+                  
+                  // Recalculate sum
+                  const totalMachineHours = updated.reduce((sum, item) => {
+                    const hours = typeof item.machineHours === 'string' ? parseFloat(item.machineHours) || 0 : item.machineHours || 0;
+                    return sum + hours;
+                  }, 0);
+                  updateEntryField(entry.id, 'machineHours', totalMachineHours.toString());
                 }}
                 placeholder="0"
                 disabled={isLocked}
@@ -315,7 +336,7 @@ const WorkEntrySection = ({
                     
                     // Calculate the sum of all equipment machine hours
                     const totalMachineHours = updated.reduce((sum, item) => {
-                      const hours = item.machineHours || 0;
+                      const hours = typeof item.machineHours === 'string' ? parseFloat(item.machineHours) || 0 : item.machineHours || 0;
                       return sum + hours;
                     }, 0);
                     

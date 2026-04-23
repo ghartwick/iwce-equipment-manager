@@ -5,6 +5,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
 import { InlineTimecardEdit } from '../components/InlineTimecardEdit';
 import { UserManagementService, AppUser } from '../services/userManagementService';
+import { codeManagementService } from '../services/codeManagementService';
+import { siteManagementService, Site } from '../services/siteManagementService';
+import { TimecardAttachment, timecardAttachmentService } from '../services/timecardAttachmentService';
 import { 
   format, 
   startOfMonth, 
@@ -69,6 +72,16 @@ export default function TimecardPage() {
   // Filter states for admins and supervisors
   const [siteFilter, setSiteFilter] = useState<string>(_savedTimecardState?.siteFilter ?? '');
   const [employeeFilter, setEmployeeFilter] = useState<string>(_savedTimecardState?.employeeFilter ?? '');
+  const [showAttachments, setShowAttachments] = useState(false);
+  const [attachmentSite, setAttachmentSite] = useState('');
+  const [attachmentCode, setAttachmentCode] = useState('');
+  const [attachmentDescription, setAttachmentDescription] = useState('');
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentSubmitting, setAttachmentSubmitting] = useState(false);
+  const [attachmentsForDate, setAttachmentsForDate] = useState<TimecardAttachment[]>([]);
+  const [sitesData, setSitesData] = useState<Site[]>([]);
+  const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
+  const [attachmentDates, setAttachmentDates] = useState<Set<string>>(new Set());
   
   // User management
   const [users, setUsers] = useState<AppUser[]>([]);
@@ -85,6 +98,8 @@ export default function TimecardPage() {
 
   const days = eachDayOfInterval({ start: startDate, end: endDate });
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const formatDateKey = (date: Date) => format(date, 'yyyy-MM-dd');
 
   const handlePreviousMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1));
@@ -195,6 +210,57 @@ export default function TimecardPage() {
     loadUsers();
   }, [user, userManagementService]);
 
+  useEffect(() => {
+    const loadAttachmentOptions = async () => {
+      try {
+        const [sites, codes] = await Promise.all([
+          siteManagementService.getActiveSites(),
+          codeManagementService.getActiveCodes()
+        ]);
+        setSitesData(sites);
+        setCodeOptionsState(codes.map(code => code.name));
+      } catch (error) {
+        // Error loading attachment options
+      }
+    };
+
+    loadAttachmentOptions();
+  }, []);
+
+  useEffect(() => {
+    const loadAttachmentsForMonth = async () => {
+      try {
+        const attachments = await timecardAttachmentService.getAttachmentsForRange(startDate, endDate);
+        const keys = new Set(attachments.map(attachment => formatDateKey(new Date(attachment.date))));
+        setAttachmentDates(keys);
+      } catch (error) {
+        // Error loading attachments
+      }
+    };
+
+    loadAttachmentsForMonth();
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    const loadAttachmentsForDate = async () => {
+      if (selectedDates.length !== 1) {
+        setAttachmentsForDate([]);
+        return;
+      }
+      try {
+        const date = selectedDates[0];
+        const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+        const attachments = await timecardAttachmentService.getAttachmentsForRange(startOfDay, endOfDay);
+        setAttachmentsForDate(attachments);
+      } catch (error) {
+        setAttachmentsForDate([]);
+      }
+    };
+
+    loadAttachmentsForDate();
+  }, [selectedDates]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-yellow-100 dark:bg-black flex items-center justify-center">
@@ -286,6 +352,15 @@ export default function TimecardPage() {
     ? format(selectedDates[0], 'yyyy-MM-dd')
     : null;
   const isMultiDateSelection = selectedDates.length > 1;
+  const attachmentCodeOptions = (() => {
+    if (attachmentSite) {
+      const selectedSite = sitesData.find(site => site.name === attachmentSite);
+      if (selectedSite?.codes?.length) {
+        return selectedSite.codes.map(code => code.name);
+      }
+    }
+    return codeOptionsState;
+  })();
 
   // Handle inline edit save
   const handleInlineSave = async (entryId: string, updates: any, editedBy?: string) => {
@@ -300,6 +375,75 @@ export default function TimecardPage() {
       } catch (error) {
         alert('Error deleting time entry');
       }
+    }
+  };
+
+  const handleAttachmentSubmit = async () => {
+    if (!selectedDates.length) return;
+    if (selectedDates.length !== 1) {
+      alert('Select a single date to attach a file.');
+      return;
+    }
+    if (!attachmentSite || !attachmentFile) {
+      alert('Please select a site and attachment file.');
+      return;
+    }
+    if (!user) return;
+
+    setAttachmentSubmitting(true);
+    try {
+      await timecardAttachmentService.uploadAttachment({
+        date: selectedDates[0],
+        site: attachmentSite,
+        code: attachmentCode,
+        description: attachmentDescription,
+        file: attachmentFile,
+        uploadedBy: user.id
+      });
+      setAttachmentSite('');
+      setAttachmentCode('');
+      setAttachmentDescription('');
+      setAttachmentFile(null);
+      setShowAttachments(false);
+      setAttachmentDates(prev => {
+        const next = new Set(prev);
+        next.add(formatDateKey(selectedDates[0]));
+        return next;
+      });
+      // Refresh attachment list for the selected date
+      const date = selectedDates[0];
+      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+      const attachments = await timecardAttachmentService.getAttachmentsForRange(startOfDay, endOfDay);
+      setAttachmentsForDate(attachments);
+      alert('Attachment uploaded successfully.');
+    } catch (error) {
+      alert('Failed to upload attachment.');
+    } finally {
+      setAttachmentSubmitting(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachment: TimecardAttachment) => {
+    if (!window.confirm('Are you sure you want to delete this attachment?')) return;
+    if (!attachment.id) return;
+
+    try {
+      await timecardAttachmentService.deleteAttachment(attachment.id, attachment.filePath);
+      // Refresh attachment list
+      setAttachmentsForDate(prev => prev.filter(a => a.id !== attachment.id));
+      // Update attachment dates set
+      const date = selectedDates[0];
+      setAttachmentDates(prev => {
+        const next = new Set(prev);
+        const remainingAttachments = attachmentsForDate.filter(a => a.id !== attachment.id);
+        if (remainingAttachments.length === 0) {
+          next.delete(formatDateKey(date));
+        }
+        return next;
+      });
+    } catch (error) {
+      alert('Failed to delete attachment.');
     }
   };
 
@@ -382,6 +526,7 @@ export default function TimecardPage() {
                 const isCurrentMonth = isSameMonth(day, currentMonth);
                 const isSelected = selectedDates.some(selected => isSameDay(day, selected));
                 const isTodayDate = isToday(day);
+                const hasAttachment = attachmentDates.has(formatDateKey(day));
 
                 return (
                   <button
@@ -424,6 +569,9 @@ export default function TimecardPage() {
                                 ))}
                               </div>
                             )}
+                            {hasAttachment && (
+                              <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full bg-blue-600 border border-yellow-200 dark:border-yellow-800" />
+                            )}
                           </>
                         );
                       })()}
@@ -441,18 +589,154 @@ export default function TimecardPage() {
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
                   Time Entries for {selectedDateLabel}
                 </h3>
-                <button
-                  onClick={() => {
-                    if (!selectedDateParam) return;
-                    navigate(`/timecard/edit/new?date=${selectedDateParam}`);
-                  }}
-                  disabled={!selectedDateParam}
-                  className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap"
-                  title={selectedDateParam ? 'Add Time Card' : 'Select a single date to add a time card'}
-                >
-                  Add Time Card
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      if (!selectedDateParam) return;
+                      navigate(`/timecard/edit/new?date=${selectedDateParam}`);
+                    }}
+                    disabled={!selectedDateParam}
+                    className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap"
+                    title={selectedDateParam ? 'Add Time Card' : 'Select a single date to add a time card'}
+                  >
+                    Add Time Card
+                  </button>
+                  <button
+                    onClick={() => setShowAttachments(prev => !prev)}
+                    className="px-3 py-1.5 text-sm bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-lg hover:bg-yellow-400 dark:hover:bg-yellow-700 font-medium transition-colors whitespace-nowrap"
+                  >
+                    Attachments
+                  </button>
+                </div>
               </div>
+
+              {showAttachments && (
+                <div className="mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
+                      Site
+                    </label>
+                    <select
+                      value={attachmentSite}
+                      onChange={(e) => {
+                        setAttachmentSite(e.target.value);
+                        setAttachmentCode('');
+                      }}
+                      className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
+                    >
+                      <option value="">Select Site</option>
+                      {sitesData.map(site => (
+                        <option key={site.id} value={site.name}>{site.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
+                      Code
+                    </label>
+                    <select
+                      value={attachmentCode}
+                      onChange={(e) => setAttachmentCode(e.target.value)}
+                      className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
+                    >
+                      <option value="">Select Code</option>
+                      {attachmentCodeOptions.map(code => (
+                        <option key={code} value={code}>{code}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
+                      Attachment
+                    </label>
+                    <input
+                      type="file"
+                      onChange={(e) => setAttachmentFile(e.target.files?.[0] ?? null)}
+                      className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
+                    />
+                    {attachmentFile && (
+                      <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-500">
+                        Selected: {attachmentFile.name}
+                      </p>
+                    )}
+                  </div>
+                  <div className="sm:col-span-3">
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={attachmentDescription}
+                      onChange={(e) => setAttachmentDescription(e.target.value)}
+                      placeholder="Enter a description for this attachment"
+                      className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
+                    />
+                  </div>
+                </div>
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleAttachmentSubmit}
+                      disabled={attachmentSubmitting || selectedDates.length !== 1}
+                      className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap disabled:opacity-50"
+                      title={selectedDates.length === 1 ? 'Upload attachment' : 'Select a single date to attach'}
+                    >
+                      {attachmentSubmitting ? 'Uploading...' : 'Submit Attachment'}
+                    </button>
+                  </div>
+
+                  {attachmentsForDate.length > 0 && (
+                    <div className="mt-4 border-t border-yellow-400 dark:border-yellow-700 pt-4">
+                      <h4 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 mb-3">
+                        Attachments for this date ({attachmentsForDate.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {attachmentsForDate.map((attachment) => {
+                          const uploader = users.find(u => u.id === attachment.uploadedBy);
+                          return (
+                            <div
+                              key={attachment.id}
+                              className="bg-yellow-100 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg p-3"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <a
+                                      href={attachment.fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline truncate"
+                                    >
+                                      {attachment.fileName}
+                                    </a>
+                                  </div>
+                                  {attachment.description && (
+                                    <p className="text-xs text-gray-600 dark:text-yellow-500 mb-1">
+                                      {attachment.description}
+                                    </p>
+                                  )}
+                                  <div className="text-xs text-yellow-600 dark:text-yellow-500">
+                                    <span className="font-medium">Site:</span> {attachment.site}
+                                    {attachment.code && <span className="ml-2"><span className="font-medium">Code:</span> {attachment.code}</span>}
+                                    {uploader && <span className="ml-2"><span className="font-medium">Uploaded by:</span> {uploader.name}</span>}
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteAttachment(attachment)}
+                                  className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-medium"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Filters for Admins and Supervisors */}
               {(user?.role === 'admin' || user?.role === 'supervisor') && (

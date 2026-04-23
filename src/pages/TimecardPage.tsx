@@ -20,7 +20,7 @@ import {
 } from 'date-fns';
 
 // Persists selected date/month across navigation to/from edit page
-let _savedTimecardState: { selectedDate: string | null; currentMonth: string; siteFilter: string; employeeFilter: string } | null = null;
+let _savedTimecardState: { selectedDates: string[]; currentMonth: string; siteFilter: string; employeeFilter: string } | null = null;
 
 export default function TimecardPage() {
   const navigate = useNavigate();
@@ -39,14 +39,25 @@ export default function TimecardPage() {
   const [currentMonth, setCurrentMonth] = useState(() =>
     _savedTimecardState?.currentMonth ? new Date(_savedTimecardState.currentMonth) : new Date()
   );
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() =>
-    _savedTimecardState?.selectedDate ? new Date(_savedTimecardState.selectedDate) : null
+  const [selectedDates, setSelectedDates] = useState<Date[]>(() =>
+    _savedTimecardState?.selectedDates?.length
+      ? _savedTimecardState.selectedDates.map(date => new Date(date))
+      : []
+  );
+  const [lastSelectedDate, setLastSelectedDate] = useState<Date | null>(() =>
+    _savedTimecardState?.selectedDates?.length
+      ? new Date(_savedTimecardState.selectedDates[_savedTimecardState.selectedDates.length - 1])
+      : null
   );
 
   // Consume saved state once on mount then clear it
   useEffect(() => {
     if (_savedTimecardState) {
-      if (_savedTimecardState.selectedDate) setSelectedDate(new Date(_savedTimecardState.selectedDate));
+      if (_savedTimecardState.selectedDates?.length) {
+        const restoredDates = _savedTimecardState.selectedDates.map(date => new Date(date));
+        setSelectedDates(restoredDates);
+        setLastSelectedDate(restoredDates[restoredDates.length - 1] ?? null);
+      }
       if (_savedTimecardState.currentMonth) setCurrentMonth(new Date(_savedTimecardState.currentMonth));
       setSiteFilter(_savedTimecardState.siteFilter);
       setEmployeeFilter(_savedTimecardState.employeeFilter);
@@ -83,11 +94,71 @@ export default function TimecardPage() {
     setCurrentMonth(addMonths(currentMonth, 1));
   };
 
-  const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
-    // Reset filters when selecting a new date
-    setSiteFilter('');
-    setEmployeeFilter('');
+  const handleDateClick = (date: Date, event: React.MouseEvent<HTMLButtonElement>) => {
+    const isAdditive = event.ctrlKey || event.metaKey;
+    const isRange = event.shiftKey && lastSelectedDate;
+
+    let nextSelectedDates: Date[] = [];
+
+    if (isRange && lastSelectedDate) {
+      const rangeStart = lastSelectedDate < date ? lastSelectedDate : date;
+      const rangeEnd = lastSelectedDate < date ? date : lastSelectedDate;
+      const rangeDates = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+
+      if (isAdditive) {
+        const existing = selectedDates.filter(selected =>
+          !rangeDates.some(rangeDate => isSameDay(rangeDate, selected))
+        );
+        nextSelectedDates = [...existing, ...rangeDates];
+      } else {
+        nextSelectedDates = rangeDates;
+      }
+    } else if (isAdditive) {
+      const alreadySelected = selectedDates.some(selected => isSameDay(selected, date));
+      nextSelectedDates = alreadySelected
+        ? selectedDates.filter(selected => !isSameDay(selected, date))
+        : [...selectedDates, date];
+    } else {
+      nextSelectedDates = [date];
+    }
+
+    setSelectedDates(nextSelectedDates);
+    setLastSelectedDate(date);
+
+    if (!isAdditive && !isRange) {
+      // Reset filters when selecting a new date (non-multi-select behavior)
+      setSiteFilter('');
+      setEmployeeFilter('');
+    }
+  };
+
+  const getEntryDate = (entry: any): Date | null => {
+    try {
+      const rawDate = entry?.date;
+      const resolved = rawDate && typeof rawDate.toDate === 'function'
+        ? rawDate.toDate()
+        : rawDate instanceof Date
+          ? rawDate
+          : new Date(rawDate);
+      if (!resolved || isNaN(resolved.getTime())) return null;
+      return new Date(resolved.getFullYear(), resolved.getMonth(), resolved.getDate());
+    } catch {
+      return null;
+    }
+  };
+
+  const groupEntriesByDate = (entries: any[]) => {
+    const groups = new Map<string, { date: Date; entries: any[] }>();
+    entries.forEach(entry => {
+      const entryDate = getEntryDate(entry);
+      if (!entryDate) return;
+      const key = format(entryDate, 'yyyy-MM-dd');
+      if (!groups.has(key)) {
+        groups.set(key, { date: entryDate, entries: [] });
+      }
+      groups.get(key)!.entries.push(entry);
+    });
+    return Array.from(groups.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
   };
 
   // Create a set of supervisor user IDs for filtering
@@ -153,8 +224,10 @@ export default function TimecardPage() {
 
   // Get unique sites from entries for the selected date
   const getUniqueSites = () => {
-    if (!selectedDate || !user) return [];
-    const allEntries = getEntriesForDate(selectedDate).filter(entry => canSeeEntry(entry, user!, supervisorUserIds));
+    if (!selectedDates.length || !user) return [];
+    const allEntries = selectedDates
+      .flatMap(date => getEntriesForDate(date))
+      .filter(entry => canSeeEntry(entry, user!, supervisorUserIds));
     
     // For admins/supervisors, show sites from all entries (including own for admins)
     if (user?.role === 'admin' || user?.role === 'supervisor') {
@@ -171,8 +244,10 @@ export default function TimecardPage() {
 
   // Get unique employees from entries for the selected date
   const getUniqueEmployees = () => {
-    if (!selectedDate || !user) return [];
-    const allEntries = getEntriesForDate(selectedDate).filter(entry => canSeeEntry(entry, user!, supervisorUserIds));
+    if (!selectedDates.length || !user) return [];
+    const allEntries = selectedDates
+      .flatMap(date => getEntriesForDate(date))
+      .filter(entry => canSeeEntry(entry, user!, supervisorUserIds));
     
     // For admins/supervisors, show all employees who have any entry for this date
     if (user?.role === 'admin' || user?.role === 'supervisor') {
@@ -195,13 +270,22 @@ export default function TimecardPage() {
   // Handle entry selection - save page state then navigate to edit page
   const handleEntrySelect = (entryId: string) => {
     _savedTimecardState = {
-      selectedDate: selectedDate?.toISOString() ?? null,
+      selectedDates: selectedDates.map(date => date.toISOString()),
       currentMonth: currentMonth.toISOString(),
       siteFilter,
       employeeFilter,
     };
     navigate(`/timecard/edit/${entryId}`);
   };
+
+  const selectedEntries = selectedDates.flatMap(date => getEntriesForDate(date));
+  const selectedDateLabel = selectedDates.length === 1
+    ? format(selectedDates[0], 'MMM d, yyyy')
+    : `${selectedDates.length} dates selected`;
+  const selectedDateParam = selectedDates.length === 1
+    ? format(selectedDates[0], 'yyyy-MM-dd')
+    : null;
+  const isMultiDateSelection = selectedDates.length > 1;
 
   // Handle inline edit save
   const handleInlineSave = async (entryId: string, updates: any, editedBy?: string) => {
@@ -296,13 +380,13 @@ export default function TimecardPage() {
             <div className="grid grid-cols-7 gap-2">
               {days.map((day, index) => {
                 const isCurrentMonth = isSameMonth(day, currentMonth);
-                const isSelected = selectedDate && isSameDay(day, selectedDate);
+                const isSelected = selectedDates.some(selected => isSameDay(day, selected));
                 const isTodayDate = isToday(day);
 
                 return (
                   <button
                     key={index}
-                    onClick={() => handleDateClick(day)}
+                    onClick={(event) => handleDateClick(day, event)}
                     className={`
                       relative p-2 text-sm rounded-lg border transition-all
                       ${isCurrentMonth ? 'text-gray-800 dark:text-yellow-100' : 'text-yellow-600 dark:text-yellow-700'}
@@ -351,18 +435,20 @@ export default function TimecardPage() {
           </div>
 
           {/* Time Cards Display */}
-          {selectedDate && (
+          {selectedDates.length > 0 && (
             <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
-                  Time Entries for {format(selectedDate, 'MMM d, yyyy')}
+                  Time Entries for {selectedDateLabel}
                 </h3>
                 <button
                   onClick={() => {
-                    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-                    navigate(`/timecard/edit/new?date=${dateStr}`);
+                    if (!selectedDateParam) return;
+                    navigate(`/timecard/edit/new?date=${selectedDateParam}`);
                   }}
+                  disabled={!selectedDateParam}
                   className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap"
+                  title={selectedDateParam ? 'Add Time Card' : 'Select a single date to add a time card'}
                 >
                   Add Time Card
                 </button>
@@ -421,7 +507,7 @@ export default function TimecardPage() {
               {/* Time Cards List */}
               <div className="space-y-4">
                 {(() => {
-                  const allEntries = getEntriesForDate(selectedDate);
+                  const allEntries = selectedEntries;
                   
                   const filteredEntries = allEntries.filter(entry => 
                     entry.userId === user?.id || canSeeEntry(entry, user!, supervisorUserIds)
@@ -438,342 +524,360 @@ export default function TimecardPage() {
                     );
                   }
 
-                  // Separate entries into your cards and other cards
-                  const yourEntries = filteredEntries
-                    .filter(entry => entry.userId === user?.id)
-                    .sort((a, b) => {
-                      // Sort by creation time (oldest first) - handle Firestore Timestamp
-                      const getTimestamp = (entry: any) => {
-                        if (!entry.createdAt) return entry.date?.getTime() || 0;
-                        // Check if it's a Firestore Timestamp (has toDate method)
-                        if (typeof (entry.createdAt as any).toDate === 'function') {
-                          return (entry.createdAt as any).toDate().getTime();
-                        }
-                        // Handle as regular Date
-                        return new Date(entry.createdAt).getTime();
-                      };
-                      
-                      const aTime = getTimestamp(a);
-                      const bTime = getTimestamp(b);
-                      return aTime - bTime;
-                    })
-                    .map((entry, index) => ({
-                      ...entry,
-                      entryNumber: entry.entryNumber || (index + 1) // Use existing or assign sequential number
-                    }));
-                  
-                  const otherEntries = isAdminOrSupervisor ? (() => {
-                    // 'self' filter: show supervisor's own entries
-                    if (employeeFilter === 'self') {
-                      return filteredEntries.filter(entry => entry.userId === user?.id);
-                    }
-
-                    // Show all entries for admins, other users' entries for supervisors (including drafts)
-                    const otherUsersEntries = user?.role === 'admin' ? filteredEntries : filteredEntries.filter(entry => entry.userId !== user?.id);
-                    
-                    // Check if "all" is explicitly selected for either filter
-                    const showAll = (siteFilter === 'all') || (employeeFilter === 'all');
-                    
-                    // Check if a specific filter is set (not empty and not 'all' and not 'self')
-                    const hasSpecificFilter = (siteFilter && siteFilter !== '' && siteFilter !== 'all') || 
-                                            (employeeFilter && employeeFilter !== '' && employeeFilter !== 'all' && employeeFilter !== 'self');
-                    
-                    if (showAll) {
-                      // "All" selected - show all other users' entries
-                      return otherUsersEntries;
-                    }
-                    
-                    if (!hasSpecificFilter) {
-                      // No filters selected - don't show other users' entries
-                      return [];
-                    }
-                    
-                    // Apply specific filters
-                    let filtered = otherUsersEntries;
-                    // Only apply site filter if it's not "all" and not empty
-                    if (siteFilter && siteFilter !== 'all' && siteFilter !== '') {
-                      filtered = filtered.filter(entry => entry.job === siteFilter);
-                    }
-                    // Only apply employee filter if it's not "all" and not empty
-                    if (employeeFilter && employeeFilter !== 'all' && employeeFilter !== '') {
-                      filtered = filtered.filter(entry => entry.userId === employeeFilter);
-                    }
-                    
-                    return filtered;
-                  })() : [];
-
-                  const showGrouped = siteFilter === 'all' || employeeFilter === 'all';
-                  const siteGroups: { site: string | null; entries: any[] }[] = [];
-                  if (showGrouped) {
-                    const groupMap: Record<string, any[]> = {};
-                    (otherEntries as any[]).forEach((entry: any) => {
-                      const site = entry.job || '(No Site)';
-                      if (!groupMap[site]) groupMap[site] = [];
-                      groupMap[site].push(entry);
-                    });
-                    Object.keys(groupMap)
-                      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
-                      .forEach(site => siteGroups.push({ site, entries: groupMap[site] }));
-                  } else {
-                    siteGroups.push({ site: null, entries: otherEntries });
-                  }
+                  const dateGroups = isMultiDateSelection
+                    ? groupEntriesByDate(filteredEntries)
+                    : [{ date: selectedDates[0], entries: filteredEntries }];
 
                   return (
-                    <div>
-                      {/* Your Time Cards Section - Field users only */}
-                      {user?.role === 'field' && (
-                        <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4">
-                            <div className="space-y-3">
-                              {yourEntries.length > 0 ? (
-                                yourEntries.map((entry: any, index: number) => {
-                                  const canAccess = canViewEntry(entry, user!);
-                                  return (
-                                    <div key={entry.id || `your-${index}`}>
-                                      <div
-                                        className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
-                                          canAccess 
-                                            ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600' 
-                                            : 'border-gray-400 dark:border-gray-600 opacity-75'
-                                        }`}
-                                      >
-                                        <div className="space-y-2">
-                                          {/* Top row — clickable to navigate to edit page */}
-                                          <div
-                                            className={canAccess ? 'cursor-pointer' : ''}
-                                            onClick={() => canAccess && handleEntrySelect(entry.id!)}
-                                          >
-                                          <div className="flex justify-between items-start">
-                                            <span className="text-gray-900 dark:text-yellow-100 font-medium">
-                                              {getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  toggleEntryExpanded(entry.id || `your-${index}`);
-                                                }}
-                                                className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
-                                              >
-                                                {expandedEntries.has(entry.id || `your-${index}`) ? (
-                                                  <ChevronUp className="w-4 h-4" />
-                                                ) : (
-                                                  <ChevronDown className="w-4 h-4" />
-                                                )}
-                                              </button>
-                                              <span className={`px-2 py-1 rounded text-xs ${
-                                                entry.status === 'draft' ? 'bg-gray-600' :
-                                                entry.status === 'submitted' ? 'bg-green-600' :
-                                                entry.status === 'rejected' ? 'bg-red-600' :
-                                                'bg-blue-600'
-                                              } text-white`}>
-                                                {entry.status === 'submitted' ? (
-                                                  <Check className="w-3 h-3" />
-                                                ) : (
-                                                  (getStatusDisplay(entry.status) || 'D').charAt(0)
-                                                )}
-                                              </span>
-                                              {canEditEntry(entry, user!) && (
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (entry.id) handleDeleteEntry(entry.id);
-                                                  }}
-                                                  className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
-                                                >
-                                                  Delete
-                                                </button>
-                                              )}
-                                            </div>
-                                          </div>
-                                          {entry.job && (
-                                            <div className="text-gray-900 dark:text-yellow-100">
-                                              {entry.job}
-                                            </div>
-                                          )}
-                                          <div className="font-medium text-yellow-700 dark:text-yellow-600">
-                                            <span className="text-sm">
-                                              Worked {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
-                                              {(entry.travelHours ?? 0) > 0 && (
-                                                <> + Travel {entry.travelHours}</>
-                                              )} = Total {((calcHours(entry.clockIn, entry.clockOut) ?? entry.hours) + (entry.travelHours ?? 0)).toFixed(2)}
-                                            </span>
-                                            {entry.lastEditedBy && (
-                                              <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt instanceof Date ? entry.lastEditedAt : (entry.lastEditedAt as any).toDate(), 'MMM d, yyyy HH:mm') : ''}`}>
-                                                Edited by {entry.lastEditedBy}
-                                              </span>
-                                            )}
-                                          </div>
-                                          </div>
-                                          
-                                          {/* Expanded Details - Inline Editable */}
-                                          {expandedEntries.has(entry.id || `your-${index}`) && (
-                                            <InlineTimecardEdit
-                                              entry={entry}
-                                              user={user!}
-                                              canEdit={canEditEntry(entry, user!)}
-                                              onSave={handleInlineSave}
-                                              calcHours={calcHours}
-                                            />
-                                          )}
-                                        </div>
-                                        
-                                        {!canAccess && (
-                                          <div className="text-red-400 text-xs mt-2">
-                                            This time card has been submitted and cannot be accessed.
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })
-                              ) : (
-                                <div className="text-center py-8 text-yellow-700 dark:text-yellow-600">
-                                  No time entries found for this date
-                                </div>
-                              )}
-                            </div>
-                        </div>
-                      )}
+                    <div className="space-y-6">
+                      {dateGroups.map(({ date, entries }) => {
+                        const groupKey = format(date, 'yyyy-MM-dd');
+                        const groupEntries = entries;
 
-                      {/* Other Time Cards Section (Admins/Supervisors only) */}
-                      {otherEntries.length > 0 && (
-                        <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4 mt-4">
-                          <div className="mb-3">
-                            <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">
-                              {(() => {
-                                if (siteFilter === 'all' || employeeFilter === 'all') {
-                                  return 'All Time Cards';
-                                } else if (employeeFilter === 'self') {
-                                  return 'Your Time Card';
-                                } else if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
-                                  const employeeName = getBestDisplayName(users.find(u => u.id === employeeFilter));
-                                  return `${siteFilter} - ${employeeName}'s Time Cards`;
-                                } else if (siteFilter && siteFilter !== 'all') {
-                                  return `${siteFilter} Time Cards`;
-                                } else if (employeeFilter && employeeFilter !== 'all') {
-                                  return `${getBestDisplayName(users.find(u => u.id === employeeFilter))}'s Time Cards`;
-                                } else {
-                                  return 'Other Time Cards';
-                                }
-                              })()}
-                            </h4>
-                          </div>
-                          <div className={showGrouped ? 'space-y-4' : 'space-y-3'}>
-                              {siteGroups.map(({ site, entries }) => (
-                                <div key={site ?? 'ungrouped'}>
-                                  {site && (
-                                    <h5 className="text-yellow-700 dark:text-yellow-400 font-semibold text-sm mb-2 mt-1 border-b border-yellow-200 dark:border-yellow-800 pb-1">
-                                      {site}
-                                    </h5>
-                                  )}
+                        // Separate entries into your cards and other cards
+                        const yourEntries = groupEntries
+                          .filter(entry => entry.userId === user?.id)
+                          .sort((a, b) => {
+                            // Sort by creation time (oldest first) - handle Firestore Timestamp
+                            const getTimestamp = (entry: any) => {
+                              if (!entry.createdAt) return entry.date?.getTime() || 0;
+                              // Check if it's a Firestore Timestamp (has toDate method)
+                              if (typeof (entry.createdAt as any).toDate === 'function') {
+                                return (entry.createdAt as any).toDate().getTime();
+                              }
+                              // Handle as regular Date
+                              return new Date(entry.createdAt).getTime();
+                            };
+                            
+                            const aTime = getTimestamp(a);
+                            const bTime = getTimestamp(b);
+                            return aTime - bTime;
+                          })
+                          .map((entry, index) => ({
+                            ...entry,
+                            entryNumber: entry.entryNumber || (index + 1) // Use existing or assign sequential number
+                          }));
+                        
+                        const otherEntries = isAdminOrSupervisor ? (() => {
+                          // 'self' filter: show supervisor's own entries
+                          if (employeeFilter === 'self') {
+                            return groupEntries.filter(entry => entry.userId === user?.id);
+                          }
+
+                          // Show all entries for admins, other users' entries for supervisors (including drafts)
+                          const otherUsersEntries = user?.role === 'admin' ? groupEntries : groupEntries.filter(entry => entry.userId !== user?.id);
+                          
+                          // Check if "all" is explicitly selected for either filter
+                          const showAll = (siteFilter === 'all') || (employeeFilter === 'all');
+                          
+                          // Check if a specific filter is set (not empty and not 'all' and not 'self')
+                          const hasSpecificFilter = (siteFilter && siteFilter !== '' && siteFilter !== 'all') || 
+                                                  (employeeFilter && employeeFilter !== '' && employeeFilter !== 'all' && employeeFilter !== 'self');
+                          
+                          if (showAll) {
+                            // "All" selected - show all other users' entries
+                            return otherUsersEntries;
+                          }
+                          
+                          if (!hasSpecificFilter) {
+                            // No filters selected - don't show other users' entries
+                            return [];
+                          }
+                          
+                          // Apply specific filters
+                          let filtered = otherUsersEntries;
+                          // Only apply site filter if it's not "all" and not empty
+                          if (siteFilter && siteFilter !== 'all' && siteFilter !== '') {
+                            filtered = filtered.filter(entry => entry.job === siteFilter);
+                          }
+                          // Only apply employee filter if it's not "all" and not empty
+                          if (employeeFilter && employeeFilter !== 'all' && employeeFilter !== '') {
+                            filtered = filtered.filter(entry => entry.userId === employeeFilter);
+                          }
+                          
+                          return filtered;
+                        })() : [];
+
+                        const showGrouped = siteFilter === 'all' || employeeFilter === 'all';
+                        const siteGroups: { site: string | null; entries: any[] }[] = [];
+                        if (showGrouped) {
+                          const groupMap: Record<string, any[]> = {};
+                          (otherEntries as any[]).forEach((entry: any) => {
+                            const site = entry.job || '(No Site)';
+                            if (!groupMap[site]) groupMap[site] = [];
+                            groupMap[site].push(entry);
+                          });
+                          Object.keys(groupMap)
+                            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+                            .forEach(site => siteGroups.push({ site, entries: groupMap[site] }));
+                        } else {
+                          siteGroups.push({ site: null, entries: otherEntries });
+                        }
+
+                        return (
+                          <div key={groupKey} className="space-y-3">
+                            {isMultiDateSelection && (
+                              <div className="text-yellow-800 dark:text-yellow-300 font-semibold text-sm uppercase tracking-wide">
+                                {format(date, 'EEE, MMM d, yyyy')}
+                              </div>
+                            )}
+                            {/* Your Time Cards Section - Field users only */}
+                            {user?.role === 'field' && (
+                              <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4">
                                   <div className="space-y-3">
-                              {entries.map((entry: any, index: number) => {
-                                const canAccess = canViewEntry(entry, user!);
-                                return (
-                                  <div key={entry.id || `other-${index}`}>
-                                    <div
-                                      className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
-                                        canAccess 
-                                          ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600' 
-                                          : 'border-gray-400 dark:border-gray-600 opacity-75'
-                                      }`}
-                                    >
-                                      <div className="space-y-2">
-                                        {/* Top row — clickable to navigate to edit page */}
-                                        <div
-                                          className={canAccess ? 'cursor-pointer' : ''}
-                                          onClick={() => canAccess && handleEntrySelect(entry.id!)}
-                                        >
-                                        <div className="flex justify-between items-start">
-                                          <span className="text-gray-900 dark:text-yellow-100 font-medium">
-                                            {getBestDisplayName(users.find(u => u.id === entry.userId))}
-                                          </span>
-                                          <div className="flex items-center gap-2">
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleEntryExpanded(entry.id || `other-${index}`);
-                                              }}
-                                              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                                    {yourEntries.length > 0 ? (
+                                      yourEntries.map((entry: any, index: number) => {
+                                        const canAccess = canViewEntry(entry, user!);
+                                        return (
+                                          <div key={entry.id || `your-${index}`}>
+                                            <div
+                                              className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
+                                                canAccess 
+                                                  ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600' 
+                                                  : 'border-gray-400 dark:border-gray-600 opacity-75'
+                                              }`}
                                             >
-                                              {expandedEntries.has(entry.id || `other-${index}`) ? (
-                                                <ChevronUp className="w-4 h-4" />
-                                              ) : (
-                                                <ChevronDown className="w-4 h-4" />
+                                              <div className="space-y-2">
+                                                {/* Top row — clickable to navigate to edit page */}
+                                                <div
+                                                  className={canAccess ? 'cursor-pointer' : ''}
+                                                  onClick={() => canAccess && handleEntrySelect(entry.id!)}
+                                                >
+                                                <div className="flex justify-between items-start">
+                                                  <span className="text-gray-900 dark:text-yellow-100 font-medium">
+                                                    {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                                  </span>
+                                                  <div className="flex items-center gap-2">
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleEntryExpanded(entry.id || `your-${index}`);
+                                                      }}
+                                                      className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                                                    >
+                                                      {expandedEntries.has(entry.id || `your-${index}`) ? (
+                                                        <ChevronUp className="w-4 h-4" />
+                                                      ) : (
+                                                        <ChevronDown className="w-4 h-4" />
+                                                      )}
+                                                    </button>
+                                                    <span className={`px-2 py-1 rounded text-xs ${
+                                                      entry.status === 'draft' ? 'bg-gray-600' :
+                                                      entry.status === 'submitted' ? 'bg-green-600' :
+                                                      entry.status === 'rejected' ? 'bg-red-600' :
+                                                      'bg-blue-600'
+                                                    } text-white`}>
+                                                      {entry.status === 'submitted' ? (
+                                                        <Check className="w-3 h-3" />
+                                                      ) : (
+                                                        (getStatusDisplay(entry.status) || 'D').charAt(0)
+                                                      )}
+                                                    </span>
+                                                    {canEditEntry(entry, user!) && (
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          if (entry.id) handleDeleteEntry(entry.id);
+                                                        }}
+                                                        className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                                      >
+                                                        Delete
+                                                      </button>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                                {entry.job && (
+                                                  <div className="text-gray-900 dark:text-yellow-100">
+                                                    {entry.job}
+                                                  </div>
+                                                )}
+                                                <div className="font-medium text-yellow-700 dark:text-yellow-600">
+                                                  <span className="text-sm">
+                                                    Worked {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
+                                                    {(entry.travelHours ?? 0) > 0 && (
+                                                      <> + Travel {entry.travelHours}</>
+                                                    )} = Total {((calcHours(entry.clockIn, entry.clockOut) ?? entry.hours) + (entry.travelHours ?? 0)).toFixed(2)}
+                                                  </span>
+                                                  {entry.lastEditedBy && (
+                                                    <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt instanceof Date ? entry.lastEditedAt : (entry.lastEditedAt as any).toDate(), 'MMM d, yyyy HH:mm') : ''}`}>
+                                                      Edited by {entry.lastEditedBy}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                </div>
+                                                
+                                                {/* Expanded Details - Inline Editable */}
+                                                {expandedEntries.has(entry.id || `your-${index}`) && (
+                                                  <InlineTimecardEdit
+                                                    entry={entry}
+                                                    user={user!}
+                                                    canEdit={canEditEntry(entry, user!)}
+                                                    onSave={handleInlineSave}
+                                                    calcHours={calcHours}
+                                                  />
+                                                )}
+                                              </div>
+                                              
+                                              {!canAccess && (
+                                                <div className="text-red-400 text-xs mt-2">
+                                                  This time card has been submitted and cannot be accessed.
+                                                </div>
                                               )}
-                                            </button>
-                                            <span className={`px-2 py-1 rounded text-xs ${
-                                              entry.status === 'draft' ? 'bg-gray-600' :
-                                              entry.status === 'submitted' ? 'bg-green-600' :
-                                              entry.status === 'rejected' ? 'bg-red-600' :
-                                              'bg-blue-600'
-                                            } text-white`}>
-                                              {entry.status === 'submitted' ? (
-                                                <Check className="w-3 h-3" />
-                                              ) : (
-                                                (getStatusDisplay(entry.status) || 'D').charAt(0)
-                                              )}
-                                            </span>
-                                            {canEditEntry(entry, user!) && (
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  if (entry.id) handleDeleteEntry(entry.id);
-                                                }}
-                                                className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                            </div>
+                                          </div>
+                                        );
+                                      })
+                                    ) : (
+                                      <div className="text-center py-8 text-yellow-700 dark:text-yellow-600">
+                                        No time entries found for this date
+                                      </div>
+                                    )}
+                                  </div>
+                              </div>
+                            )}
+
+                            {/* Other Time Cards Section (Admins/Supervisors only) */}
+                            {otherEntries.length > 0 && (
+                              <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4 mt-4">
+                                <div className="mb-3">
+                                  <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">
+                                    {(() => {
+                                      if (siteFilter === 'all' || employeeFilter === 'all') {
+                                        return 'All Time Cards';
+                                      } else if (employeeFilter === 'self') {
+                                        return 'Your Time Card';
+                                      } else if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
+                                        const employeeName = getBestDisplayName(users.find(u => u.id === employeeFilter));
+                                        return `${siteFilter} - ${employeeName}'s Time Cards`;
+                                      } else if (siteFilter && siteFilter !== 'all') {
+                                        return `${siteFilter} Time Cards`;
+                                      } else if (employeeFilter && employeeFilter !== 'all') {
+                                        return `${getBestDisplayName(users.find(u => u.id === employeeFilter))}'s Time Cards`;
+                                      } else {
+                                        return 'Other Time Cards';
+                                      }
+                                    })()}
+                                  </h4>
+                                </div>
+                                <div className={showGrouped ? 'space-y-4' : 'space-y-3'}>
+                                    {siteGroups.map(({ site, entries }) => (
+                                      <div key={site ?? 'ungrouped'}>
+                                        {site && (
+                                          <h5 className="text-yellow-700 dark:text-yellow-400 font-semibold text-sm mb-2 mt-1 border-b border-yellow-200 dark:border-yellow-800 pb-1">
+                                            {site}
+                                          </h5>
+                                        )}
+                                        <div className="space-y-3">
+                                    {entries.map((entry: any, index: number) => {
+                                      const canAccess = canViewEntry(entry, user!);
+                                      return (
+                                        <div key={entry.id || `other-${index}`}>
+                                          <div
+                                            className={`bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10 border rounded-lg p-3 transition-colors ${
+                                              canAccess 
+                                                ? 'border-yellow-400 dark:border-yellow-700 hover:border-yellow-600' 
+                                                : 'border-gray-400 dark:border-gray-600 opacity-75'
+                                            }`}
+                                          >
+                                            <div className="space-y-2">
+                                              {/* Top row — clickable to navigate to edit page */}
+                                              <div
+                                                className={canAccess ? 'cursor-pointer' : ''}
+                                                onClick={() => canAccess && handleEntrySelect(entry.id!)}
                                               >
-                                                Delete
-                                              </button>
+                                              <div className="flex justify-between items-start">
+                                                <span className="text-gray-900 dark:text-yellow-100 font-medium">
+                                                  {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      toggleEntryExpanded(entry.id || `other-${index}`);
+                                                    }}
+                                                    className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                                                  >
+                                                    {expandedEntries.has(entry.id || `other-${index}`) ? (
+                                                      <ChevronUp className="w-4 h-4" />
+                                                    ) : (
+                                                      <ChevronDown className="w-4 h-4" />
+                                                    )}
+                                                  </button>
+                                                  <span className={`px-2 py-1 rounded text-xs ${
+                                                    entry.status === 'draft' ? 'bg-gray-600' :
+                                                    entry.status === 'submitted' ? 'bg-green-600' :
+                                                    entry.status === 'rejected' ? 'bg-red-600' :
+                                                    'bg-blue-600'
+                                                  } text-white`}>
+                                                    {entry.status === 'submitted' ? (
+                                                      <Check className="w-3 h-3" />
+                                                    ) : (
+                                                      (getStatusDisplay(entry.status) || 'D').charAt(0)
+                                                    )}
+                                                  </span>
+                                                  {canEditEntry(entry, user!) && (
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (entry.id) handleDeleteEntry(entry.id);
+                                                      }}
+                                                      className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                                    >
+                                                      Delete
+                                                    </button>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              {entry.job && (
+                                                <div className="text-gray-900 dark:text-yellow-100">
+                                                  {entry.job}
+                                                </div>
+                                              )}
+                                              <div className="font-medium text-yellow-700 dark:text-yellow-600">
+                                                <span className="text-sm">
+                                                  Worked {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
+                                                  {(entry.travelHours ?? 0) > 0 && (
+                                                    <> + Travel {entry.travelHours}</>
+                                                  )} = Total {((calcHours(entry.clockIn, entry.clockOut) ?? entry.hours) + (entry.travelHours ?? 0)).toFixed(2)}
+                                                </span>
+                                                {entry.lastEditedBy && (
+                                                  <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt instanceof Date ? entry.lastEditedAt : (entry.lastEditedAt as any).toDate(), 'MMM d, yyyy HH:mm') : ''}`}>
+                                                    Edited by {entry.lastEditedBy}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              </div>
+                                              
+                                              {/* Expanded Details - Inline Editable */}
+                                              {expandedEntries.has(entry.id || `other-${index}`) && (
+                                                <InlineTimecardEdit
+                                                  entry={entry}
+                                                  user={user!}
+                                                  canEdit={canEditEntry(entry, user!)}
+                                                  onSave={handleInlineSave}
+                                                  calcHours={calcHours}
+                                                />
+                                              )}
+                                            </div>
+                                            
+                                            {!canAccess && (
+                                              <div className="text-red-400 text-xs mt-2">
+                                                This time card has been submitted and cannot be accessed.
+                                              </div>
                                             )}
                                           </div>
                                         </div>
-                                        {!showGrouped && entry.job && (
-                                          <div className="text-gray-900 dark:text-yellow-100">
-                                            {entry.job}
-                                          </div>
-                                        )}
-                                        <div className="font-medium text-yellow-700 dark:text-yellow-600">
-                                          <span className="text-sm">
-                                            Worked {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
-                                            {(entry.travelHours ?? 0) > 0 && (
-                                              <> + Travel {entry.travelHours}</>
-                                            )} = Total {((calcHours(entry.clockIn, entry.clockOut) ?? entry.hours) + (entry.travelHours ?? 0)).toFixed(2)}
-                                          </span>
-                                          {entry.lastEditedBy && (
-                                            <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt instanceof Date ? entry.lastEditedAt : (entry.lastEditedAt as any).toDate(), 'MMM d, yyyy HH:mm') : ''}`}>
-                                              Edited by {entry.lastEditedBy}
-                                            </span>
-                                          )}
+                                      );
+                                    })}
                                         </div>
-                                        </div>
-                                        
-                                        {/* Expanded Details - Inline Editable */}
-                                        {expandedEntries.has(entry.id || `other-${index}`) && (
-                                          <InlineTimecardEdit
-                                            entry={entry}
-                                            user={user!}
-                                            canEdit={canEditEntry(entry, user!)}
-                                            onSave={handleInlineSave}
-                                            calcHours={calcHours}
-                                          />
-                                        )}
                                       </div>
-                                      
-                                      {!canAccess && (
-                                        <div className="text-red-400 text-xs mt-2">
-                                          This time card has been submitted and cannot be accessed.
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                                  </div>
+                                    ))}
                                 </div>
-                              ))}
-                            </div>
-                        </div>
-                      )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })()}
@@ -782,7 +886,7 @@ export default function TimecardPage() {
           )}
 
 
-          {!selectedDate && (
+          {selectedDates.length === 0 && (
             <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
               <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-4">Select a Date</h3>
               <p className="text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view or edit time entries.</p>

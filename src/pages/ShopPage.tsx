@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { shopAttachmentService } from '../services/shopAttachmentService';
 import { ShopForm } from '../components/ShopForm';
@@ -12,7 +12,6 @@ export function ShopPage() {
   const { user } = useAuth();
   const [equipmentName, setEquipmentName] = useState<string>('');
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
-  const [expandedShopReport, setExpandedShopReport] = useState<string | null>(null);
   const [shopAttachments, setShopAttachments] = useState<Record<string, any[]>>({});
   const [showShopForm, setShowShopForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -32,6 +31,16 @@ export function ShopPage() {
       setShopReports(reports);
       if (reports.length > 0) {
         setEquipmentName(reports[0].equipmentName);
+        
+        // Load all attachments for all reports
+        const attachmentsMap: Record<string, any[]> = {};
+        for (const report of reports) {
+          if (report.id) {
+            const attachments = await shopAttachmentService.getAttachmentsForReport(report.id);
+            attachmentsMap[report.id] = attachments;
+          }
+        }
+        setShopAttachments(attachmentsMap);
       }
     } catch (error) {
       console.error('Error loading shop reports:', error);
@@ -65,73 +74,65 @@ export function ShopPage() {
       }
       
       setShowShopForm(false);
-      // Refresh shop reports
+      // Refresh shop reports and attachments
       const reports = await shopHistoryFirebaseService.getEquipmentShopHistory(equipmentId);
       setShopReports(reports);
+      
+      // Load all attachments for all reports
+      const attachmentsMap: Record<string, any[]> = {};
+      for (const report of reports) {
+        if (report.id) {
+          const attachments = await shopAttachmentService.getAttachmentsForReport(report.id);
+          attachmentsMap[report.id] = attachments;
+        }
+      }
+      setShopAttachments(attachmentsMap);
     } catch (error) {
       console.error('Error submitting shop report:', error);
       throw error;
     }
   };
 
-  const handleShopReportExpand = async (reportId: string | null) => {
-    const newExpanded = expandedShopReport === reportId ? null : reportId;
-    setExpandedShopReport(newExpanded);
-    
-    if (newExpanded && reportId) {
-      try {
-        const attachments = await shopAttachmentService.getAttachmentsForReport(reportId);
-        setShopAttachments(prev => ({ ...prev, [reportId]: attachments }));
-      } catch (error) {
-        console.error('Error fetching shop attachments:', error);
-      }
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-yellow-100 dark:bg-black p-4 sm:p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <h1 className="text-2xl sm:text-3xl font-bold text-yellow-800 dark:text-yellow-200">
-              Shop Reports - {equipmentName || 'Loading...'}
-            </h1>
+    <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+      <div className="max-w-5xl mx-auto">
+        <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => navigate(-1)}
+                className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+              >
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+              <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
+                Services - {equipmentName || 'Loading...'}
+              </h2>
+            </div>
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => setShowShopForm(true)}
+                className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
+                title="Add Shop Report"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            )}
           </div>
-          {user?.role === 'admin' && (
-            <button
-              onClick={() => setShowShopForm(true)}
-              className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors"
-            >
-              Add Shop Report
-            </button>
-          )}
-        </div>
 
-        {loading ? (
-          <div className="text-center py-8">
-            <div className="text-yellow-600 dark:text-yellow-400">Loading...</div>
-          </div>
-        ) : (
-          <>
-            {/* Shop Reports List */}
-            {shopReports.length > 0 ? (
-              <div className="space-y-2 mt-3">
-                {shopReports.map((report) => (
-                  <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
-                    <button
-                      type="button"
-                      onClick={() => handleShopReportExpand(report.id || null)}
-                      className="w-full px-3 py-2 flex items-center justify-between text-left"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
+          {loading ? (
+            <div className="text-center py-4">
+              <div className="text-xs text-yellow-600 dark:text-yellow-400">Loading...</div>
+            </div>
+          ) : (
+            <>
+              {/* Services Reports List */}
+              {shopReports.length > 0 ? (
+                <div className="space-y-2 mt-3">
+                  {shopReports.map((report) => (
+                    <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                      <div className="px-3 py-2">
+                        <div className="flex items-center space-x-2 mb-2">
                           <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
                             {new Date(report.createdAt).toLocaleDateString()}
                           </span>
@@ -139,27 +140,6 @@ export function ShopPage() {
                             by {report.createdBy}
                           </span>
                         </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          {report.lastServicedDate && `Serviced Date: ${report.lastServicedDate}`}
-                        </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          {report.lastServiceHours && `Serviced Hours At: ${report.lastServiceHours}`}
-                        </div>
-                        {report.notes && (
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                            Notes: {report.notes.substring(0, 50)}{report.notes.length > 50 ? '...' : ''}
-                          </div>
-                        )}
-                      </div>
-                      {expandedShopReport === report.id ? (
-                        <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                      )}
-                    </button>
-                    
-                    {expandedShopReport === report.id && (
-                      <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
                         <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
                           <div><strong>Serviced Date:</strong> {report.lastServicedDate || 'N/A'}</div>
                           <div><strong>Serviced Hours At:</strong> {report.lastServiceHours || 'N/A'}</div>
@@ -193,26 +173,26 @@ export function ShopPage() {
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">No shop reports yet.</p>
-            )}
-          </>
-        )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">No service reports yet.</p>
+              )}
+            </>
+          )}
 
-        {/* Shop Form Modal */}
-        {showShopForm && (
-          <ShopForm
-            equipmentId={equipmentId!}
-            equipmentName={equipmentName}
-            onClose={() => setShowShopForm(false)}
-            onSubmit={handleShopSubmit}
-            initialServiceInterval={shopReports.length > 0 ? shopReports[0].serviceInterval : undefined}
-          />
-        )}
+          {/* Shop Form Modal */}
+          {showShopForm && (
+            <ShopForm
+              equipmentId={equipmentId!}
+              equipmentName={equipmentName}
+              onClose={() => setShowShopForm(false)}
+              onSubmit={handleShopSubmit}
+              initialServiceInterval={shopReports.length > 0 ? shopReports[0].serviceInterval : undefined}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ export const shopHistoryFirebaseService = {
       notes?: string;
     },
     user: { username: string; role: string }
-  ): Promise<void> => {
+  ): Promise<string> => {
     try {
       const reportData: ShopReport = {
         equipmentId,
@@ -41,7 +41,8 @@ export const shopHistoryFirebaseService = {
         createdByRole: user.role,
       };
 
-      await addDoc(collection(db, SHOP_REPORTS_COLLECTION), reportData);
+      const docRef = await addDoc(collection(db, SHOP_REPORTS_COLLECTION), reportData);
+      return docRef.id;
     } catch (error) {
       console.error('Error adding shop report:', error);
       throw error;

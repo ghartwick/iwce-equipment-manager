@@ -10,6 +10,8 @@ import { userManagementService, AppUser } from '../services/userManagementServic
 import { getCategories } from '../services/firebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
+import { shopAttachmentService } from '../services/shopAttachmentService';
+import { maintenanceAttachmentService } from '../services/maintenanceAttachmentService';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProductFormProps {
@@ -44,8 +46,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   const [showShopForm, setShowShopForm] = useState(false);
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
+  const [maintenanceAttachments, setMaintenanceAttachments] = useState<Record<string, any[]>>({});
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
   const [expandedShopReport, setExpandedShopReport] = useState<string | null>(null);
+  const [shopAttachments, setShopAttachments] = useState<Record<string, any[]>>({});
   const [isShopSectionExpanded, setIsShopSectionExpanded] = useState(false);
   const [equipmentNotes, setEquipmentNotes] = useState<Array<{ id: string; content: string }>>([{ id: Date.now().toString(), content: '' }]);
   const [customFields, setCustomFields] = useState<Array<{ id: string; name: string; value: string }>>([]);
@@ -213,17 +217,30 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     onCancel();
   };
 
-  const handleMaintenanceSubmit = async (maintenance: EquipmentMaintenance, attachments?: Array<{ fileName: string; fileUrl: string; filePath: string }>) => {
+  const handleMaintenanceSubmit = async (maintenance: EquipmentMaintenance, files?: File[]) => {
     if (!product || !user) return;
     
     try {
-      await maintenanceHistoryFirebaseService.addMaintenanceReport(
+      const reportId = await maintenanceHistoryFirebaseService.addMaintenanceReport(
         product.id,
         product.name,
         maintenance,
-        { username: user.username, role: user.role },
-        attachments
+        { username: user.username, role: user.role }
       );
+      
+      // Upload files if provided
+      if (files && files.length > 0) {
+        for (const file of files) {
+          await maintenanceAttachmentService.uploadAttachment({
+            maintenanceReportId: reportId,
+            equipmentId: product.id,
+            equipmentName: product.name,
+            file,
+            uploadedBy: user.id
+          });
+        }
+      }
+      
       setShowMaintenanceForm(false);
       // Refresh maintenance reports
       const reports = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id);
@@ -234,16 +251,30 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     }
   };
 
-  const handleShopSubmit = async (shopReport: { lastServicedDate?: string; lastServiceHours?: number; serviceInterval?: number; notes?: string }) => {
+  const handleShopSubmit = async (shopReport: { lastServicedDate?: string; lastServiceHours?: number; serviceInterval?: number; notes?: string }, files?: File[]) => {
     if (!product || !user) return;
     
     try {
-      await shopHistoryFirebaseService.addShopReport(
+      const reportId = await shopHistoryFirebaseService.addShopReport(
         product.id,
         product.name,
         shopReport,
         { username: user.username, role: user.role }
       );
+      
+      // Upload files if provided
+      if (files && files.length > 0) {
+        for (const file of files) {
+          await shopAttachmentService.uploadAttachment({
+            shopReportId: reportId,
+            equipmentId: product.id,
+            equipmentName: product.name,
+            file,
+            uploadedBy: user.id
+          });
+        }
+      }
+      
       setShowShopForm(false);
       // Refresh shop reports
       const reports = await shopHistoryFirebaseService.getEquipmentShopHistory(product.id);
@@ -251,6 +282,34 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     } catch (error) {
       console.error('Error submitting shop report:', error);
       throw error;
+    }
+  };
+
+  const handleShopReportExpand = async (reportId: string | null) => {
+    const newExpanded = expandedShopReport === reportId ? null : reportId;
+    setExpandedShopReport(newExpanded);
+    
+    if (newExpanded && reportId) {
+      try {
+        const attachments = await shopAttachmentService.getAttachmentsForReport(reportId);
+        setShopAttachments(prev => ({ ...prev, [reportId]: attachments }));
+      } catch (error) {
+        console.error('Error fetching shop attachments:', error);
+      }
+    }
+  };
+
+  const handleMaintenanceReportExpand = async (reportId: string | null) => {
+    const newExpanded = expandedReport === reportId ? null : reportId;
+    setExpandedReport(newExpanded);
+    
+    if (newExpanded && reportId) {
+      try {
+        const attachments = await maintenanceAttachmentService.getAttachmentsForReport(reportId);
+        setMaintenanceAttachments(prev => ({ ...prev, [reportId]: attachments }));
+      } catch (error) {
+        console.error('Error fetching maintenance attachments:', error);
+      }
     }
   };
 
@@ -600,7 +659,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                         <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
                           <button
                             type="button"
-                            onClick={() => setExpandedShopReport(expandedShopReport === report.id ? null : report.id || null)}
+                            onClick={() => handleShopReportExpand(report.id || null)}
                             className="w-full px-3 py-2 flex items-center justify-between text-left"
                           >
                             <div className="flex-1">
@@ -645,6 +704,26 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                                   </div>
                                 </div>
                               )}
+                              {shopAttachments[report.id!] && shopAttachments[report.id!].length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
+                                  <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+                                    <strong>Attachments:</strong>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {shopAttachments[report.id!].map((attachment, index) => (
+                                      <a
+                                        key={index}
+                                        href={attachment.fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block text-xs text-yellow-600 dark:text-yellow-400 hover:underline"
+                                      >
+                                        {attachment.fileName}
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -682,7 +761,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                     <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
                       <button
                         type="button"
-                        onClick={() => setExpandedReport(expandedReport === report.id ? null : report.id)}
+                        onClick={() => handleMaintenanceReportExpand(report.id)}
                         className="w-full px-3 py-2 flex items-center justify-between text-left"
                       >
                         <div className="flex-1">
@@ -778,6 +857,26 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                             <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
                               <div className="text-xs text-gray-700 dark:text-gray-300">
                                 <strong>Notes:</strong> {report.maintenance.notes}
+                              </div>
+                            </div>
+                          )}
+                          {maintenanceAttachments[report.id!] && maintenanceAttachments[report.id!].length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
+                              <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+                                <strong>Attachments:</strong>
+                              </div>
+                              <div className="space-y-1">
+                                {maintenanceAttachments[report.id!].map((attachment, index) => (
+                                  <a
+                                    key={index}
+                                    href={attachment.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block text-xs text-yellow-600 dark:text-yellow-400 hover:underline"
+                                  >
+                                    {attachment.fileName}
+                                  </a>
+                                ))}
                               </div>
                             </div>
                           )}

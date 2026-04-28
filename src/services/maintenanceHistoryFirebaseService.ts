@@ -35,20 +35,19 @@ class MaintenanceHistoryFirebaseService {
     equipmentId: string,
     equipmentName: string,
     maintenance: EquipmentMaintenance,
-    user: { username: string; role: string },
-    attachments?: Attachment[]
-  ): Promise<void> {
+    user: { username: string; role: string }
+  ): Promise<string> {
     try {
       const historyCollection = collection(db, this.COLLECTION_NAME);
-      await addDoc(historyCollection, {
+      const docRef = await addDoc(historyCollection, {
         equipmentId,
         equipmentName,
         maintenance,
-        attachments,
         createdAt: Timestamp.fromDate(new Date()),
         createdBy: user.username,
         createdByRole: user.role
       });
+      return docRef.id;
     } catch (error) {
       console.error('Failed to save maintenance report to Firebase:', error);
       if (error instanceof Error) {

@@ -1,57 +1,30 @@
 import React, { useState } from 'react';
 import { X, Upload } from 'lucide-react';
 import { EquipmentMaintenance } from '../types';
-import { storage } from '../firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface MaintenanceFormProps {
   equipmentId: string;
   equipmentName: string;
   onClose: () => void;
-  onSubmit: (maintenance: EquipmentMaintenance, attachments?: Array<{ fileName: string; fileUrl: string; filePath: string }>) => Promise<void>;
+  onSubmit: (maintenance: EquipmentMaintenance, files?: File[]) => Promise<void>;
 }
 
 export function MaintenanceForm({ equipmentName, onClose, onSubmit }: MaintenanceFormProps) {
   const [maintenance, setMaintenance] = useState<EquipmentMaintenance>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [attachments, setAttachments] = useState<Array<{ fileName: string; fileUrl: string; filePath: string }>>([]);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const selectedFiles = e.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) return;
 
-    setUploadingFiles(true);
-    try {
-      const newAttachments = [...attachments];
-      
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const filePath = `maintenance-attachments/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, filePath);
-        
-        await uploadBytes(storageRef, file);
-        const fileUrl = await getDownloadURL(storageRef);
-        
-        newAttachments.push({
-          fileName: file.name,
-          fileUrl,
-          filePath,
-        });
-      }
-      
-      setAttachments(newAttachments);
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      alert('Error uploading files: ' + (error as Error).message);
-    } finally {
-      setUploadingFiles(false);
-    }
+    const newFiles = [...files, ...Array.from(selectedFiles)];
+    setFiles(newFiles);
   };
 
-  const removeAttachment = (index: number) => {
-    const newAttachments = attachments.filter((_, i) => i !== index);
-    setAttachments(newAttachments);
+  const removeFile = (index: number) => {
+    const newFiles = files.filter((_, i) => i !== index);
+    setFiles(newFiles);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,7 +33,7 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
     
     setIsSubmitting(true);
     try {
-      await onSubmit(maintenance, attachments);
+      await onSubmit(maintenance, files);
       onClose();
     } catch (error) {
       console.error('Error submitting maintenance report:', error);
@@ -176,34 +149,29 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
                 multiple
                 onChange={handleFileUpload}
                 className="hidden"
-                disabled={uploadingFiles || isSubmitting}
+                disabled={isSubmitting}
               />
               <label
                 htmlFor="file-upload"
                 className={`inline-flex items-center space-x-2 px-3 py-2 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors cursor-pointer ${
-                  uploadingFiles || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                  isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
                 <Upload className="h-4 w-4" />
-                <span>{uploadingFiles ? 'Uploading...' : 'Upload Files'}</span>
+                <span>Upload Files</span>
               </label>
             </div>
             
-            {attachments.length > 0 && (
+            {files.length > 0 && (
               <div className="mt-3 space-y-2">
-                {attachments.map((attachment, index) => (
+                {files.map((file, index) => (
                   <div key={index} className="flex items-center justify-between bg-yellow-50 dark:bg-yellow-900/20 px-3 py-2 rounded-md border border-yellow-300 dark:border-yellow-700">
-                    <a
-                      href={attachment.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-yellow-700 dark:text-yellow-300 hover:underline truncate flex-1"
-                    >
-                      {attachment.fileName}
-                    </a>
+                    <span className="text-xs text-yellow-700 dark:text-yellow-300 truncate flex-1">
+                      {file.name}
+                    </span>
                     <button
                       type="button"
-                      onClick={() => removeAttachment(index)}
+                      onClick={() => removeFile(index)}
                       className="ml-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                       disabled={isSubmitting}
                     >

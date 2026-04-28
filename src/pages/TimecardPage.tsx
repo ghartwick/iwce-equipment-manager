@@ -8,6 +8,7 @@ import { UserManagementService, AppUser } from '../services/userManagementServic
 import { codeManagementService } from '../services/codeManagementService';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { TimecardAttachment, timecardAttachmentService } from '../services/timecardAttachmentService';
+import { lockedDateService } from '../services/lockedDateService';
 import { 
   format, 
   startOfMonth, 
@@ -82,7 +83,8 @@ export default function TimecardPage() {
   const [sitesData, setSitesData] = useState<Site[]>([]);
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
   const [attachmentDates, setAttachmentDates] = useState<Set<string>>(new Set());
-  
+  const [lockedDates, setLockedDates] = useState<Set<string>>(new Set());
+
   // User management
   const [users, setUsers] = useState<AppUser[]>([]);
   const [userManagementService] = useState(() => new UserManagementService());
@@ -261,6 +263,19 @@ export default function TimecardPage() {
     loadAttachmentsForDate();
   }, [selectedDates]);
 
+  useEffect(() => {
+    const loadLockedDates = async () => {
+      try {
+        const locked = await lockedDateService.getLockedDates(startDate, endDate);
+        setLockedDates(locked);
+      } catch (error) {
+        // Error loading locked dates
+      }
+    };
+
+    loadLockedDates();
+  }, [startDate, endDate]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-yellow-100 dark:bg-black flex items-center justify-center">
@@ -335,6 +350,10 @@ export default function TimecardPage() {
 
   // Handle entry selection - save page state then navigate to edit page
   const handleEntrySelect = (entryId: string) => {
+    if (isDateLocked) {
+      alert('This date is locked. You cannot edit time entries on locked dates.');
+      return;
+    }
     _savedTimecardState = {
       selectedDates: selectedDates.map(date => date.toISOString()),
       currentMonth: currentMonth.toISOString(),
@@ -352,6 +371,7 @@ export default function TimecardPage() {
     ? format(selectedDates[0], 'yyyy-MM-dd')
     : null;
   const isMultiDateSelection = selectedDates.length > 1;
+  const isDateLocked = selectedDates.length === 1 ? lockedDates.has(formatDateKey(selectedDates[0])) : false;
   const attachmentCodeOptions = (() => {
     if (attachmentSite) {
       const selectedSite = sitesData.find(site => site.name === attachmentSite);
@@ -364,11 +384,19 @@ export default function TimecardPage() {
 
   // Handle inline edit save
   const handleInlineSave = async (entryId: string, updates: any, editedBy?: string) => {
+    if (isDateLocked) {
+      alert('This date is locked. You cannot edit time entries on locked dates.');
+      return;
+    }
     await updateTimeEntry(entryId, updates, editedBy);
   };
 
   // Handle entry deletion
   const handleDeleteEntry = async (entryId: string) => {
+    if (isDateLocked) {
+      alert('This date is locked. You cannot delete time entries on locked dates.');
+      return;
+    }
     if (window.confirm('Are you sure you want to delete this time entry?')) {
       try {
         await deleteTimeEntry(entryId);
@@ -444,6 +472,32 @@ export default function TimecardPage() {
       });
     } catch (error) {
       alert('Failed to delete attachment.');
+    }
+  };
+
+  const handleToggleLock = async (date: Date) => {
+    if (!user || user.role !== 'admin') {
+      alert('Only admins can lock/unlock dates.');
+      return;
+    }
+
+    const dateKey = formatDateKey(date);
+    const isLocked = lockedDates.has(dateKey);
+
+    try {
+      if (isLocked) {
+        await lockedDateService.unlockDate(date);
+        setLockedDates(prev => {
+          const next = new Set(prev);
+          next.delete(dateKey);
+          return next;
+        });
+      } else {
+        await lockedDateService.lockDate(date, user.id);
+        setLockedDates(prev => new Set(prev).add(dateKey));
+      }
+    } catch (error) {
+      alert(`Failed to ${isLocked ? 'unlock' : 'lock'} date.`);
     }
   };
 
@@ -527,6 +581,8 @@ export default function TimecardPage() {
                 const isSelected = selectedDates.some(selected => isSameDay(day, selected));
                 const isTodayDate = isToday(day);
                 const hasAttachment = attachmentDates.has(formatDateKey(day));
+                const dateKey = formatDateKey(day);
+                const isLocked = lockedDates.has(dateKey);
 
                 return (
                   <button
@@ -536,8 +592,8 @@ export default function TimecardPage() {
                       relative p-2 text-sm rounded-lg border transition-all
                       ${isCurrentMonth ? 'text-gray-800 dark:text-yellow-100' : 'text-yellow-600 dark:text-yellow-700'}
                       ${!isCurrentMonth ? 'opacity-50' : ''}
-                      ${isTodayDate && !isSelected ? 'border-yellow-500 dark:border-yellow-400' : (!isTodayDate && !isSelected ? 'border-yellow-600 dark:border-yellow-800' : '')}
-                      ${isSelected ? 'bg-green-200 dark:bg-green-900 dark:bg-opacity-50 border-green-500' : 'hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30'}
+                      ${isLocked ? 'border-gray-400 dark:border-gray-600 bg-gray-300 dark:bg-gray-800 opacity-75' : (isTodayDate && !isSelected ? 'border-yellow-500 dark:border-yellow-400' : (!isTodayDate && !isSelected ? 'border-yellow-600 dark:border-yellow-800' : ''))}
+                      ${isSelected && !isLocked ? 'bg-green-200 dark:bg-green-900 dark:bg-opacity-50 border-green-500' : 'hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30'}
                     `}
                   >
                     <div className="text-center relative">
@@ -546,7 +602,7 @@ export default function TimecardPage() {
                         const dayEntries = getEntriesForDate(day);
                         const submittedCount = dayEntries.filter(entry => entry.status === 'submitted').length;
                         const draftCount = dayEntries.filter(entry => !entry.status || entry.status === 'draft').length;
-                        
+
                         return (
                           <>
                             {draftCount > 0 && (
@@ -595,9 +651,9 @@ export default function TimecardPage() {
                       if (!selectedDateParam) return;
                       navigate(`/timecard/edit/new?date=${selectedDateParam}`);
                     }}
-                    disabled={!selectedDateParam}
-                    className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap"
-                    title={selectedDateParam ? 'Add Time Card' : 'Select a single date to add a time card'}
+                    disabled={!selectedDateParam || isDateLocked}
+                    className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap disabled:opacity-50"
+                    title={isDateLocked ? 'Date is locked' : (selectedDateParam ? 'Add Time Card' : 'Select a single date to add a time card')}
                   >
                     Add Time Card
                   </button>
@@ -607,6 +663,15 @@ export default function TimecardPage() {
                   >
                     Attachments
                   </button>
+                  {user?.role === 'admin' && selectedDateParam && (
+                    <button
+                      onClick={() => handleToggleLock(selectedDates[0])}
+                      className="px-3 py-1.5 text-sm bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap"
+                      title={isDateLocked ? 'Unlock date' : 'Lock date'}
+                    >
+                      {isDateLocked ? 'Unlock' : 'Lock'}
+                    </button>
+                  )}
                 </div>
               </div>
 

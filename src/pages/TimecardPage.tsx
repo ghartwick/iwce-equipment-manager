@@ -407,16 +407,32 @@ export default function TimecardPage() {
   };
 
   const handleAttachmentSubmit = async () => {
-    if (!selectedDates.length) return;
+    console.log('handleAttachmentSubmit called');
+    console.log('selectedDates:', selectedDates);
+    console.log('attachmentSite:', attachmentSite);
+    console.log('attachmentFile:', attachmentFile);
+    console.log('user:', user);
+    
+    if (!selectedDates.length) {
+      alert('Please select a date first.');
+      return;
+    }
     if (selectedDates.length !== 1) {
       alert('Select a single date to attach a file.');
       return;
     }
-    if (!attachmentSite || !attachmentFile) {
-      alert('Please select a site and attachment file.');
+    if (!attachmentSite) {
+      alert('Please select a site.');
       return;
     }
-    if (!user) return;
+    if (!attachmentFile) {
+      alert('Please select a file.');
+      return;
+    }
+    if (!user) {
+      alert('User not authenticated.');
+      return;
+    }
 
     setAttachmentSubmitting(true);
     try {
@@ -446,7 +462,8 @@ export default function TimecardPage() {
       setAttachmentsForDate(attachments);
       alert('Attachment uploaded successfully.');
     } catch (error) {
-      alert('Failed to upload attachment.');
+      console.error('Error uploading attachment:', error);
+      alert('Failed to upload attachment: ' + (error as Error).message);
     } finally {
       setAttachmentSubmitting(false);
     }
@@ -663,7 +680,10 @@ export default function TimecardPage() {
                     Add Time Card
                   </button>
                   <button
-                    onClick={() => setShowAttachments(prev => !prev)}
+                    onClick={() => {
+                      console.log('Attachments button clicked');
+                      setShowAttachments(prev => !prev);
+                    }}
                     className="px-3 py-1.5 text-sm bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-lg hover:bg-yellow-400 dark:hover:bg-yellow-700 font-medium transition-colors whitespace-nowrap"
                   >
                     Attachments
@@ -747,7 +767,12 @@ export default function TimecardPage() {
                   <div className="mt-4 flex justify-end">
                     <button
                       type="button"
-                      onClick={handleAttachmentSubmit}
+                      onClick={() => {
+                        console.log('Submit Attachment button clicked');
+                        console.log('attachmentSubmitting:', attachmentSubmitting);
+                        console.log('selectedDates.length:', selectedDates.length);
+                        handleAttachmentSubmit();
+                      }}
                       disabled={attachmentSubmitting || selectedDates.length !== 1}
                       className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap disabled:opacity-50"
                       title={selectedDates.length === 1 ? 'Upload attachment' : 'Select a single date to attach'}

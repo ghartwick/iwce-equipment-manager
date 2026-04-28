@@ -1,12 +1,6 @@
 import { db } from '../firebase';
 import { collection, addDoc, query, where, orderBy, getDocs } from 'firebase/firestore';
 
-export interface Attachment {
-  fileName: string;
-  fileUrl: string;
-  filePath: string;
-}
-
 export interface ShopReport {
   id?: string;
   equipmentId: string;
@@ -15,7 +9,6 @@ export interface ShopReport {
   lastServiceHours?: number;
   serviceInterval?: number;
   notes?: string;
-  attachments?: Attachment[];
   createdAt: string;
   createdBy: string;
   createdByRole: string;
@@ -32,7 +25,6 @@ export const shopHistoryFirebaseService = {
       lastServiceHours?: number;
       serviceInterval?: number;
       notes?: string;
-      attachments?: Attachment[];
     },
     user: { username: string; role: string }
   ): Promise<void> => {
@@ -44,7 +36,6 @@ export const shopHistoryFirebaseService = {
         lastServiceHours: shopReport.lastServiceHours,
         serviceInterval: shopReport.serviceInterval,
         notes: shopReport.notes,
-        attachments: shopReport.attachments,
         createdAt: new Date().toISOString(),
         createdBy: user.username,
         createdByRole: user.role,

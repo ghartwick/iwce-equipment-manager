@@ -645,26 +645,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                                   </div>
                                 </div>
                               )}
-                              {report.attachments && report.attachments.length > 0 && (
-                                <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
-                                  <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-                                    <strong>Attachments:</strong>
-                                  </div>
-                                  <div className="space-y-1">
-                                    {report.attachments.map((attachment, index) => (
-                                      <a
-                                        key={index}
-                                        href={attachment.fileUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block text-xs text-yellow-600 dark:text-yellow-400 hover:underline"
-                                      >
-                                        {attachment.fileName}
-                                      </a>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           )}
                         </div>
@@ -798,26 +778,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                             <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
                               <div className="text-xs text-gray-700 dark:text-gray-300">
                                 <strong>Notes:</strong> {report.maintenance.notes}
-                              </div>
-                            </div>
-                          )}
-                          {report.attachments && report.attachments.length > 0 && (
-                            <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
-                              <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-                                <strong>Attachments:</strong>
-                              </div>
-                              <div className="space-y-1">
-                                {report.attachments.map((attachment, index) => (
-                                  <a
-                                    key={index}
-                                    href={attachment.fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block text-xs text-yellow-600 dark:text-yellow-400 hover:underline"
-                                  >
-                                    {attachment.fileName}
-                                  </a>
-                                ))}
                               </div>
                             </div>
                           )}

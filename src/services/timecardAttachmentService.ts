@@ -28,26 +28,41 @@ class TimecardAttachmentService {
   private readonly collectionName = 'timecardAttachments';
 
   async uploadAttachment(input: TimecardAttachmentInput): Promise<string> {
+    console.log('uploadAttachment called with:', input);
     const dateKey = this.formatDateKey(input.date);
     const filePath = `timecard-attachments/${dateKey}/${Date.now()}_${input.file.name}`;
+    console.log('File path:', filePath);
+    console.log('File size:', input.file.size);
     const storageRef = ref(storage, filePath);
 
-    await uploadBytes(storageRef, input.file);
-    const fileUrl = await getDownloadURL(storageRef);
+    try {
+      console.log('Starting upload to Firebase Storage...');
+      await uploadBytes(storageRef, input.file);
+      console.log('Upload complete, getting download URL...');
+      const fileUrl = await getDownloadURL(storageRef);
+      console.log('Download URL obtained:', fileUrl);
 
-    const docRef = await addDoc(collection(db, this.collectionName), {
-      date: Timestamp.fromDate(input.date),
-      site: input.site,
-      code: input.code ?? '',
-      description: input.description ?? '',
-      fileName: input.file.name,
-      fileUrl,
-      filePath,
-      uploadedBy: input.uploadedBy,
-      createdAt: Timestamp.fromDate(new Date())
-    });
+      console.log('Saving metadata to Firestore...');
+      const docRef = await addDoc(collection(db, this.collectionName), {
+        date: Timestamp.fromDate(input.date),
+        site: input.site,
+        code: input.code ?? '',
+        description: input.description ?? '',
+        fileName: input.file.name,
+        fileUrl,
+        filePath,
+        uploadedBy: input.uploadedBy,
+        createdAt: Timestamp.fromDate(new Date())
+      });
+      console.log('Metadata saved with ID:', docRef.id);
 
-    return docRef.id;
+      return docRef.id;
+    } catch (error) {
+      console.error('Error in uploadAttachment:', error);
+      console.error('Error code:', (error as any).code);
+      console.error('Error message:', (error as any).message);
+      throw error;
+    }
   }
 
   async getAttachmentsForRange(startDate: Date, endDate: Date): Promise<TimecardAttachment[]> {

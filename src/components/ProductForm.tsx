@@ -503,10 +503,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                     <button
                       type="button"
                       onClick={() => setCustomFields([...customFields, { id: Date.now().toString(), name: '', value: '' }])}
-                      className="inline-flex items-center justify-center p-1.5 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 transition-colors ml-2"
+                      className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
                       title="Add Custom Field"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
@@ -532,10 +532,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                     <button
                       type="button"
                       onClick={() => setShowShopForm(true)}
-                      className="inline-flex items-center justify-center p-1.5 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 transition-colors"
+                      className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
                       title="Add Shop Report"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
@@ -671,10 +671,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                 <button
                   type="button"
                   onClick={() => setShowMaintenanceForm(true)}
-                  className="inline-flex items-center justify-center p-1.5 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 transition-colors"
+                  className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
                   title="Add Maintenance Report"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-5 w-5" />
                 </button>
               </div>
               

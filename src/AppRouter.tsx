@@ -10,6 +10,7 @@ const InventoryPage = React.lazy(() => import('./pages/InventoryPage'));
 const TimecardPage = React.lazy(() => import('./pages/TimecardPage'));
 const TimecardEditPage = React.lazy(() => import('./pages/TimecardEditPage'));
 const EquipmentPage = React.lazy(() => import('./pages/EquipmentPage'));
+const ShopPage = React.lazy(() => import('./pages/ShopPage'));
 const HeavyEquipmentManagementPage = React.lazy(() => import('./pages/HeavyEquipmentManagementPage'));
 const FieldToolsManagementPage = React.lazy(() => import('./pages/FieldToolsManagementPage'));
 const SmallToolsManagementPage = React.lazy(() => import('./pages/SmallToolsManagementPage'));
@@ -81,6 +82,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <EquipmentPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/inventory/equipment/:equipmentId/shop" element={
+          isAuthenticated ? (
+            <Layout>
+              <ShopPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

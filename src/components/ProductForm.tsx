@@ -4,13 +4,10 @@ import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { Equipment, Category, EquipmentMaintenance } from '../types';
 import { EquipmentLog } from './EquipmentLog';
 import { MaintenanceForm } from './MaintenanceForm';
-import { ShopForm } from './ShopForm';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
 import { getCategories } from '../services/firebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
-import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
-import { shopAttachmentService } from '../services/shopAttachmentService';
 import { maintenanceAttachmentService } from '../services/maintenanceAttachmentService';
 import { useAuth } from '../hooks/useAuth';
 
@@ -43,17 +40,9 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   const [showLog, setShowLog] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
-  const [showShopForm, setShowShopForm] = useState(false);
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
   const [maintenanceAttachments, setMaintenanceAttachments] = useState<Record<string, any[]>>({});
-  const [shopReports, setShopReports] = useState<ShopReport[]>([]);
-  const [expandedShopReport, setExpandedShopReport] = useState<string | null>(null);
-  const [shopAttachments, setShopAttachments] = useState<Record<string, any[]>>({});
-  const [isShopSectionExpanded, setIsShopSectionExpanded] = useState(false);
-  const [equipmentNotes, setEquipmentNotes] = useState<Array<{ id: string; content: string }>>([{ id: Date.now().toString(), content: '' }]);
-  const [customFields, setCustomFields] = useState<Array<{ id: string; name: string; value: string }>>([]);
-  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
 
   const getEquipmentUrl = (id: string) =>
     `${window.location.origin}/inventory/equipment/${id}`;
@@ -150,21 +139,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     fetchMaintenanceReports();
   }, [product]);
 
-  // Fetch shop reports when product changes
-  useEffect(() => {
-    const fetchShopReports = async () => {
-      if (product?.equipmentType === 'heavy') {
-        try {
-          const reports = await shopHistoryFirebaseService.getEquipmentShopHistory(product.id);
-          setShopReports(reports);
-        } catch (error) {
-          console.error('Error fetching shop reports:', error);
-        }
-      }
-    };
-    fetchShopReports();
-  }, [product]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -248,54 +222,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     } catch (error) {
       console.error('Error submitting maintenance report:', error);
       throw error;
-    }
-  };
-
-  const handleShopSubmit = async (shopReport: { lastServicedDate?: string; lastServiceHours?: number; serviceInterval?: number; notes?: string }, files?: File[]) => {
-    if (!product || !user) return;
-    
-    try {
-      const reportId = await shopHistoryFirebaseService.addShopReport(
-        product.id,
-        product.name,
-        shopReport,
-        { username: user.username, role: user.role }
-      );
-      
-      // Upload files if provided
-      if (files && files.length > 0) {
-        for (const file of files) {
-          await shopAttachmentService.uploadAttachment({
-            shopReportId: reportId,
-            equipmentId: product.id,
-            equipmentName: product.name,
-            file,
-            uploadedBy: user.id
-          });
-        }
-      }
-      
-      setShowShopForm(false);
-      // Refresh shop reports
-      const reports = await shopHistoryFirebaseService.getEquipmentShopHistory(product.id);
-      setShopReports(reports);
-    } catch (error) {
-      console.error('Error submitting shop report:', error);
-      throw error;
-    }
-  };
-
-  const handleShopReportExpand = async (reportId: string | null) => {
-    const newExpanded = expandedShopReport === reportId ? null : reportId;
-    setExpandedShopReport(newExpanded);
-    
-    if (newExpanded && reportId) {
-      try {
-        const attachments = await shopAttachmentService.getAttachmentsForReport(reportId);
-        setShopAttachments(prev => ({ ...prev, [reportId]: attachments }));
-      } catch (error) {
-        console.error('Error fetching shop attachments:', error);
-      }
     }
   };
 
@@ -527,217 +453,16 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         >
           {isEditing ? 'Update Location' : 'Add Equipment'}
         </button>
+        {isEditing && product?.equipmentType === 'heavy' && userRole === 'admin' && (
+          <button
+            type="button"
+            onClick={() => window.location.href = `/inventory/equipment/${product.id}/shop`}
+            className="px-4 py-3 bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-md hover:bg-yellow-400 dark:hover:bg-yellow-700 text-sm font-medium transition-colors"
+          >
+            Shop
+          </button>
+        )}
         </div>
-
-          {/* Shop Section - Only for heavy equipment when editing and admin */}
-          {isEditing && product?.equipmentType === 'heavy' && userRole === 'admin' && (
-            <div className="md:col-span-2 mt-4 pt-4 border-t border-yellow-400 dark:border-yellow-600">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">Shop</h3>
-                <button
-                  type="button"
-                  onClick={() => setIsNotesExpanded(!isNotesExpanded)}
-                  className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
-                  title={isNotesExpanded ? 'Collapse' : 'Expand'}
-                >
-                  {isNotesExpanded ? (
-                    <ChevronUp className="h-4 w-4" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-
-              {/* Equipment Notes */}
-              {isNotesExpanded && (
-                <div className="mb-3">
-                  {equipmentNotes.map((note, index) => (
-                    <div key={note.id} className="flex items-center space-x-2 mb-2">
-                      <textarea
-                        value={note.content}
-                        onChange={(e) => {
-                          const newNotes = [...equipmentNotes];
-                          newNotes[index].content = e.target.value;
-                          setEquipmentNotes(newNotes);
-                        }}
-                        placeholder="Enter notes about this equipment..."
-                        rows={2}
-                        className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
-                      />
-                      {equipmentNotes.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setEquipmentNotes(equipmentNotes.filter((_, i) => i !== index))}
-                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setEquipmentNotes([...equipmentNotes, { id: Date.now().toString(), content: '' }])}
-                      className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
-                      title="Add Note"
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Custom Fields */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">Services</h3>
-                  <div className="flex items-center space-x-1">
-                    <button
-                      type="button"
-                      onClick={() => setIsShopSectionExpanded(!isShopSectionExpanded)}
-                      className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
-                      title={isShopSectionExpanded ? 'Collapse' : 'Expand'}
-                    >
-                      {isShopSectionExpanded ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowShopForm(true)}
-                      className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
-                      title="Add Shop Report"
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-                {customFields.map((field, index) => (
-                  <div key={field.id} className="flex items-center space-x-2 mb-2">
-                    <input
-                      type="text"
-                      value={field.name}
-                      onChange={(e) => {
-                        const newFields = [...customFields];
-                        newFields[index].name = e.target.value;
-                        setCustomFields(newFields);
-                      }}
-                      placeholder="Field Name"
-                      className="flex-1 px-2 py-1 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                    />
-                    <input
-                      type="text"
-                      value={field.value}
-                      onChange={(e) => {
-                        const newFields = [...customFields];
-                        newFields[index].value = e.target.value;
-                        setCustomFields(newFields);
-                      }}
-                      placeholder="Value"
-                      className="flex-1 px-2 py-1 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setCustomFields(customFields.filter((_, i) => i !== index))}
-                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Shop Reports List - Collapsible */}
-              {isShopSectionExpanded && (
-                <>
-                  {shopReports.length > 0 && (
-                    <div className="space-y-2 mt-3">
-                      {shopReports.map((report) => (
-                        <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
-                          <button
-                            type="button"
-                            onClick={() => handleShopReportExpand(report.id || null)}
-                            className="w-full px-3 py-2 flex items-center justify-between text-left"
-                          >
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
-                                  {new Date(report.createdAt).toLocaleDateString()}
-                                </span>
-                                <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                                  by {report.createdBy}
-                                </span>
-                              </div>
-                              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                {report.lastServicedDate && `Serviced Date: ${report.lastServicedDate}`}
-                              </div>
-                              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                {report.lastServiceHours && `Serviced Hours At: ${report.lastServiceHours}`}
-                              </div>
-                              {report.notes && (
-                                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                  Notes: {report.notes.substring(0, 50)}{report.notes.length > 50 ? '...' : ''}
-                                </div>
-                              )}
-                            </div>
-                            {expandedShopReport === report.id ? (
-                              <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                            )}
-                          </button>
-                          
-                          {expandedShopReport === report.id && (
-                            <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
-                              <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
-                                <div><strong>Serviced Date:</strong> {report.lastServicedDate || 'N/A'}</div>
-                                <div><strong>Serviced Hours At:</strong> {report.lastServiceHours || 'N/A'}</div>
-                                <div><strong>Service Interval:</strong> {report.serviceInterval || 'N/A'}</div>
-                              </div>
-                              {report.notes && (
-                                <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
-                                  <div className="text-xs text-gray-700 dark:text-gray-300">
-                                    <strong>Notes:</strong> {report.notes}
-                                  </div>
-                                </div>
-                              )}
-                              {shopAttachments[report.id!] && shopAttachments[report.id!].length > 0 && (
-                                <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
-                                  <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
-                                    <strong>Attachments:</strong>
-                                  </div>
-                                  <div className="space-y-1">
-                                    {shopAttachments[report.id!].map((attachment, index) => (
-                                      <a
-                                        key={index}
-                                        href={attachment.fileUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block text-xs text-yellow-600 dark:text-yellow-400 hover:underline"
-                                      >
-                                        {attachment.fileName}
-                                      </a>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {shopReports.length === 0 && (
-                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">No shop reports yet.</p>
-                  )}
-                </>
-              )}
-            </div>
-          )}
 
           {/* Maintenance Section - Only for heavy equipment when editing */}
           {isEditing && product?.equipmentType === 'heavy' && (
@@ -978,17 +703,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
           equipmentName={product.name}
           onClose={() => setShowMaintenanceForm(false)}
           onSubmit={handleMaintenanceSubmit}
-        />
-      )}
-
-      {/* Shop Form Modal */}
-      {showShopForm && product && (
-        <ShopForm
-          equipmentId={product.id}
-          equipmentName={product.name}
-          onClose={() => setShowShopForm(false)}
-          onSubmit={handleShopSubmit}
-          initialServiceInterval={shopReports.length > 0 ? shopReports[0].serviceInterval : undefined}
         />
       )}
     </div>

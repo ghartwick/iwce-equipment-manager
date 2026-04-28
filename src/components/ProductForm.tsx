@@ -47,7 +47,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
   const [expandedShopReport, setExpandedShopReport] = useState<string | null>(null);
   const [isShopSectionExpanded, setIsShopSectionExpanded] = useState(false);
-  const [equipmentNotes, setEquipmentNotes] = useState('');
+  const [equipmentNotes, setEquipmentNotes] = useState<Array<{ id: string; content: string }>>([{ id: Date.now().toString(), content: '' }]);
   const [customFields, setCustomFields] = useState<Array<{ id: string; name: string; value: string }>>([]);
   const [isNotesExpanded, setIsNotesExpanded] = useState(false);
 
@@ -492,19 +492,36 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
               {/* Equipment Notes */}
               {isNotesExpanded && (
                 <div className="mb-3">
-                  <div className="flex items-center justify-between">
-                    <textarea
-                      value={equipmentNotes}
-                      onChange={(e) => setEquipmentNotes(e.target.value)}
-                      placeholder="Enter notes about this equipment..."
-                      rows={2}
-                      className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
-                    />
+                  {equipmentNotes.map((note, index) => (
+                    <div key={note.id} className="flex items-center space-x-2 mb-2">
+                      <textarea
+                        value={note.content}
+                        onChange={(e) => {
+                          const newNotes = [...equipmentNotes];
+                          newNotes[index].content = e.target.value;
+                          setEquipmentNotes(newNotes);
+                        }}
+                        placeholder="Enter notes about this equipment..."
+                        rows={2}
+                        className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
+                      />
+                      {equipmentNotes.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setEquipmentNotes(equipmentNotes.filter((_, i) => i !== index))}
+                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="flex justify-end">
                     <button
                       type="button"
-                      onClick={() => setCustomFields([...customFields, { id: Date.now().toString(), name: '', value: '' }])}
+                      onClick={() => setEquipmentNotes([...equipmentNotes, { id: Date.now().toString(), content: '' }])}
                       className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
-                      title="Add Custom Field"
+                      title="Add Note"
                     >
                       <Plus className="h-5 w-5" />
                     </button>
@@ -515,7 +532,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
               {/* Custom Fields */}
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs text-yellow-700 dark:text-yellow-300">Services</label>
+                  <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">Services</h3>
                   <div className="flex items-center space-x-1">
                     <button
                       type="button"

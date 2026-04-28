@@ -1,20 +1,33 @@
 import React, { useState } from 'react';
 import { X, Upload } from 'lucide-react';
-import { EquipmentMaintenance } from '../types';
 import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-interface MaintenanceFormProps {
+interface ShopReport {
+  lastServicedDate?: string;
+  lastServiceHours?: number;
+  serviceInterval?: number;
+  notes?: string;
+  attachments?: Array<{
+    fileName: string;
+    fileUrl: string;
+    filePath: string;
+  }>;
+}
+
+interface ShopFormProps {
   equipmentId: string;
   equipmentName: string;
   onClose: () => void;
-  onSubmit: (maintenance: EquipmentMaintenance, attachments?: Array<{ fileName: string; fileUrl: string; filePath: string }>) => Promise<void>;
+  onSubmit: (shopReport: ShopReport) => Promise<void>;
+  initialServiceInterval?: number;
 }
 
-export function MaintenanceForm({ equipmentName, onClose, onSubmit }: MaintenanceFormProps) {
-  const [maintenance, setMaintenance] = useState<EquipmentMaintenance>({});
+export function ShopForm({ equipmentName, onClose, onSubmit, initialServiceInterval }: ShopFormProps) {
+  const [shopReport, setShopReport] = useState<ShopReport>({
+    serviceInterval: initialServiceInterval,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [attachments, setAttachments] = useState<Array<{ fileName: string; fileUrl: string; filePath: string }>>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,24 +36,24 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
 
     setUploadingFiles(true);
     try {
-      const newAttachments = [...attachments];
+      const attachments = shopReport.attachments || [];
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const filePath = `maintenance-attachments/${Date.now()}_${file.name}`;
+        const filePath = `shop-attachments/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, filePath);
         
         await uploadBytes(storageRef, file);
         const fileUrl = await getDownloadURL(storageRef);
         
-        newAttachments.push({
+        attachments.push({
           fileName: file.name,
           fileUrl,
           filePath,
         });
       }
       
-      setAttachments(newAttachments);
+      setShopReport({ ...shopReport, attachments });
     } catch (error) {
       console.error('Error uploading files:', error);
       alert('Error uploading files: ' + (error as Error).message);
@@ -50,8 +63,9 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
   };
 
   const removeAttachment = (index: number) => {
+    const attachments = shopReport.attachments || [];
     const newAttachments = attachments.filter((_, i) => i !== index);
-    setAttachments(newAttachments);
+    setShopReport({ ...shopReport, attachments: newAttachments });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,11 +74,11 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
     
     setIsSubmitting(true);
     try {
-      await onSubmit(maintenance, attachments);
+      await onSubmit(shopReport);
       onClose();
     } catch (error) {
-      console.error('Error submitting maintenance report:', error);
-      alert('Error submitting maintenance report: ' + (error as Error).message);
+      console.error('Error submitting shop report:', error);
+      alert('Error submitting shop report: ' + (error as Error).message);
     } finally {
       setIsSubmitting(false);
     }
@@ -72,10 +86,10 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto mx-4" onClick={e => e.stopPropagation()}>
+      <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
-            Maintenance Report - {equipmentName}
+            Shop Report - {equipmentName}
           </h2>
           <button onClick={onClose} className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500">
             <X className="h-5 w-5" />
@@ -83,73 +97,42 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Maintenance Section */}
+          {/* Shop Section */}
           <div className="border-t border-yellow-400 dark:border-yellow-600 pt-4">
-            <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-3">Maintenance</h3>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-              {/* Hours */}
+            <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-3">Shop</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Serviced Date */}
               <div>
-                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Hours</label>
+                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Serviced Date</label>
+                <input
+                  type="date"
+                  value={shopReport.lastServicedDate || ''}
+                  onChange={(e) => setShopReport({ ...shopReport, lastServicedDate: e.target.value })}
+                  className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  style={{ colorScheme: 'dark' }}
+                />
+              </div>
+
+              {/* Serviced Hours At */}
+              <div>
+                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Serviced Hours At</label>
                 <input
                   type="number"
-                  value={maintenance.hours || ''}
-                  onChange={(e) => setMaintenance({ ...maintenance, hours: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  value={shopReport.lastServiceHours || ''}
+                  onChange={(e) => setShopReport({ ...shopReport, lastServiceHours: e.target.value ? parseFloat(e.target.value) : undefined })}
                   className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
 
-              {/* OK/NA Fields */}
-              {[
-                { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
-                { key: 'tiresTracks', label: 'Tires/Tracks' },
-                { key: 'bucket', label: 'Bucket' },
-                { key: 'cuttingEdgeTeeth', label: 'Cutting Edge/Teeth' },
-                { key: 'hoses', label: 'Hoses' },
-                { key: 'batteryCableBeltHosesFilterGuards', label: 'Battery Cable, Belt, Hoses, Filter, Guards' },
-                { key: 'backupAlarm', label: 'Backup Alarm' },
-                { key: 'fireExtinguisher', label: 'Fire Extinguisher' },
-                { key: 'gauges', label: 'Gauges' },
-                { key: 'horn', label: 'Horn' },
-                { key: 'spillKit', label: 'Spill Kit' },
-                { key: 'glass', label: 'Glass (all sides)' },
-                { key: 'mirror', label: 'Mirror' },
-                { key: 'rollOverProtection', label: 'Roll Over Protection' },
-                { key: 'seatBeltSeat', label: 'Seat Belt/Seat' },
-              ].map(({ key, label }) => (
-                <div key={key}>
-                  <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">{label}</label>
-                  <select
-                    value={(maintenance as any)[key] || ''}
-                    onChange={(e) => {
-                      const value = e.target.value === 'OK' ? 'OK' : e.target.value === 'NA' ? 'NA' : e.target.value === 'Repair' ? 'Repair' : undefined;
-                      setMaintenance(prev => ({ ...prev, [key]: value } as any));
-                    }}
-                    className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  >
-                    <option value="">Select</option>
-                    <option value="OK">OK</option>
-                    <option value="Repair">Repair</option>
-                    <option value="NA">NA</option>
-                  </select>
-                </div>
-              ))}
-
-              {/* All Fluids Level */}
+              {/* Service Interval */}
               <div>
-                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">All Fluids Level</label>
-                <select
-                  value={maintenance.allFluidsLevel || ''}
-                  onChange={(e) => {
-                    const value = e.target.value === 'OK' ? 'OK' : e.target.value === 'NA' ? 'NA' : e.target.value === 'Repair' ? 'Repair' : undefined;
-                    setMaintenance({ ...maintenance, allFluidsLevel: value });
-                  }}
-                  className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                >
-                  <option value="">Select</option>
-                  <option value="OK">OK</option>
-                  <option value="Repair">Repair</option>
-                  <option value="NA">NA</option>
-                </select>
+                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Service Interval</label>
+                <input
+                  type="number"
+                  value={shopReport.serviceInterval || ''}
+                  onChange={(e) => setShopReport({ ...shopReport, serviceInterval: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
               </div>
             </div>
           </div>
@@ -158,9 +141,9 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
           <div className="border-t border-yellow-400 dark:border-yellow-600 pt-4">
             <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-3">Notes</h3>
             <textarea
-              value={maintenance.notes || ''}
-              onChange={(e) => setMaintenance({ ...maintenance, notes: e.target.value })}
-              placeholder="Enter any additional notes about this maintenance report..."
+              value={shopReport.notes || ''}
+              onChange={(e) => setShopReport({ ...shopReport, notes: e.target.value })}
+              placeholder="Enter any additional notes about this shop report..."
               rows={3}
               className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
             />
@@ -189,9 +172,9 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
               </label>
             </div>
             
-            {attachments.length > 0 && (
+            {shopReport.attachments && shopReport.attachments.length > 0 && (
               <div className="mt-3 space-y-2">
-                {attachments.map((attachment, index) => (
+                {shopReport.attachments.map((attachment, index) => (
                   <div key={index} className="flex items-center justify-between bg-yellow-50 dark:bg-yellow-900/20 px-3 py-2 rounded-md border border-yellow-300 dark:border-yellow-700">
                     <a
                       href={attachment.fileUrl}

@@ -2,11 +2,18 @@ import { collection, addDoc, query, where, orderBy, getDocs, Timestamp } from 'f
 import { db } from '../firebase';
 import { EquipmentMaintenance } from '../types';
 
+export interface Attachment {
+  fileName: string;
+  fileUrl: string;
+  filePath: string;
+}
+
 export interface MaintenanceReport {
   id: string;
   equipmentId: string;
   equipmentName: string;
   maintenance: EquipmentMaintenance;
+  attachments?: Attachment[];
   createdAt: string;
   createdBy: string;
   createdByRole: string;
@@ -28,7 +35,8 @@ class MaintenanceHistoryFirebaseService {
     equipmentId: string,
     equipmentName: string,
     maintenance: EquipmentMaintenance,
-    user: { username: string; role: string }
+    user: { username: string; role: string },
+    attachments?: Attachment[]
   ): Promise<void> {
     try {
       const historyCollection = collection(db, this.COLLECTION_NAME);
@@ -36,6 +44,7 @@ class MaintenanceHistoryFirebaseService {
         equipmentId,
         equipmentName,
         maintenance,
+        attachments,
         createdAt: Timestamp.fromDate(new Date()),
         createdBy: user.username,
         createdByRole: user.role

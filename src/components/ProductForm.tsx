@@ -4,10 +4,12 @@ import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { Equipment, Category, EquipmentMaintenance } from '../types';
 import { EquipmentLog } from './EquipmentLog';
 import { MaintenanceForm } from './MaintenanceForm';
+import { ShopForm } from './ShopForm';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
 import { getCategories } from '../services/firebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
+import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProductFormProps {
@@ -33,18 +35,21 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     equipmentType: 'field' as 'heavy' | 'field',
     repair: false,
     repairDescription: '',
-    lastServicedDate: '',
-    lastServiceHours: '',
-    serviceInterval: '',
-    shopNotes: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showLog, setShowLog] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  const [showShopForm, setShowShopForm] = useState(false);
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
+  const [shopReports, setShopReports] = useState<ShopReport[]>([]);
+  const [expandedShopReport, setExpandedShopReport] = useState<string | null>(null);
+  const [isShopSectionExpanded, setIsShopSectionExpanded] = useState(false);
+  const [equipmentNotes, setEquipmentNotes] = useState('');
+  const [customFields, setCustomFields] = useState<Array<{ id: string; name: string; value: string }>>([]);
+  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
 
   const getEquipmentUrl = (id: string) =>
     `${window.location.origin}/inventory/equipment/${id}`;
@@ -112,10 +117,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         equipmentType: product.equipmentType || 'field',
         repair: product.repair || false,
         repairDescription: product.repairDescription || '',
-        lastServicedDate: (product as any).lastServicedDate || '',
-        lastServiceHours: (product as any).lastServiceHours || '',
-        serviceInterval: (product as any).serviceInterval || '',
-        shopNotes: (product as any).shopNotes || '',
       });
       
       // Check if the site is a custom site (not in the sites list)
@@ -143,6 +144,21 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       }
     };
     fetchMaintenanceReports();
+  }, [product]);
+
+  // Fetch shop reports when product changes
+  useEffect(() => {
+    const fetchShopReports = async () => {
+      if (product?.equipmentType === 'heavy') {
+        try {
+          const reports = await shopHistoryFirebaseService.getEquipmentShopHistory(product.id);
+          setShopReports(reports);
+        } catch (error) {
+          console.error('Error fetching shop reports:', error);
+        }
+      }
+    };
+    fetchShopReports();
   }, [product]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -197,7 +213,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     onCancel();
   };
 
-  const handleMaintenanceSubmit = async (maintenance: EquipmentMaintenance) => {
+  const handleMaintenanceSubmit = async (maintenance: EquipmentMaintenance, attachments?: Array<{ fileName: string; fileUrl: string; filePath: string }>) => {
     if (!product || !user) return;
     
     try {
@@ -205,7 +221,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         product.id,
         product.name,
         maintenance,
-        { username: user.username, role: user.role }
+        { username: user.username, role: user.role },
+        attachments
       );
       setShowMaintenanceForm(false);
       // Refresh maintenance reports
@@ -213,6 +230,26 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       setMaintenanceReports(reports);
     } catch (error) {
       console.error('Error submitting maintenance report:', error);
+      throw error;
+    }
+  };
+
+  const handleShopSubmit = async (shopReport: { lastServicedDate?: string; lastServiceHours?: number; serviceInterval?: number; notes?: string }) => {
+    if (!product || !user) return;
+    
+    try {
+      await shopHistoryFirebaseService.addShopReport(
+        product.id,
+        product.name,
+        shopReport,
+        { username: user.username, role: user.role }
+      );
+      setShowShopForm(false);
+      // Refresh shop reports
+      const reports = await shopHistoryFirebaseService.getEquipmentShopHistory(product.id);
+      setShopReports(reports);
+    } catch (error) {
+      console.error('Error submitting shop report:', error);
       throw error;
     }
   };
@@ -436,71 +473,193 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
           {/* Shop Section - Only for heavy equipment when editing and admin */}
           {isEditing && product?.equipmentType === 'heavy' && userRole === 'admin' && (
             <div className="md:col-span-2 mt-4 pt-4 border-t border-yellow-400 dark:border-yellow-600">
-              <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-3">Shop</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Last Serviced Date */}
-                <div>
-                  <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Last Serviced Date</label>
-                  <input
-                    type="date"
-                    value={formData.lastServicedDate}
-                    onChange={(e) => handleInputChange('lastServicedDate', e.target.value)}
-                    className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  />
-                </div>
-
-                {/* Last Service Hours @ */}
-                <div>
-                  <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Last Service Hours @</label>
-                  <input
-                    type="number"
-                    value={formData.lastServiceHours}
-                    onChange={(e) => handleInputChange('lastServiceHours', e.target.value)}
-                    className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-
-                {/* Service Interval */}
-                <div>
-                  <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Service Interval</label>
-                  <input
-                    type="number"
-                    value={formData.serviceInterval}
-                    onChange={(e) => handleInputChange('serviceInterval', e.target.value)}
-                    className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-                </div>
-              </div>
-              {/* Shop Notes */}
-              <div className="mt-3">
-                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Shop Notes</label>
-                <textarea
-                  value={formData.shopNotes}
-                  onChange={(e) => handleInputChange('shopNotes', e.target.value)}
-                  placeholder="Enter shop notes..."
-                  rows={3}
-                  className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
-                />
-              </div>
-              <div className="flex justify-end mt-3">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">Shop</h3>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (product) {
-                      onSubmit({
-                        ...product,
-                        lastServicedDate: formData.lastServicedDate,
-                        lastServiceHours: formData.lastServiceHours ? parseFloat(formData.lastServiceHours) : undefined,
-                        serviceInterval: formData.serviceInterval ? parseFloat(formData.serviceInterval) : undefined,
-                        shopNotes: formData.shopNotes,
-                      } as any);
-                    }
-                  }}
-                  className="px-4 py-2 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors"
+                  onClick={() => setIsNotesExpanded(!isNotesExpanded)}
+                  className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
+                  title={isNotesExpanded ? 'Collapse' : 'Expand'}
                 >
-                  Save Shop Info
+                  {isNotesExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
                 </button>
               </div>
+
+              {/* Equipment Notes */}
+              {isNotesExpanded && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between">
+                    <textarea
+                      value={equipmentNotes}
+                      onChange={(e) => setEquipmentNotes(e.target.value)}
+                      placeholder="Enter notes about this equipment..."
+                      rows={2}
+                      className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCustomFields([...customFields, { id: Date.now().toString(), name: '', value: '' }])}
+                      className="inline-flex items-center justify-center p-1.5 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 transition-colors ml-2"
+                      title="Add Custom Field"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Fields */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs text-yellow-700 dark:text-yellow-300">Services</label>
+                  <div className="flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsShopSectionExpanded(!isShopSectionExpanded)}
+                      className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
+                      title={isShopSectionExpanded ? 'Collapse' : 'Expand'}
+                    >
+                      {isShopSectionExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowShopForm(true)}
+                      className="inline-flex items-center justify-center p-1.5 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 transition-colors"
+                      title="Add Shop Report"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                {customFields.map((field, index) => (
+                  <div key={field.id} className="flex items-center space-x-2 mb-2">
+                    <input
+                      type="text"
+                      value={field.name}
+                      onChange={(e) => {
+                        const newFields = [...customFields];
+                        newFields[index].name = e.target.value;
+                        setCustomFields(newFields);
+                      }}
+                      placeholder="Field Name"
+                      className="flex-1 px-2 py-1 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                    <input
+                      type="text"
+                      value={field.value}
+                      onChange={(e) => {
+                        const newFields = [...customFields];
+                        newFields[index].value = e.target.value;
+                        setCustomFields(newFields);
+                      }}
+                      placeholder="Value"
+                      className="flex-1 px-2 py-1 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCustomFields(customFields.filter((_, i) => i !== index))}
+                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Shop Reports List - Collapsible */}
+              {isShopSectionExpanded && (
+                <>
+                  {shopReports.length > 0 && (
+                    <div className="space-y-2 mt-3">
+                      {shopReports.map((report) => (
+                        <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedShopReport(expandedShopReport === report.id ? null : report.id || null)}
+                            className="w-full px-3 py-2 flex items-center justify-between text-left"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                                  {new Date(report.createdAt).toLocaleDateString()}
+                                </span>
+                                <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                                  by {report.createdBy}
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                {report.lastServicedDate && `Serviced Date: ${report.lastServicedDate}`}
+                              </div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                {report.lastServiceHours && `Serviced Hours At: ${report.lastServiceHours}`}
+                              </div>
+                              {report.notes && (
+                                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                  Notes: {report.notes.substring(0, 50)}{report.notes.length > 50 ? '...' : ''}
+                                </div>
+                              )}
+                            </div>
+                            {expandedShopReport === report.id ? (
+                              <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                            )}
+                          </button>
+                          
+                          {expandedShopReport === report.id && (
+                            <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
+                              <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
+                                <div><strong>Serviced Date:</strong> {report.lastServicedDate || 'N/A'}</div>
+                                <div><strong>Serviced Hours At:</strong> {report.lastServiceHours || 'N/A'}</div>
+                                <div><strong>Service Interval:</strong> {report.serviceInterval || 'N/A'}</div>
+                              </div>
+                              {report.notes && (
+                                <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
+                                  <div className="text-xs text-gray-700 dark:text-gray-300">
+                                    <strong>Notes:</strong> {report.notes}
+                                  </div>
+                                </div>
+                              )}
+                              {report.attachments && report.attachments.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
+                                  <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+                                    <strong>Attachments:</strong>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {report.attachments.map((attachment, index) => (
+                                      <a
+                                        key={index}
+                                        href={attachment.fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block text-xs text-yellow-600 dark:text-yellow-400 hover:underline"
+                                      >
+                                        {attachment.fileName}
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {shopReports.length === 0 && (
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">No shop reports yet.</p>
+                  )}
+                </>
+              )}
             </div>
           )}
 
@@ -512,10 +671,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                 <button
                   type="button"
                   onClick={() => setShowMaintenanceForm(true)}
-                  className="inline-flex items-center space-x-1 px-3 py-1.5 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors"
+                  className="inline-flex items-center justify-center p-1.5 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 transition-colors"
+                  title="Add Maintenance Report"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Add Report</span>
                 </button>
               </div>
               
@@ -625,6 +784,26 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                               </div>
                             </div>
                           )}
+                          {report.attachments && report.attachments.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
+                              <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
+                                <strong>Attachments:</strong>
+                              </div>
+                              <div className="space-y-1">
+                                {report.attachments.map((attachment, index) => (
+                                  <a
+                                    key={index}
+                                    href={attachment.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block text-xs text-yellow-600 dark:text-yellow-400 hover:underline"
+                                  >
+                                    {attachment.fileName}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -723,6 +902,17 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
           equipmentName={product.name}
           onClose={() => setShowMaintenanceForm(false)}
           onSubmit={handleMaintenanceSubmit}
+        />
+      )}
+
+      {/* Shop Form Modal */}
+      {showShopForm && product && (
+        <ShopForm
+          equipmentId={product.id}
+          equipmentName={product.name}
+          onClose={() => setShowShopForm(false)}
+          onSubmit={handleShopSubmit}
+          initialServiceInterval={shopReports.length > 0 ? shopReports[0].serviceInterval : undefined}
         />
       )}
     </div>

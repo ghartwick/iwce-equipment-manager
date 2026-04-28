@@ -407,12 +407,6 @@ export default function TimecardPage() {
   };
 
   const handleAttachmentSubmit = async () => {
-    console.log('handleAttachmentSubmit called');
-    console.log('selectedDates:', selectedDates);
-    console.log('attachmentSite:', attachmentSite);
-    console.log('attachmentFile:', attachmentFile);
-    console.log('user:', user);
-    
     if (!selectedDates.length) {
       alert('Please select a date first.');
       return;
@@ -680,10 +674,7 @@ export default function TimecardPage() {
                     Add Time Card
                   </button>
                   <button
-                    onClick={() => {
-                      console.log('Attachments button clicked');
-                      setShowAttachments(prev => !prev);
-                    }}
+                    onClick={() => setShowAttachments(prev => !prev)}
                     className="px-3 py-1.5 text-sm bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-lg hover:bg-yellow-400 dark:hover:bg-yellow-700 font-medium transition-colors whitespace-nowrap"
                   >
                     Attachments
@@ -767,12 +758,7 @@ export default function TimecardPage() {
                   <div className="mt-4 flex justify-end">
                     <button
                       type="button"
-                      onClick={() => {
-                        console.log('Submit Attachment button clicked');
-                        console.log('attachmentSubmitting:', attachmentSubmitting);
-                        console.log('selectedDates.length:', selectedDates.length);
-                        handleAttachmentSubmit();
-                      }}
+                      onClick={handleAttachmentSubmit}
                       disabled={attachmentSubmitting || selectedDates.length !== 1}
                       className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap disabled:opacity-50"
                       title={selectedDates.length === 1 ? 'Upload attachment' : 'Select a single date to attach'}

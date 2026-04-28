@@ -314,9 +314,9 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
             </span>
           </EditableField>
         )}
-        {isEditing && (
+        {travelHours && (
           <EditableField
-            displayValue={travelHours ? `Travel: ${travelHours}` : 'Travel: 0'}
+            displayValue={`Travel: ${travelHours}`}
             isEditing={isEditing}
             editingField={editingField}
             fieldName="travelHours"
@@ -342,10 +342,10 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
       </div>
 
       {/* Site/Job - editable */}
-      {isEditing && (
+      {job && (
         <div className="text-xs">
           <EditableField
-            displayValue={job ? `Site: ${job}` : '(click to set site)'}
+            displayValue={`Site: ${job}`}
             isEditing={isEditing}
             editingField={editingField}
             fieldName="job"
@@ -406,10 +406,10 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                   )}
 
                   {/* Machine Hours */}
-                  {(workEntry.machineHours || isEditing) && (
+                  {workEntry.machineHours && (
                     <div className="text-yellow-700 dark:text-yellow-400">
                       <EditableField
-                        displayValue={workEntry.machineHours ? `Machine ${workEntry.machineHours}` : 'Machine (click to set)'}
+                        displayValue={`Machine ${workEntry.machineHours}`}
                         isEditing={isEditing}
                         editingField={editingField}
                         fieldName={`machineHours-${idx}`}
@@ -435,10 +435,10 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                   )}
 
                   {/* Labour Hours */}
-                  {(workEntry.labourHours || isEditing) && (
+                  {workEntry.labourHours && (
                     <div className="text-yellow-700 dark:text-yellow-400">
                       <EditableField
-                        displayValue={workEntry.labourHours ? `Labour ${workEntry.labourHours}` : 'Labour (click to set)'}
+                        displayValue={`Labour ${workEntry.labourHours}`}
                         isEditing={isEditing}
                         editingField={editingField}
                         fieldName={`labourHours-${idx}`}
@@ -464,12 +464,10 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                   )}
 
                   {/* Equipment Entries */}
-                  {(workEntry.equipmentEntries?.length > 0 || isEditing) && (
+                  {workEntry.equipmentEntries?.length > 0 && (
                     <div className="text-yellow-700 dark:text-yellow-400">
                     <EditableField
-                      displayValue={workEntry.equipmentEntries && workEntry.equipmentEntries.length > 0 ? 
-                        `${workEntry.equipmentEntries.map((e: EquipmentEntry) => `${e.equipment} - ${e.machineHours} hrs`).join(', ')}` : 
-                        'Equipment (click to set)'}
+                      displayValue={`${workEntry.equipmentEntries.map((e: EquipmentEntry) => `${e.equipment} - ${e.machineHours} hrs`).join(', ')}`}
                       isEditing={isEditing}
                       editingField={editingField}
                       fieldName={`equipment-${idx}`}
@@ -562,10 +560,10 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                 )}
 
                   {/* Small Tools */}
-                  {(workEntry.smallTools?.length > 0 || isEditing) && (
+                  {workEntry.smallTools?.length > 0 && (
                     <div className="text-yellow-700 dark:text-yellow-400">
                       <EditableField
-                        displayValue={workEntry.smallTools?.length > 0 ? `${Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}` : '(click to set)'}
+                        displayValue={`${Array.isArray(workEntry.smallTools) ? workEntry.smallTools.join(', ') : workEntry.smallTools}`}
                         isEditing={isEditing}
                         editingField={editingField}
                         fieldName={`smallTools-${idx}`}
@@ -605,9 +603,9 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
 
                 {/* Notes */}
                 <div>
-                  {(workEntry.notes || isEditing) && (
+                  {workEntry.notes && (
                     <EditableField
-                      displayValue={workEntry.notes || '(click to add notes)'}
+                      displayValue={workEntry.notes}
                       isEditing={isEditing}
                       editingField={editingField}
                       fieldName={`notes-${idx}`}

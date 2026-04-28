@@ -112,8 +112,7 @@ export function MobileProductList({
                           <span className="text-yellow-700 dark:text-yellow-300 text-xs">{product.site}</span>
                         </div>
                       )}
-
-                                          </div>
+                    </div>
                   </div>
                   
                 </React.Fragment>

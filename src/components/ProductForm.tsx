@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, QrCode, Download } from 'lucide-react';
+import { X, Clock, QrCode, Download, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
-import { Equipment, Category, EquipmentNote } from '../types';
+import { Equipment, Category, EquipmentMaintenance } from '../types';
 import { EquipmentLog } from './EquipmentLog';
+import { MaintenanceForm } from './MaintenanceForm';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
 import { getCategories } from '../services/firebaseService';
+import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProductFormProps {
@@ -31,13 +33,18 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     equipmentType: 'field' as 'heavy' | 'field',
     repair: false,
     repairDescription: '',
+    lastServicedDate: '',
+    lastServiceHours: '',
+    serviceInterval: '',
+    shopNotes: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showLog, setShowLog] = useState(false);
   const [showQR, setShowQR] = useState(false);
-  const [notes, setNotes] = useState<EquipmentNote[]>([]);
-  const [newNote, setNewNote] = useState('');
+  const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
+  const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
+  const [expandedReport, setExpandedReport] = useState<string | null>(null);
 
   const getEquipmentUrl = (id: string) =>
     `${window.location.origin}/inventory/equipment/${id}`;
@@ -105,6 +112,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         equipmentType: product.equipmentType || 'field',
         repair: product.repair || false,
         repairDescription: product.repairDescription || '',
+        lastServicedDate: (product as any).lastServicedDate || '',
+        lastServiceHours: (product as any).lastServiceHours || '',
+        serviceInterval: (product as any).serviceInterval || '',
+        shopNotes: (product as any).shopNotes || '',
       });
       
       // Check if the site is a custom site (not in the sites list)
@@ -116,11 +127,23 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         setShowCustomSite(false);
         setCustomSite('');
       }
-      
-      // Load notes
-      setNotes(product.notes || []);
     }
   }, [product, sites]);
+
+  // Fetch maintenance reports when product changes
+  useEffect(() => {
+    const fetchMaintenanceReports = async () => {
+      if (product?.equipmentType === 'heavy') {
+        try {
+          const reports = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id);
+          setMaintenanceReports(reports);
+        } catch (error) {
+          console.error('Error fetching maintenance reports:', error);
+        }
+      }
+    };
+    fetchMaintenanceReports();
+  }, [product]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,7 +173,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     const submitData = {
       ...formData,
       repair: repairFlag,
-      notes: notes,
       isActive: true,
       showInInventory: true,
       showInTimecard: true
@@ -175,57 +197,23 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     onCancel();
   };
 
-  const handleAddNote = async () => {
-    if (!newNote.trim()) return;
+  const handleMaintenanceSubmit = async (maintenance: EquipmentMaintenance) => {
+    if (!product || !user) return;
     
-    const note: EquipmentNote = {
-      id: Date.now().toString(),
-      text: newNote.trim(),
-      createdAt: new Date().toISOString(),
-      createdBy: user?.name || 'Unknown User',
-      createdByRole: user?.role || userRole || 'field'
-    };
-    
-    const updatedNotes = [...notes, note];
-    setNotes(updatedNotes);
-    setNewNote('');
-    
-    // If editing an existing product, update it with the new note
-    if (isEditing && product) {
-      try {
-        // Always go through the normal update flow to track history
-        await onSubmit({
-          ...product,
-          notes: updatedNotes
-        });
-      } catch (error) {
-        console.error('Error updating equipment with note:', error);
-        // Revert the note if update failed
-        setNotes(notes);
-        setNewNote(newNote.trim());
-      }
-    }
-  };
-
-  const handleDeleteNote = async (noteId: string) => {
-    if (userRole !== 'admin') return;
-    
-    const updatedNotes = notes.filter(note => note.id !== noteId);
-    setNotes(updatedNotes);
-    
-    // If editing an existing product, update it without the deleted note
-    if (isEditing && product) {
-      try {
-        // Always go through the normal update flow to track history
-        await onSubmit({
-          ...product,
-          notes: updatedNotes
-        });
-      } catch (error) {
-        console.error('Error updating equipment after deleting note:', error);
-        // Revert the note if update failed
-        setNotes(notes);
-      }
+    try {
+      await maintenanceHistoryFirebaseService.addMaintenanceReport(
+        product.id,
+        product.name,
+        maintenance,
+        { username: user.username, role: user.role }
+      );
+      setShowMaintenanceForm(false);
+      // Refresh maintenance reports
+      const reports = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id);
+      setMaintenanceReports(reports);
+    } catch (error) {
+      console.error('Error submitting maintenance report:', error);
+      throw error;
     }
   };
 
@@ -414,51 +402,239 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             </div>
           )}
 
-          {/* Notes Section */}
-          {isEditing && (
-            <div className="md:col-span-2">
-              <div className="space-y-2 mb-3">
-                {[...notes].reverse().map((note) => (
-                  <div key={note.id} className="flex items-start justify-between p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
-                    <div className="flex items-start space-x-2 flex-1">
-                      <span className="text-yellow-600 dark:text-yellow-400 mt-0.5">•</span>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-900 dark:text-yellow-100">{note.text}</p>
-                        <p className="text-xs text-gray-500 dark:text-yellow-600 mt-1">
-                          {note.createdBy} • {new Date(note.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    {userRole === 'admin' && (
-                      <button
-                        onClick={() => handleDeleteNote(note.id)}
-                        className="text-red-500 hover:text-red-700 p-1"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+        <div className="flex justify-end space-x-2 pt-4">
+        {onDelete && product && userRole === 'admin' && (
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
+                onDelete();
+              }
+            }}
+            className="px-4 py-3 border border-red-600 rounded-md text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900 text-sm font-medium"
+          >
+            Delete
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={isSubmitting}
+          className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {allowFullEdit ? 'Cancel' : 'Close'}
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isEditing ? 'Update Location' : 'Add Equipment'}
+        </button>
+        </div>
+
+          {/* Shop Section - Only for heavy equipment when editing and admin */}
+          {isEditing && product?.equipmentType === 'heavy' && userRole === 'admin' && (
+            <div className="md:col-span-2 mt-4 pt-4 border-t border-yellow-400 dark:border-yellow-600">
+              <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-3">Shop</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Last Serviced Date */}
+                <div>
+                  <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Last Serviced Date</label>
+                  <input
+                    type="date"
+                    value={formData.lastServicedDate}
+                    onChange={(e) => handleInputChange('lastServicedDate', e.target.value)}
+                    className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
+
+                {/* Last Service Hours @ */}
+                <div>
+                  <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Last Service Hours @</label>
+                  <input
+                    type="number"
+                    value={formData.lastServiceHours}
+                    onChange={(e) => handleInputChange('lastServiceHours', e.target.value)}
+                    className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+
+                {/* Service Interval */}
+                <div>
+                  <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Service Interval</label>
+                  <input
+                    type="number"
+                    value={formData.serviceInterval}
+                    onChange={(e) => handleInputChange('serviceInterval', e.target.value)}
+                    className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
               </div>
-              
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Add a note..."
-                  className="flex-1 px-3 py-2 border border-yellow-600 rounded-md outline-none text-sm bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNote())}
+              {/* Shop Notes */}
+              <div className="mt-3">
+                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Shop Notes</label>
+                <textarea
+                  value={formData.shopNotes}
+                  onChange={(e) => handleInputChange('shopNotes', e.target.value)}
+                  placeholder="Enter shop notes..."
+                  rows={3}
+                  className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
                 />
+              </div>
+              <div className="flex justify-end mt-3">
                 <button
                   type="button"
-                  onClick={handleAddNote}
-                  disabled={!newNote.trim()}
-                  className="px-4 py-2 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => {
+                    if (product) {
+                      onSubmit({
+                        ...product,
+                        lastServicedDate: formData.lastServicedDate,
+                        lastServiceHours: formData.lastServiceHours ? parseFloat(formData.lastServiceHours) : undefined,
+                        serviceInterval: formData.serviceInterval ? parseFloat(formData.serviceInterval) : undefined,
+                        shopNotes: formData.shopNotes,
+                      } as any);
+                    }
+                  }}
+                  className="px-4 py-2 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors"
                 >
-                  Add Note
+                  Save Shop Info
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Maintenance Section - Only for heavy equipment when editing */}
+          {isEditing && product?.equipmentType === 'heavy' && (
+            <div className="md:col-span-2 mt-4 pt-4 border-t border-yellow-400 dark:border-yellow-600">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">Maintenance</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowMaintenanceForm(true)}
+                  className="inline-flex items-center space-x-1 px-3 py-1.5 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Report</span>
+                </button>
+              </div>
+              
+              {/* Maintenance Reports List */}
+              {maintenanceReports.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  {maintenanceReports.map((report) => (
+                    <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedReport(expandedReport === report.id ? null : report.id)}
+                        className="w-full px-3 py-2 flex items-center justify-between text-left"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                              {new Date(report.createdAt).toLocaleDateString()}
+                            </span>
+                            <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                              by {report.createdBy}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            {report.maintenance.notes && `Notes: ${report.maintenance.notes.substring(0, 50)}${report.maintenance.notes.length > 50 ? '...' : ''}`}
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            {report.maintenance.hours && `Hours: ${report.maintenance.hours}`}
+                          </div>
+                          <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                            {[
+                              report.maintenance.stepsHandRails,
+                              report.maintenance.tiresTracks,
+                              report.maintenance.bucket,
+                              report.maintenance.cuttingEdgeTeeth,
+                              report.maintenance.hoses,
+                              report.maintenance.batteryCableBeltHosesFilterGuards,
+                              report.maintenance.backupAlarm,
+                              report.maintenance.fireExtinguisher,
+                              report.maintenance.gauges,
+                              report.maintenance.horn,
+                              report.maintenance.spillKit,
+                              report.maintenance.glass,
+                              report.maintenance.mirror,
+                              report.maintenance.rollOverProtection,
+                              report.maintenance.seatBeltSeat,
+                              report.maintenance.allFluidsLevel,
+                            ].filter(val => val === 'Repair').length > 0 && (
+                              <span>
+                                Repairs: {[
+                                  report.maintenance.stepsHandRails === 'Repair' && 'Steps/Hand Rails',
+                                  report.maintenance.tiresTracks === 'Repair' && 'Tires/Tracks',
+                                  report.maintenance.bucket === 'Repair' && 'Bucket',
+                                  report.maintenance.cuttingEdgeTeeth === 'Repair' && 'Cutting Edge/Teeth',
+                                  report.maintenance.hoses === 'Repair' && 'Hoses',
+                                  report.maintenance.batteryCableBeltHosesFilterGuards === 'Repair' && 'Battery Cable/Belt/Hoses/Filter/Guards',
+                                  report.maintenance.backupAlarm === 'Repair' && 'Backup Alarm',
+                                  report.maintenance.fireExtinguisher === 'Repair' && 'Fire Extinguisher',
+                                  report.maintenance.gauges === 'Repair' && 'Gauges',
+                                  report.maintenance.horn === 'Repair' && 'Horn',
+                                  report.maintenance.spillKit === 'Repair' && 'Spill Kit',
+                                  report.maintenance.glass === 'Repair' && 'Glass',
+                                  report.maintenance.mirror === 'Repair' && 'Mirror',
+                                  report.maintenance.rollOverProtection === 'Repair' && 'Roll Over Protection',
+                                  report.maintenance.seatBeltSeat === 'Repair' && 'Seat Belt/Seat',
+                                  report.maintenance.allFluidsLevel === 'Repair' && 'All Fluids Level',
+                                ].filter(Boolean).join(', ')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {expandedReport === report.id ? (
+                          <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                        )}
+                      </button>
+                      
+                      {expandedReport === report.id && (
+                        <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
+                          <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
+                            <div><strong>Hours:</strong> {report.maintenance.hours || 'N/A'}</div>
+                            <div><strong>Steps/Hand Rails:</strong> {report.maintenance.stepsHandRails || 'N/A'}</div>
+                            <div><strong>Tires/Tracks:</strong> {report.maintenance.tiresTracks || 'N/A'}</div>
+                            <div><strong>Bucket:</strong> {report.maintenance.bucket || 'N/A'}</div>
+                            <div><strong>Cutting Edge/Teeth:</strong> {report.maintenance.cuttingEdgeTeeth || 'N/A'}</div>
+                            <div><strong>Hoses:</strong> {report.maintenance.hoses || 'N/A'}</div>
+                            <div><strong>Backup Alarm:</strong> {report.maintenance.backupAlarm || 'N/A'}</div>
+                            <div><strong>Fire Extinguisher:</strong> {report.maintenance.fireExtinguisher || 'N/A'}</div>
+                            <div><strong>Gauges:</strong> {report.maintenance.gauges || 'N/A'}</div>
+                            <div><strong>Horn:</strong> {report.maintenance.horn || 'N/A'}</div>
+                            <div><strong>Spill Kit:</strong> {report.maintenance.spillKit || 'N/A'}</div>
+                            <div><strong>Glass:</strong> {report.maintenance.glass || 'N/A'}</div>
+                            <div><strong>Mirror:</strong> {report.maintenance.mirror || 'N/A'}</div>
+                            <div><strong>Seat Belt/Seat:</strong> {report.maintenance.seatBeltSeat || 'N/A'}</div>
+                            <div><strong>All Fluids Level:</strong> {report.maintenance.allFluidsLevel || 'N/A'}</div>
+                            {report.maintenance.lastServicedDate && (
+                              <div><strong>Last Serviced:</strong> {report.maintenance.lastServicedDate}</div>
+                            )}
+                            {report.maintenance.lastServiceHours && (
+                              <div><strong>Last Service Hours:</strong> {report.maintenance.lastServiceHours}</div>
+                            )}
+                          </div>
+                          {report.maintenance.notes && (
+                            <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
+                              <div className="text-xs text-gray-700 dark:text-gray-300">
+                                <strong>Notes:</strong> {report.maintenance.notes}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {maintenanceReports.length === 0 && (
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">No maintenance reports yet.</p>
+              )}
             </div>
           )}
 
@@ -497,37 +673,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             />
           </div>
         )}
-
-        <div className="flex justify-end space-x-2 pt-4">
-        {onDelete && product && userRole === 'admin' && (
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
-                onDelete();
-              }
-            }}
-            className="px-4 py-3 border border-red-600 rounded-md text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900 text-sm font-medium"
-          >
-            Delete
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={handleCancel}
-          disabled={isSubmitting}
-          className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {allowFullEdit ? 'Cancel' : 'Close'}
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isEditing ? 'Update' : 'Add'} Equipment
-        </button>
-        </div>
       </form>
       
       {/* Equipment Log - Shows when log button is clicked */}
@@ -569,6 +714,16 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             </button>
           </div>
         </div>
+      )}
+
+      {/* Maintenance Form Modal */}
+      {showMaintenanceForm && product && (
+        <MaintenanceForm
+          equipmentId={product.id}
+          equipmentName={product.name}
+          onClose={() => setShowMaintenanceForm(false)}
+          onSubmit={handleMaintenanceSubmit}
+        />
       )}
     </div>
   );

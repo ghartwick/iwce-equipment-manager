@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { Plus, Bell, User, LogOut, ChevronDown, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, Database } from 'lucide-react';
-import { migrateToNewCollections } from '../utils/migrationUtils';
+import { Plus, Bell, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,25 +15,6 @@ function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [migrating, setMigrating] = useState(false);
-
-  const handleMigrateDatabase = async () => {
-    if (!window.confirm('This will migrate all data to the new database collections (fieldTools, heavyEquipment, smallTools). This action cannot be undone. Proceed?')) return;
-    setMigrating(true);
-    try {
-      const result = await migrateToNewCollections();
-      if (result.errors.length > 0) {
-        alert(`Migration completed with errors:\nField Tools: ${result.fieldToolsMigrated}\nHeavy Equipment: ${result.heavyEquipmentMigrated}\nErrors:\n${result.errors.join('\n')}`);
-      } else {
-        alert(`Migration successful!\nField Tools migrated: ${result.fieldToolsMigrated}\nHeavy Equipment migrated: ${result.heavyEquipmentMigrated}`);
-      }
-      window.location.reload();
-    } catch (e: any) {
-      alert('Migration failed: ' + e.message);
-    } finally {
-      setMigrating(false);
-    }
-  };
 
   const navigation = [
     { name: 'Inventory', href: '/inventory', icon: Package },
@@ -115,7 +95,7 @@ function Layout({ children }: LayoutProps) {
                 <Bell className="h-5 w-5" />
               </button>
 
-              {/* Hamburger Menu - Moved to Right */}
+              {/* Hamburger Menu - Mobile Only */}
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 lg:hidden"
@@ -163,11 +143,10 @@ function Layout({ children }: LayoutProps) {
                       e.stopPropagation();
                       setShowUserMenu(!showUserMenu);
                     }}
-                    className="flex items-center space-x-2 p-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-30 rounded-lg hover:bg-[#e8d0b8] dark:hover:bg-opacity-50 transition-colors"
+                    className="p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
                     title="User Menu"
                   >
-                    <User className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                    <ChevronDown className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+                    <Menu className="h-5 w-5" />
                   </button>
 
                   {showUserMenu && (
@@ -186,7 +165,7 @@ function Layout({ children }: LayoutProps) {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="p-2">
                         {/* Admin-only Management Items */}
                         {user.role === 'admin' && (
@@ -235,21 +214,9 @@ function Layout({ children }: LayoutProps) {
                               <Wrench className="h-4 w-4" />
                               <span>Manage Small Tools</span>
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowUserMenu(false);
-                                handleMigrateDatabase();
-                              }}
-                              disabled={migrating}
-                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                              <Database className="h-4 w-4" />
-                              <span>{migrating ? 'Migrating...' : 'Migrate Database'}</span>
-                            </button>
                           </>
                         )}
-                        
+
                         {/* User Management - Admin, Supervisor, and Field Users */}
                         {user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'field') && (
                           <button
@@ -264,7 +231,7 @@ function Layout({ children }: LayoutProps) {
                             <span>User Management</span>
                           </button>
                         )}
-                        
+
                         {/* Theme Toggle */}
                         <button
                           onClick={(e) => {
@@ -277,7 +244,7 @@ function Layout({ children }: LayoutProps) {
                           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                           <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
                         </button>
-                        
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

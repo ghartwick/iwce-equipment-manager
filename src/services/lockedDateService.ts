@@ -28,6 +28,14 @@ class LockedDateService {
     await deleteDoc(docRef);
   }
 
+  async lockMultipleDates(dates: Date[], userId: string): Promise<void> {
+    await Promise.all(dates.map(date => this.lockDate(date, userId)));
+  }
+
+  async unlockMultipleDates(dates: Date[]): Promise<void> {
+    await Promise.all(dates.map(date => this.unlockDate(date)));
+  }
+
   async getLockedDates(startDate: Date, endDate: Date): Promise<Set<string>> {
     const q = query(
       collection(db, this.collectionName),

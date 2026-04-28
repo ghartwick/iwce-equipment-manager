@@ -28,6 +28,30 @@ export interface EquipmentNote {
   createdByRole: string;
 }
 
+export interface EquipmentMaintenance {
+  hours?: number;
+  lastServicedDate?: string;
+  lastServiceHours?: number;
+  serviceInterval?: number;
+  stepsHandRails?: 'OK' | 'Repair' | 'NA';
+  tiresTracks?: 'OK' | 'Repair' | 'NA';
+  bucket?: 'OK' | 'Repair' | 'NA';
+  cuttingEdgeTeeth?: 'OK' | 'Repair' | 'NA';
+  hoses?: 'OK' | 'Repair' | 'NA';
+  batteryCableBeltHosesFilterGuards?: 'OK' | 'Repair' | 'NA';
+  backupAlarm?: 'OK' | 'Repair' | 'NA';
+  fireExtinguisher?: 'OK' | 'Repair' | 'NA';
+  gauges?: 'OK' | 'Repair' | 'NA';
+  horn?: 'OK' | 'Repair' | 'NA';
+  spillKit?: 'OK' | 'Repair' | 'NA';
+  glass?: 'OK' | 'Repair' | 'NA';
+  mirror?: 'OK' | 'Repair' | 'NA';
+  rollOverProtection?: 'OK' | 'Repair' | 'NA';
+  seatBeltSeat?: 'OK' | 'Repair' | 'NA';
+  allFluidsLevel?: 'OK' | 'Repair' | 'NA';
+  notes?: string;
+}
+
 export interface Category {
   id: string;
   name: string;

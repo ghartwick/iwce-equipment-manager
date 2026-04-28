@@ -475,29 +475,34 @@ export default function TimecardPage() {
     }
   };
 
-  const handleToggleLock = async (date: Date) => {
+  const handleToggleLock = async (dates: Date | Date[]) => {
     if (!user || user.role !== 'admin') {
       alert('Only admins can lock/unlock dates.');
       return;
     }
 
-    const dateKey = formatDateKey(date);
-    const isLocked = lockedDates.has(dateKey);
+    const datesArray = Array.isArray(dates) ? dates : [dates];
+    const someLocked = datesArray.some(d => lockedDates.has(formatDateKey(d)));
+    const shouldLock = !someLocked;
 
     try {
-      if (isLocked) {
-        await lockedDateService.unlockDate(date);
+      if (shouldLock) {
+        await lockedDateService.lockMultipleDates(datesArray, user.id);
         setLockedDates(prev => {
           const next = new Set(prev);
-          next.delete(dateKey);
+          datesArray.forEach(d => next.add(formatDateKey(d)));
           return next;
         });
       } else {
-        await lockedDateService.lockDate(date, user.id);
-        setLockedDates(prev => new Set(prev).add(dateKey));
+        await lockedDateService.unlockMultipleDates(datesArray);
+        setLockedDates(prev => {
+          const next = new Set(prev);
+          datesArray.forEach(d => next.delete(formatDateKey(d)));
+          return next;
+        });
       }
     } catch (error) {
-      alert(`Failed to ${isLocked ? 'unlock' : 'lock'} date.`);
+      alert(`Failed to ${shouldLock ? 'lock' : 'unlock'} dates.`);
     }
   };
 
@@ -663,13 +668,13 @@ export default function TimecardPage() {
                   >
                     Attachments
                   </button>
-                  {user?.role === 'admin' && selectedDateParam && (
+                  {user?.role === 'admin' && selectedDates.length > 0 && (
                     <button
-                      onClick={() => handleToggleLock(selectedDates[0])}
+                      onClick={() => handleToggleLock(selectedDates)}
                       className="px-3 py-1.5 text-sm bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap"
-                      title={isDateLocked ? 'Unlock date' : 'Lock date'}
+                      title={selectedDates.length === 1 ? (isDateLocked ? 'Unlock date' : 'Lock date') : (selectedDates.some(d => lockedDates.has(formatDateKey(d))) ? 'Unlock dates' : 'Lock dates')}
                     >
-                      {isDateLocked ? 'Unlock' : 'Lock'}
+                      {selectedDates.length === 1 ? (isDateLocked ? 'Unlock' : 'Lock') : (selectedDates.some(d => lockedDates.has(formatDateKey(d))) ? 'Unlock All' : 'Lock All')}
                     </button>
                   )}
                 </div>

@@ -205,13 +205,26 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
 
       const workedHours = calcHours(newClockIn, newClockOut) ?? 0;
 
+      // Filter out empty equipment entries before saving
+      const filteredWorkEntries = workEntries.map(we => ({
+        ...we,
+        equipmentEntries: we.equipmentEntries && we.equipmentEntries.length > 0
+          ? we.equipmentEntries
+              .filter(e => e.id !== 'default')
+              .filter(e => {
+                const hours = typeof e.machineHours === 'string' ? parseFloat(e.machineHours) : e.machineHours;
+                return e.equipment && e.equipment.trim() !== '' && hours !== 0 && hours !== 0.00;
+              })
+          : []
+      }));
+
       const updates: Partial<TimeEntry> = {
         clockIn: newClockIn,
         clockOut: newClockOut,
         hours: workedHours,
         job: job || undefined,
         travelHours: travelHours ? parseFloat(travelHours) : undefined,
-        workEntries: workEntries.length > 0 ? workEntries : undefined,
+        workEntries: filteredWorkEntries.length > 0 ? filteredWorkEntries : undefined,
         notes: notes || undefined,
       };
 
@@ -379,31 +392,33 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="space-y-0.5">
                   {/* Code - filtered by site */}
-                  {(user.role === 'supervisor' || user.role === 'admin') && (
-                    <div className="font-medium text-yellow-800 dark:text-yellow-300">
-                      <EditableField
-                        displayValue={workEntry.code || ''}
-                        isEditing={isEditing}
-                        editingField={editingField}
-                        fieldName={`code-${idx}`}
-                        onStartEdit={handleFieldClick}
-                        className="font-medium text-yellow-800 dark:text-yellow-300"
+                  <div className="font-medium text-yellow-800 dark:text-yellow-300">
+                    <EditableField
+                      displayValue={(() => {
+                        const codeObj = filteredCodes.find(c => c.name === workEntry.code);
+                        if (!codeObj) return workEntry.code || '';
+                        return codeObj.description ? `${codeObj.name} - ${codeObj.description}` : codeObj.name;
+                      })()}
+                      isEditing={isEditing}
+                      editingField={editingField}
+                      fieldName={`code-${idx}`}
+                      onStartEdit={handleFieldClick}
+                      className="font-medium text-yellow-800 dark:text-yellow-300"
+                    >
+                      <select
+                        value={workEntry.code || ''}
+                        onChange={(e) => { updateWorkEntry(idx, 'code', e.target.value); setEditingField(null); }}
+                        autoFocus
+                        className="w-full px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <select
-                          value={workEntry.code || ''}
-                          onChange={(e) => { updateWorkEntry(idx, 'code', e.target.value); setEditingField(null); }}
-                          autoFocus
-                          className="w-full px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <option value="">Select code...</option>
-                          {filteredCodes.map(c => (
-                            <option key={c.name} value={c.name}>{c.name}{c.description ? ` - ${c.description}` : ''}</option>
-                          ))}
-                        </select>
-                      </EditableField>
-                    </div>
-                  )}
+                        <option value="">Select code...</option>
+                        {filteredCodes.map(c => (
+                          <option key={c.name} value={c.name}>{c.name}{c.description ? ` - ${c.description}` : ''}</option>
+                        ))}
+                      </select>
+                    </EditableField>
+                  </div>
 
                   {/* Machine Hours */}
                   {workEntry.machineHours && (
@@ -464,10 +479,18 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                   )}
 
                   {/* Equipment Entries */}
-                  {workEntry.equipmentEntries?.length > 0 && (
+                  {workEntry.equipmentEntries && workEntry.equipmentEntries.filter((e: EquipmentEntry) => {
+                    const hours = typeof e.machineHours === 'string' ? parseFloat(e.machineHours) : e.machineHours;
+                    return e.equipment && e.equipment.trim() !== '' && hours !== 0 && hours !== 0.00;
+                  }).length > 0 && (
                     <div className="text-yellow-700 dark:text-yellow-400">
                     <EditableField
-                      displayValue={`${workEntry.equipmentEntries.map((e: EquipmentEntry) => `${e.equipment} - ${e.machineHours} hrs`).join(', ')}`}
+                      displayValue={workEntry.equipmentEntries
+                        .filter((e: EquipmentEntry) => {
+                          const hours = typeof e.machineHours === 'string' ? parseFloat(e.machineHours) : e.machineHours;
+                          return e.equipment && e.equipment.trim() !== '' && hours !== 0 && hours !== 0.00;
+                        })
+                        .map((e: EquipmentEntry) => `${e.equipment} - ${e.machineHours} hrs`).join(', ')}
                       isEditing={isEditing}
                       editingField={editingField}
                       fieldName={`equipment-${idx}`}
@@ -635,8 +658,14 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
         <div className="text-xs bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 p-2 rounded">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
-              {(user.role === 'supervisor' || user.role === 'admin') && entry.code && (
-                <div className="font-medium text-yellow-800 dark:text-yellow-300">{entry.code}</div>
+              {entry.code && (
+                <div className="font-medium text-yellow-800 dark:text-yellow-300">
+                  {(() => {
+                    const codeObj = filteredCodes.find(c => c.name === entry.code);
+                    if (!codeObj) return entry.code;
+                    return codeObj.description ? `${codeObj.name} - ${codeObj.description}` : codeObj.name;
+                  })()}
+                </div>
               )}
               {entry.machineHours && (
                 <div className="text-yellow-700 dark:text-yellow-400">Machine {entry.machineHours}</div>

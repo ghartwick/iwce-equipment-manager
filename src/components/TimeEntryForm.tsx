@@ -47,8 +47,7 @@ const WorkEntrySection = ({
   hoursMatch,
   codeOptionsWithDetails,
   equipmentOptions,
-  smallToolsOptions,
-  user
+  smallToolsOptions
 }: {
   entry: WorkEntry;
   entryIndex: number;
@@ -62,7 +61,6 @@ const WorkEntrySection = ({
   codeOptionsWithDetails: { name: string; description?: string }[];
   equipmentOptions: { name: string; description?: string }[];
   smallToolsOptions: string[];
-  user: User;
 }) => {
   // Create stable onChange handlers to prevent re-render issues
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -131,7 +129,7 @@ const WorkEntrySection = ({
           <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-500">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div>
-                {(user.role === 'supervisor' || user.role === 'admin') && entry.code && (
+                {entry.code && (
                   <div><span className="font-medium">Code:</span> {entry.code}</div>
                 )}
                 {entry.machineHours && (
@@ -140,9 +138,11 @@ const WorkEntrySection = ({
                 {entry.labourHours && (
                   <div><span className="font-medium">Labour:</span> {entry.labourHours}</div>
                 )}
-                {(entry.equipmentEntries && entry.equipmentEntries.length > 0) && (
+                {(entry.equipmentEntries && entry.equipmentEntries.filter(e => e.equipment && e.equipment.trim() !== '' && e.machineHours !== 0 && e.machineHours !== '0' && e.machineHours !== '0.00').length > 0) && (
                   <div>
-                    {entry.equipmentEntries.map((equipEntry, idx) => (
+                    {entry.equipmentEntries
+                      .filter(e => e.equipment && e.equipment.trim() !== '' && e.machineHours !== 0 && e.machineHours !== '0' && e.machineHours !== '0.00')
+                      .map((equipEntry, idx) => (
                       <div key={idx}>
                         {equipEntry.equipment} - {equipEntry.machineHours} hrs
                       </div>
@@ -169,9 +169,8 @@ const WorkEntrySection = ({
       {/* Show content only if not collapsed */}
       {!entry.collapsed && (
         <>
-        {/* Code Dropdown - Only for supervisors and admins */}
-        {(user.role === 'supervisor' || user.role === 'admin') && (
-          <div className="mb-3">
+        {/* Code Dropdown */}
+        <div className="mb-3">
             <select
               value={entry.code}
               onChange={handleCodeChange}
@@ -186,7 +185,6 @@ const WorkEntrySection = ({
               ))}
             </select>
           </div>
-        )}
 
         {/* Machine & Labour Hours */}
         <div className="flex gap-2 sm:gap-4 overflow-x-auto mb-3">
@@ -821,7 +819,11 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         notes: entry.notes || null,
         code: entry.code || null,
         equipment: entry.equipment.length > 0 ? entry.equipment : null,
-        equipmentEntries: entry.equipmentEntries && entry.equipmentEntries.length > 0 ? entry.equipmentEntries.filter(e => e.id !== 'default') : null,
+        equipmentEntries: entry.equipmentEntries && entry.equipmentEntries.length > 0 
+          ? entry.equipmentEntries
+              .filter(e => e.id !== 'default')
+              .filter(e => e.equipment && e.equipment.trim() !== '' && (e.machineHours !== 0 && e.machineHours !== '0' && e.machineHours !== '0.00'))
+          : null,
         machineHours: entry.machineHours ? parseFloat(entry.machineHours) : null,
         labourHours: entry.labourHours ? parseFloat(entry.labourHours) : null,
         smallTools: entry.smallTools.length > 0 ? entry.smallTools : null,
@@ -1250,7 +1252,6 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               codeOptionsWithDetails={codeOptionsWithDetails}
               equipmentOptions={equipmentOptions}
               smallToolsOptions={smallToolsOptions}
-              user={user}
             />
             </div>
           ))}

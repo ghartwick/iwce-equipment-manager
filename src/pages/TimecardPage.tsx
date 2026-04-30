@@ -77,7 +77,7 @@ export default function TimecardPage() {
   const [attachmentSite, setAttachmentSite] = useState('');
   const [attachmentCode, setAttachmentCode] = useState('');
   const [attachmentDescription, setAttachmentDescription] = useState('');
-  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
   const [attachmentSubmitting, setAttachmentSubmitting] = useState(false);
   const [attachmentsForDate, setAttachmentsForDate] = useState<TimecardAttachment[]>([]);
   const [sitesData, setSitesData] = useState<Site[]>([]);
@@ -419,8 +419,8 @@ export default function TimecardPage() {
       alert('Please select a site.');
       return;
     }
-    if (!attachmentFile) {
-      alert('Please select a file.');
+    if (attachmentFiles.length === 0) {
+      alert('Please select at least one file.');
       return;
     }
     if (!user) {
@@ -430,18 +430,22 @@ export default function TimecardPage() {
 
     setAttachmentSubmitting(true);
     try {
-      await timecardAttachmentService.uploadAttachment({
-        date: selectedDates[0],
-        site: attachmentSite,
-        code: attachmentCode,
-        description: attachmentDescription,
-        file: attachmentFile,
-        uploadedBy: user.id
-      });
+      // Upload all files
+      for (const file of attachmentFiles) {
+        await timecardAttachmentService.uploadAttachment({
+          date: selectedDates[0],
+          site: attachmentSite,
+          code: attachmentCode,
+          description: attachmentDescription,
+          file,
+          uploadedBy: user.id
+        });
+      }
+      
       setAttachmentSite('');
       setAttachmentCode('');
       setAttachmentDescription('');
-      setAttachmentFile(null);
+      setAttachmentFiles([]);
       setShowAttachments(false);
       setAttachmentDates(prev => {
         const next = new Set(prev);
@@ -454,7 +458,7 @@ export default function TimecardPage() {
       const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
       const attachments = await timecardAttachmentService.getAttachmentsForRange(startOfDay, endOfDay);
       setAttachmentsForDate(attachments);
-      alert('Attachment uploaded successfully.');
+      alert(`${attachmentFiles.length} attachment(s) uploaded successfully.`);
     } catch (error) {
       console.error('Error uploading attachment:', error);
       alert('Failed to upload attachment: ' + (error as Error).message);
@@ -733,12 +737,13 @@ export default function TimecardPage() {
                     </label>
                     <input
                       type="file"
-                      onChange={(e) => setAttachmentFile(e.target.files?.[0] ?? null)}
+                      multiple
+                      onChange={(e) => setAttachmentFiles(Array.from(e.target.files || []))}
                       className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     />
-                    {attachmentFile && (
+                    {attachmentFiles.length > 0 && (
                       <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-500">
-                        Selected: {attachmentFile.name}
+                        Selected: {attachmentFiles.length} file(s) - {attachmentFiles.map(f => f.name).join(', ')}
                       </p>
                     )}
                   </div>

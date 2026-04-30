@@ -1077,14 +1077,29 @@ export default function TimecardPage() {
                                                 </div>
                                                 
                                                 {/* Expanded Details - Inline Editable */}
-                                                {expandedEntries.has(entry.id || `your-${index}`) && (
-                                                  <InlineTimecardEdit
-                                                    entry={entry}
-                                                    user={user!}
-                                                    canEdit={canEditEntry(entry, user!)}
-                                                    onSave={handleInlineSave}
-                                                    calcHours={calcHours}
-                                                  />
+                                                {(expandedEntries.has(entry.id || `your-${index}`) || canEditEntry(entry, user!)) && (
+                                                  <>
+                                                  <div className="hidden sm:block">
+                                                    {expandedEntries.has(entry.id || `your-${index}`) && (
+                                                      <InlineTimecardEdit
+                                                        entry={entry}
+                                                        user={user!}
+                                                        canEdit={canEditEntry(entry, user!)}
+                                                        onSave={handleInlineSave}
+                                                        calcHours={calcHours}
+                                                      />
+                                                    )}
+                                                  </div>
+                                                  <div className="block sm:hidden">
+                                                    <InlineTimecardEdit
+                                                      entry={entry}
+                                                      user={user!}
+                                                      canEdit={canEditEntry(entry, user!)}
+                                                      onSave={handleInlineSave}
+                                                      calcHours={calcHours}
+                                                    />
+                                                  </div>
+                                                  </>
                                                 )}
                                               </div>
                                               
@@ -1219,14 +1234,29 @@ export default function TimecardPage() {
                                               </div>
                                               
                                               {/* Expanded Details - Inline Editable */}
-                                              {expandedEntries.has(entry.id || `other-${index}`) && (
-                                                <InlineTimecardEdit
-                                                  entry={entry}
-                                                  user={user!}
-                                                  canEdit={canEditEntry(entry, user!)}
-                                                  onSave={handleInlineSave}
-                                                  calcHours={calcHours}
-                                                />
+                                              {(expandedEntries.has(entry.id || `other-${index}`) || canEditEntry(entry, user!)) && (
+                                                <>
+                                                <div className="hidden sm:block">
+                                                  {expandedEntries.has(entry.id || `other-${index}`) && (
+                                                    <InlineTimecardEdit
+                                                      entry={entry}
+                                                      user={user!}
+                                                      canEdit={canEditEntry(entry, user!)}
+                                                      onSave={handleInlineSave}
+                                                      calcHours={calcHours}
+                                                    />
+                                                  )}
+                                                </div>
+                                                <div className="block sm:hidden">
+                                                  <InlineTimecardEdit
+                                                    entry={entry}
+                                                    user={user!}
+                                                    canEdit={canEditEntry(entry, user!)}
+                                                    onSave={handleInlineSave}
+                                                    calcHours={calcHours}
+                                                  />
+                                                </div>
+                                                </>
                                               )}
                                             </div>
                                             

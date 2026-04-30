@@ -232,6 +232,7 @@ export function FilterPanel({
 
           <div className="space-y-1 sm:space-y-2">
             <button
+              role="button"
               onClick={() => scrollToCategory('all')}
               className={`w-full text-left px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm ${
                 selectedCategory === 'all'
@@ -243,6 +244,7 @@ export function FilterPanel({
             </button>
             {sortedCategories.map((category) => (
               <div
+                role="button"
                 key={category.id}
                 onClick={() => scrollToCategory(category.id)}
                 className={`relative group flex items-center justify-between w-full px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm cursor-pointer ${

@@ -273,6 +273,11 @@ export function ProductList({
                                     {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
                                   </>
                                 )}
+                                {product.locationNotes && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 italic mt-1 break-words">
+                                    {product.locationNotes}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -404,6 +409,11 @@ export function ProductList({
                                     {product.employee && <div className="break-words">{product.employee}</div>}
                                     {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
                                   </>
+                                )}
+                                {product.locationNotes && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 italic mt-1 break-words">
+                                    {product.locationNotes}
+                                  </div>
                                 )}
                               </div>
                             </div>

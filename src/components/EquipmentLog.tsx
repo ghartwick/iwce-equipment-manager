@@ -49,6 +49,7 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
   const getFieldLabel = (field: string): string => {
     const labels: Record<string, string> = {
       repairDescription: 'Alert Description',
+      locationNotes: 'Notes',
       serialNumber: 'Serial Number',
       name: 'Name',
       employee: 'Employee',
@@ -121,7 +122,7 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
 
               {entry.changes && entry.changes.length > 0 && (
                 <div className="mt-0.5 space-y-0">
-                  {entry.changes.filter(change => !['isActive', 'showInInventory', 'showInTimecard', 'parentId'].includes(change.field)).map((change, index) => {
+                  {entry.changes.filter(change => !['isActive', 'showInInventory', 'showInTimecard', 'parentId', 'description'].includes(change.field)).map((change, index) => {
                     // Special handling for deleted notes
                     if (change.field === 'notes' && change.oldValue && change.newValue === '') {
                       return (

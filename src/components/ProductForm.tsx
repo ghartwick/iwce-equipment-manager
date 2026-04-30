@@ -34,6 +34,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     equipmentType: 'field' as 'heavy' | 'field',
     repair: false,
     repairDescription: '',
+    locationNotes: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -110,6 +111,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         equipmentType: product.equipmentType || 'field',
         repair: product.repair || false,
         repairDescription: product.repairDescription || '',
+        locationNotes: '', // Always start with empty notes for new entry
       });
       
       // Check if the site is a custom site (not in the sites list)
@@ -424,46 +426,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             </div>
           )}
 
-        <div className="flex justify-end space-x-2 pt-4">
-        {onDelete && product && userRole === 'admin' && (
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
-                onDelete();
-              }
-            }}
-            className="px-4 py-3 border border-red-600 rounded-md text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900 text-sm font-medium"
-          >
-            Delete
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={handleCancel}
-          disabled={isSubmitting}
-          className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {allowFullEdit ? 'Cancel' : 'Close'}
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isEditing ? 'Update Location' : 'Add Equipment'}
-        </button>
-        {isEditing && product?.equipmentType === 'heavy' && userRole === 'admin' && (
-          <button
-            type="button"
-            onClick={() => window.location.href = `/inventory/equipment/${product.id}/shop`}
-            className="px-4 py-3 bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-md hover:bg-yellow-400 dark:hover:bg-yellow-700 text-sm font-medium transition-colors"
-          >
-            Shop
-          </button>
-        )}
-        </div>
-
           {/* Maintenance Section - Only for heavy equipment when editing */}
           {isEditing && product?.equipmentType === 'heavy' && (
             <div className="md:col-span-2 mt-4 pt-4 border-t border-yellow-400 dark:border-yellow-600">
@@ -653,6 +615,61 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             />
           </div>
         )}
+
+        {isEditing && (
+          <div className="mt-2 sm:mt-3">
+            <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
+              Notes
+            </label>
+            <textarea
+              rows={2}
+              value={formData.locationNotes}
+              onChange={(e) => handleInputChange('locationNotes', e.target.value)}
+              placeholder="Make a note"
+              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+            />
+          </div>
+        )}
+
+        <div className="flex justify-end space-x-2 pt-4">
+        {onDelete && product && userRole === 'admin' && (
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
+                onDelete();
+              }
+            }}
+            className="px-4 py-3 border border-red-600 rounded-md text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900 text-sm font-medium"
+          >
+            Delete
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={isSubmitting}
+          className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {allowFullEdit ? 'Cancel' : 'Close'}
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isEditing ? 'Update' : 'Add Equipment'}
+        </button>
+        {isEditing && product?.equipmentType === 'heavy' && userRole === 'admin' && (
+          <button
+            type="button"
+            onClick={() => window.location.href = `/inventory/equipment/${product.id}/shop`}
+            className="px-4 py-3 bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-md hover:bg-yellow-400 dark:hover:bg-yellow-700 text-sm font-medium transition-colors"
+          >
+            Shop
+          </button>
+        )}
+        </div>
       </form>
       
       {/* Equipment Log - Shows when log button is clicked */}

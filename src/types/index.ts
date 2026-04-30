@@ -9,6 +9,7 @@ export interface Equipment {
   equipmentType: 'heavy' | 'field';
   repair: boolean;
   repairDescription?: string;
+  locationNotes?: string;
   notes?: EquipmentNote[];
   isActive: boolean;
   showInInventory: boolean;

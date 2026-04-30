@@ -1,25 +1,7 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-
-export interface Equipment {
-  id: string;
-  name: string;
-  description?: string;
-  serialNumber?: string;
-  category?: string;
-  site?: string;
-  employee?: string;
-  equipmentType: 'heavy' | 'field';
-  repair: boolean;
-  repairDescription?: string;
-  isActive: boolean;
-  showInInventory: boolean;
-  showInTimecard: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy?: string;
-  parentId?: string;
-}
+import { equipmentHistoryFirebaseService } from './equipmentHistoryFirebaseService';
+import { Equipment } from '../types';
 
 export class EquipmentManagementService {
   private readonly COLLECTION_NAME = 'heavyEquipment';
@@ -31,14 +13,18 @@ export class EquipmentManagementService {
       
       return snapshot.docs.map(docSnap => {
         const data = docSnap.data();
-        let createdAt = new Date();
-        let updatedAt = new Date();
+        let createdAt = new Date().toISOString();
+        let updatedAt = new Date().toISOString();
         try {
           if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-            createdAt = data.createdAt.toDate();
+            createdAt = data.createdAt.toDate().toISOString();
+          } else if (data.createdAt) {
+            createdAt = data.createdAt;
           }
           if (data.updatedAt && typeof data.updatedAt.toDate === 'function') {
-            updatedAt = data.updatedAt.toDate();
+            updatedAt = data.updatedAt.toDate().toISOString();
+          } else if (data.updatedAt) {
+            updatedAt = data.updatedAt;
           }
         } catch (e) {
           // Fallback to current date if timestamp conversion fails
@@ -115,13 +101,29 @@ export class EquipmentManagementService {
     }
   }
 
-  async updateEquipment(id: string, updates: Partial<Omit<Equipment, 'id' | 'createdAt'>>): Promise<void> {
+  async updateEquipment(id: string, updates: Partial<Omit<Equipment, 'id' | 'createdAt'>>, user?: { username: string; role: string }): Promise<void> {
     try {
+      // Get the old equipment data for history tracking
       const equipmentDoc = doc(db, this.COLLECTION_NAME, id);
+      const oldDoc = await getDoc(equipmentDoc);
+      const oldEquipment = oldDoc.exists() ? { id: oldDoc.id, ...oldDoc.data() } as Equipment : undefined;
+
+      // Update the equipment
       await updateDoc(equipmentDoc, {
         ...updates,
         updatedAt: Timestamp.fromDate(new Date())
       });
+
+      // Track history if user is provided and this is an update
+      if (user && oldEquipment) {
+        const newEquipment = { ...oldEquipment, ...updates } as Equipment;
+        await equipmentHistoryFirebaseService.trackEquipmentChange(
+          'updated',
+          newEquipment,
+          user,
+          oldEquipment
+        );
+      }
     } catch (error) {
       console.error('Error updating equipment:', error);
       throw new Error('Failed to update equipment');

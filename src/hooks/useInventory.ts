@@ -75,8 +75,8 @@ export function useInventory(refreshKey?: number) {
         repairDescription: equipment.repairDescription || '',
         notes: (equipment as any).notes || [],
         equipmentType: 'heavy' as const,
-        createdAt: equipment.createdAt.toISOString(),
-        updatedAt: equipment.updatedAt.toISOString(),
+        createdAt: equipment.createdAt as string,
+        updatedAt: equipment.updatedAt as string,
         lastModifiedBy: equipment.createdBy || 'System'
       }));
       
@@ -246,8 +246,9 @@ export function useInventory(refreshKey?: number) {
         if (updates.repair !== undefined) heavyUpdates.repair = updates.repair;
         if (updates.repairDescription !== undefined) heavyUpdates.repairDescription = updates.repairDescription;
         if (updates.notes !== undefined) heavyUpdates.notes = updates.notes;
+        if (updates.locationNotes !== undefined) heavyUpdates.locationNotes = updates.locationNotes;
         
-                await equipmentManagementService.updateEquipment(id, heavyUpdates);
+        await equipmentManagementService.updateEquipment(id, heavyUpdates, user ? { username: user.username, role: user.role } : undefined);
       } else {
         await updateEquipment(id, updates);
       }

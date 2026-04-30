@@ -74,8 +74,8 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
         category: item.category || '',
         serialNumber: item.serialNumber || '',
         repairDescription: item.repairDescription || '',
-        createdAt: item.createdAt.toISOString(),
-        updatedAt: item.updatedAt.toISOString(),
+        createdAt: item.createdAt as string,
+        updatedAt: item.updatedAt as string,
         notes: []
       }));
       setEquipment(convertedEquipment);

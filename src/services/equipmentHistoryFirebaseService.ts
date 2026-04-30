@@ -152,7 +152,7 @@ class EquipmentHistoryFirebaseService {
     if (action === 'updated' && oldEquipment) {
       // For restricted fields (name, serialNumber, category), only include if changed
       const restrictedFields = ['name', 'serialNumber', 'category'];
-      const otherFields = ['employee', 'site', 'repairDescription']; // Removed 'repair'
+      const otherFields = ['employee', 'site', 'repairDescription', 'locationNotes']; // Removed 'repair'
       
       // Check restricted fields - only include if actually changed
       restrictedFields.forEach(field => {
@@ -184,7 +184,7 @@ class EquipmentHistoryFirebaseService {
       });
     } else if (action === 'created') {
       // For created equipment, show all initial values
-      const fieldsToTrack = ['name', 'serialNumber', 'category', 'employee', 'site', 'repairDescription']; // Removed 'repair'
+      const fieldsToTrack = ['name', 'serialNumber', 'category', 'employee', 'site', 'repairDescription', 'locationNotes']; // Removed 'repair'
       
       fieldsToTrack.forEach(field => {
         const value = equipment[field as keyof Equipment];

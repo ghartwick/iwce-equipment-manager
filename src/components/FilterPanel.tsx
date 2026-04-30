@@ -166,7 +166,7 @@ export function FilterPanel({
                 e.stopPropagation();
                 setShowAddCategory(!showAddCategory);
               }}
-              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+              className="hidden sm:block p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
               title="Add Category"
             >
               <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -178,7 +178,7 @@ export function FilterPanel({
       {!isCategoryFormCollapsed && (
         <>
           {showAddCategory && (
-            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
+            <div className="hidden sm:block mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
               <input
                 type="text"
                 placeholder="Category name"
@@ -204,7 +204,7 @@ export function FilterPanel({
           )}
 
           {editingCategoryId && (
-            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
+            <div className="hidden sm:block mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
               <h4 className="text-xs sm:text-sm font-medium text-yellow-700 dark:text-yellow-200">Edit Category</h4>
               <input
                 type="text"
@@ -257,7 +257,7 @@ export function FilterPanel({
                   <span>{category.name}</span>
                 </div>
                 {userRole === 'admin' && (
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <div className="hidden sm:flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

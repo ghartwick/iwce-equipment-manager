@@ -1,4 +1,4 @@
-import { collection, addDoc, query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { EquipmentMaintenance } from '../types';
 
@@ -141,6 +141,17 @@ class MaintenanceHistoryFirebaseService {
     } catch (error) {
       console.error('Failed to retrieve all maintenance history from Firebase:', error);
       return [];
+    }
+  }
+
+  // Delete a maintenance report
+  async deleteMaintenanceReport(reportId: string): Promise<void> {
+    try {
+      const reportRef = doc(db, this.COLLECTION_NAME, reportId);
+      await deleteDoc(reportRef);
+    } catch (error) {
+      console.error('Failed to delete maintenance report:', error);
+      throw error;
     }
   }
 }

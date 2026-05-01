@@ -44,6 +44,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
   const [maintenanceAttachments, setMaintenanceAttachments] = useState<Record<string, any[]>>({});
+  const [maintenanceCollapsed, setMaintenanceCollapsed] = useState(true);
+  const [visibleReportCount, setVisibleReportCount] = useState(10);
 
   const getEquipmentUrl = (id: string) =>
     `${window.location.origin}/inventory/equipment/${id}`;
@@ -133,6 +135,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         try {
           const reports = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id);
           setMaintenanceReports(reports);
+          setVisibleReportCount(10);
         } catch (error) {
           console.error('Error fetching maintenance reports:', error);
         }
@@ -221,6 +224,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       // Refresh maintenance reports
       const reports = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id);
       setMaintenanceReports(reports);
+      setVisibleReportCount(10);
     } catch (error) {
       console.error('Error submitting maintenance report:', error);
       throw error;
@@ -238,6 +242,23 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       } catch (error) {
         console.error('Error fetching maintenance attachments:', error);
       }
+    }
+  };
+
+  const handleDeleteMaintenanceReport = async (reportId: string) => {
+    if (!confirm('Are you sure you want to delete this maintenance report?')) return;
+    
+    try {
+      await maintenanceHistoryFirebaseService.deleteMaintenanceReport(reportId);
+      // Refresh maintenance reports
+      if (product?.equipmentType === 'heavy') {
+        const reports = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id);
+        setMaintenanceReports(reports);
+        setVisibleReportCount(10);
+      }
+    } catch (error) {
+      console.error('Error deleting maintenance report:', error);
+      alert('Error deleting maintenance report: ' + (error as Error).message);
     }
   };
 
@@ -431,20 +452,32 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             <div className="md:col-span-2 mt-4 pt-4 border-t border-yellow-400 dark:border-yellow-600">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">Maintenance</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowMaintenanceForm(true)}
-                  className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
-                  title="Add Maintenance Report"
-                >
-                  <Plus className="h-5 w-5" />
-                </button>
+                <div className="flex items-center space-x-1">
+                  {maintenanceReports.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setMaintenanceCollapsed(!maintenanceCollapsed)}
+                      className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
+                      title={maintenanceCollapsed ? "Expand" : "Collapse"}
+                    >
+                      {maintenanceCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowMaintenanceForm(true)}
+                    className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
+                    title="Add Maintenance Report"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
               
               {/* Maintenance Reports List */}
               {maintenanceReports.length > 0 && (
                 <div className="space-y-2 mt-3">
-                  {maintenanceReports.map((report) => (
+                  {(maintenanceCollapsed ? [maintenanceReports[0]] : maintenanceReports.slice(0, visibleReportCount)).map((report) => (
                     <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
                       <button
                         type="button"
@@ -508,11 +541,26 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                             )}
                           </div>
                         </div>
-                        {expandedReport === report.id ? (
-                          <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                        )}
+                        <div className="flex items-center space-x-2">
+                          {userRole === 'admin' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteMaintenanceReport(report.id);
+                              }}
+                              className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                              title="Delete Report"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                          {expandedReport === report.id ? (
+                            <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                          )}
+                        </div>
                       </button>
                       
                       {expandedReport === report.id && (
@@ -574,6 +622,17 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                 </div>
               )}
               
+              {!maintenanceCollapsed && maintenanceReports.length > visibleReportCount && (
+                <button
+                  type="button"
+                  onClick={() => setVisibleReportCount(prev => prev + 10)}
+                  className="w-full mt-2 px-3 py-2 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors flex items-center justify-center space-x-1"
+                >
+                  <span>Show More ({maintenanceReports.length - visibleReportCount} remaining)</span>
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              )}
+              
               {maintenanceReports.length === 0 && (
                 <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">No maintenance reports yet.</p>
               )}
@@ -616,7 +675,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
           </div>
         )}
 
-        {isEditing && (
+        {isEditing && formData.equipmentType !== 'heavy' && (
           <div className="mt-2 sm:mt-3">
             <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
               Notes

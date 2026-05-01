@@ -17,6 +17,7 @@ const SmallToolsManagementPage = React.lazy(() => import('./pages/SmallToolsMana
 const SiteManagementPage = React.lazy(() => import('./pages/SiteManagementPage'));
 const EditSitePage = React.lazy(() => import('./pages/EditSitePage').then(m => ({ default: m.EditSitePage })));
 const UserManagementPage = React.lazy(() => import('./pages/UserManagementPage'));
+const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
 
 // Loading fallback for lazy-loaded pages
 const PageLoader = () => (
@@ -131,6 +132,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <UserManagementPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/reports" element={
+          isAuthenticated ? (
+            <Layout>
+              <ReportsPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

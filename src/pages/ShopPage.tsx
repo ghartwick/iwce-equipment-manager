@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, X } from 'lucide-react';
+import { ArrowLeft, Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { shopAttachmentService } from '../services/shopAttachmentService';
 import { ShopForm } from '../components/ShopForm';
@@ -16,6 +16,7 @@ export function ShopPage() {
   const [showShopForm, setShowShopForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [equipmentDataNotes, setEquipmentDataNotes] = useState<string[]>([]);
+  const [reportsCollapsed, setReportsCollapsed] = useState(true);
 
   const addEquipmentDataNote = () => {
     setEquipmentDataNotes([...equipmentDataNotes, '']);
@@ -89,6 +90,7 @@ export function ShopPage() {
       }
       
       setShowShopForm(false);
+      setReportsCollapsed(true);
       // Refresh shop reports and attachments
       const reports = await shopHistoryFirebaseService.getEquipmentShopHistory(equipmentId);
       setShopReports(reports);
@@ -108,6 +110,33 @@ export function ShopPage() {
     }
   };
 
+  const handleDeleteShopReport = async (reportId: string) => {
+    if (!confirm('Are you sure you want to delete this shop report?')) return;
+    
+    try {
+      await shopHistoryFirebaseService.deleteShopReport(reportId);
+      // Refresh shop reports
+      if (equipmentId) {
+        const reports = await shopHistoryFirebaseService.getEquipmentShopHistory(equipmentId);
+        setShopReports(reports);
+        setReportsCollapsed(true);
+        
+        // Load all attachments for all reports
+        const attachmentsMap: Record<string, any[]> = {};
+        for (const report of reports) {
+          if (report.id) {
+            const attachments = await shopAttachmentService.getAttachmentsForReport(report.id);
+            attachmentsMap[report.id] = attachments;
+          }
+        }
+        setShopAttachments(attachmentsMap);
+      }
+    } catch (error) {
+      console.error('Error deleting shop report:', error);
+      alert('Error deleting shop report: ' + (error as Error).message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
       <div className="max-w-5xl mx-auto">
@@ -122,15 +151,6 @@ export function ShopPage() {
               </button>
               <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">{equipmentName || 'Loading...'}</h3>
             </div>
-            {user?.role === 'admin' && (
-              <button
-                onClick={() => setShowShopForm(true)}
-                className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
-                title="Add Shop Report"
-              >
-                <Plus className="h-5 w-5" />
-              </button>
-            )}
           </div>
 
           {/* Equipment Data Notes */}
@@ -165,9 +185,35 @@ export function ShopPage() {
 
           {/* Services Header */}
           <div className="border-t border-yellow-400 dark:border-yellow-600 pt-4">
-            <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
-              Services
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
+                Services
+              </h2>
+              <div className="flex items-center space-x-2">
+                {shopReports.length > 1 && (
+                  <button
+                    onClick={() => setReportsCollapsed(!reportsCollapsed)}
+                    className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
+                    title={reportsCollapsed ? 'Show All Reports' : 'Collapse Reports'}
+                  >
+                    {reportsCollapsed ? (
+                      <ChevronDown className="h-5 w-5" />
+                    ) : (
+                      <ChevronUp className="h-5 w-5" />
+                    )}
+                  </button>
+                )}
+                {user?.role === 'admin' && (
+                  <button
+                    onClick={() => setShowShopForm(true)}
+                    className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
+                    title="Add Shop Report"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {loading ? (
@@ -179,16 +225,27 @@ export function ShopPage() {
               {/* Services Reports List */}
               {shopReports.length > 0 ? (
                 <div className="space-y-2 mt-3">
-                  {shopReports.map((report) => (
+                  {(reportsCollapsed ? [shopReports[0]] : shopReports).map((report) => (
                     <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
                       <div className="px-3 py-2">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
-                            {new Date(report.createdAt).toLocaleDateString()}
-                          </span>
-                          <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                            by {report.createdBy}
-                          </span>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                              {new Date(report.createdAt).toLocaleDateString()}
+                            </span>
+                            <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                              by {report.createdBy}
+                            </span>
+                          </div>
+                          {user?.role === 'admin' && (
+                            <button
+                              onClick={() => report.id && handleDeleteShopReport(report.id)}
+                              className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                              title="Delete Report"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
                           <div><strong>Serviced Date:</strong> {report.lastServicedDate || 'N/A'}</div>

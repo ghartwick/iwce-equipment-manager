@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, X } from 'lucide-react';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { shopAttachmentService } from '../services/shopAttachmentService';
 import { ShopForm } from '../components/ShopForm';
@@ -15,6 +15,21 @@ export function ShopPage() {
   const [shopAttachments, setShopAttachments] = useState<Record<string, any[]>>({});
   const [showShopForm, setShowShopForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [equipmentDataNotes, setEquipmentDataNotes] = useState<string[]>([]);
+
+  const addEquipmentDataNote = () => {
+    setEquipmentDataNotes([...equipmentDataNotes, '']);
+  };
+
+  const removeEquipmentDataNote = (index: number) => {
+    setEquipmentDataNotes(equipmentDataNotes.filter((_, i) => i !== index));
+  };
+
+  const updateEquipmentDataNote = (index: number, value: string) => {
+    const newNotes = [...equipmentDataNotes];
+    newNotes[index] = value;
+    setEquipmentDataNotes(newNotes);
+  };
 
   useEffect(() => {
     if (equipmentId) {
@@ -105,9 +120,7 @@ export function ShopPage() {
               >
                 <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
-              <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
-                Services - {equipmentName || 'Loading...'}
-              </h2>
+              <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">{equipmentName || 'Loading...'}</h3>
             </div>
             {user?.role === 'admin' && (
               <button
@@ -118,6 +131,43 @@ export function ShopPage() {
                 <Plus className="h-5 w-5" />
               </button>
             )}
+          </div>
+
+          {/* Equipment Data Notes */}
+          <div className="space-y-2 mb-4">
+            {equipmentDataNotes.map((note, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={note}
+                  onChange={(e) => updateEquipmentDataNote(index, e.target.value)}
+                  placeholder="Enter equipment data note..."
+                  className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeEquipmentDataNote(index)}
+                  className="p-1.5 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addEquipmentDataNote}
+              className="flex items-center space-x-1 px-2 py-1 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
+            >
+              <Plus className="h-3 w-3" />
+              <span>Add Note</span>
+            </button>
+          </div>
+
+          {/* Services Header */}
+          <div className="border-t border-yellow-400 dark:border-yellow-600 pt-4">
+            <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
+              Services
+            </h2>
           </div>
 
           {loading ? (

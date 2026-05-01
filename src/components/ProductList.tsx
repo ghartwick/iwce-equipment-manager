@@ -159,7 +159,7 @@ export function ProductList({
       
       <div className="overflow-x-auto">
         <table className="w-full max-w-[100vw]">
-          <tbody className="bg-yellow-200 dark:bg-black divide-y divide-yellow-200 dark:divide-yellow-800">
+          <tbody className="bg-yellow-200 dark:bg-black divide-y divide-yellow-400 dark:divide-yellow-800">
             {showCategoryHeadings ? (
               // Group by category with headings
               (() => {

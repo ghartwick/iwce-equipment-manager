@@ -37,7 +37,6 @@ export default function TimecardPage() {
     canEditEntry,
     canViewEntry,
     canSeeEntry,
-    getStatusColor,
   } = useTimecard();
 
   const [currentMonth, setCurrentMonth] = useState(() =>
@@ -82,7 +81,7 @@ export default function TimecardPage() {
   const [attachmentsForDate, setAttachmentsForDate] = useState<TimecardAttachment[]>([]);
   const [sitesData, setSitesData] = useState<Site[]>([]);
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
-  const [attachmentDates, setAttachmentDates] = useState<Set<string>>(new Set());
+  const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
   const [lockedDates, setLockedDates] = useState<Set<string>>(new Set());
 
   // User management
@@ -233,8 +232,14 @@ export default function TimecardPage() {
     const loadAttachmentsForMonth = async () => {
       try {
         const attachments = await timecardAttachmentService.getAttachmentsForRange(startDate, endDate);
-        const keys = new Set(attachments.map(attachment => formatDateKey(new Date(attachment.date))));
-        setAttachmentDates(keys);
+        const counts: Record<string, number> = {};
+        
+        attachments.forEach(attachment => {
+          const key = formatDateKey(new Date(attachment.date));
+          counts[key] = (counts[key] || 0) + 1;
+        });
+        
+        setAttachmentCounts(counts);
       } catch (error) {
         // Error loading attachments
       }
@@ -447,9 +452,11 @@ export default function TimecardPage() {
       setAttachmentDescription('');
       setAttachmentFiles([]);
       setShowAttachments(false);
-      setAttachmentDates(prev => {
-        const next = new Set(prev);
-        next.add(formatDateKey(selectedDates[0]));
+      // Update attachment counts
+      setAttachmentCounts(prev => {
+        const next = { ...prev };
+        const key = formatDateKey(selectedDates[0]);
+        next[key] = (next[key] || 0) + 1;
         return next;
       });
       // Refresh attachment list for the selected date
@@ -475,13 +482,15 @@ export default function TimecardPage() {
       await timecardAttachmentService.deleteAttachment(attachment.id, attachment.filePath);
       // Refresh attachment list
       setAttachmentsForDate(prev => prev.filter(a => a.id !== attachment.id));
-      // Update attachment dates set
+      // Update attachment counts
       const date = selectedDates[0];
-      setAttachmentDates(prev => {
-        const next = new Set(prev);
+      setAttachmentCounts(prev => {
+        const next = { ...prev };
         const remainingAttachments = attachmentsForDate.filter(a => a.id !== attachment.id);
         if (remainingAttachments.length === 0) {
-          next.delete(formatDateKey(date));
+          delete next[formatDateKey(date)];
+        } else {
+          next[formatDateKey(date)] = remainingAttachments.length;
         }
         return next;
       });
@@ -600,8 +609,8 @@ export default function TimecardPage() {
                 const isCurrentMonth = isSameMonth(day, currentMonth);
                 const isSelected = selectedDates.some(selected => isSameDay(day, selected));
                 const isTodayDate = isToday(day);
-                const hasAttachment = attachmentDates.has(formatDateKey(day));
                 const dateKey = formatDateKey(day);
+                const attachmentCount = attachmentCounts[dateKey] || 0;
                 const isLocked = lockedDates.has(dateKey);
 
                 return (
@@ -635,18 +644,10 @@ export default function TimecardPage() {
                                 {submittedCount}
                               </div>
                             )}
-                            {dayEntries.length > 0 && (
-                              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 flex gap-1">
-                                {dayEntries.slice(0, 3).map((entry, i) => (
-                                  <div
-                                    key={entry.id || i}
-                                    className={`w-1 h-1 rounded-full ${getStatusColor(entry.status)}`}
-                                  />
-                                ))}
+                            {attachmentCount > 0 && (
+                              <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold border border-yellow-200 dark:border-yellow-800">
+                                {attachmentCount}
                               </div>
-                            )}
-                            {hasAttachment && (
-                              <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full bg-blue-600 border border-yellow-200 dark:border-yellow-800" />
                             )}
                           </>
                         );
@@ -692,6 +693,12 @@ export default function TimecardPage() {
                       {selectedDates.length === 1 ? (isDateLocked ? 'Unlock' : 'Lock') : (selectedDates.some(d => lockedDates.has(formatDateKey(d))) ? 'Unlock All' : 'Lock All')}
                     </button>
                   )}
+                  <button
+                    onClick={() => setSelectedDates([])}
+                    className="px-3 py-1.5 text-sm bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-lg hover:bg-yellow-400 dark:hover:bg-yellow-700 font-medium transition-colors whitespace-nowrap"
+                  >
+                    Clear Selection
+                  </button>
                 </div>
               </div>
 

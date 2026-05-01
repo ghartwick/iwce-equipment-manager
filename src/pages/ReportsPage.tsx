@@ -20,18 +20,31 @@ import {
 } from 'date-fns';
 
 export default function ReportsPage() {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
-  const [lastSelectedDate, setLastSelectedDate] = useState<Date | null>(null);
+  // Persist state across navigation
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const saved = localStorage.getItem('reportsCurrentMonth');
+    return saved ? new Date(saved) : new Date();
+  });
+  const [selectedDates, setSelectedDates] = useState<Date[]>(() => {
+    const saved = localStorage.getItem('reportsSelectedDates');
+    return saved ? JSON.parse(saved).map((d: string) => new Date(d)) : [];
+  });
+  const [lastSelectedDate, setLastSelectedDate] = useState<Date | null>(() => {
+    const saved = localStorage.getItem('reportsLastSelectedDate');
+    return saved ? new Date(saved) : null;
+  });
+  const [siteFilter, setSiteFilter] = useState<string>(() => localStorage.getItem('reportsSiteFilter') || '');
+  const [userFilter, setUserFilter] = useState<string>(() => localStorage.getItem('reportsUserFilter') || '');
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
   const [loading, setLoading] = useState(false);
-  const [reportsForMonth, setReportsForMonth] = useState<Set<string>>(new Set());
-  const [siteFilter, setSiteFilter] = useState<string>('');
-  const [userFilter, setUserFilter] = useState<string>('');
+  const [maintenanceCounts, setMaintenanceCounts] = useState<Record<string, number>>({});
+  const [shopCounts, setShopCounts] = useState<Record<string, number>>({});
   const [equipmentData, setEquipmentData] = useState<Record<string, Equipment>>({});
   const [users, setUsers] = useState<AppUser[]>([]);
   const [userManagementService] = useState(() => new UserManagementService());
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -49,6 +62,114 @@ export default function ReportsPage() {
 
   const handleNextMonth = () => {
     setCurrentMonth(addMonths(currentMonth, 1));
+  };
+
+  const handleGenerateReport = async () => {
+    // Check if a filter is selected
+    if (!siteFilter && !userFilter) {
+      alert('Please select a filter (Site or User) to generate a report');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const [maintenance, shop] = await Promise.all([
+        maintenanceHistoryFirebaseService.getAllMaintenanceHistory(),
+        shopHistoryFirebaseService.getAllShopHistory()
+      ]);
+
+      const selectedDateKeys = selectedDates.map(d => formatDateKey(d));
+
+      const filteredMaintenance = maintenance.filter(report => {
+        const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
+        if (!selectedDateKeys.includes(reportDate)) return false;
+        
+        const equipment = equipmentData[report.equipmentId];
+        
+        // If siteFilter is 'all', don't filter by site
+        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && equipment?.site !== siteFilter) return false;
+        
+        // If userFilter is 'all', don't filter by user
+        if (userFilter && userFilter !== '' && userFilter !== 'all') {
+          const selectedUser = users.find(u => u.id === userFilter);
+          if (selectedUser && report.createdBy !== selectedUser.username) return false;
+        }
+        
+        return true;
+      });
+
+      const filteredShop = shop.filter(report => {
+        const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
+        if (!selectedDateKeys.includes(reportDate)) return false;
+        
+        const equipment = equipmentData[report.equipmentId];
+        
+        // If siteFilter is 'all', don't filter by site
+        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && equipment?.site !== siteFilter) return false;
+        
+        // If userFilter is 'all', don't filter by user
+        if (userFilter && userFilter !== '' && userFilter !== 'all') {
+          const selectedUser = users.find(u => u.id === userFilter);
+          if (selectedUser && report.createdBy !== selectedUser.username) return false;
+        }
+        
+        return true;
+      });
+
+      // Analyze maintenance reports by user
+      const reportsByUser: Record<string, number> = {};
+      filteredMaintenance.forEach(report => {
+        reportsByUser[report.createdBy] = (reportsByUser[report.createdBy] || 0) + 1;
+      });
+
+      // Analyze by equipment
+      const reportsByEquipment: Record<string, number> = {};
+      filteredMaintenance.forEach(report => {
+        const equipmentName = report.equipmentName || report.equipmentId;
+        reportsByEquipment[equipmentName] = (reportsByEquipment[equipmentName] || 0) + 1;
+      });
+
+      // Analyze by repair items (from maintenance fields marked as 'Repair')
+      const repairItems: Record<string, number> = {};
+      filteredMaintenance.forEach(report => {
+        const m = report.maintenance;
+        if (m.stepsHandRails === 'Repair') repairItems['Steps/Hand Rails'] = (repairItems['Steps/Hand Rails'] || 0) + 1;
+        if (m.tiresTracks === 'Repair') repairItems['Tires/Tracks'] = (repairItems['Tires/Tracks'] || 0) + 1;
+        if (m.bucket === 'Repair') repairItems['Bucket'] = (repairItems['Bucket'] || 0) + 1;
+        if (m.cuttingEdgeTeeth === 'Repair') repairItems['Cutting Edge/Teeth'] = (repairItems['Cutting Edge/Teeth'] || 0) + 1;
+        if (m.hoses === 'Repair') repairItems['Hoses'] = (repairItems['Hoses'] || 0) + 1;
+        if (m.batteryCableBeltHosesFilterGuards === 'Repair') repairItems['Battery/Cable/Belt/Hoses/Filter/Guards'] = (repairItems['Battery/Cable/Belt/Hoses/Filter/Guards'] || 0) + 1;
+        if (m.backupAlarm === 'Repair') repairItems['Backup Alarm'] = (repairItems['Backup Alarm'] || 0) + 1;
+        if (m.fireExtinguisher === 'Repair') repairItems['Fire Extinguisher'] = (repairItems['Fire Extinguisher'] || 0) + 1;
+        if (m.gauges === 'Repair') repairItems['Gauges'] = (repairItems['Gauges'] || 0) + 1;
+        if (m.horn === 'Repair') repairItems['Horn'] = (repairItems['Horn'] || 0) + 1;
+        if (m.spillKit === 'Repair') repairItems['Spill Kit'] = (repairItems['Spill Kit'] || 0) + 1;
+        if (m.glass === 'Repair') repairItems['Glass'] = (repairItems['Glass'] || 0) + 1;
+        if (m.mirror === 'Repair') repairItems['Mirror'] = (repairItems['Mirror'] || 0) + 1;
+        if (m.rollOverProtection === 'Repair') repairItems['Roll Over Protection'] = (repairItems['Roll Over Protection'] || 0) + 1;
+        if (m.seatBeltSeat === 'Repair') repairItems['Seat Belt/Seat'] = (repairItems['Seat Belt/Seat'] || 0) + 1;
+        if (m.allFluidsLevel === 'Repair') repairItems['All Fluids Level'] = (repairItems['All Fluids Level'] || 0) + 1;
+      });
+
+      const analysis = {
+        totalMaintenanceReports: filteredMaintenance.length,
+        totalShopReports: filteredShop.length,
+        reportsByUser,
+        reportsByEquipment,
+        repairItems,
+        dateRange: `${format(selectedDates[0], 'MMM d')} - ${format(selectedDates[selectedDates.length - 1], 'MMM d')}`,
+        uniqueUsers: Object.keys(reportsByUser).length,
+        uniqueEquipment: Object.keys(reportsByEquipment).length
+      };
+
+      setAnalysisResults(analysis);
+      setShowAnalysis(true);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Error generating report');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDateClick = (date: Date, event: React.MouseEvent<HTMLButtonElement>) => {
@@ -157,7 +278,8 @@ export default function ReportsPage() {
         shopHistoryFirebaseService.getAllShopHistory()
       ]);
 
-      const reportDates = new Set<string>();
+      const maintCounts: Record<string, number> = {};
+      const shopCounts: Record<string, number> = {};
 
       maintenance.forEach(report => {
         const equipment = equipmentData[report.equipmentId];
@@ -172,7 +294,7 @@ export default function ReportsPage() {
         }
         
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
-        reportDates.add(reportDate);
+        maintCounts[reportDate] = (maintCounts[reportDate] || 0) + 1;
       });
 
       shop.forEach(report => {
@@ -188,10 +310,11 @@ export default function ReportsPage() {
         }
         
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
-        reportDates.add(reportDate);
+        shopCounts[reportDate] = (shopCounts[reportDate] || 0) + 1;
       });
 
-      setReportsForMonth(reportDates);
+      setMaintenanceCounts(maintCounts);
+      setShopCounts(shopCounts);
     } catch (error) {
       console.error('Error loading reports for month:', error);
     }
@@ -206,6 +329,31 @@ export default function ReportsPage() {
       loadReportsForDate(selectedDates[0]);
     }
   }, [siteFilter, userFilter]);
+
+  // Save filter state to localStorage
+  useEffect(() => {
+    localStorage.setItem('reportsSiteFilter', siteFilter);
+  }, [siteFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('reportsUserFilter', userFilter);
+  }, [userFilter]);
+
+  useEffect(() => {
+    localStorage.setItem('reportsCurrentMonth', currentMonth.toISOString());
+  }, [currentMonth]);
+
+  useEffect(() => {
+    localStorage.setItem('reportsSelectedDates', JSON.stringify(selectedDates.map(d => d.toISOString())));
+  }, [selectedDates]);
+
+  useEffect(() => {
+    if (lastSelectedDate) {
+      localStorage.setItem('reportsLastSelectedDate', lastSelectedDate.toISOString());
+    } else {
+      localStorage.removeItem('reportsLastSelectedDate');
+    }
+  }, [lastSelectedDate]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -296,7 +444,9 @@ export default function ReportsPage() {
                 const isCurrentMonth = isSameMonth(day, currentMonth);
                 const isSelected = selectedDates.some(d => isSameDay(day, d));
                 const isTodayDate = isToday(day);
-                const hasReports = reportsForMonth.has(formatDateKey(day));
+                const dateKey = formatDateKey(day);
+                const maintCount = maintenanceCounts[dateKey] || 0;
+                const shopCount = shopCounts[dateKey] || 0;
 
                 return (
                   <button
@@ -312,8 +462,15 @@ export default function ReportsPage() {
                   >
                     <div className="text-center relative">
                       {format(day, 'd')}
-                      {hasReports && (
-                        <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-blue-600" />
+                      {maintCount > 0 && (
+                        <div className="absolute -top-1 -left-1 bg-orange-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                          {maintCount}
+                        </div>
+                      )}
+                      {shopCount > 0 && (
+                        <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                          {shopCount}
+                        </div>
                       )}
                     </div>
                   </button>
@@ -335,16 +492,28 @@ export default function ReportsPage() {
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
                   Reports for {selectedDateLabel}
                 </h3>
-                <button
-                  onClick={() => {
-                    setSelectedDates([]);
-                    setMaintenanceReports([]);
-                    setShopReports([]);
-                  }}
-                  className="px-3 py-1.5 text-sm bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-lg hover:bg-yellow-400 dark:hover:bg-yellow-700 font-medium transition-colors"
-                >
-                  Clear Selection
-                </button>
+                <div className="flex space-x-2">
+                  {selectedDates.length >= 1 && (
+                    <button
+                      onClick={handleGenerateReport}
+                      className="px-3 py-1.5 text-sm bg-blue-500 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-600 font-medium transition-colors"
+                    >
+                      Generate Report
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedDates([]);
+                      setMaintenanceReports([]);
+                      setShopReports([]);
+                      setShowAnalysis(false);
+                      setAnalysisResults(null);
+                    }}
+                    className="px-3 py-1.5 text-sm bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-lg hover:bg-yellow-400 dark:hover:bg-yellow-700 font-medium transition-colors"
+                  >
+                    Clear Selection
+                  </button>
+                </div>
               </div>
 
               {/* Filter Dropdowns */}
@@ -388,6 +557,71 @@ export default function ReportsPage() {
                   </select>
                 </div>
               </div>
+
+              {/* Analysis Results */}
+              {showAnalysis && analysisResults && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-4 mb-6">
+                  <h4 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-4">
+                    Maintenance Analysis for {analysisResults.dateRange}
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.totalMaintenanceReports}</div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400">Total Maintenance Reports</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.totalShopReports}</div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400">Total Shop Reports</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.uniqueUsers}</div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400">Unique Users</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.uniqueEquipment}</div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400">Unique Equipment</div>
+                    </div>
+                  </div>
+
+                  {Object.keys(analysisResults.repairItems).length > 0 && (
+                    <div className="mb-4">
+                      <h5 className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Repair Items</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {Object.entries(analysisResults.repairItems).map(([item, count]) => (
+                          <div key={item} className="bg-white dark:bg-black rounded px-3 py-2 border border-blue-200 dark:border-blue-800">
+                            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{item}</div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">{String(count)} report(s)</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mb-4">
+                    <h5 className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Reports by Equipment</h5>
+                    <div className="space-y-1">
+                      {Object.entries(analysisResults.reportsByEquipment).map(([equipment, count]) => (
+                        <div key={equipment} className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
+                          <span>{equipment}</span>
+                          <span>{String(count)} report(s)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h5 className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Reports by User</h5>
+                    <div className="space-y-1">
+                      {Object.entries(analysisResults.reportsByUser).map(([user, count]) => (
+                        <div key={user} className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
+                          <span>{user}</span>
+                          <span>{String(count)} report(s)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {loading ? (
                 <div className="text-center py-8">

@@ -325,7 +325,6 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                 <tr className="bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30">
                   <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Username</th>
                   <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Name</th>
-                  <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Role</th>
                   <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Status</th>
                   <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Actions</th>
                 </tr>
@@ -362,7 +361,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                       <React.Fragment key={role}>
                         {/* Role Header Row */}
                         <tr>
-                          <td colSpan={5} className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20">
+                          <td colSpan={4} className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20">
                             <button
                               onClick={toggleExpanded}
                               className="flex items-center space-x-2 text-sm font-medium text-yellow-700 dark:text-yellow-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors"
@@ -387,9 +386,6 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                             </td>
                             <td className="px-4 py-2">
                               <div className="text-sm font-medium text-gray-900 dark:text-yellow-100">{user.name}</div>
-                            </td>
-                            <td className="px-4 py-2">
-                              <span className="text-sm capitalize text-yellow-700 dark:text-yellow-300">{user.role}</span>
                             </td>
                             <td className="px-4 py-2 text-center">
                               <span className={`px-2 py-1 text-xs rounded-full ${user.isActive ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-400' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>

@@ -240,8 +240,8 @@ export function useInventory(refreshKey?: number) {
         await updateEquipment(id, updates);
       }
       
-      // Add alerts for changes
-      if (product && user) {
+      // Add alerts for changes (only for field equipment, heavy equipment already handled)
+      if (product && user && product.equipmentType !== 'heavy') {
         const displayName = user.name || 'Unknown User';
         const changes: string[] = [];
         

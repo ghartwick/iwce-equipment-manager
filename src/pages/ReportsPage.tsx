@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Wrench } from 'lucide-react';
+import { FileText, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
@@ -45,6 +45,7 @@ export default function ReportsPage() {
   const [userManagementService] = useState(() => new UserManagementService());
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [expandedReport, setExpandedReport] = useState<string | null>(null);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -639,24 +640,63 @@ export default function ReportsPage() {
                       </h4>
                       <div className="space-y-2">
                         {maintenanceReports.map(report => (
-                          <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700 p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <div>
-                                <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">{report.equipmentName}</span>
-                                <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">by {report.createdBy}</span>
+                          <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedReport(expandedReport === report.id ? null : report.id)}
+                              className="w-full px-3 py-2 flex items-center justify-between text-left"
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                                    {report.equipmentName}
+                                  </span>
+                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                                    by {report.createdBy}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                  {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
                               </div>
-                              <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                                {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </div>
-                            {report.maintenance.notes && (
-                              <div className="text-xs text-gray-700 dark:text-gray-300">
-                                <strong>Notes:</strong> {report.maintenance.notes}
-                              </div>
-                            )}
-                            {report.maintenance.hours && (
-                              <div className="text-xs text-gray-700 dark:text-gray-300 mt-1">
-                                <strong>Hours:</strong> {report.maintenance.hours}
+                              {expandedReport === report.id ? (
+                                <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                              )}
+                            </button>
+                            {expandedReport === report.id && (
+                              <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
+                                <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
+                                  <div><strong>Hours:</strong> {report.maintenance.hours || 'N/A'}</div>
+                                  <div><strong>Steps/Hand Rails:</strong> {report.maintenance.stepsHandRails || 'N/A'}</div>
+                                  <div><strong>Tires/Tracks:</strong> {report.maintenance.tiresTracks || 'N/A'}</div>
+                                  <div><strong>Bucket:</strong> {report.maintenance.bucket || 'N/A'}</div>
+                                  <div><strong>Cutting Edge/Teeth:</strong> {report.maintenance.cuttingEdgeTeeth || 'N/A'}</div>
+                                  <div><strong>Hoses:</strong> {report.maintenance.hoses || 'N/A'}</div>
+                                  <div><strong>Backup Alarm:</strong> {report.maintenance.backupAlarm || 'N/A'}</div>
+                                  <div><strong>Fire Extinguisher:</strong> {report.maintenance.fireExtinguisher || 'N/A'}</div>
+                                  <div><strong>Gauges:</strong> {report.maintenance.gauges || 'N/A'}</div>
+                                  <div><strong>Horn:</strong> {report.maintenance.horn || 'N/A'}</div>
+                                  <div><strong>Spill Kit:</strong> {report.maintenance.spillKit || 'N/A'}</div>
+                                  <div><strong>Glass:</strong> {report.maintenance.glass || 'N/A'}</div>
+                                  <div><strong>Mirror:</strong> {report.maintenance.mirror || 'N/A'}</div>
+                                  <div><strong>Seat Belt/Seat:</strong> {report.maintenance.seatBeltSeat || 'N/A'}</div>
+                                  <div><strong>All Fluids Level:</strong> {report.maintenance.allFluidsLevel || 'N/A'}</div>
+                                  {report.maintenance.lastServicedDate && (
+                                    <div><strong>Last Serviced:</strong> {report.maintenance.lastServicedDate}</div>
+                                  )}
+                                  {report.maintenance.lastServiceHours && (
+                                    <div><strong>Last Service Hours:</strong> {report.maintenance.lastServiceHours}</div>
+                                  )}
+                                </div>
+                                {report.maintenance.notes && (
+                                  <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
+                                    <div className="text-xs text-gray-700 dark:text-gray-300">
+                                      <strong>Notes:</strong> {report.maintenance.notes}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>

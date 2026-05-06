@@ -42,6 +42,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   const [showQR, setShowQR] = useState(false);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
+  const [equipmentDataNotes, setEquipmentDataNotes] = useState<string[]>([]);
+  const [newNote, setNewNote] = useState('');
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
   const [maintenanceAttachments, setMaintenanceAttachments] = useState<Record<string, any[]>>({});
   const [maintenanceCollapsed, setMaintenanceCollapsed] = useState(true);
@@ -49,6 +51,17 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
 
   const getEquipmentUrl = (id: string) =>
     `${window.location.origin}/inventory/equipment/${id}`;
+
+  const addEquipmentDataNote = () => {
+    if (newNote.trim()) {
+      setEquipmentDataNotes([...equipmentDataNotes, newNote.trim()]);
+      setNewNote('');
+    }
+  };
+
+  const removeEquipmentDataNote = (index: number) => {
+    setEquipmentDataNotes(equipmentDataNotes.filter((_, i) => i !== index));
+  };
 
   const handleDownloadQR = () => {
     if (!product?.id) return;
@@ -116,6 +129,11 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         locationNotes: '', // Always start with empty notes for new entry
       });
       
+      // Load equipment data notes from the notes field if they exist
+      if (product.notes && Array.isArray(product.notes)) {
+        setEquipmentDataNotes(product.notes.map(note => typeof note === 'string' ? note : note.text || ''));
+      }
+      
       // Check if the site is a custom site (not in the sites list)
       if (product.site && !sites.some(site => site.name === product.site)) {
         setShowCustomSite(true);
@@ -174,7 +192,14 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       repair: repairFlag,
       isActive: true,
       showInInventory: true,
-      showInTimecard: true
+      showInTimecard: true,
+      notes: equipmentDataNotes.filter(note => note.trim()).map(note => ({
+        id: Date.now().toString() + Math.random(),
+        text: note,
+        createdAt: new Date().toISOString(),
+        createdBy: user?.name || 'Unknown User',
+        createdByRole: user?.role || 'field'
+      }))
     };
     
         
@@ -485,6 +510,43 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                     title="Add Maintenance Report"
                   >
                     <Plus className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Equipment Data Notes */}
+              <div className="space-y-2 mb-4">
+                <ul className="list-disc list-inside space-y-1">
+                  {equipmentDataNotes.map((note, index) => (
+                    <li key={index} className="flex items-center justify-between text-xs text-gray-900 dark:text-yellow-100">
+                      <span>{note}</span>
+                      {user?.role === 'admin' && (
+                        <button
+                          type="button"
+                          onClick={() => removeEquipmentDataNote(index)}
+                          className="ml-2 p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Enter equipment data note..."
+                    className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={addEquipmentDataNote}
+                    className="flex items-center space-x-1 px-2 py-1 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Add</span>
                   </button>
                 </div>
               </div>

@@ -133,8 +133,8 @@ export class EquipmentManagementService {
           const oldValue = oldEquipment[key as keyof Equipment];
           const newValue = updates[key as keyof Omit<Equipment, 'id' | 'createdAt'>];
           
-          // Skip timestamp fields and repair field
-          if (key === 'updatedAt' || key === 'createdAt' || key === 'repair') return;
+          // Skip timestamp fields, repair field, and notes field
+          if (key === 'updatedAt' || key === 'createdAt' || key === 'repair' || key === 'notes') return;
           
           // Skip if no change
           if (oldValue === newValue) return;

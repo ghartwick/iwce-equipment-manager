@@ -63,7 +63,7 @@ export interface Category {
 export interface StockAlert {
   id: string;
   productId: string;
-  type: 'low_stock' | 'out_of_stock' | 'repair';
+  type: 'low_stock' | 'out_of_stock' | 'repair' | 'change';
   message: string;
   createdAt: string;
   userId?: string;

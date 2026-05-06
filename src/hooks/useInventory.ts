@@ -8,14 +8,12 @@ import {
   getCategories,
   addCategory as _addCategory,
   updateCategory as _updateCategory,
-  deleteCategory as _deleteCategory,
-  getAlerts,
-  addAlert as _addAlert,
-  deleteAlert as _deleteAlert
+  deleteCategory as _deleteCategory
 } from '../services/firebaseService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { useAuth } from './useAuth';
+import { UserManagementService, AppUser } from '../services/userManagementService';
 
 export function useInventory(refreshKey?: number) {
   const [products, setProducts] = useState<Equipment[]>([]);
@@ -23,6 +21,7 @@ export function useInventory(refreshKey?: number) {
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const [userManagementService] = useState(() => new UserManagementService());
 
   useEffect(() => {
     loadData();
@@ -33,11 +32,11 @@ export function useInventory(refreshKey?: number) {
       setLoading(true);
       
       // Load data from Firebase
-      const [loadedProducts, loadedCategories, loadedAlerts, heavyEquipment] = await Promise.all([
+      const [loadedProducts, loadedCategories, heavyEquipment, allUsers] = await Promise.all([
         getEquipment(),
         getCategories(),
-        getAlerts(),
-        equipmentManagementService.getInventoryEquipment()
+        equipmentManagementService.getInventoryEquipment(),
+        userManagementService.getAllUsers()
       ]);
       
       // Build sets for both IDs and names to support legacy (name-stored) and new (ID-stored) categories
@@ -47,7 +46,51 @@ export function useInventory(refreshKey?: number) {
       // Filter small tools (equipmentType !== 'heavy')
       const smallTools = loadedProducts.filter(product => (product as any).equipmentType !== 'heavy');
       
-      const cleanedSmallTools = smallTools.map(product => {
+      // Fetch history for small tools to get actual user
+      const smallToolsWithHistory = await Promise.all(
+        smallTools.map(async (product) => {
+          if (product.repair) {
+            try {
+              const history = await equipmentHistoryFirebaseService.getEquipmentHistory(product.id);
+              if (history.length > 0) {
+                const mostRecent = history[0];
+                return {
+                  ...product,
+                  lastModifiedBy: mostRecent.user
+                };
+              }
+            } catch (error) {
+              console.error('Error fetching history for', product.name, error);
+            }
+          }
+          return product;
+        })
+      );
+      
+      // Fetch history for heavy equipment to get locationNotes
+      const heavyEquipmentWithHistory = await Promise.all(
+        heavyEquipment.map(async (equipment) => {
+          try {
+            const history = await equipmentHistoryFirebaseService.getEquipmentHistory(equipment.id);
+            if (history.length > 0) {
+              // Get the most recent history entry and extract locationNotes from changes
+              const mostRecent = history[0];
+              const notesChange = mostRecent.changes?.find(c => c.field === 'locationNotes');
+              if (notesChange && notesChange.newValue && notesChange.newValue !== '(empty)') {
+                return {
+                  ...equipment,
+                  locationNotes: notesChange.newValue
+                };
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching history for', equipment.name, error);
+          }
+          return equipment;
+        })
+      );
+      
+      const cleanedSmallTools = smallToolsWithHistory.map(product => {
         const { supplier, minStockLevel, quantity, price, location, tags, description, ...cleanedProduct } = product as any;
         const hasValidCategory = validCategoryIds.has(product.category || '') || validCategoryNames.has(product.category || '');
         
@@ -57,13 +100,15 @@ export function useInventory(refreshKey?: number) {
           site: (product as any).site || '',
           repair: (product as any).repair || false,
           repairDescription: (product as any).repairDescription || '',
+          locationNotes: (product as any).locationNotes || '',
+          lastModifiedBy: (product as any).lastModifiedBy || (product as any).createdBy || 'System',
           category: hasValidCategory ? product.category : 'Small Tools',
           equipmentType: 'field' as const
         };
       });
       
       // Convert heavy equipment to match inventory format
-      const convertedHeavyEquipment = heavyEquipment.map(equipment => ({
+      const convertedHeavyEquipment = heavyEquipmentWithHistory.map(equipment => ({
         id: equipment.id,
         name: equipment.name,
         description: equipment.description || '',
@@ -73,6 +118,7 @@ export function useInventory(refreshKey?: number) {
         site: equipment.site || '',
         repair: equipment.repair || false,
         repairDescription: equipment.repairDescription || '',
+        locationNotes: (equipment as any).locationNotes || '',
         notes: (equipment as any).notes || [],
         equipmentType: 'heavy' as const,
         createdAt: equipment.createdAt as string,
@@ -83,12 +129,12 @@ export function useInventory(refreshKey?: number) {
       // Merge small tools and heavy equipment
       const allProducts = [...cleanedSmallTools, ...convertedHeavyEquipment];
       
-      // Generate repair alerts for equipment that needs repair
-      const repairAlerts = generateRepairAlerts(allProducts, loadedAlerts);
+      // Generate change alerts for all equipment from history
+      const changeAlerts = await generateChangeAlerts(allProducts, allUsers);
       
       setProducts(allProducts);
       setCategories(loadedCategories);
-      setAlerts(repairAlerts);
+      setAlerts(changeAlerts);
     } catch (error) {
       console.error('Error loading data from Firebase:', error);
     } finally {
@@ -96,46 +142,76 @@ export function useInventory(refreshKey?: number) {
     }
   };
 
-  const generateRepairAlerts = (products: Equipment[], existingAlerts: StockAlert[]): StockAlert[] => {
-    const repairAlerts = products
-      .filter(product => product.repair)
-      .map(product => {
-        // Check if alert already exists for this product
-        const existingAlert = existingAlerts.find(alert => 
-          alert.productId === product.id && alert.type === 'repair'
-        );
+  const generateChangeAlerts = async (products: Equipment[], users: AppUser[]): Promise<StockAlert[]> => {
+    // Helper function to get display name from username
+    const getDisplayName = (username: string | undefined): string => {
+      if (!username) return 'Unknown User';
+      // Try to match by username first
+      const user = users.find(u => u.username === username);
+      if (user) return user.name;
+      // If not found by username, try to match by name (in case the stored value is the name)
+      const userByName = users.find(u => u.name === username);
+      if (userByName) return userByName.name;
+      return username;
+    };
+    
+    const allAlerts: StockAlert[] = [];
+    
+    // Fetch history for each equipment and generate alerts for changes
+    for (const product of products) {
+      try {
+        const history = await equipmentHistoryFirebaseService.getEquipmentHistory(product.id);
         
-        if (existingAlert) {
-          // Update the alert with the latest timestamp and user from the product
-          return {
-            ...existingAlert,
-            message: `${product.name} has an alert${product.repairDescription ? ': ' + product.repairDescription : ''}`,
-            createdAt: product.updatedAt || existingAlert.createdAt,
-            userName: product.lastModifiedBy || existingAlert.userName,
-          };
+        // Process each history entry to create alerts
+        for (const historyEntry of history) {
+          if (historyEntry.changes && historyEntry.changes.length > 0) {
+            const displayName = getDisplayName(historyEntry.user);
+            
+            // Filter out empty changes, no-change changes, and skip fields
+            const filteredChanges = historyEntry.changes.filter(change => {
+              if (change.newValue === '(empty)' && change.oldValue === '(empty)') return false;
+              if (change.oldValue === change.newValue) return false;
+              const skipFields = ['isActive', 'showInInventory', 'showInTimecard', 'updatedAt', 'createdAt', 'repair'];
+              if (skipFields.includes(change.field)) return false;
+              return true;
+            });
+            
+            // Only create alert if there are filtered changes
+            if (filteredChanges.length > 0) {
+              const alertId = `change-${product.id}-${historyEntry.timestamp.getTime()}`;
+              
+              // Format the message to show all changed fields
+              const changeMessages = filteredChanges.map(change => {
+                if (change.field === 'locationNotes' || change.field === 'notes' || change.field === 'employee') {
+                  return change.newValue || '';
+                } else {
+                  return `${change.field}: ${change.newValue}`;
+                }
+              });
+              
+              // Join all changes with newlines
+              const message = changeMessages.join('\n');
+              
+              allAlerts.push({
+                id: alertId,
+                productId: product.id,
+                type: 'change',
+                message: message,
+                createdAt: historyEntry.timestamp.toISOString(),
+                userName: displayName,
+              });
+            }
+          }
         }
-        
-        // Create new repair alert
-        const newAlert: StockAlert = {
-          id: `repair-${product.id}-${Date.now()}`,
-          productId: product.id,
-          type: 'repair',
-          message: `${product.name} has an alert${product.repairDescription ? ': ' + product.repairDescription : ''}`,
-          createdAt: product.updatedAt || new Date().toISOString(),
-          userName: product.lastModifiedBy || 'Unknown User',
-        };
-        return newAlert;
-      });
+      } catch (error) {
+        console.error('Error fetching history for', product.name, error);
+      }
+    }
     
-    // Remove repair alerts for products that no longer need repair
-    const validRepairProductIds = new Set(products.filter(p => p.repair).map(p => p.id));
-    const filteredAlerts = existingAlerts.filter(alert => 
-      alert.type !== 'repair' || validRepairProductIds.has(alert.productId)
-    );
+    // Sort alerts by date (newest first)
+    allAlerts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     
-    // Combine existing non-repair alerts with current repair alerts
-    const nonRepairAlerts = filteredAlerts.filter(alert => alert.type !== 'repair');
-    return [...nonRepairAlerts, ...repairAlerts];
+    return allAlerts;
   };
 
   const addProduct = async (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -171,6 +247,12 @@ export function useInventory(refreshKey?: number) {
     try {
       const product = products.find(p => p.id === id);
       
+      // Heavy equipment must be updated through equipmentManagementService
+      if (product?.equipmentType === 'heavy') {
+        await equipmentManagementService.updateEquipment(id, updates);
+        await loadData();
+        return;
+      }
             
       // Log the changes to history
       if (product && user) {
@@ -232,26 +314,8 @@ export function useInventory(refreshKey?: number) {
           });
         }
       }
-      
-      if (product?.equipmentType === 'heavy') {
-        // Route heavy equipment updates through equipmentManagementService
-        // Convert the updates to match the heavy equipment service format
-        const heavyUpdates: any = {};
-        if (updates.name !== undefined) heavyUpdates.name = updates.name;
-        if (updates.description !== undefined) heavyUpdates.description = updates.description;
-        if (updates.serialNumber !== undefined) heavyUpdates.serialNumber = updates.serialNumber;
-        if (updates.category !== undefined) heavyUpdates.category = updates.category;
-        if (updates.site !== undefined) heavyUpdates.site = updates.site;
-        if (updates.employee !== undefined) heavyUpdates.employee = updates.employee;
-        if (updates.repair !== undefined) heavyUpdates.repair = updates.repair;
-        if (updates.repairDescription !== undefined) heavyUpdates.repairDescription = updates.repairDescription;
-        if (updates.notes !== undefined) heavyUpdates.notes = updates.notes;
-        if (updates.locationNotes !== undefined) heavyUpdates.locationNotes = updates.locationNotes;
-        
-        await equipmentManagementService.updateEquipment(id, heavyUpdates, user ? { username: user.username, role: user.role } : undefined);
-      } else {
-        await updateEquipment(id, updates);
-      }
+
+      await updateEquipment(id, updates);
       
       await loadData();
     } catch (error) {
@@ -273,15 +337,6 @@ export function useInventory(refreshKey?: number) {
       await loadData(); // Refresh data from Firebase
     } catch (error) {
       console.error('Error deleting product:', error);
-    }
-  };
-
-  const clearAlert = async (alertId: string) => {
-    try {
-      await _deleteAlert(alertId);
-      await loadData(); // Refresh data from Firebase
-    } catch (error) {
-      console.error('Error clearing alert:', error);
     }
   };
 
@@ -320,7 +375,6 @@ export function useInventory(refreshKey?: number) {
     addProduct,
     updateProduct,
     deleteProduct,
-    clearAlert,
     addCategory,
     editCategory,
     deleteCategory,

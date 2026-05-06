@@ -420,7 +420,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
           )}
 
           {isEditing && product?.equipmentType === 'heavy' && (
-            <div>
+            <div className="md:col-span-2">
               <select
                 value={showCustomSite ? 'OTHER' : formData.site}
                 onChange={(e) => handleSiteChange(e.target.value)}
@@ -444,6 +444,21 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                   autoFocus
                 />
               )}
+            </div>
+          )}
+
+          {isEditing && product?.equipmentType === 'heavy' && (
+            <div className="md:col-span-2 mt-2 sm:mt-3">
+              <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
+                Notes
+              </label>
+              <textarea
+                rows={2}
+                value={formData.locationNotes}
+                onChange={(e) => handleInputChange('locationNotes', e.target.value)}
+                placeholder="Make a note"
+                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+              />
             </div>
           )}
 

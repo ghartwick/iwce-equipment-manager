@@ -16,7 +16,7 @@ interface EquipmentManagementProps {
   asPage?: boolean;
 }
 
-const EMPTY_FORM = { name: '', description: '', serialNumber: '', category: '', site: '', employee: '', repair: false, repairDescription: '', isActive: true, showInInventory: true, showInTimecard: true, parentId: '' };
+const EMPTY_FORM = { name: '', description: '', serialNumber: '', category: '', site: '', employee: '', repair: false, repairDescription: '', locationNotes: '', isActive: true, showInInventory: true, showInTimecard: true, parentId: '' };
 
 export function EquipmentManagement({ currentUser, asPage = false }: EquipmentManagementProps) {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
@@ -74,6 +74,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
         category: item.category || '',
         serialNumber: item.serialNumber || '',
         repairDescription: item.repairDescription || '',
+        locationNotes: item.locationNotes || '',
         createdAt: item.createdAt as string,
         updatedAt: item.updatedAt as string,
         notes: []
@@ -170,6 +171,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
       employee: item.employee || '',
       repair: item.repair || false,
       repairDescription: item.repairDescription || '',
+      locationNotes: item.locationNotes || '',
       isActive: item.isActive,
       showInInventory: item.showInInventory,
       showInTimecard: item.showInTimecard,
@@ -366,6 +368,18 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={formData.locationNotes}
+                    onChange={(e) => setFormData({ ...formData, locationNotes: e.target.value })}
+                    placeholder="Make a note"
+                    className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
                 <div className="flex flex-wrap gap-4">
                   <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
                     <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
@@ -463,6 +477,11 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                 <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">
                                   {item.name}
                                   {!item.isActive && <span className="ml-2 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-500 text-xs rounded">Inactive</span>}
+                                  {item.locationNotes && (
+                                    <div className="text-xs text-gray-600 dark:text-gray-400 italic mt-1 break-words">
+                                      {item.locationNotes}
+                                    </div>
+                                  )}
                                 </td>
                               <td className="px-4 py-2">
                                 <select
@@ -655,6 +674,11 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                     <span className="text-gray-500 dark:text-gray-400 mr-2">↳</span>
                                     {variant.name}
                                     {!variant.isActive && <span className="ml-2 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-500 text-xs rounded">Inactive</span>}
+                                    {variant.locationNotes && (
+                                      <div className="text-xs text-gray-600 dark:text-gray-400 italic mt-1 break-words">
+                                        {variant.locationNotes}
+                                      </div>
+                                    )}
                                   </td>
                                   <td className="px-4 py-2">
                                     <span className="text-sm text-gray-500 dark:text-gray-400">

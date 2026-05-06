@@ -62,7 +62,6 @@ function App() {
     alerts,
     loading: inventoryLoading,
     addProduct,
-    clearAlert,
     addCategory,
     editCategory,
     deleteCategory,
@@ -183,7 +182,6 @@ function App() {
                 <AlertPanel 
                   alerts={alerts} 
                   products={products} 
-                  onClearAlert={clearAlert} 
                 />
               </div>
             </div>
@@ -251,7 +249,6 @@ function App() {
                 <AlertPanel 
                   alerts={alerts} 
                   products={products} 
-                  onClearAlert={clearAlert} 
                 />
               </div>
             )}
@@ -261,7 +258,6 @@ function App() {
               <AlertPanel 
                 alerts={alerts} 
                 products={products} 
-                onClearAlert={clearAlert} 
               />
             </div>
 

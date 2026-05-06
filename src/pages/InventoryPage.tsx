@@ -22,11 +22,11 @@ function InventoryPage() {
     loading: inventoryLoading,
     addProduct,
     updateProduct,
-    clearAlert,
     addCategory,
     editCategory,
     deleteCategory,
     refreshData,
+    loadAlerts,
   } = useInventory();
 
   const { user } = useAuth();
@@ -35,6 +35,7 @@ function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAlerts, setShowAlerts] = useState(false);
+  const [alertDaysAgo, setAlertDaysAgo] = useState(7);
   const alertsRef = useRef<HTMLDivElement>(null);
   const [sites, setSites] = useState<Site[]>([]);
   const [appUsers, setAppUsers] = useState<AppUser[]>([]);
@@ -116,7 +117,11 @@ function InventoryPage() {
       setShowAddForm(true);
     };
 
-    const handleToggleAlerts = () => {
+    const handleToggleAlerts = async () => {
+      if (!showAlerts) {
+        setAlertDaysAgo(7);
+        await loadAlerts(7);
+      }
       setShowAlerts(!showAlerts);
     };
 
@@ -128,6 +133,12 @@ function InventoryPage() {
       window.removeEventListener('toggleAlerts', handleToggleAlerts);
     };
   }, [showAlerts]);
+
+  const handleLoadMoreAlerts = async () => {
+    const newDaysAgo = alertDaysAgo + 7;
+    setAlertDaysAgo(newDaysAgo);
+    await loadAlerts(newDaysAgo);
+  };
 
   // Click outside handler for alerts
   useEffect(() => {
@@ -245,8 +256,9 @@ function InventoryPage() {
           <div className="mb-3" ref={alertsRef}>
             <AlertPanel 
               alerts={alerts} 
-              products={products} 
-              onClearAlert={clearAlert} 
+              products={products}
+              onLoadMore={handleLoadMoreAlerts}
+              hasMore={alerts.length >= 50}
             />
           </div>
         )}
@@ -314,8 +326,9 @@ function InventoryPage() {
             <div ref={alertsRef}>
               <AlertPanel 
                 alerts={alerts} 
-                products={products} 
-                onClearAlert={clearAlert} 
+                products={products}
+                onLoadMore={handleLoadMoreAlerts}
+                hasMore={alerts.length >= 50}
               />
             </div>
           )}

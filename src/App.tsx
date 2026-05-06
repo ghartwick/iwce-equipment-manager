@@ -30,6 +30,13 @@ function App() {
   const [showAlerts, setShowAlerts] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const handleToggleAlerts = async () => {
+    if (!showAlerts) {
+      await loadAlerts();
+    }
+    setShowAlerts(!showAlerts);
+  };
+
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
   };
@@ -65,6 +72,7 @@ function App() {
     addCategory,
     editCategory,
     deleteCategory,
+    loadAlerts,
   } = useInventory(refreshKey);
 
   const filteredProducts = products.filter(product => {
@@ -166,7 +174,7 @@ function App() {
           setShowAddForm(!showAddForm);
         }}
         alertCount={alerts.length}
-        onToggleAlerts={() => setShowAlerts(!showAlerts)}
+        onToggleAlerts={handleToggleAlerts}
         user={user}
         onLogout={logout}
         onRefresh={handleRefresh}

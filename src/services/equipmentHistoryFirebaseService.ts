@@ -152,7 +152,7 @@ class EquipmentHistoryFirebaseService {
     if (action === 'updated' && oldEquipment) {
       // For restricted fields (name, serialNumber, category), only include if changed
       const restrictedFields = ['name', 'serialNumber', 'category'];
-      const otherFields = ['employee', 'site', 'repairDescription', 'locationNotes']; // Removed 'repair'
+      const otherFields = ['employee', 'site', 'repairDescription', 'locationNotes']; // Removed 'notes' - handle separately
       
       // Check restricted fields - only include if actually changed
       restrictedFields.forEach(field => {
@@ -182,9 +182,22 @@ class EquipmentHistoryFirebaseService {
           });
         }
       });
+      
+      // Handle notes field specially - it's an array
+      if (equipment.notes && equipment.notes.length > 0) {
+        const notesText = equipment.notes.map(n => n.text).join('; ');
+        const oldNotes = oldEquipment.notes && oldEquipment.notes.length > 0
+          ? oldEquipment.notes.map(n => n.text).join('; ')
+          : '(empty)';
+        changes.push({
+          field: 'notes',
+          oldValue: oldNotes,
+          newValue: notesText
+        });
+      }
     } else if (action === 'created') {
       // For created equipment, show all initial values
-      const fieldsToTrack = ['name', 'serialNumber', 'category', 'employee', 'site', 'repairDescription', 'locationNotes']; // Removed 'repair'
+      const fieldsToTrack = ['name', 'serialNumber', 'category', 'employee', 'site', 'repairDescription', 'locationNotes']; // Removed 'notes' - handle separately
       
       fieldsToTrack.forEach(field => {
         const value = equipment[field as keyof Equipment];
@@ -198,6 +211,16 @@ class EquipmentHistoryFirebaseService {
           });
         }
       });
+      
+      // Handle notes field specially - it's an array
+      if (equipment.notes && equipment.notes.length > 0) {
+        const notesText = equipment.notes.map(n => n.text).join('; ');
+        changes.push({
+          field: 'notes',
+          oldValue: '(empty)',
+          newValue: notesText
+        });
+      }
     }
 
     await this.addHistory({

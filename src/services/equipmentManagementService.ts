@@ -1,6 +1,7 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { equipmentHistoryFirebaseService } from './equipmentHistoryFirebaseService';
+import { alertsFirebaseService } from './alertsFirebaseService';
 import { Equipment } from '../types';
 
 export class EquipmentManagementService {
@@ -117,12 +118,47 @@ export class EquipmentManagementService {
       // Track history if user is provided and this is an update
       if (user && oldEquipment) {
         const newEquipment = { ...oldEquipment, ...updates } as Equipment;
+        
         await equipmentHistoryFirebaseService.trackEquipmentChange(
           'updated',
           newEquipment,
           user,
           oldEquipment
         );
+        
+        // Generate alerts for changes
+        const changes: string[] = [];
+        
+        Object.keys(updates).forEach(key => {
+          const oldValue = oldEquipment[key as keyof Equipment];
+          const newValue = updates[key as keyof Omit<Equipment, 'id' | 'createdAt'>];
+          
+          // Skip timestamp fields and repair field
+          if (key === 'updatedAt' || key === 'createdAt' || key === 'repair') return;
+          
+          // Skip if no change
+          if (oldValue === newValue) return;
+          
+          // Skip system fields
+          if (['isActive', 'showInInventory', 'showInTimecard'].includes(key)) return;
+          
+          // Add change to alerts without field name prefix
+          changes.push(String(newValue || ''));
+        });
+        
+        if (changes.length > 0) {
+          try {
+            await alertsFirebaseService.addAlert({
+              productId: id,
+              type: 'change',
+              message: changes.join('\n'),
+              createdAt: new Date().toISOString(),
+              userName: user.username || 'Unknown User',
+            });
+          } catch (error) {
+            console.error('Error adding alert for heavy equipment:', error);
+          }
+        }
       }
     } catch (error) {
       console.error('Error updating equipment:', error);

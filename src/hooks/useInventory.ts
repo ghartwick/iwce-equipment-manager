@@ -12,8 +12,8 @@ import {
 } from '../services/firebaseService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
+import { alertsFirebaseService } from '../services/alertsFirebaseService';
 import { useAuth } from './useAuth';
-import { UserManagementService, AppUser } from '../services/userManagementService';
 
 export function useInventory(refreshKey?: number) {
   const [products, setProducts] = useState<Equipment[]>([]);
@@ -21,7 +21,6 @@ export function useInventory(refreshKey?: number) {
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const [userManagementService] = useState(() => new UserManagementService());
 
   useEffect(() => {
     loadData();
@@ -32,11 +31,10 @@ export function useInventory(refreshKey?: number) {
       setLoading(true);
       
       // Load data from Firebase
-      const [loadedProducts, loadedCategories, heavyEquipment, allUsers] = await Promise.all([
+      const [loadedProducts, loadedCategories, heavyEquipment] = await Promise.all([
         getEquipment(),
         getCategories(),
-        equipmentManagementService.getInventoryEquipment(),
-        userManagementService.getAllUsers()
+        equipmentManagementService.getInventoryEquipment()
       ]);
       
       // Build sets for both IDs and names to support legacy (name-stored) and new (ID-stored) categories
@@ -129,12 +127,9 @@ export function useInventory(refreshKey?: number) {
       // Merge small tools and heavy equipment
       const allProducts = [...cleanedSmallTools, ...convertedHeavyEquipment];
       
-      // Generate change alerts for all equipment from history
-      const changeAlerts = await generateChangeAlerts(allProducts, allUsers);
-      
       setProducts(allProducts);
       setCategories(loadedCategories);
-      setAlerts(changeAlerts);
+      // Alerts will be loaded on-demand
     } catch (error) {
       console.error('Error loading data from Firebase:', error);
     } finally {
@@ -142,77 +137,10 @@ export function useInventory(refreshKey?: number) {
     }
   };
 
-  const generateChangeAlerts = async (products: Equipment[], users: AppUser[]): Promise<StockAlert[]> => {
-    // Helper function to get display name from username
-    const getDisplayName = (username: string | undefined): string => {
-      if (!username) return 'Unknown User';
-      // Try to match by username first
-      const user = users.find(u => u.username === username);
-      if (user) return user.name;
-      // If not found by username, try to match by name (in case the stored value is the name)
-      const userByName = users.find(u => u.name === username);
-      if (userByName) return userByName.name;
-      return username;
-    };
-    
-    const allAlerts: StockAlert[] = [];
-    
-    // Fetch history for each equipment and generate alerts for changes
-    for (const product of products) {
-      try {
-        const history = await equipmentHistoryFirebaseService.getEquipmentHistory(product.id);
-        
-        // Process each history entry to create alerts
-        for (const historyEntry of history) {
-          if (historyEntry.changes && historyEntry.changes.length > 0) {
-            const displayName = getDisplayName(historyEntry.user);
-            
-            // Filter out empty changes, no-change changes, and skip fields
-            const filteredChanges = historyEntry.changes.filter(change => {
-              if (change.newValue === '(empty)' && change.oldValue === '(empty)') return false;
-              if (change.oldValue === change.newValue) return false;
-              const skipFields = ['isActive', 'showInInventory', 'showInTimecard', 'updatedAt', 'createdAt', 'repair'];
-              if (skipFields.includes(change.field)) return false;
-              return true;
-            });
-            
-            // Only create alert if there are filtered changes
-            if (filteredChanges.length > 0) {
-              const alertId = `change-${product.id}-${historyEntry.timestamp.getTime()}`;
-              
-              // Format the message to show all changed fields
-              const changeMessages = filteredChanges.map(change => {
-                if (change.field === 'locationNotes' || change.field === 'notes' || change.field === 'employee') {
-                  return change.newValue || '';
-                } else {
-                  return `${change.field}: ${change.newValue}`;
-                }
-              });
-              
-              // Join all changes with newlines
-              const message = changeMessages.join('\n');
-              
-              allAlerts.push({
-                id: alertId,
-                productId: product.id,
-                type: 'change',
-                message: message,
-                createdAt: historyEntry.timestamp.toISOString(),
-                userName: displayName,
-              });
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching history for', product.name, error);
-      }
-    }
-    
-    // Sort alerts by date (newest first)
-    allAlerts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    return allAlerts;
-  };
+  const loadAlerts = async (daysAgo: number = 7) => {
+  const alerts = await alertsFirebaseService.getRecentAlerts(50, daysAgo);
+  setAlerts(alerts);
+};
 
   const addProduct = async (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
@@ -249,78 +177,110 @@ export function useInventory(refreshKey?: number) {
       
       // Heavy equipment must be updated through equipmentManagementService
       if (product?.equipmentType === 'heavy') {
-        await equipmentManagementService.updateEquipment(id, updates);
-        await loadData();
-        return;
-      }
-            
-      // Log the changes to history
-      if (product && user) {
-        const changes: { field: string; oldValue: string; newValue: string }[] = [];
-        
-        // Check each field for changes (excluding timestamp fields)
-        Object.keys(updates).forEach(key => {
-          // Skip timestamp fields as they're updated automatically
-          if (key === 'updatedAt' || key === 'createdAt') return;
+        await equipmentManagementService.updateEquipment(id, updates, {
+          username: user?.username || user?.name || 'Unknown User',
+          role: user?.role || 'field'
+        });
+      } else {
+        // Log the changes to history for field equipment
+        if (product && user) {
+          const changes: { field: string; oldValue: string; newValue: string }[] = [];
           
+          Object.keys(updates).forEach(key => {
+            if (key === 'updatedAt' || key === 'createdAt') return;
+            
+            const oldValue = product[key as keyof Equipment];
+            const newValue = updates[key as keyof Equipment];
+            
+            if (key === 'notes' && Array.isArray(newValue)) {
+              const oldNotes = Array.isArray(oldValue) ? oldValue : [];
+              const newNotes = newValue;
+              
+              newNotes.forEach(newNote => {
+                if (!oldNotes.some(oldNote => oldNote.id === newNote.id)) {
+                  changes.push({
+                    field: 'notes',
+                    oldValue: '',
+                    newValue: `"${newNote.text}"`
+                  });
+                }
+              });
+              
+              oldNotes.forEach(oldNote => {
+                if (!newNotes.some(newNote => newNote.id === oldNote.id)) {
+                  changes.push({
+                    field: 'notes',
+                    oldValue: `"${oldNote.text}"`,
+                    newValue: ''
+                  });
+                }
+              });
+            } else if (oldValue !== newValue && newValue !== undefined) {
+              changes.push({
+                field: key,
+                oldValue: String(oldValue || ''),
+                newValue: String(newValue)
+              });
+            }
+          });
+          
+          if (changes.length > 0) {
+            await equipmentHistoryFirebaseService.addHistory({
+              equipmentId: id,
+              equipmentName: product.name,
+              action: 'updated',
+              timestamp: new Date(),
+              user: user.name || 'Unknown User',
+              userRole: user.role || 'field',
+              changes
+            });
+          }
+        }
+
+        await updateEquipment(id, updates);
+      }
+      
+      // Add alerts for changes
+      if (product && user) {
+        const displayName = user.name || 'Unknown User';
+        const changes: string[] = [];
+        
+        Object.keys(updates).forEach(key => {
           const oldValue = product[key as keyof Equipment];
           const newValue = updates[key as keyof Equipment];
           
-          // Special handling for notes array
-          if (key === 'notes' && Array.isArray(newValue)) {
-            const oldNotes = Array.isArray(oldValue) ? oldValue : [];
-            const newNotes = newValue;
-            
-            // Check for added notes
-            newNotes.forEach(newNote => {
-              if (!oldNotes.some(oldNote => oldNote.id === newNote.id)) {
-                changes.push({
-                  field: 'notes',
-                  oldValue: '',
-                  newValue: `"${newNote.text}"`
-                });
-              }
-            });
-            
-            // Check for deleted notes
-            oldNotes.forEach(oldNote => {
-              if (!newNotes.some(newNote => newNote.id === oldNote.id)) {
-                changes.push({
-                  field: 'notes',
-                  oldValue: `"${oldNote.text}"`,
-                  newValue: ''
-                });
-              }
-            });
-          } else if (oldValue !== newValue && newValue !== undefined) {
-            changes.push({
-              field: key,
-              oldValue: String(oldValue || ''),
-              newValue: String(newValue)
-            });
-          }
+          // Skip timestamp fields and repair field
+          if (key === 'updatedAt' || key === 'createdAt' || key === 'repair') return;
+          
+          // Skip if no change
+          if (oldValue === newValue) return;
+          
+          // Skip system fields
+          if (['isActive', 'showInInventory', 'showInTimecard'].includes(key)) return;
+          
+          // Add change to alerts without field name prefix
+          changes.push(String(newValue || ''));
         });
         
-        // Add history entry if there are changes
         if (changes.length > 0) {
-          await equipmentHistoryFirebaseService.addHistory({
-            equipmentId: id,
-            equipmentName: product.name,
-            action: 'updated',
-            timestamp: new Date(),
-            user: user.name || 'Unknown User',
-            userRole: user.role || 'field',
-            changes
-          });
+          try {
+            await alertsFirebaseService.addAlert({
+              productId: id,
+              type: 'change',
+              message: changes.join('\n'),
+              createdAt: new Date().toISOString(),
+              userName: displayName,
+            });
+          } catch (error) {
+            console.error('Error adding alert:', error);
+          }
         }
       }
-
-      await updateEquipment(id, updates);
       
       await loadData();
     } catch (error) {
       console.error('Error updating product:', error);
-      throw error; // Re-throw the error so it can be caught by the caller
+      throw error;
     }
   };
 
@@ -379,5 +339,6 @@ export function useInventory(refreshKey?: number) {
     editCategory,
     deleteCategory,
     refreshData: loadData,
+    loadAlerts,
   };
 }

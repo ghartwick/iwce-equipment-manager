@@ -1,14 +1,29 @@
 import { StockAlert, Equipment } from '../types';
+import { useState } from 'react';
 
 interface AlertPanelProps {
   alerts: StockAlert[];
   products: Equipment[];
+  onLoadMore?: () => void;
+  hasMore?: boolean;
 }
 
-export function AlertPanel({ alerts, products }: AlertPanelProps) {
+export function AlertPanel({ alerts, products, onLoadMore, hasMore }: AlertPanelProps) {
+  const [isLoading, setIsLoading] = useState(false);
+
   const getProductName = (productId: string) => {
     const product = products.find(p => p.id === productId);
     return product ? product.name : 'Unknown Equipment';
+  };
+
+  const handleLoadMore = async () => {
+    if (isLoading || !onLoadMore) return;
+    setIsLoading(true);
+    try {
+      await onLoadMore();
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Sort alerts by date (newest first)
@@ -91,6 +106,18 @@ export function AlertPanel({ alerts, products }: AlertPanelProps) {
             </div>
           </div>
         ))}
+        
+        {onLoadMore && hasMore && (
+          <div className="p-3 sm:p-4 border-t border-yellow-200 dark:border-yellow-800">
+            <button
+              onClick={handleLoadMore}
+              disabled={isLoading}
+              className="w-full px-4 py-2 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Loading...' : 'Load More Alerts'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

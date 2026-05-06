@@ -3,15 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useInventory } from '../hooks/useInventory';
 import { ProductForm } from '../components/ProductForm';
+import { AlertPanel } from '../components/AlertPanel';
 import { Equipment } from '../types';
 
 export default function EquipmentPage() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { products, categories, updateProduct, loading } = useInventory();
+  const { products, categories, updateProduct, loading, loadAlerts, alerts } = useInventory();
 
   const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [alertDaysAgo, setAlertDaysAgo] = useState(7);
 
   useEffect(() => {
     if (!loading && equipmentId) {
@@ -19,6 +22,28 @@ export default function EquipmentPage() {
       setEquipment(found || null);
     }
   }, [products, equipmentId, loading]);
+
+  // Listen for toggleAlerts custom event
+  useEffect(() => {
+    const handleToggleAlerts = async () => {
+      if (!showAlerts) {
+        setAlertDaysAgo(7);
+        await loadAlerts(7);
+      }
+      setShowAlerts(!showAlerts);
+    };
+
+    window.addEventListener('toggleAlerts', handleToggleAlerts as EventListener);
+    return () => {
+      window.removeEventListener('toggleAlerts', handleToggleAlerts as EventListener);
+    };
+  }, [showAlerts, loadAlerts]);
+
+  const handleLoadMoreAlerts = async () => {
+    const newDaysAgo = alertDaysAgo + 7;
+    setAlertDaysAgo(newDaysAgo);
+    await loadAlerts(newDaysAgo);
+  };
 
   const handleEdit = async (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!equipment) return;
@@ -65,6 +90,18 @@ export default function EquipmentPage() {
   return (
     <main className="px-4 sm:px-6 lg:px-6 py-2 sm:py-3 -mx-4 sm:-mx-6 lg:mx-0">
       <div className="max-w-5xl mx-auto">
+        {/* Alerts Section */}
+        {showAlerts && (
+          <div className="mb-3">
+            <AlertPanel 
+              alerts={alerts} 
+              products={products}
+              onLoadMore={handleLoadMoreAlerts}
+              hasMore={alerts.length >= 50}
+            />
+          </div>
+        )}
+
         <ProductForm
           categories={categories}
           product={equipment}

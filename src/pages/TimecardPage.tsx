@@ -726,12 +726,12 @@ export default function TimecardPage() {
               headStyles: { fillColor: [255, 200, 100], textColor: 0 },
               styles: { fontSize: 6, cellPadding: 2 },
               columnStyles: {
-                0: { cellWidth: 25 },
+                0: { cellWidth: 20 },
                 1: { cellWidth: 15 },
                 2: { cellWidth: 15 },
-                3: { cellWidth: 50 },
+                3: { cellWidth: 45 },
                 4: { cellWidth: 35 },
-                5: { cellWidth: 40 }
+                5: { cellWidth: 38 }
               }
             });
 
@@ -905,12 +905,14 @@ export default function TimecardPage() {
                   >
                     Clear Selection
                   </button>
-                  <button
-                    onClick={handleExportPDF}
-                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 font-medium transition-colors whitespace-nowrap"
-                  >
-                    Export
-                  </button>
+                  {(user?.role === 'admin' || user?.role === 'supervisor') && (
+                    <button
+                      onClick={handleExportPDF}
+                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 font-medium transition-colors whitespace-nowrap"
+                    >
+                      Export
+                    </button>
+                  )}
                 </div>
               </div>
 

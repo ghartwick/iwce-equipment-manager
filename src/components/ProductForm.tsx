@@ -42,27 +42,15 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   const [showQR, setShowQR] = useState(false);
   const [showMaintenanceForm, setShowMaintenanceForm] = useState(false);
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
-  const [equipmentDataNotes, setEquipmentDataNotes] = useState<string[]>([]);
-  const [newNote, setNewNote] = useState('');
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
   const [maintenanceAttachments, setMaintenanceAttachments] = useState<Record<string, any[]>>({});
   const [maintenanceCollapsed, setMaintenanceCollapsed] = useState(true);
   const [visibleReportCount, setVisibleReportCount] = useState(10);
+  const [hiddenMaintenanceNoteIds, setHiddenMaintenanceNoteIds] = useState<string[]>([]);
 
   const getEquipmentUrl = (id: string) => {
     const baseUrl = 'https://iwce-equipment-manager.vercel.app';
     return `${baseUrl}/inventory/equipment/${id}`;
-  };
-
-  const addEquipmentDataNote = () => {
-    if (newNote.trim()) {
-      setEquipmentDataNotes([...equipmentDataNotes, newNote.trim()]);
-      setNewNote('');
-    }
-  };
-
-  const removeEquipmentDataNote = (index: number) => {
-    setEquipmentDataNotes(equipmentDataNotes.filter((_, i) => i !== index));
   };
 
   const handleDownloadQR = () => {
@@ -128,13 +116,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         equipmentType: product.equipmentType || 'field',
         repair: product.repair || false,
         repairDescription: product.repairDescription || '',
-        locationNotes: '', // Always start with empty notes for new entry
+        locationNotes: '',
       });
-      
-      // Load equipment data notes from the notes field if they exist
-      if (product.notes && Array.isArray(product.notes)) {
-        setEquipmentDataNotes(product.notes.map(note => typeof note === 'string' ? note : note.text || ''));
-      }
       
       // Check if the site is a custom site (not in the sites list)
       if (product.site && !sites.some(site => site.name === product.site)) {
@@ -195,13 +178,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       isActive: true,
       showInInventory: true,
       showInTimecard: true,
-      notes: equipmentDataNotes.filter(note => note.trim()).map(note => ({
-        id: Date.now().toString() + Math.random(),
-        text: note,
-        createdAt: new Date().toISOString(),
-        createdBy: user?.name || 'Unknown User',
-        createdByRole: user?.role || 'field'
-      }))
+      notes: []
     };
     
         
@@ -289,6 +266,12 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     }
   };
 
+  const handleDeleteMaintenanceNote = (reportId: string) => {
+    if (!confirm('Are you sure you want to hide this note from the display? The note will remain in the maintenance report for historical purposes.')) return;
+    
+    setHiddenMaintenanceNoteIds([...hiddenMaintenanceNoteIds, reportId]);
+  };
+
   const handleSiteChange = (value: string) => {
     if (value === 'OTHER') {
       setShowCustomSite(true);
@@ -298,6 +281,27 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       setCustomSite('');
       setFormData(prev => ({ ...prev, site: value }));
     }
+  };
+
+  const hasRepairs = (maintenance: EquipmentMaintenance): boolean => {
+    return [
+      maintenance.stepsHandRails,
+      maintenance.tiresTracks,
+      maintenance.bucket,
+      maintenance.cuttingEdgeTeeth,
+      maintenance.hoses,
+      maintenance.batteryCableBeltHosesFilterGuards,
+      maintenance.backupAlarm,
+      maintenance.fireExtinguisher,
+      maintenance.gauges,
+      maintenance.horn,
+      maintenance.spillKit,
+      maintenance.glass,
+      maintenance.mirror,
+      maintenance.rollOverProtection,
+      maintenance.seatBeltSeat,
+      maintenance.allFluidsLevel,
+    ].some(val => val === 'Repair');
   };
 
   const handleCustomSiteChange = (value: string) => {
@@ -516,48 +520,36 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                 </div>
               </div>
 
-              {/* Equipment Data Notes */}
+              {/* Equipment Data Notes from Maintenance Reports */}
               <div className="space-y-2 mb-4">
                 <ul className="list-disc list-inside space-y-1">
-                  {equipmentDataNotes.map((note, index) => (
-                    <li key={index} className="flex items-center justify-between text-xs text-gray-900 dark:text-yellow-100">
-                      <span>{note}</span>
-                      {user?.role === 'admin' && (
-                        <button
-                          type="button"
-                          onClick={() => removeEquipmentDataNote(index)}
-                          className="ml-2 p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </li>
-                  ))}
+                  {maintenanceReports
+                    .filter(report => report.maintenance.notes && report.maintenance.notes.trim() !== '' && !hiddenMaintenanceNoteIds.includes(report.id!))
+                    .map((report, index) => (
+                      <li key={index} className="flex items-center justify-between text-xs text-gray-900 dark:text-yellow-100">
+                        <span>
+                          {new Date(report.createdAt).toLocaleDateString()} - {report.createdBy}: {report.maintenance.notes}
+                        </span>
+                        {user?.role === 'admin' && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMaintenanceNote(report.id!)}
+                            className="ml-2 p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                            title="Hide Note"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </li>
+                    ))}
                 </ul>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    placeholder="Enter equipment data note..."
-                    className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={addEquipmentDataNote}
-                    className="flex items-center space-x-1 px-2 py-1 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
-                  >
-                    <Plus className="h-3 w-3" />
-                    <span>Add</span>
-                  </button>
-                </div>
               </div>
-              
+
               {/* Maintenance Reports List */}
               {maintenanceReports.length > 0 && (
                 <div className="space-y-2 mt-3">
                   {(maintenanceCollapsed ? [maintenanceReports[0]] : maintenanceReports.slice(0, visibleReportCount)).map((report) => (
-                    <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                    <div key={report.id} className={`rounded-lg border ${hasRepairs(report.maintenance) ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'}`}>
                       <div
                         onClick={() => handleMaintenanceReportExpand(report.id)}
                         className="w-full px-3 py-2 flex items-center justify-between text-left cursor-pointer"

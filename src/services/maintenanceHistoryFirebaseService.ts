@@ -1,4 +1,4 @@
-import { collection, addDoc, query, where, orderBy, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, getDocs, Timestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { EquipmentMaintenance } from '../types';
 
@@ -151,6 +151,16 @@ class MaintenanceHistoryFirebaseService {
       await deleteDoc(reportRef);
     } catch (error) {
       console.error('Failed to delete maintenance report:', error);
+      throw error;
+    }
+  }
+
+  async updateMaintenanceReport(reportId: string, maintenance: EquipmentMaintenance): Promise<void> {
+    try {
+      const reportRef = doc(db, this.COLLECTION_NAME, reportId);
+      await updateDoc(reportRef, { maintenance });
+    } catch (error) {
+      console.error('Failed to update maintenance report:', error);
       throw error;
     }
   }

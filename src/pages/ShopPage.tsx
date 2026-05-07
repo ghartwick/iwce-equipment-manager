@@ -5,12 +5,14 @@ import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryF
 import { shopAttachmentService } from '../services/shopAttachmentService';
 import { ShopForm } from '../components/ShopForm';
 import { useAuth } from '../hooks/useAuth';
+import { equipmentManagementService } from '../services/equipmentManagementService';
 
 export function ShopPage() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [equipmentName, setEquipmentName] = useState<string>('');
+  const [unitName, setUnitName] = useState<string>('');
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
   const [shopAttachments, setShopAttachments] = useState<Record<string, any[]>>({});
   const [showShopForm, setShowShopForm] = useState(false);
@@ -43,6 +45,18 @@ export function ShopPage() {
     
     try {
       setLoading(true);
+      
+      // Fetch equipment data to get unit name
+      try {
+        const allEquipment = await equipmentManagementService.getAllEquipment();
+        const equipment = allEquipment.find(eq => eq.id === equipmentId);
+        if (equipment) {
+          setUnitName(equipment.name || '');
+        }
+      } catch (error) {
+        console.error('Error loading equipment data:', error);
+      }
+      
       const reports = await shopHistoryFirebaseService.getEquipmentShopHistory(equipmentId);
       setShopReports(reports);
       if (reports.length > 0) {
@@ -149,7 +163,7 @@ export function ShopPage() {
               >
                 <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
-              <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">{equipmentName || 'Loading...'}</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">{equipmentName || unitName || 'Loading...'}</h3>
             </div>
           </div>
 

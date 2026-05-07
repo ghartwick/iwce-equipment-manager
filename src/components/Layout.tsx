@@ -75,7 +75,11 @@ function Layout({ children }: LayoutProps) {
           <div className="flex items-center justify-between h-16">
             {/* Left Side - Logo + Title */}
             <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-3">
+              <div
+                className="flex items-center space-x-3 cursor-pointer select-none"
+                onClick={() => navigate('/game')}
+                title="Secret Game"
+              >
                 <img 
                   src="/top-left-logo.png" 
                   alt="IWCE Logo" 

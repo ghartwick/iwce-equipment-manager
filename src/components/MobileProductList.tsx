@@ -90,7 +90,7 @@ export function MobileProductList({
                             onEdit?.(product);
                           }
                         }}
-                        className="p-2 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                        className="p-2 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
                         title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
                       >
                         <Pencil className="h-4 w-4" />
@@ -211,7 +211,7 @@ export function MobileProductList({
                                 onEdit?.(product);
                               }
                             }}
-                            className="p-2 text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900 bg-opacity-40 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-800 dark:hover:bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                            className="p-2 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
                             title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
                           >
                             <Pencil className="h-4 w-4" />

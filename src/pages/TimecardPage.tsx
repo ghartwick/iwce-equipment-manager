@@ -9,6 +9,8 @@ import { codeManagementService } from '../services/codeManagementService';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { TimecardAttachment, timecardAttachmentService } from '../services/timecardAttachmentService';
 import { lockedDateService } from '../services/lockedDateService';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   format, 
   startOfMonth, 
@@ -564,6 +566,210 @@ export default function TimecardPage() {
     });
   };
 
+  const handleExportPDF = async () => {
+    if (!selectedDates.length) {
+      alert('Please select at least one date to export.');
+      return;
+    }
+
+    // Check if both filters are set to none
+    if ((!siteFilter || siteFilter === '') && (!employeeFilter || employeeFilter === '')) {
+      alert('Please select a site or employee filter before exporting.');
+      return;
+    }
+
+    let entries = selectedDates.flatMap(d => getEntriesForDate(d));
+    
+    // Filter based on site filter (only if a specific site is selected, not 'all')
+    if (siteFilter && siteFilter !== '' && siteFilter !== 'all') {
+      entries = entries.filter(entry => entry.job === siteFilter);
+    }
+    
+    // Filter based on employee filter
+    if (employeeFilter && employeeFilter !== '' && employeeFilter !== 'all') {
+      if (employeeFilter === 'self') {
+        // Show only current user's entries
+        entries = entries.filter(entry => entry.userId === user?.id);
+      } else {
+        // Show entries for specific employee
+        entries = entries.filter(entry => entry.userId === employeeFilter);
+      }
+    }
+    
+    const filteredEntries = entries.filter(entry => canSeeEntry(entry, user!, supervisorUserIds));
+
+    if (filteredEntries.length === 0) {
+      alert('No time entries found for the selected filters.');
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const dateStr = selectedDates.length === 1
+      ? format(selectedDates[0], 'MMM d, yyyy')
+      : `${format(selectedDates[0], 'MMM d')} - ${format(selectedDates[selectedDates.length - 1], 'MMM d, yyyy')}`;
+
+    // Title - left justified
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Time Card', 14, 20);
+
+    // Date range - right justified
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(dateStr, pageWidth - 14 - doc.getTextWidth(dateStr), 20);
+
+    // Filters
+    let yPosition = 35;
+    if (employeeFilter) {
+      const employee = users.find(u => u.id === employeeFilter);
+      const employeeName = employee ? (employee.name || employee.username) : employeeFilter;
+      doc.text(`Employee: ${employeeName}`, 14, yPosition);
+      yPosition += 7;
+    }
+    yPosition += 5;
+
+    // Group entries by date first, then by site
+    const entriesByDate = new Map<string, any[]>();
+    filteredEntries.forEach(entry => {
+      const dateKey = entry.date ? format(new Date(entry.date), 'yyyy-MM-dd') : 'Unknown Date';
+      if (!entriesByDate.has(dateKey)) {
+        entriesByDate.set(dateKey, []);
+      }
+      entriesByDate.get(dateKey)!.push(entry);
+    });
+
+    // Sort dates
+    const sortedDates = Array.from(entriesByDate.keys()).sort();
+
+    sortedDates.forEach(dateKey => {
+      const dateEntries = entriesByDate.get(dateKey)!;
+
+      if (yPosition > 240) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      // Date header
+      const displayDate = dateKey === 'Unknown Date' ? 'Unknown Date' : format(new Date(dateKey), 'MMM d, yyyy');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(displayDate, 14, yPosition);
+      yPosition += 10;
+
+      // Group entries by job/site within each date
+      const entriesByJob = new Map<string, any[]>();
+      dateEntries.forEach(entry => {
+        const job = entry.job || 'No Site';
+        if (!entriesByJob.has(job)) {
+          entriesByJob.set(job, []);
+        }
+        entriesByJob.get(job)!.push(entry);
+      });
+
+      entriesByJob.forEach((jobEntries, job) => {
+        if (yPosition > 240) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        // Site header
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Site: ${job}`, 14, yPosition);
+        yPosition += 7;
+
+        jobEntries.forEach((entry) => {
+          if (yPosition > 240) {
+            doc.addPage();
+            yPosition = 20;
+          }
+
+          const entryOwner = users.find(u => u.id === entry.userId);
+          const ownerName = entryOwner ? (entryOwner.name || entryOwner.username) : 'Unknown';
+
+          // Employee name
+          doc.setFontSize(6);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`Employee: ${ownerName}`, 14, yPosition);
+          yPosition += 4;
+
+          // Clock in/out
+          doc.setFont('helvetica', 'normal');
+          const clockIn = entry.clockIn ? format(new Date(entry.clockIn), 'h:mm a') : 'N/A';
+          const clockOut = entry.clockOut ? format(new Date(entry.clockOut), 'h:mm a') : 'N/A';
+          doc.text(`Clock In: ${clockIn}  |  Clock Out: ${clockOut}`, 14, yPosition);
+          yPosition += 2;
+
+          // Work entries table
+          const workEntries = entry.workEntries || [];
+          if (workEntries.length > 0) {
+            const tableData = workEntries.map((we: any) => [
+              we.code || '',
+              we.machineHours || '0',
+              we.labourHours || '0',
+              (we.equipmentEntries && we.equipmentEntries.length > 0)
+                ? we.equipmentEntries
+                    .filter((e: any) => e.equipment && e.machineHours && e.machineHours !== '0')
+                    .map((e: any) => `${e.equipment} (${e.machineHours})`)
+                    .join(', ')
+                : '',
+              we.smallTools && we.smallTools.length > 0 ? we.smallTools.join(', ') : '',
+              we.notes || ''
+            ]);
+
+            autoTable(doc, {
+              startY: yPosition,
+              head: [['Code', 'Machine', 'Labour', 'Equipment', 'Small Tools', 'Notes']],
+              body: tableData,
+              theme: 'grid',
+              headStyles: { fillColor: [255, 200, 100], textColor: 0 },
+              styles: { fontSize: 6, cellPadding: 2 },
+              columnStyles: {
+                0: { cellWidth: 25 },
+                1: { cellWidth: 15 },
+                2: { cellWidth: 15 },
+                3: { cellWidth: 50 },
+                4: { cellWidth: 35 },
+                5: { cellWidth: 40 }
+              }
+            });
+
+            yPosition = (doc as any).lastAutoTable.finalY + 3;
+          }
+
+          // Add consent note after each time card
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'italic');
+          doc.text('Employee consented to end of day health statement', 14, yPosition);
+
+          yPosition += 10;
+        });
+      });
+
+      yPosition += 10;
+    });
+
+    // Add submission statement at the end
+    yPosition += 20;
+    if (yPosition > 240) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.text('By submitting this form, I confirm that, to the best of my knowledge, all assigned work has', 14, yPosition);
+    yPosition += 5;
+    doc.text('been completed and that I departed the worksite without injury, illness, or incident at the', 14, yPosition);
+    yPosition += 5;
+    doc.text('time of departure. Once submitted the card is locked.', 14, yPosition);
+
+    // Save PDF
+    const fileName = `TimeCard_${format(selectedDates[0], 'yyyy-MM-dd')}${selectedDates.length > 1 ? `_${format(selectedDates[selectedDates.length - 1], 'yyyy-MM-dd')}` : ''}.pdf`;
+    doc.save(fileName);
+  };
+
   return (
     <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
       <div className="max-w-5xl mx-auto">
@@ -698,6 +904,12 @@ export default function TimecardPage() {
                     className="px-3 py-1.5 text-sm bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-lg hover:bg-yellow-400 dark:hover:bg-yellow-700 font-medium transition-colors whitespace-nowrap"
                   >
                     Clear Selection
+                  </button>
+                  <button
+                    onClick={handleExportPDF}
+                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 font-medium transition-colors whitespace-nowrap"
+                  >
+                    Export
                   </button>
                 </div>
               </div>

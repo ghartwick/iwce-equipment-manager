@@ -9,6 +9,7 @@ import { ThemeProvider } from './context/ThemeContext';
 const InventoryPage = React.lazy(() => import('./pages/InventoryPage'));
 const TimecardPage = React.lazy(() => import('./pages/TimecardPage'));
 const TimecardEditPage = React.lazy(() => import('./pages/TimecardEditPage'));
+const GamePage = React.lazy(() => import('./pages/GamePage'));
 const EquipmentPage = React.lazy(() => import('./pages/EquipmentPage'));
 const ShopPage = React.lazy(() => import('./pages/ShopPage'));
 const HeavyEquipmentManagementPage = React.lazy(() => import('./pages/HeavyEquipmentManagementPage'));
@@ -76,6 +77,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <TimecardEditPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/game" element={
+          isAuthenticated ? (
+            <Layout>
+              <GamePage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

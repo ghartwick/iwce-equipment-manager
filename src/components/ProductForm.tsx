@@ -528,7 +528,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                     .map((report, index) => (
                       <li key={index} className="flex items-center justify-between text-xs text-gray-900 dark:text-yellow-100">
                         <span>
-                          {new Date(report.createdAt).toLocaleDateString()} - {report.createdBy}: {report.maintenance.notes}
+                          {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - {report.createdBy}: {report.maintenance.notes}
                         </span>
                         {user?.role === 'admin' && (
                           <button
@@ -557,7 +557,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
                             <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
-                              {new Date(report.createdAt).toLocaleDateString()}
+                              {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                             </span>
                             <span className="text-xs text-yellow-600 dark:text-yellow-400">
                               by {report.createdBy}

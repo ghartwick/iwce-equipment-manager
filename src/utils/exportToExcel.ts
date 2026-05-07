@@ -19,8 +19,8 @@ export function exportToExcel(equipment: Equipment[], filename: string = 'equipm
     'Serial Number': item.serialNumber,
     'Alert Status': item.repair ? 'Yes' : 'No',
     'Alert Description': item.repairDescription || '',
-    'Created Date': new Date(item.createdAt).toLocaleDateString(),
-    'Last Updated': new Date(item.updatedAt).toLocaleDateString()
+    'Created Date': new Date(item.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    'Last Updated': new Date(item.updatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
   }));
 
   // Create workbook and worksheet

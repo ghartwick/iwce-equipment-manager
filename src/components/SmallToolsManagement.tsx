@@ -290,7 +290,7 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
                           </p>
                         )}
                         <p className="text-xs text-gray-500 mt-2">
-                          Created: {tool.createdAt.toLocaleDateString()}
+                          Created: {tool.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                           {tool.createdBy && ` by ${tool.createdBy}`}
                         </p>
                       </div>

@@ -38,7 +38,7 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore }: AlertPanel
   let currentDateKey = '';
   sortedAlerts.forEach((alert) => {
     const date = new Date(alert.createdAt);
-    const dateKey = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const dateKey = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     if (dateKey !== currentDateKey) {
       currentDateKey = dateKey;
       groupedByDay.push({ label: dateKey, alerts: [] });

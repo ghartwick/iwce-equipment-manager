@@ -294,7 +294,7 @@ export function CodeManagement({ currentUser }: CodeManagementProps) {
                           </p>
                         )}
                         <p className="text-xs text-gray-500 mt-2">
-                          Created: {code.createdAt.toLocaleDateString()}
+                          Created: {code.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                           {code.createdBy && ` by ${code.createdBy}`}
                         </p>
                       </div>

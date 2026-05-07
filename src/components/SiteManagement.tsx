@@ -258,7 +258,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
                               {site.name}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
-                              Created: {site.createdAt.toLocaleDateString()}
+                              Created: {site.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                               {site.createdBy && ` by ${site.createdBy}`}
                             </div>
                           </div>
@@ -329,7 +329,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
                                   {site.name}
                                 </div>
                                 <div className="text-xs text-gray-500 mt-1">
-                                  Created: {site.createdAt.toLocaleDateString()}
+                                  Created: {site.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                                   {site.createdBy && ` by ${site.createdBy}`}
                                 </div>
                               </div>

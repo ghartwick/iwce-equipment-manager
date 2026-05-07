@@ -245,7 +245,7 @@ export function ShopPage() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center space-x-2">
                             <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
-                              {new Date(report.createdAt).toLocaleDateString()}
+                              {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                             </span>
                             <span className="text-xs text-yellow-600 dark:text-yellow-400">
                               by {report.createdBy}

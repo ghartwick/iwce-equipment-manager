@@ -49,8 +49,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   const [maintenanceCollapsed, setMaintenanceCollapsed] = useState(true);
   const [visibleReportCount, setVisibleReportCount] = useState(10);
 
-  const getEquipmentUrl = (id: string) =>
-    `${window.location.origin}/inventory/equipment/${id}`;
+  const getEquipmentUrl = (id: string) => {
+    const baseUrl = 'https://iwce-equipment-manager.vercel.app';
+    return `${baseUrl}/inventory/equipment/${id}`;
+  };
 
   const addEquipmentDataNote = () => {
     if (newNote.trim()) {
@@ -556,10 +558,9 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                 <div className="space-y-2 mt-3">
                   {(maintenanceCollapsed ? [maintenanceReports[0]] : maintenanceReports.slice(0, visibleReportCount)).map((report) => (
                     <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
-                      <button
-                        type="button"
+                      <div
                         onClick={() => handleMaintenanceReportExpand(report.id)}
-                        className="w-full px-3 py-2 flex items-center justify-between text-left"
+                        className="w-full px-3 py-2 flex items-center justify-between text-left cursor-pointer"
                       >
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
@@ -602,7 +603,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                                   report.maintenance.bucket === 'Repair' && 'Bucket',
                                   report.maintenance.cuttingEdgeTeeth === 'Repair' && 'Cutting Edge/Teeth',
                                   report.maintenance.hoses === 'Repair' && 'Hoses',
-                                  report.maintenance.batteryCableBeltHosesFilterGuards === 'Repair' && 'Battery Cable/Belt/Hoses/Filter/Guards',
+                                  report.maintenance.batteryCableBeltHosesFilterGuards === 'Repair' && 'Battery/Cable/Belt/Hoses/Filter/Guards',
                                   report.maintenance.backupAlarm === 'Repair' && 'Backup Alarm',
                                   report.maintenance.fireExtinguisher === 'Repair' && 'Fire Extinguisher',
                                   report.maintenance.gauges === 'Repair' && 'Gauges',
@@ -638,7 +639,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                             <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                           )}
                         </div>
-                      </button>
+                      </div>
                       
                       {expandedReport === report.id && (
                         <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">

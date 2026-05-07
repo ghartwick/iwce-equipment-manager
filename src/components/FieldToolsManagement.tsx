@@ -110,7 +110,7 @@ export function FieldToolsManagement({ currentUser, asPage = false }: FieldTools
     setShowQR(true);
   };
 
-  const getEquipmentUrl = (id: string) => `${window.location.origin}/inventory/equipment/${id}`;
+  const getEquipmentUrl = (id: string) => `https://iwce-equipment-manager.vercel.app/inventory/equipment/${id}`;
 
   const modalContent = (
     <>

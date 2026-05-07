@@ -851,10 +851,10 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                 </button>
               </div>
               <div className="flex justify-center mb-4">
-                <QRCodeSVG value={`${window.location.origin}/inventory/equipment/${selectedItem.id}`} size={200} level="M" includeMargin />
+                <QRCodeSVG value={`https://iwce-equipment-manager.vercel.app/inventory/equipment/${selectedItem.id}`} size={200} level="M" includeMargin />
               </div>
               <p className="text-xs text-yellow-600 dark:text-yellow-500 text-center break-all">
-                {window.location.origin}/inventory/equipment/{selectedItem.id}
+                https://iwce-equipment-manager.vercel.app/inventory/equipment/{selectedItem.id}
               </p>
             </div>
           </div>

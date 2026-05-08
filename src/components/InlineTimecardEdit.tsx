@@ -163,17 +163,21 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
     return allCodes.map(name => ({ name, description: '' }));
   }, [allCodes, job, sitesData]);
 
-  // Filter equipment by selected site (same logic as TimeEntryForm)
+  // Filter equipment by selected site + linked (co-located) sites (both directions)
   const filteredEquipment = useMemo(() => {
     if (!job) return [];
-    const parentIdsAtSite = new Set(
-      allEquipmentData.filter(item => !item.parentId && item.site === job).map(item => item.id)
+    const selectedSite = sitesData.find(s => s.name === job);
+    const forwardLinks = selectedSite?.linkedSites ?? [];
+    const reverseLinks = sitesData.filter(s => s.linkedSites?.includes(job)).map(s => s.name);
+    const sitesToInclude = [...new Set([job, ...forwardLinks, ...reverseLinks])];
+    const parentIdsAtSites = new Set(
+      allEquipmentData.filter(item => !item.parentId && sitesToInclude.includes(item.site ?? '')).map(item => item.id)
     );
     return allEquipmentData.filter(item =>
-      (!item.parentId && item.site === job) ||
-      (item.parentId && parentIdsAtSite.has(item.parentId))
+      (!item.parentId && sitesToInclude.includes(item.site ?? '')) ||
+      (item.parentId && parentIdsAtSites.has(item.parentId))
     );
-  }, [job, allEquipmentData]);
+  }, [job, allEquipmentData, sitesData]);
 
   const handleFieldClick = (field: string) => {
     setEditingField(field);

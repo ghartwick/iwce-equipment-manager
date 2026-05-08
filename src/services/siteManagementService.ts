@@ -11,6 +11,7 @@ export interface Site {
   name: string;
   description?: string;
   codes?: SiteCode[];
+  linkedSites?: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -35,6 +36,7 @@ export class SiteManagementService {
           codes: (data.codes || []).map((c: any) =>
             typeof c === 'string' ? { name: c, description: '' } : c
           ),
+          linkedSites: data.linkedSites || [],
           isActive: data.isActive ?? true,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
@@ -65,6 +67,7 @@ export class SiteManagementService {
         codes: (data.codes || []).map((c: any) =>
           typeof c === 'string' ? { name: c, description: '' } : c
         ),
+        linkedSites: data.linkedSites || [],
         isActive: data.isActive ?? true,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),

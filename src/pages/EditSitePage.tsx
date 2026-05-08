@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { siteManagementService, Site, SiteCode } from '../services/siteManagementService';
 import { parseExcelFile } from '../utils/excelImport';
-import { ArrowLeft, Plus, Trash2, Upload, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X } from 'lucide-react';
 
 export function EditSitePage() {
   const { siteId } = useParams<{ siteId: string }>();
@@ -19,6 +19,11 @@ export function EditSitePage() {
     isActive: true
   });
   
+  const [linkedSites, setLinkedSites] = useState<string[]>([]);
+  const [allSites, setAllSites] = useState<Site[]>([]);
+  const [linkedDropdownOpen, setLinkedDropdownOpen] = useState(false);
+  const [linkedSearch, setLinkedSearch] = useState('');
+  const linkedDropdownRef = useRef<HTMLDivElement>(null);
   const [codes, setCodes] = useState<SiteCode[]>([]);
   const [newCode, setNewCode] = useState('');
   const [newCodeDescription, setNewCodeDescription] = useState('');
@@ -32,16 +37,32 @@ export function EditSitePage() {
     }
   }, [siteId]);
 
+  useEffect(() => {
+    if (!linkedDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (linkedDropdownRef.current && !linkedDropdownRef.current.contains(e.target as Node)) {
+        setLinkedDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [linkedDropdownOpen]);
+
   const loadSite = async (id: string) => {
     try {
-      const siteData = await siteManagementService.getSite(id);
+      const [siteData, allSitesData] = await Promise.all([
+        siteManagementService.getSite(id),
+        siteManagementService.getAllSites(),
+      ]);
       setSite(siteData);
+      setAllSites(allSitesData.filter(s => s.id !== id));
       setFormData({
         name: siteData.name,
         description: siteData.description || '',
         isActive: siteData.isActive
       });
       setCodes(siteData.codes || []);
+      setLinkedSites(siteData.linkedSites || []);
     } catch (error: any) {
       setError(error?.message || 'Failed to load site');
     } finally {
@@ -58,7 +79,8 @@ export function EditSitePage() {
     try {
       await siteManagementService.updateSite(site.id, {
         ...formData,
-        codes
+        codes,
+        linkedSites
       });
       setSuccess('Site updated successfully');
       setTimeout(() => navigate('/manage/sites'), 1500);
@@ -216,6 +238,121 @@ export function EditSitePage() {
                   />
                   <span className="text-sm text-yellow-700 dark:text-yellow-300">Active</span>
                 </label>
+              </div>
+            </div>
+
+            {/* Linked Sites */}
+            <div className="mb-8">
+              <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-1">Co-located Sites</h3>
+              <p className="text-sm text-yellow-600 dark:text-yellow-500 mb-3">
+                Equipment from selected sites will automatically appear when workers select <strong>{formData.name || 'this site'}</strong> on their timecard.
+              </p>
+
+              <div className="relative" ref={linkedDropdownRef}>
+                {/* Trigger */}
+                <button
+                  type="button"
+                  onClick={() => { setLinkedDropdownOpen(prev => !prev); setLinkedSearch(''); }}
+                  className="w-full flex items-center justify-between px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                >
+                  <span className="text-sm text-gray-900 dark:text-yellow-100 truncate">
+                    {linkedSites.length === 0
+                      ? 'None selected'
+                      : linkedSites.join(', ')}
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 ml-2 transition-transform ${linkedDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Selected tags */}
+                {linkedSites.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {linkedSites.map(name => (
+                      <span
+                        key={name}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-yellow-400 dark:bg-yellow-700 text-yellow-900 dark:text-yellow-100 font-medium"
+                      >
+                        {name}
+                        <button
+                          type="button"
+                          onClick={() => setLinkedSites(prev => prev.filter(n => n !== name))}
+                          className="hover:text-red-700 dark:hover:text-red-300"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Dropdown panel */}
+                {linkedDropdownOpen && (
+                  <div className="absolute z-20 mt-1 w-full bg-yellow-50 dark:bg-gray-900 border border-yellow-400 dark:border-yellow-700 rounded-lg shadow-lg overflow-hidden">
+                    {/* Search */}
+                    <div className="p-2 border-b border-yellow-300 dark:border-yellow-700">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={linkedSearch}
+                        onChange={e => setLinkedSearch(e.target.value)}
+                        placeholder="Filter sites…"
+                        className="w-full px-2 py-1.5 text-sm bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded focus:outline-none focus:ring-1 focus:ring-yellow-500 text-gray-900 dark:text-yellow-100"
+                      />
+                    </div>
+                    {/* Options */}
+                    <div className="max-h-52 overflow-y-auto">
+                      {allSites
+                        .filter(s => s.isActive && s.name.toLowerCase().includes(linkedSearch.toLowerCase()))
+                        .length === 0 ? (
+                          <p className="px-3 py-2 text-sm text-yellow-600 dark:text-yellow-500">No sites match.</p>
+                        ) : (
+                          allSites
+                            .filter(s => s.isActive && s.name.toLowerCase().includes(linkedSearch.toLowerCase()))
+                            .map(s => {
+                              const checked = linkedSites.includes(s.name);
+                              return (
+                                <label
+                                  key={s.id}
+                                  className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
+                                    checked
+                                      ? 'bg-yellow-100 dark:bg-yellow-900/40'
+                                      : 'hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={e => {
+                                      if (e.target.checked) {
+                                        setLinkedSites(prev => [...prev, s.name]);
+                                      } else {
+                                        setLinkedSites(prev => prev.filter(n => n !== s.name));
+                                      }
+                                    }}
+                                    className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                                  />
+                                  <div>
+                                    <span className="text-sm font-medium text-gray-900 dark:text-yellow-100">{s.name}</span>
+                                    {s.description && (
+                                      <p className="text-xs text-yellow-600 dark:text-yellow-500">{s.description}</p>
+                                    )}
+                                  </div>
+                                </label>
+                              );
+                            })
+                        )}
+                    </div>
+                    {/* Close */}
+                    <div className="p-2 border-t border-yellow-300 dark:border-yellow-700">
+                      <button
+                        type="button"
+                        onClick={() => setLinkedDropdownOpen(false)}
+                        className="w-full py-1 text-xs text-yellow-700 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-200 font-medium"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

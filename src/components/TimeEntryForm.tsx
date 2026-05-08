@@ -629,19 +629,21 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   // Use state-based small tools options
   const smallToolsOptions = useMemo(() => smallToolsOptionsState, [smallToolsOptionsState]);
 
-  // Use state-based equipment options, filtered by selected site
+  // Use state-based equipment options, filtered by selected site + any linked (co-located) sites
   const equipmentOptions = useMemo(() => {
     if (!job) return [];
-    // Find original units at the selected site
-    const parentIdsAtSite = new Set(
-      allEquipmentData.filter(item => !item.parentId && item.site === job).map(item => item.id)
+    const selectedSite = sitesData.find(s => s.name === job);
+    const forwardLinks = selectedSite?.linkedSites ?? [];
+    const reverseLinks = sitesData.filter(s => s.linkedSites?.includes(job)).map(s => s.name);
+    const sitesToInclude = [...new Set([job, ...forwardLinks, ...reverseLinks])];
+    const parentIdsAtSites = new Set(
+      allEquipmentData.filter(item => !item.parentId && sitesToInclude.includes(item.site ?? '')).map(item => item.id)
     );
-    const filtered = allEquipmentData.filter(item =>
-      (!item.parentId && item.site === job) ||
-      (item.parentId && parentIdsAtSite.has(item.parentId))
+    return allEquipmentData.filter(item =>
+      (!item.parentId && sitesToInclude.includes(item.site ?? '')) ||
+      (item.parentId && parentIdsAtSites.has(item.parentId))
     );
-    return filtered.length > 0 ? filtered : [];
-  }, [job, allEquipmentData]);
+  }, [job, allEquipmentData, sitesData]);
 
   useEffect(() => {
     if (entry) {

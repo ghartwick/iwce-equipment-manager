@@ -8,6 +8,8 @@ import { UserManagementService, AppUser } from '../services/userManagementServic
 import { codeManagementService } from '../services/codeManagementService';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { TimecardAttachment, timecardAttachmentService } from '../services/timecardAttachmentService';
+import { PurchaseOrderPanel } from '../components/PurchaseOrderPanel';
+import { purchaseOrderService, PurchaseOrder } from '../services/purchaseOrderService';
 import { lockedDateService } from '../services/lockedDateService';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -85,6 +87,9 @@ export default function TimecardPage() {
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
   const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
   const [lockedDates, setLockedDates] = useState<Set<string>>(new Set());
+  const [showPOForm, setShowPOForm] = useState(false);
+  const [poCounts, setPoCounts] = useState<Record<string, number>>({});
+  const [posForDate, setPosForDate] = useState<PurchaseOrder[]>([]);
 
   // User management
   const [users, setUsers] = useState<AppUser[]>([]);
@@ -268,6 +273,36 @@ export default function TimecardPage() {
     };
 
     loadAttachmentsForDate();
+  }, [selectedDates]);
+
+  useEffect(() => {
+    const loadPOCountsForMonth = async () => {
+      try {
+        const pos = await purchaseOrderService.getPOsForRange(startDate, endDate);
+        const counts: Record<string, number> = {};
+        pos.forEach(po => {
+          const key = formatDateKey(new Date(po.date));
+          counts[key] = (counts[key] || 0) + 1;
+        });
+        setPoCounts(counts);
+      } catch {
+        // ignore
+      }
+    };
+    loadPOCountsForMonth();
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    const loadPOsForDate = async () => {
+      if (selectedDates.length !== 1) { setPosForDate([]); return; }
+      try {
+        const pos = await purchaseOrderService.getPOsForDate(selectedDates[0]);
+        setPosForDate(pos);
+      } catch {
+        setPosForDate([]);
+      }
+    };
+    loadPOsForDate();
   }, [selectedDates]);
 
   useEffect(() => {
@@ -770,6 +805,107 @@ export default function TimecardPage() {
     doc.save(fileName);
   };
 
+  const handleExportPOsPDF = async () => {
+    if (!selectedDates.length) {
+      alert('Please select at least one date to export.');
+      return;
+    }
+
+    let pos: PurchaseOrder[];
+    if (selectedDates.length === 1) {
+      pos = posForDate;
+    } else {
+      const rangeStart = new Date(Math.min(...selectedDates.map(d => d.getTime())));
+      const rangeEnd = new Date(Math.max(...selectedDates.map(d => d.getTime())));
+      rangeStart.setHours(0, 0, 0, 0);
+      rangeEnd.setHours(23, 59, 59, 999);
+      pos = await purchaseOrderService.getPOsForRange(rangeStart, rangeEnd);
+    }
+
+    if (pos.length === 0) {
+      alert('No purchase orders found for the selected date(s).');
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const dateStr = selectedDates.length === 1
+      ? format(selectedDates[0], 'MMM d, yyyy')
+      : `${format(selectedDates[0], 'MMM d')} – ${format(selectedDates[selectedDates.length - 1], 'MMM d, yyyy')}`;
+
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Purchase Orders', 14, 20);
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(dateStr, pageWidth - 14 - doc.getTextWidth(dateStr), 20);
+
+    let yPosition = 35;
+
+    // Group POs by date
+    const posByDate = new Map<string, PurchaseOrder[]>();
+    pos.forEach(po => {
+      const key = format(new Date(po.date), 'yyyy-MM-dd');
+      if (!posByDate.has(key)) posByDate.set(key, []);
+      posByDate.get(key)!.push(po);
+    });
+
+    Array.from(posByDate.keys()).sort().forEach(dateKey => {
+      const datePOs = posByDate.get(dateKey)!;
+
+      if (yPosition > 240) { doc.addPage(); yPosition = 20; }
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(format(new Date(dateKey), 'MMM d, yyyy'), 14, yPosition);
+      yPosition += 8;
+
+      datePOs.forEach(po => {
+        if (yPosition > 240) { doc.addPage(); yPosition = 20; }
+
+        // PO header
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`PO #${po.poNumber}`, 14, yPosition);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`To: ${po.to}   Site: ${po.site}   By: ${po.submittedBy}`, 40, yPosition);
+        yPosition += 6;
+
+        // Items table
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Qty', 'Description', 'Code']],
+          body: po.items.map(item => [String(item.quantity), item.description, item.code]),
+          theme: 'grid',
+          headStyles: { fillColor: [147, 51, 234], textColor: 255 },
+          styles: { fontSize: 8, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 15 },
+            1: { cellWidth: 110 },
+            2: { cellWidth: 45 },
+          },
+        });
+
+        yPosition = (doc as any).lastAutoTable.finalY + 3;
+
+        if (po.attachmentName) {
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'italic');
+          doc.text(`Attachment: ${po.attachmentName}`, 14, yPosition);
+          yPosition += 4;
+        }
+
+        yPosition += 6;
+      });
+
+      yPosition += 4;
+    });
+
+    const fileName = `PurchaseOrders_${format(selectedDates[0], 'yyyy-MM-dd')}${selectedDates.length > 1 ? `_${format(selectedDates[selectedDates.length - 1], 'yyyy-MM-dd')}` : ''}.pdf`;
+    doc.save(fileName);
+  };
+
   return (
     <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
       <div className="max-w-5xl mx-auto">
@@ -817,6 +953,7 @@ export default function TimecardPage() {
                 const isTodayDate = isToday(day);
                 const dateKey = formatDateKey(day);
                 const attachmentCount = attachmentCounts[dateKey] || 0;
+                const poCount = poCounts[dateKey] || 0;
                 const isLocked = lockedDates.has(dateKey);
 
                 return (
@@ -855,6 +992,11 @@ export default function TimecardPage() {
                                 {attachmentCount}
                               </div>
                             )}
+                            {poCount > 0 && (
+                              <div className="absolute -bottom-1 -left-1 bg-purple-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold border border-yellow-200 dark:border-yellow-800">
+                                {poCount}
+                              </div>
+                            )}
                           </>
                         );
                       })()}
@@ -890,6 +1032,14 @@ export default function TimecardPage() {
                   >
                     Attachments
                   </button>
+                  <button
+                    onClick={() => setShowPOForm(prev => !prev)}
+                    disabled={!selectedDateParam}
+                    className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors whitespace-nowrap disabled:opacity-50 ${showPOForm ? 'bg-purple-600 text-white hover:bg-purple-500' : 'bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800/60'}`}
+                    title={selectedDateParam ? 'Purchase Orders' : 'Select a single date to create a PO'}
+                  >
+                    PO
+                  </button>
                   {user?.role === 'admin' && selectedDates.length > 0 && (
                     <button
                       onClick={() => handleToggleLock(selectedDates)}
@@ -907,14 +1057,31 @@ export default function TimecardPage() {
                   </button>
                   {(user?.role === 'admin' || user?.role === 'supervisor') && (
                     <button
-                      onClick={handleExportPDF}
+                      onClick={showPOForm ? handleExportPOsPDF : handleExportPDF}
                       className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 font-medium transition-colors whitespace-nowrap"
+                      title={showPOForm ? 'Export Purchase Orders to PDF' : 'Export Time Cards to PDF'}
                     >
-                      Export
+                      {showPOForm ? 'Export POs' : 'Export'}
                     </button>
                   )}
                 </div>
               </div>
+
+              {showPOForm && selectedDates.length === 1 && (
+                <div className="mb-6">
+                  <PurchaseOrderPanel
+                    date={selectedDates[0]}
+                    submittedBy={user?.name ?? user?.username ?? 'Unknown'}
+                    posForDate={posForDate}
+                    onPOCreated={(poNumber) => {
+                      const key = formatDateKey(selectedDates[0]);
+                      setPoCounts(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
+                      purchaseOrderService.getPOsForDate(selectedDates[0]).then(setPosForDate);
+                      void poNumber;
+                    }}
+                  />
+                </div>
+              )}
 
               {showAttachments && (
                 <div className="mb-6">

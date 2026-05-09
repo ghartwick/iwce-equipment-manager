@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Trophy } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { saveGameScore, getTopGameScores, clearAllGameScores, GameScore } from '../services/gameScoreService';
 
 const CANVAS_W = 480;
 const CANVAS_H = 320;
@@ -36,25 +37,23 @@ export default function GamePage() {
   const userNameRef = useRef('OPERATOR');
   useEffect(() => { userNameRef.current = (user?.name || user?.username || 'OPERATOR').substring(0, 16).toUpperCase(); }, [user]);
 
-  type HighScore = { name: string; score: number; date: string };
-  const [highScores, setHighScores] = useState<HighScore[]>(() => {
-    try { return JSON.parse(localStorage.getItem('excavatorGameScores') || '[]'); }
-    catch { return []; }
-  });
+  const [highScores, setHighScores] = useState<GameScore[]>([]);
+  const [scoresLoading, setScoresLoading] = useState(true);
+
+  useEffect(() => {
+    getTopGameScores(10).then(s => { setHighScores(s); setScoresLoading(false); }).catch(() => setScoresLoading(false));
+  }, []);
 
   useEffect(() => {
     if (displayState === 'gameover' || displayState === 'win') {
       const name = user?.name || user?.username || 'Unknown';
-      const entry: HighScore = { name, score, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) };
-      const updated = [...highScores, entry].sort((a, b) => b.score - a.score).slice(0, 10);
-      setHighScores(updated);
-      localStorage.setItem('excavatorGameScores', JSON.stringify(updated));
+      const entry = { name, score, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) };
+      saveGameScore(entry).then(() => getTopGameScores(10).then(setHighScores)).catch(console.error);
     }
   }, [displayState]);
 
   const clearScores = () => {
-    setHighScores([]);
-    localStorage.removeItem('excavatorGameScores');
+    clearAllGameScores().then(() => setHighScores([])).catch(console.error);
   };
 
   useEffect(() => {
@@ -1145,11 +1144,13 @@ export default function GamePage() {
             <h2 className="text-yellow-400 font-mono font-bold text-sm flex items-center gap-2">
               <Trophy size={16} /> HIGH SCORES
             </h2>
-            {highScores.length > 0 && (
+            {user?.role === 'admin' && highScores.length > 0 && (
               <button onClick={clearScores} className="text-gray-400 hover:text-red-400 text-xs font-mono">CLEAR</button>
             )}
           </div>
-          {highScores.length === 0 ? (
+          {scoresLoading ? (
+            <p className="text-gray-400 font-mono text-xs text-center py-2">Loading scores…</p>
+          ) : highScores.length === 0 ? (
             <p className="text-gray-400 font-mono text-xs text-center py-2">No scores yet — play to set a record!</p>
           ) : (
             <table className="w-full text-xs font-mono">

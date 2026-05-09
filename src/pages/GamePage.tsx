@@ -21,14 +21,20 @@ const overlap = (a: Rect, b: Rect) =>
 
 export default function GamePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const gsRef = useRef<'start'|'playing'|'gameover'|'win'>('start');
-  const [displayState, setDisplayState] = useState<'start'|'playing'|'gameover'|'win'>('start');
+  const gsRef = useRef<'start'|'briefing'|'playing'|'gameover'|'win'>('start');
+  const [displayState, setDisplayState] = useState<'start'|'briefing'|'playing'|'gameover'|'win'>('start');
   const [score, setScore] = useState(0);
   const keysRef = useRef<Record<string,boolean>>({});
   const touchRef = useRef({ left: false, right: false, jump: false });
   const restartRef = useRef<() => void>(() => {});
+  const briefingFrameRef = useRef(0);
+  const briefingTextDoneRef = useRef(false);
+  const dialogueIndexRef = useRef(0);
+  const dialogueLineFrameRef = useRef(0);
 
   const { user } = useAuth();
+  const userNameRef = useRef('OPERATOR');
+  useEffect(() => { userNameRef.current = (user?.name || user?.username || 'OPERATOR').substring(0, 16).toUpperCase(); }, [user]);
 
   type HighScore = { name: string; score: number; date: string };
   const [highScores, setHighScores] = useState<HighScore[]>(() => {
@@ -585,7 +591,7 @@ export default function GamePage() {
       ctx.fillStyle = 'white';
       ctx.font = 'bold 13px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(`EXCAVATOR  ${String(scoreVal).padStart(6, '0')}`, 8, 20);
+      ctx.fillText(`FIELD TRAINING  ${String(scoreVal).padStart(6, '0')}`, 8, 20);
       ctx.textAlign = 'center';
       ctx.fillText(`RAISES: ${String(coinCount).padStart(2, '0')}`, CANVAS_W / 2, 20);
       ctx.textAlign = 'right';
@@ -612,13 +618,223 @@ export default function GamePage() {
       if (scoreVal > 0) ctx.fillText(`Score: ${scoreVal}`, CANVAS_W / 2, CANVAS_H / 2 + 52);
     };
 
+    const drawBriefingScreen = () => {
+      const pName = userNameRef.current;
+      const di = dialogueIndexRef.current;
+      const lf = dialogueLineFrameRef.current;
+      const bf = briefingFrameRef.current;
+      const DIALOGUE = [
+        { speaker: 'f' as const, name: 'GEOFF',
+          text: `Site's overrun with workers, ${pName}. Get that excavator moving.` },
+        { speaker: 'o' as const, name: pName,
+          text: `Copy that. I'll stomp through them and reach the flag.` },
+        { speaker: 'f' as const, name: 'GEOFF',
+          text: `Watch the open pits — they're everywhere. Don't scratch my machine.` },
+      ];
+      const cur = DIALOGUE[Math.min(di, DIALOGUE.length - 1)];
+      const charsToShow = briefingTextDoneRef.current ? Infinity : lf * 2;
+      if (!briefingTextDoneRef.current && lf * 2 >= cur.text.length) briefingTextDoneRef.current = true;
+      const fActive = cur.speaker === 'f';
+      const oActive = !fActive;
+      const portY = 18, portH = 228, lpW = 238, rpX = 242;
+
+      // Background
+      ctx.fillStyle = '#060606';
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+      // ── LEFT PORTRAIT – FOREMAN ──
+      ctx.globalAlpha = fActive ? 1.0 : 0.3;
+      ctx.fillStyle = fActive ? '#0f1629' : '#07090f';
+      ctx.fillRect(0, portY, lpW, portH);
+      const fcx = 119, fY = portY;
+      // Hard hat (white)
+      ctx.fillStyle = '#f1f5f9'; ctx.fillRect(fcx - 55, fY + 12, 110, 30);
+      ctx.fillStyle = '#cbd5e1'; ctx.fillRect(fcx - 68, fY + 38, 136, 8);
+      ctx.fillStyle = '#94a3b8'; ctx.fillRect(fcx - 60, fY + 40, 120, 4);
+      // Face
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath(); ctx.ellipse(fcx, fY + 90, 48, 44, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e5a050';
+      ctx.fillRect(fcx - 48, fY + 90, 8, 44); ctx.fillRect(fcx + 40, fY + 90, 8, 44);
+      // Ears
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(fcx - 56, fY + 78, 10, 20); ctx.fillRect(fcx + 46, fY + 78, 10, 20);
+      // Heavy eyebrows (stern)
+      ctx.fillStyle = '#713f12';
+      ctx.fillRect(fcx - 34, fY + 66, 24, 5); ctx.fillRect(fcx + 10, fY + 66, 24, 5);
+      ctx.fillRect(fcx - 34, fY + 62, 8, 5); ctx.fillRect(fcx + 26, fY + 62, 8, 5);
+      // Eyes
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(fcx - 30, fY + 74, 16, 13); ctx.fillRect(fcx + 14, fY + 74, 16, 13);
+      ctx.fillStyle = '#e0e7ff';
+      ctx.fillRect(fcx - 27, fY + 76, 6, 6); ctx.fillRect(fcx + 21, fY + 76, 6, 6);
+      // Nose
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(fcx - 7, fY + 92, 14, 9);
+      ctx.fillRect(fcx - 14, fY + 98, 8, 5); ctx.fillRect(fcx + 6, fY + 98, 8, 5);
+      // Thick mustache
+      ctx.fillStyle = '#92400e'; ctx.fillRect(fcx - 24, fY + 105, 48, 7);
+      // Stern mouth
+      ctx.fillStyle = '#7c3600'; ctx.fillRect(fcx - 18, fY + 115, 36, 4);
+      // Neck
+      ctx.fillStyle = '#fde68a'; ctx.fillRect(fcx - 20, fY + 132, 40, 20);
+      // Dark shirt base
+      ctx.fillStyle = '#1f2937'; ctx.fillRect(0, fY + 148, lpW, portH - 150);
+      // Hi-vis vest
+      ctx.fillStyle = '#ea580c'; ctx.fillRect(fcx - 80, fY + 152, 160, portH - 154);
+      ctx.fillStyle = '#1f2937';
+      ctx.fillRect(0, fY + 152, fcx - 80, portH - 154);
+      ctx.fillRect(fcx + 80, fY + 152, lpW - (fcx + 80), portH - 154);
+      // Hi-vis stripes
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(0, fY + 184, lpW, 10); ctx.fillRect(0, fY + 206, lpW, 10);
+      // V-collar
+      ctx.fillStyle = '#1f2937';
+      ctx.beginPath();
+      ctx.moveTo(fcx - 14, fY + 150); ctx.lineTo(fcx, fY + 172); ctx.lineTo(fcx + 14, fY + 150); ctx.fill();
+      // Portrait border
+      ctx.strokeStyle = fActive ? '#3b82f6' : '#1e3a5f'; ctx.lineWidth = 2;
+      ctx.strokeRect(1, portY + 1, lpW - 2, portH - 2);
+      // Name plate
+      ctx.fillStyle = fActive ? '#1d4ed8' : '#172554';
+      ctx.fillRect(0, portY + portH - 22, lpW, 22);
+      ctx.fillStyle = fActive ? '#bfdbfe' : '#3b82f6';
+      ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('GEOFF', lpW / 2, portY + portH - 7);
+      ctx.globalAlpha = 1.0;
+
+      // ── DIVIDER ──
+      ctx.fillStyle = '#000'; ctx.fillRect(lpW, portY, rpX - lpW, portH);
+
+      // ── RIGHT PORTRAIT – OPERATOR ──
+      ctx.globalAlpha = oActive ? 1.0 : 0.3;
+      ctx.fillStyle = oActive ? '#1c1200' : '#0d0900';
+      ctx.fillRect(rpX, portY, CANVAS_W - rpX, portH);
+      const ocx = rpX + 119, oY = portY;
+      // Yellow hard hat
+      ctx.fillStyle = '#fbbf24'; ctx.fillRect(ocx - 55, oY + 12, 110, 30);
+      ctx.fillStyle = '#f59e0b'; ctx.fillRect(ocx - 68, oY + 38, 136, 8);
+      ctx.fillStyle = '#d97706'; ctx.fillRect(ocx - 60, oY + 40, 120, 4);
+      // Hat logo
+      ctx.fillStyle = '#92400e'; ctx.fillRect(ocx - 14, oY + 17, 28, 16);
+      ctx.fillStyle = '#fde68a'; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('IWC', ocx, oY + 28);
+      // Face
+      ctx.fillStyle = '#fde68a';
+      ctx.beginPath(); ctx.ellipse(ocx, oY + 90, 48, 44, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e5a050';
+      ctx.fillRect(ocx - 48, oY + 90, 8, 44); ctx.fillRect(ocx + 40, oY + 90, 8, 44);
+      // Ears
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(ocx - 56, oY + 78, 10, 20); ctx.fillRect(ocx + 46, oY + 78, 10, 20);
+      // Neutral brows
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(ocx - 30, oY + 68, 22, 4); ctx.fillRect(ocx + 8, oY + 68, 22, 4);
+      // Eyes (confident)
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fillRect(ocx - 30, oY + 76, 16, 13); ctx.fillRect(ocx + 14, oY + 76, 16, 13);
+      ctx.fillStyle = '#e0e7ff';
+      ctx.fillRect(ocx - 27, oY + 78, 6, 6); ctx.fillRect(ocx + 21, oY + 78, 6, 6);
+      // Nose
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(ocx - 7, oY + 94, 14, 9);
+      ctx.fillRect(ocx - 14, oY + 100, 8, 5); ctx.fillRect(ocx + 6, oY + 100, 8, 5);
+      // Slight smile
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(ocx - 16, oY + 112, 32, 4);
+      ctx.fillRect(ocx - 20, oY + 110, 6, 5); ctx.fillRect(ocx + 14, oY + 110, 6, 5);
+      // Neck
+      ctx.fillStyle = '#fde68a'; ctx.fillRect(ocx - 20, oY + 132, 40, 20);
+      // Work shirt (dark teal)
+      ctx.fillStyle = '#134e4a'; ctx.fillRect(rpX, oY + 148, CANVAS_W - rpX, portH - 150);
+      ctx.fillStyle = '#0f766e'; ctx.fillRect(ocx - 70, oY + 152, 140, portH - 154);
+      ctx.fillStyle = '#134e4a';
+      ctx.fillRect(rpX, oY + 152, ocx - 70 - rpX, portH - 154);
+      ctx.fillRect(ocx + 70, oY + 152, CANVAS_W - (ocx + 70), portH - 154);
+      // Chest pocket
+      ctx.fillStyle = '#0d5752'; ctx.fillRect(ocx - 42, oY + 172, 34, 22);
+      ctx.fillStyle = '#fbbf24'; ctx.fillRect(ocx - 40, oY + 174, 16, 3);
+      // V-collar
+      ctx.fillStyle = '#134e4a';
+      ctx.beginPath();
+      ctx.moveTo(ocx - 14, oY + 150); ctx.lineTo(ocx, oY + 170); ctx.lineTo(ocx + 14, oY + 150); ctx.fill();
+      // Portrait border
+      ctx.strokeStyle = oActive ? '#f59e0b' : '#78350f'; ctx.lineWidth = 2;
+      ctx.strokeRect(rpX + 1, portY + 1, CANVAS_W - rpX - 2, portH - 2);
+      // Name plate
+      ctx.fillStyle = oActive ? '#92400e' : '#451a03';
+      ctx.fillRect(rpX, portY + portH - 22, CANVAS_W - rpX, 22);
+      ctx.fillStyle = oActive ? '#fde68a' : '#d97706';
+      ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(pName.substring(0, 12), rpX + (CANVAS_W - rpX) / 2, portY + portH - 7);
+      ctx.globalAlpha = 1.0;
+
+      // ── HEADER ──
+      ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, CANVAS_W, portY);
+      ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('FIELD TRAINING', 6, 13);
+      ctx.fillStyle = '#6b7280'; ctx.textAlign = 'center';
+      ctx.fillText('PRE-MISSION', CANVAS_W / 2, 13);
+      ctx.fillStyle = '#4ade80'; ctx.textAlign = 'right';
+      ctx.fillText('STAGE 1', CANVAS_W - 6, 13);
+
+      // ── TEXT BOX ──
+      const tbY = portY + portH, tbH = CANVAS_H - tbY;
+      ctx.fillStyle = '#080808'; ctx.fillRect(0, tbY, CANVAS_W, tbH);
+      ctx.fillStyle = fActive ? '#3b82f6' : '#f59e0b';
+      ctx.fillRect(0, tbY, CANVAS_W, 3);
+      // Name tag
+      ctx.fillStyle = fActive ? '#1d4ed8' : '#b45309';
+      ctx.fillRect(5, tbY + 6, 90, 20);
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(cur.name.substring(0, 10), 50, tbY + 19);
+      // Dialogue text with word wrap
+      const displayText = cur.text.substring(0, Math.min(charsToShow, cur.text.length));
+      ctx.font = '11px monospace'; ctx.fillStyle = '#f3f4f6'; ctx.textAlign = 'left';
+      const txStart = 8, txWidth = CANVAS_W - 16;
+      const words = displayText.split(' ');
+      let lineStr = '', lineY2 = tbY + 35, lastLine = '';
+      for (const word of words) {
+        const test = lineStr ? lineStr + ' ' + word : word;
+        if (ctx.measureText(test).width > txWidth && lineStr) {
+          ctx.fillText(lineStr, txStart, lineY2);
+          lineStr = word; lineY2 += 16;
+        } else { lineStr = test; }
+      }
+      lastLine = lineStr;
+      if (lineStr) ctx.fillText(lineStr, txStart, lineY2);
+      // Cursor
+      if (!briefingTextDoneRef.current && Math.floor(bf / 8) % 2 === 0) {
+        const cw = ctx.measureText(lastLine).width;
+        ctx.fillStyle = fActive ? '#93c5fd' : '#fcd34d';
+        ctx.fillRect(txStart + cw + 2, lineY2 - 9, 5, 10);
+      }
+      // Progress dots
+      for (let d = 0; d < 3; d++) {
+        ctx.fillStyle = d <= di ? (fActive ? '#3b82f6' : '#f59e0b') : '#374151';
+        ctx.fillRect(CANVAS_W / 2 - 11 + d * 10, CANVAS_H - 9, 7, 7);
+      }
+      // Prompt
+      if (briefingTextDoneRef.current) {
+        const blink = Math.floor(bf / 20) % 2 === 0;
+        ctx.fillStyle = blink ? '#fbbf24' : '#78350f';
+        ctx.font = 'bold 10px monospace'; ctx.textAlign = 'right';
+        ctx.fillText(di >= 2 ? '\u25ba START MISSION' : '\u25ba NEXT', CANVAS_W - 6, CANVAS_H - 4);
+      }
+    };
+
     // ---- Keyboard ----
     const onKeyDown = (e: KeyboardEvent) => {
       keysRef.current[e.key] = true;
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
       if ([' ','Enter'].includes(e.key)) {
-        if (gsRef.current === 'start') { gsRef.current = 'playing'; setDisplayState('playing'); }
-        if (gsRef.current === 'gameover' || gsRef.current === 'win') restart();
+        if (gsRef.current === 'start') { gsRef.current = 'briefing'; briefingFrameRef.current = 0; briefingTextDoneRef.current = false; dialogueIndexRef.current = 0; dialogueLineFrameRef.current = 0; setDisplayState('briefing'); }
+        else if (gsRef.current === 'briefing') {
+          if (!briefingTextDoneRef.current) { briefingTextDoneRef.current = true; }
+          else if (dialogueIndexRef.current < 2) { dialogueIndexRef.current++; briefingTextDoneRef.current = false; dialogueLineFrameRef.current = 0; }
+          else { gsRef.current = 'playing'; setDisplayState('playing'); }
+        }
+        else if (gsRef.current === 'gameover' || gsRef.current === 'win') restart();
       }
     };
     const onKeyUp = (e: KeyboardEvent) => { keysRef.current[e.key] = false; };
@@ -643,7 +859,8 @@ export default function GamePage() {
       frame++;
       const gs = gsRef.current;
 
-      if (gs === 'start')    { drawSplashScreen('EXCAVATOR GAME', 'Arrow/WASD to move, Space to jump', '#fbbf24'); return; }
+      if (gs === 'start')    { drawSplashScreen('FIELD TRAINING', 'Arrow/WASD to move, Space to jump', '#fbbf24'); return; }
+      if (gs === 'briefing') { briefingFrameRef.current++; dialogueLineFrameRef.current++; drawBriefingScreen(); return; }
       if (gs === 'gameover') { drawSplashScreen('GAME OVER', 'You ran out of lives!', '#dc2626'); return; }
       if (gs === 'win')      { drawSplashScreen('Congratulations!', 'Now get back to work!', '#4ade80'); return; }
 
@@ -859,8 +1076,6 @@ export default function GamePage() {
     <div className="min-h-screen bg-blue-900 dark:bg-black text-white px-2 sm:px-4 py-2 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
       <div className="max-w-2xl mx-auto">
         <div className="bg-blue-800 dark:bg-black border-2 border-yellow-400 rounded-lg shadow-2xl p-3">
-          <h1 className="text-xl font-bold text-yellow-400 mb-2 text-center font-mono tracking-widest">EXCAVATOR GAME</h1>
-
           <div className="flex justify-center mb-3">
             <canvas
               ref={canvasRef}
@@ -901,7 +1116,12 @@ export default function GamePage() {
                   e.preventDefault();
                   touchRef.current.jump = true;
                   if (gsRef.current !== 'playing') {
-                    if (gsRef.current === 'start') { gsRef.current = 'playing'; setDisplayState('playing'); }
+                    if (gsRef.current === 'start') { gsRef.current = 'briefing'; briefingFrameRef.current = 0; briefingTextDoneRef.current = false; dialogueIndexRef.current = 0; dialogueLineFrameRef.current = 0; setDisplayState('briefing'); }
+                    else if (gsRef.current === 'briefing') {
+                      if (!briefingTextDoneRef.current) { briefingTextDoneRef.current = true; }
+                      else if (dialogueIndexRef.current < 2) { dialogueIndexRef.current++; briefingTextDoneRef.current = false; dialogueLineFrameRef.current = 0; }
+                      else { gsRef.current = 'playing'; setDisplayState('playing'); }
+                    }
                     else { restartRef.current(); }
                   }
                 }}

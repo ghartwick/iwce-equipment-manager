@@ -88,6 +88,7 @@ export default function TimecardPage() {
   const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
   const [lockedDates, setLockedDates] = useState<Set<string>>(new Set());
   const [showPOForm, setShowPOForm] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [poCounts, setPoCounts] = useState<Record<string, number>>({});
   const [posForDate, setPosForDate] = useState<PurchaseOrder[]>([]);
 
@@ -147,6 +148,7 @@ export default function TimecardPage() {
 
     setSelectedDates(nextSelectedDates);
     setLastSelectedDate(date);
+    setShowSummary(false);
 
     if (!isAdditive && !isRange) {
       // Reset filters when selecting a new date (non-multi-select behavior)
@@ -388,6 +390,45 @@ export default function TimecardPage() {
     
     // Only return the current user for field users
     return user ? [user] : [];
+  };
+
+  // Build an aggregated day summary from entries visible under the current site filter
+  const buildDaySummary = () => {
+    if (selectedDates.length !== 1) return null;
+    if (!siteFilter || siteFilter === '' || siteFilter === 'all') return null;
+    const date = selectedDates[0];
+    const entries = getEntriesForDate(date).filter(e => e.job === siteFilter);
+    if (!entries.length) return null;
+
+    type UserRow = { name: string; labourH: number; travelH: number; machineH: number; codes: string[]; equipment: string[]; notes: string[] };
+    const byUser: Record<string, UserRow> = {};
+    const allEquipment = new Set<string>();
+    const allCodes = new Set<string>();
+    const allNotes: string[] = [];
+    let totalLabour = 0, totalTravel = 0, totalMachine = 0;
+
+    for (const entry of entries) {
+      const u = users.find(u2 => u2.id === entry.userId);
+      const name = u?.name || 'Unknown';
+      if (!byUser[entry.userId]) byUser[entry.userId] = { name, labourH: 0, travelH: 0, machineH: 0, codes: [], equipment: [], notes: [] };
+      const row = byUser[entry.userId];
+      const labH = entry.labourHours ?? entry.hours ?? 0;
+      const travH = entry.travelHours ?? 0;
+      const machH = entry.machineHours ?? 0;
+      row.labourH += labH; row.travelH += travH; row.machineH += machH;
+      totalLabour += labH; totalTravel += travH; totalMachine += machH;
+      if (entry.code && !row.codes.includes(entry.code)) { row.codes.push(entry.code); allCodes.add(entry.code); }
+      if (entry.equipment && !row.equipment.includes(entry.equipment)) { row.equipment.push(entry.equipment); allEquipment.add(entry.equipment); }
+      if (entry.notes?.trim()) allNotes.push(`${name}: ${entry.notes.trim()}`);
+      entry.workEntries?.forEach(we => {
+        if (we.code && !row.codes.includes(we.code)) { row.codes.push(we.code); allCodes.add(we.code); }
+        we.equipmentEntries?.forEach(ee => {
+          if (ee.equipment && !row.equipment.includes(ee.equipment)) { row.equipment.push(ee.equipment); allEquipment.add(ee.equipment); }
+        });
+        if (we.notes?.trim()) allNotes.push(`${name}: ${we.notes.trim()}`);
+      });
+    }
+    return { date, site: siteFilter, byUser, allEquipment, allCodes, allNotes, totalLabour, totalTravel, totalMachine, count: entries.length };
   };
 
   // Handle entry selection - save page state then navigate to edit page
@@ -1055,6 +1096,18 @@ export default function TimecardPage() {
                   >
                     Clear Selection
                   </button>
+                  {(user?.role === 'admin' || user?.role === 'supervisor') && selectedDates.length === 1 && siteFilter && siteFilter !== '' && siteFilter !== 'all' && (
+                    <button
+                      onClick={() => setShowSummary(v => !v)}
+                      className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors whitespace-nowrap ${
+                        showSummary
+                          ? 'bg-green-600 text-white hover:bg-green-500'
+                          : 'bg-green-700 text-white hover:bg-green-600'
+                      }`}
+                    >
+                      {showSummary ? 'Hide Summary' : 'Summarize Day'}
+                    </button>
+                  )}
                   {(user?.role === 'admin' || user?.role === 'supervisor') && (
                     <button
                       onClick={showPOForm ? handleExportPOsPDF : handleExportPDF}
@@ -1211,6 +1264,79 @@ export default function TimecardPage() {
                   )}
                 </div>
               )}
+
+              {/* Day Summary Panel */}
+              {showSummary && (() => {
+                const s = buildDaySummary();
+                if (!s) return null;
+                const fmtH = (h: number) => h % 1 === 0 ? `${h}h` : `${h.toFixed(1)}h`;
+                const copyText = [
+                  `DAY SUMMARY — ${s.site} — ${format(s.date, 'MMM d, yyyy')}`,
+                  '='.repeat(48),
+                  `CREW (${s.count} ${s.count === 1 ? 'worker' : 'workers'})`,
+                  ...Object.values(s.byUser).map(r => {
+                    const parts = [`Labour: ${fmtH(r.labourH)}`];
+                    if (r.travelH) parts.push(`Travel: ${fmtH(r.travelH)}`);
+                    if (r.machineH) parts.push(`Machine: ${fmtH(r.machineH)}`);
+                    return `  ${r.name}: ${parts.join(' | ')}`;
+                  }),
+                  '',
+                  s.allEquipment.size ? `EQUIPMENT\n${[...s.allEquipment].map(e => `  - ${e}`).join('\n')}` : '',
+                  s.allCodes.size ? `WORK CODES: ${[...s.allCodes].join(', ')}` : '',
+                  s.allNotes.length ? `NOTES\n${s.allNotes.map(n => `  - ${n}`).join('\n')}` : '',
+                  '',
+                  `TOTALS — Labour: ${fmtH(s.totalLabour)} | Travel: ${fmtH(s.totalTravel)} | Machine: ${fmtH(s.totalMachine)}`,
+                ].filter(l => l !== '').join('\n');
+                return (
+                  <div className="mb-6 bg-green-50 dark:bg-green-950 border border-green-400 dark:border-green-700 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <div>
+                        <h3 className="font-bold text-green-800 dark:text-green-300 text-sm">DAY SUMMARY</h3>
+                        <p className="text-xs text-green-600 dark:text-green-500">{s.site} &mdash; {format(s.date, 'EEEE, MMMM d, yyyy')}</p>
+                      </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(copyText)}
+                        className="text-xs px-2 py-1 bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 rounded hover:bg-green-300 dark:hover:bg-green-700 font-medium"
+                      >Copy</button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <p className="font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide mb-1">Crew ({s.count})</p>
+                        {Object.values(s.byUser).map((r, i) => (
+                          <div key={i} className="mb-1 text-gray-700 dark:text-gray-300">
+                            <span className="font-medium">{r.name}</span>
+                            <span className="text-green-600 dark:text-green-500 ml-1">
+                              {r.labourH > 0 && `${fmtH(r.labourH)} labour`}
+                              {r.travelH > 0 && ` · ${fmtH(r.travelH)} travel`}
+                              {r.machineH > 0 && ` · ${fmtH(r.machineH)} machine`}
+                            </span>
+                            {r.codes.length > 0 && <span className="ml-1 text-yellow-600 dark:text-yellow-500">[{r.codes.join(', ')}]</span>}
+                          </div>
+                        ))}
+                      </div>
+                      <div>
+                        {s.allEquipment.size > 0 && (
+                          <div className="mb-2">
+                            <p className="font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide mb-1">Equipment</p>
+                            {[...s.allEquipment].map((e, i) => <p key={i} className="text-gray-700 dark:text-gray-300">{e}</p>)}
+                          </div>
+                        )}
+                        {s.allNotes.length > 0 && (
+                          <div>
+                            <p className="font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide mb-1">Notes</p>
+                            {s.allNotes.map((n, i) => <p key={i} className="text-gray-600 dark:text-gray-400 italic">{n}</p>)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-green-300 dark:border-green-700 flex gap-4 text-xs font-semibold text-green-800 dark:text-green-300">
+                      <span>Labour: {fmtH(s.totalLabour)}</span>
+                      <span>Travel: {fmtH(s.totalTravel)}</span>
+                      <span>Machine: {fmtH(s.totalMachine)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Filters for Admins and Supervisors */}
               {(user?.role === 'admin' || user?.role === 'supervisor') && (

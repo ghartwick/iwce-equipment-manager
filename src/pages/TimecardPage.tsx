@@ -419,7 +419,6 @@ export default function TimecardPage() {
       totalLabour += labH; totalTravel += travH; totalMachine += machH;
       if (entry.code && !row.codes.includes(entry.code)) { row.codes.push(entry.code); allCodes.add(entry.code); }
       if (entry.equipment && !row.equipment.includes(entry.equipment)) { row.equipment.push(entry.equipment); allEquipment.add(entry.equipment); }
-      if (entry.notes?.trim()) allNotes.push(`${name}: ${entry.notes.trim()}`);
       entry.workEntries?.forEach(we => {
         if (we.code && !row.codes.includes(we.code)) { row.codes.push(we.code); allCodes.add(we.code); }
         we.equipmentEntries?.forEach(ee => {
@@ -427,6 +426,8 @@ export default function TimecardPage() {
         });
         if (we.notes?.trim()) allNotes.push(`${name}: ${we.notes.trim()}`);
       });
+      // Only use entry-level notes if there are no workEntries (legacy fallback)
+      if (!entry.workEntries?.length && entry.notes?.trim()) allNotes.push(`${name}: ${entry.notes.trim()}`);
     }
     return { date, site: siteFilter, byUser, allEquipment, allCodes, allNotes, totalLabour, totalTravel, totalMachine, count: entries.length };
   };

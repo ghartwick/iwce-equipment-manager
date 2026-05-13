@@ -13,6 +13,7 @@ export function ShopPage() {
   const { user } = useAuth();
   const [equipmentName, setEquipmentName] = useState<string>('');
   const [unitName, setUnitName] = useState<string>('');
+  const [equipmentSite, setEquipmentSite] = useState<string>('');
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
   const [shopAttachments, setShopAttachments] = useState<Record<string, any[]>>({});
   const [showShopForm, setShowShopForm] = useState(false);
@@ -52,6 +53,7 @@ export function ShopPage() {
         const equipment = allEquipment.find(eq => eq.id === equipmentId);
         if (equipment) {
           setUnitName(equipment.name || '');
+          setEquipmentSite(equipment.site || '');
         }
       } catch (error) {
         console.error('Error loading equipment data:', error);
@@ -86,6 +88,7 @@ export function ShopPage() {
       const reportId = await shopHistoryFirebaseService.addShopReport(
         equipmentId,
         equipmentName,
+        equipmentSite,
         shopReport,
         { username: user.username, role: user.role }
       );

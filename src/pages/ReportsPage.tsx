@@ -206,6 +206,7 @@ export default function ReportsPage() {
     setSelectedDates(nextSelectedDates);
     setLastSelectedDate(date);
 
+    // Load reports for the date to populate user filter dropdown
     if (nextSelectedDates.length > 0) {
       loadReportsForDate(nextSelectedDates[0]);
     }
@@ -225,10 +226,11 @@ export default function ReportsPage() {
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
         if (reportDate !== dateKey) return false;
         
-        const equipment = equipmentData[report.equipmentId];
+        // Use stored site from report, fall back to current equipment site
+        const site = report.site || equipmentData[report.equipmentId]?.site;
         
         // If siteFilter is 'all', don't filter by site
-        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && equipment?.site !== siteFilter) return false;
+        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site !== siteFilter) return false;
         
         // If userFilter is 'all', don't filter by user
         if (userFilter && userFilter !== '' && userFilter !== 'all') {
@@ -243,10 +245,11 @@ export default function ReportsPage() {
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
         if (reportDate !== dateKey) return false;
         
-        const equipment = equipmentData[report.equipmentId];
+        // Use stored site from report, fall back to current equipment site
+        const site = report.site || equipmentData[report.equipmentId]?.site;
         
         // If siteFilter is 'all', don't filter by site
-        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && equipment?.site !== siteFilter) return false;
+        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site !== siteFilter) return false;
         
         // If userFilter is 'all', don't filter by user
         if (userFilter && userFilter !== '' && userFilter !== 'all') {
@@ -257,14 +260,9 @@ export default function ReportsPage() {
         return true;
       });
 
-      // Only set reports if filters are engaged (including 'all'), otherwise clear them
-      if (siteFilter || userFilter) {
-        setMaintenanceReports(filteredMaintenance);
-        setShopReports(filteredShop);
-      } else {
-        setMaintenanceReports([]);
-        setShopReports([]);
-      }
+      // Always set reports for selected date so filter dropdowns can populate
+      setMaintenanceReports(filteredMaintenance);
+      setShopReports(filteredShop);
     } catch (error) {
       console.error('Error loading reports:', error);
     } finally {
@@ -283,10 +281,11 @@ export default function ReportsPage() {
       const shopCounts: Record<string, number> = {};
 
       maintenance.forEach(report => {
-        const equipment = equipmentData[report.equipmentId];
+        // Use stored site from report, fall back to current equipment site
+        const site = report.site || equipmentData[report.equipmentId]?.site;
         
         // If siteFilter is 'all', don't filter by site
-        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && equipment?.site !== siteFilter) return;
+        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site !== siteFilter) return;
         
         // If userFilter is 'all', don't filter by user
         if (userFilter && userFilter !== '' && userFilter !== 'all') {
@@ -299,10 +298,11 @@ export default function ReportsPage() {
       });
 
       shop.forEach(report => {
-        const equipment = equipmentData[report.equipmentId];
+        // Use stored site from report, fall back to current equipment site
+        const site = report.site || equipmentData[report.equipmentId]?.site;
         
         // If siteFilter is 'all', don't filter by site
-        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && equipment?.site !== siteFilter) return;
+        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site !== siteFilter) return;
         
         // If userFilter is 'all', don't filter by user
         if (userFilter && userFilter !== '' && userFilter !== 'all') {
@@ -381,15 +381,17 @@ export default function ReportsPage() {
     ? format(selectedDates[0], 'MMM d, yyyy')
     : `${selectedDates.length} dates selected`;
 
-  // Get unique sites from equipment
+  // Get unique sites from equipment that have reports for the selected date
   const getUniqueSites = () => {
-    const sites = new Set<string>();
-    Object.values(equipmentData).forEach(eq => {
-      if (eq.site) {
-        sites.add(eq.site);
+    const siteSet = new Set<string>();
+    [...maintenanceReports, ...shopReports].forEach(report => {
+      // Use the site stored in the report (at creation time), fall back to current equipment site
+      const site = report.site || (equipmentData[report.equipmentId]?.site);
+      if (site) {
+        siteSet.add(site);
       }
     });
-    return Array.from(sites).sort();
+    return Array.from(siteSet).sort();
   };
 
   // Get unique users who created reports
@@ -576,11 +578,11 @@ export default function ReportsPage() {
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.uniqueUsers}</div>
-                      <div className="text-sm text-blue-600 dark:text-blue-400">Unique Users</div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400">Users</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.uniqueEquipment}</div>
-                      <div className="text-sm text-blue-600 dark:text-blue-400">Unique Equipment</div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400">Equipment</div>
                     </div>
                   </div>
 
@@ -632,7 +634,7 @@ export default function ReportsPage() {
               ) : (
                 <>
                   {/* Maintenance Reports */}
-                  {maintenanceReports.length > 0 && (
+                  {maintenanceReports.length > 0 && (siteFilter || userFilter) && (
                     <div className="mb-6">
                       <h4 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3 flex items-center gap-2">
                         <Wrench className="h-4 w-4" />
@@ -658,6 +660,11 @@ export default function ReportsPage() {
                                 <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                   {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
+                                {report.site && (
+                                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                    Site: {report.site}
+                                  </div>
+                                )}
                               </div>
                               {expandedReport === report.id ? (
                                 <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
@@ -706,7 +713,7 @@ export default function ReportsPage() {
                   )}
 
                   {/* Shop Reports */}
-                  {shopReports.length > 0 && (
+                  {shopReports.length > 0 && (siteFilter || userFilter) && (
                     <div>
                       <h4 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3 flex items-center gap-2">
                         <FileText className="h-4 w-4" />
@@ -720,9 +727,16 @@ export default function ReportsPage() {
                                 <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">{report.equipmentName}</span>
                                 <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">by {report.createdBy}</span>
                               </div>
-                              <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                                {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
+                              <div className="text-right">
+                                <span className="text-xs text-yellow-600 dark:text-yellow-400 block">
+                                  {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                                {report.site && (
+                                  <span className="text-xs text-blue-600 dark:text-blue-400 block">
+                                    Site: {report.site}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-xs text-gray-700 dark:text-gray-300">
                               <div><strong>Serviced:</strong> {report.lastServicedDate || 'N/A'}</div>

@@ -12,6 +12,7 @@ export interface MaintenanceReport {
   id: string;
   equipmentId: string;
   equipmentName: string;
+  site?: string;
   maintenance: EquipmentMaintenance;
   attachments?: Attachment[];
   createdAt: string;
@@ -34,6 +35,7 @@ class MaintenanceHistoryFirebaseService {
   async addMaintenanceReport(
     equipmentId: string,
     equipmentName: string,
+    site: string,
     maintenance: EquipmentMaintenance,
     user: { username: string; role: string }
   ): Promise<string> {
@@ -42,6 +44,7 @@ class MaintenanceHistoryFirebaseService {
       const docRef = await addDoc(historyCollection, {
         equipmentId,
         equipmentName,
+        site,
         maintenance,
         createdAt: Timestamp.fromDate(new Date()),
         createdBy: user.username,

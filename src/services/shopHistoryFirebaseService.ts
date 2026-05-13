@@ -5,6 +5,7 @@ export interface ShopReport {
   id?: string;
   equipmentId: string;
   equipmentName: string;
+  site?: string;
   lastServicedDate?: string;
   lastServiceHours?: number;
   serviceInterval?: number;
@@ -20,6 +21,7 @@ export const shopHistoryFirebaseService = {
   addShopReport: async (
     equipmentId: string,
     equipmentName: string,
+    site: string,
     shopReport: {
       lastServicedDate?: string;
       lastServiceHours?: number;
@@ -32,6 +34,7 @@ export const shopHistoryFirebaseService = {
       const reportData: ShopReport = {
         equipmentId,
         equipmentName,
+        site,
         lastServicedDate: shopReport.lastServicedDate,
         lastServiceHours: shopReport.lastServiceHours,
         serviceInterval: shopReport.serviceInterval,

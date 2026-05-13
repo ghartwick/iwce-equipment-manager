@@ -207,6 +207,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       const reportId = await maintenanceHistoryFirebaseService.addMaintenanceReport(
         product.id,
         product.name,
+        product.site || '',
         maintenance,
         { username: user.username, role: user.role }
       );

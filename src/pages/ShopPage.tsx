@@ -14,6 +14,7 @@ export function ShopPage() {
   const [equipmentName, setEquipmentName] = useState<string>('');
   const [unitName, setUnitName] = useState<string>('');
   const [equipmentSite, setEquipmentSite] = useState<string>('');
+  const [serviceInterval, setServiceInterval] = useState<number | undefined>(undefined);
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
   const [shopAttachments, setShopAttachments] = useState<Record<string, any[]>>({});
   const [showShopForm, setShowShopForm] = useState(false);
@@ -35,6 +36,19 @@ export function ShopPage() {
     setEquipmentDataNotes(newNotes);
   };
 
+  const handleSaveServiceInterval = async () => {
+    if (!equipmentId) return;
+    try {
+      await equipmentManagementService.updateEquipment(equipmentId, {
+        serviceInterval
+      });
+      alert('Service interval saved successfully');
+    } catch (error) {
+      console.error('Error saving service interval:', error);
+      alert('Error saving service interval');
+    }
+  };
+
   useEffect(() => {
     if (equipmentId) {
       loadShopReports();
@@ -54,6 +68,7 @@ export function ShopPage() {
         if (equipment) {
           setUnitName(equipment.name || '');
           setEquipmentSite(equipment.site || '');
+          setServiceInterval(equipment.serviceInterval);
         }
       } catch (error) {
         console.error('Error loading equipment data:', error);
@@ -167,6 +182,27 @@ export function ShopPage() {
                 <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">{equipmentName || unitName || 'Loading...'}</h3>
+            </div>
+          </div>
+
+          {/* Service Interval */}
+          <div className="mb-4">
+            <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Service Interval</label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                value={serviceInterval || ''}
+                onChange={(e) => setServiceInterval(e.target.value ? parseFloat(e.target.value) : undefined)}
+                className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="Enter service interval in hours"
+              />
+              <button
+                type="button"
+                onClick={handleSaveServiceInterval}
+                className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
+              >
+                Save
+              </button>
             </div>
           </div>
 

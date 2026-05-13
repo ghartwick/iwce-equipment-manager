@@ -230,7 +230,8 @@ export default function ReportsPage() {
         const site = report.site || equipmentData[report.equipmentId]?.site;
         
         // If siteFilter is 'all', don't filter by site
-        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site !== siteFilter) return false;
+        // If siteFilter is set but report has no site, include the report (for backward compatibility)
+        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site && site !== siteFilter) return false;
         
         // If userFilter is 'all', don't filter by user
         if (userFilter && userFilter !== '' && userFilter !== 'all') {
@@ -249,7 +250,8 @@ export default function ReportsPage() {
         const site = report.site || equipmentData[report.equipmentId]?.site;
         
         // If siteFilter is 'all', don't filter by site
-        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site !== siteFilter) return false;
+        // If siteFilter is set but report has no site, include the report (for backward compatibility)
+        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site && site !== siteFilter) return false;
         
         // If userFilter is 'all', don't filter by user
         if (userFilter && userFilter !== '' && userFilter !== 'all') {
@@ -285,7 +287,8 @@ export default function ReportsPage() {
         const site = report.site || equipmentData[report.equipmentId]?.site;
         
         // If siteFilter is 'all', don't filter by site
-        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site !== siteFilter) return;
+        // If siteFilter is set but report has no site, include the report (for backward compatibility)
+        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site && site !== siteFilter) return;
         
         // If userFilter is 'all', don't filter by user
         if (userFilter && userFilter !== '' && userFilter !== 'all') {
@@ -302,7 +305,8 @@ export default function ReportsPage() {
         const site = report.site || equipmentData[report.equipmentId]?.site;
         
         // If siteFilter is 'all', don't filter by site
-        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site !== siteFilter) return;
+        // If siteFilter is set but report has no site, include the report (for backward compatibility)
+        if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site && site !== siteFilter) return;
         
         // If userFilter is 'all', don't filter by user
         if (userFilter && userFilter !== '' && userFilter !== 'all') {
@@ -498,10 +502,16 @@ export default function ReportsPage() {
                 <div className="flex space-x-2">
                   {selectedDates.length >= 1 && (
                     <button
-                      onClick={handleGenerateReport}
+                      onClick={() => {
+                        if (showAnalysis) {
+                          setShowAnalysis(false);
+                        } else {
+                          handleGenerateReport();
+                        }
+                      }}
                       className="px-3 py-1.5 text-sm bg-blue-500 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-600 font-medium transition-colors"
                     >
-                      Generate Report
+                      {showAnalysis ? 'Close Report' : 'Report'}
                     </button>
                   )}
                   <button

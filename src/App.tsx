@@ -128,9 +128,9 @@ function App() {
     navigate(`/inventory/equipment/${product.id}`);
   };
 
-  const handleLogin = async (username: string, password: string) => {
+  const handleLogin = async (username: string, password: string, rememberMe: boolean) => {
     try {
-      await login(username, password);
+      await login(username, password, rememberMe);
     } catch (error) {
       // Error is handled in useAuth hook
     }

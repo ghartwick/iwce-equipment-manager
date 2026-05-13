@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: (username: string, password: string) => void;
+  onLogin: (username: string, password: string, rememberMe: boolean) => void;
   error?: string;
 }
 
@@ -10,6 +10,7 @@ export function LoginPage({ onLogin, error }: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   // Apply saved theme on the login page
@@ -33,7 +34,7 @@ export function LoginPage({ onLogin, error }: LoginProps) {
     
     setIsLoading(true);
     try {
-      await onLogin(username, password);
+      await onLogin(username, password, rememberMe);
     } finally {
       setIsLoading(false);
     }
@@ -134,6 +135,8 @@ export function LoginPage({ onLogin, error }: LoginProps) {
               <input
                 id="remember"
                 type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
                 className="h-4 w-4 bg-black border-yellow-600 rounded focus:ring-yellow-500 focus:ring-2 text-yellow-500"
               />
               <label htmlFor="remember" className="ml-2 block text-sm text-yellow-300">

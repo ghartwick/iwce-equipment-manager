@@ -34,9 +34,10 @@ export function useAuth() {
           const user = JSON.parse(savedUser);
           const session = JSON.parse(savedSession);
           
-          // Check if session is still valid (24 hours)
+          // Check if session is still valid (24 hours if not remembered, 30 days if remembered)
           const sessionAge = Date.now() - session.createdAt;
-          if (sessionAge < 24 * 60 * 60 * 1000) {
+          const maxAge = session.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+          if (sessionAge < maxAge) {
             // Verify user still exists and is active
             const currentUser = await userManagementService.getUserByUsername(user.username);
             if (currentUser && currentUser.isActive) {
@@ -90,7 +91,7 @@ export function useAuth() {
     checkAuth();
   }, []);
 
-  const login = async (username: string, password: string): Promise<void> => {
+  const login = async (username: string, password: string, rememberMe: boolean = false): Promise<void> => {
     return new Promise(async (resolve, reject) => {
       try {
         // Get user from Firebase
@@ -119,9 +120,10 @@ export function useAuth() {
           return;
         }
 
-        // Create session
+        // Create session with rememberMe flag
         const session = {
           createdAt: Date.now(),
+          rememberMe,
         };
 
         // Save to localStorage

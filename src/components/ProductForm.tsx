@@ -9,6 +9,7 @@ import { userManagementService, AppUser } from '../services/userManagementServic
 import { getCategories } from '../services/firebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
 import { maintenanceAttachmentService } from '../services/maintenanceAttachmentService';
+import { equipmentPhotoService, EquipmentPhoto } from '../services/equipmentPhotoService';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProductFormProps {
@@ -47,6 +48,12 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   const [maintenanceCollapsed, setMaintenanceCollapsed] = useState(true);
   const [visibleReportCount, setVisibleReportCount] = useState(10);
   const [hiddenMaintenanceNoteIds, setHiddenMaintenanceNoteIds] = useState<string[]>([]);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
+  const [photosExpanded, setPhotosExpanded] = useState(false);
+  const [equipmentPhotos, setEquipmentPhotos] = useState<EquipmentPhoto[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+  const [photosUploading, setPhotosUploading] = useState(false);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
 
   const getEquipmentUrl = (id: string) => {
     const baseUrl = 'https://iwce-equipment-manager.vercel.app';
@@ -71,7 +78,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   const categories = categoriesProp && categoriesProp.length > 0 ? categoriesProp : fetchedCategories;
 
   const isEditing = !!product;
-  const formTitle = isEditing ? (allowFullEdit ? 'Edit Equipment' : 'Change Location') : 'Add Equipment';
+  const isChangeLocation = isEditing && !allowFullEdit && product?.equipmentType === 'heavy';
+  const formTitle = isEditing
+    ? (allowFullEdit ? 'Edit Equipment' : `Change Location${product?.name ? ` — ${product.name}` : ''}`)
+    : 'Add Equipment';
 
   // Sort sites alphabetically
   const sortedSites = [...sites].sort((a, b) => a.name.localeCompare(b.name));
@@ -305,6 +315,44 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     ].some(val => val === 'Repair');
   };
 
+  const loadEquipmentPhotos = async (equipmentId: string) => {
+    setPhotosLoading(true);
+    try {
+      const photos = await equipmentPhotoService.getPhotosForEquipment(equipmentId);
+      setEquipmentPhotos(photos.sort((a, b) => a.createdAt.localeCompare(b.createdAt)));
+    } catch (error) {
+      console.error('Error loading photos:', error);
+    } finally {
+      setPhotosLoading(false);
+    }
+  };
+
+  const handlePhotoUpload = async () => {
+    if (!product?.id || !user || photoFiles.length === 0) return;
+    setPhotosUploading(true);
+    try {
+      for (const file of photoFiles) {
+        await equipmentPhotoService.uploadPhoto(product.id, file, user.username);
+      }
+      setPhotoFiles([]);
+      await loadEquipmentPhotos(product.id);
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+    } finally {
+      setPhotosUploading(false);
+    }
+  };
+
+  const handleDeletePhoto = async (photo: EquipmentPhoto) => {
+    if (!confirm('Delete this photo?')) return;
+    try {
+      await equipmentPhotoService.deletePhoto(photo.id, photo.filePath);
+      setEquipmentPhotos(prev => prev.filter(p => p.id !== photo.id));
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+    }
+  };
+
   const handleCustomSiteChange = (value: string) => {
     setCustomSite(value);
     setFormData(prev => ({ ...prev, site: value }));
@@ -362,23 +410,25 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
 
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-          <div>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              disabled={isEditing && !allowFullEdit}
-              className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
-                isEditing && !allowFullEdit
-                  ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
-              }`}
-              placeholder="Equipment Name"
-            />
-          </div>
+          {!isChangeLocation && (
+            <div>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                disabled={isEditing && !allowFullEdit}
+                className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
+                  isEditing && !allowFullEdit
+                    ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
+                }`}
+                placeholder="Equipment Name"
+              />
+            </div>
+          )}
 
-          {(!isEditing || product?.equipmentType !== 'field') && (
+          {(!isEditing || (product?.equipmentType !== 'field' && !isChangeLocation)) && (
             <div>
               <input
                 type="text"
@@ -491,6 +541,114 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                 placeholder="Make a note"
                 className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
               />
+            </div>
+          )}
+
+          {/* Details collapsible section - Change Location mode only */}
+          {isChangeLocation && product && (
+            <div className="md:col-span-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setDetailsExpanded(v => !v)}
+                className="flex items-center justify-between w-full px-3 py-2 bg-yellow-300 dark:bg-yellow-900/40 border border-yellow-500 dark:border-yellow-700 rounded-md text-xs sm:text-sm font-semibold text-yellow-700 dark:text-yellow-300 hover:bg-yellow-400 dark:hover:bg-yellow-800/50 transition-colors"
+              >
+                <span>Details</span>
+                {detailsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              {detailsExpanded && (
+                <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-md grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-gray-800 dark:text-yellow-100">
+                  <div><span className="font-semibold text-yellow-700 dark:text-yellow-400">Name:</span> {product.name || '—'}</div>
+                  <div><span className="font-semibold text-yellow-700 dark:text-yellow-400">Description:</span> {product.description || '—'}</div>
+                  <div><span className="font-semibold text-yellow-700 dark:text-yellow-400">Serial #:</span> {product.serialNumber || '—'}</div>
+                  <div><span className="font-semibold text-yellow-700 dark:text-yellow-400">Year:</span> {(product as any).year || '—'}</div>
+                  <div><span className="font-semibold text-yellow-700 dark:text-yellow-400">Make:</span> {(product as any).make || '—'}</div>
+                  <div><span className="font-semibold text-yellow-700 dark:text-yellow-400">Model:</span> {(product as any).model || '—'}</div>
+                  <div><span className="font-semibold text-yellow-700 dark:text-yellow-400">Category:</span> {categories.find(c => c.id === product.category)?.name || product.category || '—'}</div>
+                  <div><span className="font-semibold text-yellow-700 dark:text-yellow-400">Site:</span> {product.site || '—'}</div>
+                  <div><span className="font-semibold text-yellow-700 dark:text-yellow-400">Repair Alert:</span> {product.repair ? 'Yes' : 'No'}</div>
+                  {product.repairDescription && (
+                    <div className="col-span-2"><span className="font-semibold text-yellow-700 dark:text-yellow-400">Repair Notes:</span> {product.repairDescription}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Photos collapsible section - Change Location mode only */}
+          {isChangeLocation && product && (
+            <div className="md:col-span-2 mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !photosExpanded;
+                  setPhotosExpanded(next);
+                  if (next && equipmentPhotos.length === 0 && !photosLoading) {
+                    loadEquipmentPhotos(product.id);
+                  }
+                }}
+                className="flex items-center justify-between w-full px-3 py-2 bg-yellow-300 dark:bg-yellow-900/40 border border-yellow-500 dark:border-yellow-700 rounded-md text-xs sm:text-sm font-semibold text-yellow-700 dark:text-yellow-300 hover:bg-yellow-400 dark:hover:bg-yellow-800/50 transition-colors"
+              >
+                <span>Photos {equipmentPhotos.length > 0 ? `(${equipmentPhotos.length})` : ''}</span>
+                {photosExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </button>
+              {photosExpanded && (
+                <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-md space-y-3">
+                  {/* Upload area */}
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => setPhotoFiles(Array.from(e.target.files || []))}
+                      className="w-full text-xs text-gray-700 dark:text-yellow-200 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-yellow-600 file:text-black hover:file:bg-yellow-500 cursor-pointer"
+                    />
+                    {photoFiles.length > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-yellow-700 dark:text-yellow-400">{photoFiles.length} file(s) selected</span>
+                        <button
+                          type="button"
+                          onClick={handlePhotoUpload}
+                          disabled={photosUploading}
+                          className="px-3 py-1 text-xs bg-yellow-600 text-black rounded hover:bg-yellow-500 font-medium disabled:opacity-50"
+                        >
+                          {photosUploading ? 'Uploading...' : 'Upload'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {/* Photo grid */}
+                  {photosLoading ? (
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400">Loading photos...</p>
+                  ) : equipmentPhotos.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {equipmentPhotos.map(photo => (
+                        <div key={photo.id} className="relative group">
+                          <a href={photo.fileUrl} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={photo.fileUrl}
+                              alt={photo.fileName}
+                              className="w-full h-24 object-cover rounded border border-yellow-300 dark:border-yellow-700"
+                            />
+                          </a>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-0.5">{photo.fileName}</p>
+                          {user?.role === 'admin' && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePhoto(photo)}
+                              className="absolute top-1 right-1 p-0.5 bg-red-600 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Delete photo"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400">No photos yet.</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

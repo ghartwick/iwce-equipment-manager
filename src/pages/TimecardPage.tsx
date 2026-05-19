@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, MoreVertical } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
 import { InlineTimecardEdit } from '../components/InlineTimecardEdit';
@@ -88,6 +88,7 @@ export default function TimecardPage() {
   const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
   const [lockedDates, setLockedDates] = useState<Set<string>>(new Set());
   const [showPOForm, setShowPOForm] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [poCounts, setPoCounts] = useState<Record<string, number>>({});
   const [posForDate, setPosForDate] = useState<PurchaseOrder[]>([]);
@@ -460,10 +461,10 @@ export default function TimecardPage() {
     if (attachmentSite) {
       const selectedSite = sitesData.find(site => site.name === attachmentSite);
       if (selectedSite?.codes?.length) {
-        return selectedSite.codes.map(code => code.name);
+        return selectedSite.codes;
       }
     }
-    return codeOptionsState;
+    return codeOptionsState.map(name => ({ name, description: undefined }));
   })();
 
   // Handle inline edit save
@@ -505,6 +506,10 @@ export default function TimecardPage() {
     }
     if (attachmentFiles.length === 0) {
       alert('Please select at least one file.');
+      return;
+    }
+    if (!attachmentDescription.trim()) {
+      alert('Please enter a description for the attachment.');
       return;
     }
     if (!user) {
@@ -1056,7 +1061,7 @@ export default function TimecardPage() {
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
                   Time Entries for {selectedDateLabel}
                 </h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-auto">
                   <button
                     onClick={() => {
                       if (!selectedDateParam) return;
@@ -1068,56 +1073,67 @@ export default function TimecardPage() {
                   >
                     Add Time Card
                   </button>
-                  <button
-                    onClick={() => setShowAttachments(prev => !prev)}
-                    className="px-3 py-1.5 text-sm bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-lg hover:bg-yellow-400 dark:hover:bg-yellow-700 font-medium transition-colors whitespace-nowrap"
-                  >
-                    Attachments
-                  </button>
-                  <button
-                    onClick={() => setShowPOForm(prev => !prev)}
-                    disabled={!selectedDateParam}
-                    className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors whitespace-nowrap disabled:opacity-50 ${showPOForm ? 'bg-purple-600 text-white hover:bg-purple-500' : 'bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-800/60'}`}
-                    title={selectedDateParam ? 'Purchase Orders' : 'Select a single date to create a PO'}
-                  >
-                    PO
-                  </button>
-                  {user?.role === 'admin' && selectedDates.length > 0 && (
+                  {/* Actions overflow menu */}
+                  <div className="relative">
                     <button
-                      onClick={() => handleToggleLock(selectedDates)}
-                      className="px-3 py-1.5 text-sm bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap"
-                      title={selectedDates.length === 1 ? (isDateLocked ? 'Unlock date' : 'Lock date') : (selectedDates.some(d => lockedDates.has(formatDateKey(d))) ? 'Unlock dates' : 'Lock dates')}
+                      onClick={() => setShowActionsMenu(prev => !prev)}
+                      className="p-1.5 rounded-lg bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 hover:bg-yellow-400 dark:hover:bg-yellow-700 transition-colors"
+                      title="More actions"
                     >
-                      {selectedDates.length === 1 ? (isDateLocked ? 'Unlock' : 'Lock') : (selectedDates.some(d => lockedDates.has(formatDateKey(d))) ? 'Unlock All' : 'Lock All')}
+                      <MoreVertical className="h-4 w-4" />
                     </button>
-                  )}
-                  <button
-                    onClick={() => setSelectedDates([])}
-                    className="px-3 py-1.5 text-sm bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-lg hover:bg-yellow-400 dark:hover:bg-yellow-700 font-medium transition-colors whitespace-nowrap"
-                  >
-                    Clear Selection
-                  </button>
-                  {(user?.role === 'admin' || user?.role === 'supervisor') && selectedDates.length === 1 && siteFilter && siteFilter !== '' && siteFilter !== 'all' && (
-                    <button
-                      onClick={() => setShowSummary(v => !v)}
-                      className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors whitespace-nowrap ${
-                        showSummary
-                          ? 'bg-green-600 text-white hover:bg-green-500'
-                          : 'bg-green-700 text-white hover:bg-green-600'
-                      }`}
-                    >
-                      {showSummary ? 'Hide Summary' : 'Summarize Day'}
-                    </button>
-                  )}
-                  {(user?.role === 'admin' || user?.role === 'supervisor') && (
-                    <button
-                      onClick={showPOForm ? handleExportPOsPDF : handleExportPDF}
-                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-500 font-medium transition-colors whitespace-nowrap"
-                      title={showPOForm ? 'Export Purchase Orders to PDF' : 'Export Time Cards to PDF'}
-                    >
-                      {showPOForm ? 'Export POs' : 'Export'}
-                    </button>
-                  )}
+                    {showActionsMenu && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowActionsMenu(false)} />
+                        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-900 border border-yellow-300 dark:border-yellow-700 rounded-lg shadow-lg z-50 py-1">
+                        <button
+                          onClick={() => { setShowAttachments(prev => !prev); setShowActionsMenu(false); }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
+                        >
+                          Attachments
+                        </button>
+                        <button
+                          onClick={() => { setShowPOForm(prev => !prev); setShowActionsMenu(false); }}
+                          disabled={!selectedDateParam}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40 disabled:opacity-50"
+                        >
+                          {showPOForm ? 'Hide PO' : 'PO'}
+                        </button>
+                        {(user?.role === 'admin' || user?.role === 'supervisor') && selectedDates.length === 1 && siteFilter && siteFilter !== '' && siteFilter !== 'all' && (
+                          <button
+                            onClick={() => { setShowSummary(v => !v); setShowActionsMenu(false); }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
+                          >
+                            {showSummary ? 'Hide Summary' : 'Summarize Day'}
+                          </button>
+                        )}
+                        {user?.role === 'admin' && selectedDates.length > 0 && (
+                          <button
+                            onClick={() => { handleToggleLock(selectedDates); setShowActionsMenu(false); }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
+                          >
+                            {selectedDates.length === 1 ? (isDateLocked ? 'Unlock' : 'Lock') : (selectedDates.some(d => lockedDates.has(formatDateKey(d))) ? 'Unlock All' : 'Lock All')}
+                          </button>
+                        )}
+                        {(user?.role === 'admin' || user?.role === 'supervisor') && (
+                          <button
+                            onClick={() => { showPOForm ? handleExportPOsPDF() : handleExportPDF(); setShowActionsMenu(false); }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
+                          >
+                            {showPOForm ? 'Export POs' : 'Export'}
+                          </button>
+                        )}
+                        <div className="border-t border-yellow-200 dark:border-yellow-800 my-1" />
+                        <button
+                          onClick={() => { setSelectedDates([]); setShowActionsMenu(false); }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
+                        >
+                          Clear Selection
+                        </button>
+                      </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1169,7 +1185,9 @@ export default function TimecardPage() {
                     >
                       <option value="">Select Code</option>
                       {attachmentCodeOptions.map(code => (
-                        <option key={code} value={code}>{code}</option>
+                        <option key={code.name} value={code.name}>
+                          {code.name} - {code.description || 'No description'}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -1191,13 +1209,14 @@ export default function TimecardPage() {
                   </div>
                   <div className="sm:col-span-3">
                     <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
-                      Description
+                      Description <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={attachmentDescription}
                       onChange={(e) => setAttachmentDescription(e.target.value)}
                       placeholder="Enter a description for this attachment"
+                      required
                       className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     />
                   </div>

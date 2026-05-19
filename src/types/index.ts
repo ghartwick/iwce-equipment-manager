@@ -6,6 +6,9 @@ export interface Equipment {
   site?: string;
   category?: string;
   serialNumber?: string;
+  year?: string;
+  make?: string;
+  model?: string;
   equipmentType: 'heavy' | 'field';
   repair: boolean;
   repairDescription?: string;

@@ -16,7 +16,7 @@ interface EquipmentManagementProps {
   asPage?: boolean;
 }
 
-const EMPTY_FORM = { name: '', description: '', serialNumber: '', category: '', site: '', employee: '', repair: false, repairDescription: '', locationNotes: '', isActive: true, showInInventory: true, showInTimecard: true, parentId: '' };
+const EMPTY_FORM = { name: '', description: '', serialNumber: '', year: '', make: '', model: '', category: '', site: '', employee: '', repair: false, repairDescription: '', locationNotes: '', isActive: true, showInInventory: true, showInTimecard: true, parentId: '' };
 
 export function EquipmentManagement({ currentUser, asPage = false }: EquipmentManagementProps) {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
@@ -166,6 +166,9 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
       name: item.name,
       description: item.description || '',
       serialNumber: item.serialNumber || '',
+      year: item.year || '',
+      make: item.make || '',
+      model: item.model || '',
       category: item.category || '',
       site: item.site || '',
       employee: item.employee || '',
@@ -335,6 +338,24 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                     type="text" placeholder="Serial Number"
                     value={formData.serialNumber}
                     onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                  <input
+                    type="text" placeholder="Year"
+                    value={formData.year}
+                    onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                  <input
+                    type="text" placeholder="Make"
+                    value={formData.make}
+                    onChange={(e) => setFormData({ ...formData, make: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                  <input
+                    type="text" placeholder="Model"
+                    value={formData.model}
+                    onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                   <select
@@ -604,6 +625,24 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                           type="text" placeholder="Serial Number"
                                           value={formData.serialNumber}
                                           onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
+                                          className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        />
+                                        <input
+                                          type="text" placeholder="Year"
+                                          value={formData.year}
+                                          onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                                          className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        />
+                                        <input
+                                          type="text" placeholder="Make"
+                                          value={formData.make}
+                                          onChange={(e) => setFormData({ ...formData, make: e.target.value })}
+                                          className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                        />
+                                        <input
+                                          type="text" placeholder="Model"
+                                          value={formData.model}
+                                          onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                                           className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                         />
                                         <select

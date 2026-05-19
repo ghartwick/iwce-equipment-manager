@@ -79,8 +79,7 @@ export default function TimecardPage() {
   const [showAttachments, setShowAttachments] = useState(false);
   const [attachmentSite, setAttachmentSite] = useState('');
   const [attachmentCode, setAttachmentCode] = useState('');
-  const [attachmentDescription, setAttachmentDescription] = useState('');
-  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
+  const [attachmentFilesWithDesc, setAttachmentFilesWithDesc] = useState<{ file: File; description: string }[]>([]);
   const [attachmentSubmitting, setAttachmentSubmitting] = useState(false);
   const [attachmentsForDate, setAttachmentsForDate] = useState<TimecardAttachment[]>([]);
   const [sitesData, setSitesData] = useState<Site[]>([]);
@@ -504,12 +503,12 @@ export default function TimecardPage() {
       alert('Please select a site.');
       return;
     }
-    if (attachmentFiles.length === 0) {
+    if (attachmentFilesWithDesc.length === 0) {
       alert('Please select at least one file.');
       return;
     }
-    if (!attachmentDescription.trim()) {
-      alert('Please enter a description for the attachment.');
+    if (attachmentFilesWithDesc.some(item => !item.description.trim())) {
+      alert('Please enter a description for each attachment.');
       return;
     }
     if (!user) {
@@ -519,13 +518,13 @@ export default function TimecardPage() {
 
     setAttachmentSubmitting(true);
     try {
-      // Upload all files
-      for (const file of attachmentFiles) {
+      // Upload all files with their individual descriptions
+      for (const { file, description } of attachmentFilesWithDesc) {
         await timecardAttachmentService.uploadAttachment({
           date: selectedDates[0],
           site: attachmentSite,
           code: attachmentCode,
-          description: attachmentDescription,
+          description,
           file,
           uploadedBy: user.id
         });
@@ -533,14 +532,13 @@ export default function TimecardPage() {
       
       setAttachmentSite('');
       setAttachmentCode('');
-      setAttachmentDescription('');
-      setAttachmentFiles([]);
+      setAttachmentFilesWithDesc([]);
       setShowAttachments(false);
       // Update attachment counts
       setAttachmentCounts(prev => {
         const next = { ...prev };
         const key = formatDateKey(selectedDates[0]);
-        next[key] = (next[key] || 0) + 1;
+        next[key] = (next[key] || 0) + attachmentFilesWithDesc.length;
         return next;
       });
       // Refresh attachment list for the selected date
@@ -549,7 +547,7 @@ export default function TimecardPage() {
       const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
       const attachments = await timecardAttachmentService.getAttachmentsForRange(startOfDay, endOfDay);
       setAttachmentsForDate(attachments);
-      alert(`${attachmentFiles.length} attachment(s) uploaded successfully.`);
+      alert(`${attachmentFilesWithDesc.length} attachment(s) uploaded successfully.`);
     } catch (error) {
       console.error('Error uploading attachment:', error);
       alert('Failed to upload attachment: ' + (error as Error).message);
@@ -1198,28 +1196,37 @@ export default function TimecardPage() {
                     <input
                       type="file"
                       multiple
-                      onChange={(e) => setAttachmentFiles(Array.from(e.target.files || []))}
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        setAttachmentFilesWithDesc(files.map(f => ({ file: f, description: '' })));
+                      }}
                       className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     />
-                    {attachmentFiles.length > 0 && (
+                    {attachmentFilesWithDesc.length > 0 && (
                       <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-500">
-                        Selected: {attachmentFiles.length} file(s) - {attachmentFiles.map(f => f.name).join(', ')}
+                        Selected: {attachmentFilesWithDesc.length} file(s)
                       </p>
                     )}
                   </div>
-                  <div className="sm:col-span-3">
-                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
-                      Description <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={attachmentDescription}
-                      onChange={(e) => setAttachmentDescription(e.target.value)}
-                      placeholder="Enter a description for this attachment"
-                      required
-                      className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
-                    />
-                  </div>
+                  {attachmentFilesWithDesc.map((item, index) => (
+                    <div key={index} className="sm:col-span-3">
+                      <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
+                        Description for {item.file.name} <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => {
+                          const updated = [...attachmentFilesWithDesc];
+                          updated[index].description = e.target.value;
+                          setAttachmentFilesWithDesc(updated);
+                        }}
+                        placeholder={`Enter description for ${item.file.name}`}
+                        required
+                        className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+                  ))}
                 </div>
                   <div className="mt-4 flex justify-end">
                     <button

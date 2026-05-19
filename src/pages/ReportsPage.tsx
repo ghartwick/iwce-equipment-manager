@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FileText, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
 import { AlertPanel } from '../components/AlertPanel';
 import { alertsFirebaseService } from '../services/alertsFirebaseService';
@@ -50,6 +50,7 @@ export default function ReportsPage() {
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
   const [repairAlerts, setRepairAlerts] = useState<StockAlert[]>([]);
   const [showRepairAlerts, setShowRepairAlerts] = useState(false);
+  const alertPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     alertsFirebaseService.getAllRepairAlerts().then(setRepairAlerts).catch(console.error);
@@ -62,6 +63,19 @@ export default function ReportsPage() {
     window.addEventListener('toggleAlerts', handleToggleAlerts);
     return () => window.removeEventListener('toggleAlerts', handleToggleAlerts);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (alertPanelRef.current && !alertPanelRef.current.contains(event.target as Node)) {
+        setShowRepairAlerts(false);
+      }
+    };
+
+    if (showRepairAlerts) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showRepairAlerts]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -429,7 +443,7 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 gap-2">
           {/* Repair Alerts Panel */}
           {showRepairAlerts && (
-            <div>
+            <div ref={alertPanelRef}>
               <AlertPanel
                 alerts={repairAlerts}
                 products={Object.values(equipmentData)}

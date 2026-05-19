@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, X, ChevronDown, ChevronUp, Bell } from 'lucide-react';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { shopAttachmentService } from '../services/shopAttachmentService';
 import { ShopForm } from '../components/ShopForm';
 import { useAuth } from '../hooks/useAuth';
 import { equipmentManagementService } from '../services/equipmentManagementService';
+import { alertsFirebaseService } from '../services/alertsFirebaseService';
+import { StockAlert } from '../types';
 
 export function ShopPage() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
@@ -21,6 +23,8 @@ export function ShopPage() {
   const [loading, setLoading] = useState(true);
   const [equipmentDataNotes, setEquipmentDataNotes] = useState<string[]>([]);
   const [reportsCollapsed, setReportsCollapsed] = useState(true);
+  const [alerts, setAlerts] = useState<StockAlert[]>([]);
+  const [showAlerts, setShowAlerts] = useState(false);
 
   const addEquipmentDataNote = () => {
     setEquipmentDataNotes([...equipmentDataNotes, '']);
@@ -52,8 +56,19 @@ export function ShopPage() {
   useEffect(() => {
     if (equipmentId) {
       loadShopReports();
+      loadAlerts();
     }
   }, [equipmentId]);
+
+  const loadAlerts = async () => {
+    if (!equipmentId) return;
+    try {
+      const equipmentAlerts = await alertsFirebaseService.getAlertsByProduct(equipmentId, 'repair');
+      setAlerts(equipmentAlerts);
+    } catch (error) {
+      console.error('Error loading alerts:', error);
+    }
+  };
 
   const loadShopReports = async () => {
     if (!equipmentId) return;
@@ -183,7 +198,47 @@ export function ShopPage() {
               </button>
               <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">{equipmentName || unitName || 'Loading...'}</h3>
             </div>
+            <button
+              onClick={() => setShowAlerts(v => !v)}
+              className="relative p-1.5 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+              title="Shop Alerts"
+            >
+              <Bell className="h-5 w-5" />
+              {alerts.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {alerts.length}
+                </span>
+              )}
+            </button>
           </div>
+
+          {/* Alerts Panel */}
+          {showAlerts && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-400 dark:border-red-700 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold text-red-700 dark:text-red-400">Shop Alerts ({alerts.length})</h4>
+                <button onClick={() => setShowAlerts(false)} className="p-0.5 text-red-500 hover:text-red-700">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              {alerts.length === 0 ? (
+                <p className="text-xs text-red-600 dark:text-red-400">No alerts for this unit.</p>
+              ) : (
+                <div className="space-y-2">
+                  {alerts.map(alert => (
+                    <div key={alert.id} className="text-xs border border-red-200 dark:border-red-800 rounded p-2 bg-white dark:bg-black">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide">{alert.type}</span>
+                        <span className="text-gray-500 dark:text-gray-400">{new Date(alert.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                      <p className="mt-1 text-gray-800 dark:text-yellow-100">{alert.message}</p>
+                      {alert.userName && <p className="mt-0.5 text-gray-500 dark:text-gray-400">by {alert.userName}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Service Interval */}
           <div className="mb-4">

@@ -1,4 +1,4 @@
-import { collection, addDoc, query, orderBy, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, getDocs, where, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { StockAlert } from '../types';
 
@@ -64,28 +64,55 @@ export class AlertsFirebaseService {
     }
   }
 
-  async getAlertsByProduct(productId: string): Promise<StockAlert[]> {
+  async getAllRepairAlerts(): Promise<StockAlert[]> {
     try {
       const alertsCollection = collection(db, COLLECTION_NAME);
-      const q = query(
-        alertsCollection,
-        orderBy('createdAt', 'desc')
-      );
-      
+      const q = query(alertsCollection, where('type', '==', 'repair'));
       const querySnapshot = await getDocs(q);
       const alerts = querySnapshot.docs.map(doc => {
         const data = doc.data();
+        const createdAt = data.createdAt?.toDate
+          ? data.createdAt.toDate().toISOString()
+          : data.createdAt || new Date().toISOString();
         return {
           id: doc.id,
           productId: data.productId,
           type: data.type,
           message: data.message,
-          createdAt: data.createdAt.toDate().toISOString(),
+          createdAt,
+          userName: data.userName
+        } as StockAlert;
+      });
+      return alerts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } catch (error) {
+      console.error('Error fetching repair alerts from Firebase:', error);
+      return [];
+    }
+  }
+
+  async getAlertsByProduct(productId: string, type?: StockAlert['type']): Promise<StockAlert[]> {
+    try {
+      const alertsCollection = collection(db, COLLECTION_NAME);
+      const q = query(alertsCollection, where('productId', '==', productId));
+      
+      const querySnapshot = await getDocs(q);
+      const alerts = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        const createdAt = data.createdAt?.toDate
+          ? data.createdAt.toDate().toISOString()
+          : data.createdAt || new Date().toISOString();
+        return {
+          id: doc.id,
+          productId: data.productId,
+          type: data.type,
+          message: data.message,
+          createdAt,
           userName: data.userName
         };
       });
       
-      return alerts.filter(alert => alert.productId === productId);
+      const filtered = type ? alerts.filter(a => a.type === type) : alerts;
+      return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (error) {
       console.error('Error fetching alerts for product from Firebase:', error);
       return [];

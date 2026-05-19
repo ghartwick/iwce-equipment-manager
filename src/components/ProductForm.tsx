@@ -10,6 +10,7 @@ import { getCategories } from '../services/firebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
 import { maintenanceAttachmentService } from '../services/maintenanceAttachmentService';
 import { equipmentPhotoService, EquipmentPhoto } from '../services/equipmentPhotoService';
+import { alertsFirebaseService } from '../services/alertsFirebaseService';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProductFormProps {
@@ -235,6 +236,51 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         }
       }
       
+      // Fire shop alert if any repairs or notes exist
+      const repairFields = [
+        maintenance.stepsHandRails, maintenance.tiresTracks, maintenance.bucket,
+        maintenance.cuttingEdgeTeeth, maintenance.hoses, maintenance.batteryCableBeltHosesFilterGuards,
+        maintenance.backupAlarm, maintenance.fireExtinguisher, maintenance.gauges,
+        maintenance.horn, maintenance.spillKit, maintenance.glass, maintenance.mirror,
+        maintenance.rollOverProtection, maintenance.seatBeltSeat, maintenance.allFluidsLevel
+      ];
+      const repairItems = [
+        maintenance.stepsHandRails === 'Repair' && 'Steps/Hand Rails',
+        maintenance.tiresTracks === 'Repair' && 'Tires/Tracks',
+        maintenance.bucket === 'Repair' && 'Bucket',
+        maintenance.cuttingEdgeTeeth === 'Repair' && 'Cutting Edge/Teeth',
+        maintenance.hoses === 'Repair' && 'Hoses',
+        maintenance.batteryCableBeltHosesFilterGuards === 'Repair' && 'Battery/Cable/Belt/Hoses/Filter/Guards',
+        maintenance.backupAlarm === 'Repair' && 'Backup Alarm',
+        maintenance.fireExtinguisher === 'Repair' && 'Fire Extinguisher',
+        maintenance.gauges === 'Repair' && 'Gauges',
+        maintenance.horn === 'Repair' && 'Horn',
+        maintenance.spillKit === 'Repair' && 'Spill Kit',
+        maintenance.glass === 'Repair' && 'Glass',
+        maintenance.mirror === 'Repair' && 'Mirror',
+        maintenance.rollOverProtection === 'Repair' && 'Roll Over Protection',
+        maintenance.seatBeltSeat === 'Repair' && 'Seat Belt/Seat',
+        maintenance.allFluidsLevel === 'Repair' && 'All Fluids Level',
+      ].filter(Boolean) as string[];
+      const hasRepairs = repairFields.some(v => v === 'Repair');
+      const hasNotes = !!maintenance.notes?.trim();
+      if (hasRepairs || hasNotes) {
+        const messageParts: string[] = [];
+        if (repairItems.length > 0) messageParts.push(`Repairs needed: ${repairItems.join(', ')}`);
+        if (hasNotes) messageParts.push(`Note: ${maintenance.notes}`);
+        try {
+          await alertsFirebaseService.addAlert({
+            productId: product.id,
+            type: 'repair',
+            message: messageParts.join(' | '),
+            createdAt: new Date().toISOString(),
+            userName: user.username,
+          });
+        } catch (alertErr) {
+          console.error('Failed to save repair alert:', alertErr);
+        }
+      }
+
       setShowMaintenanceForm(false);
       // Refresh maintenance reports
       const reports = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id);

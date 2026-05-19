@@ -49,9 +49,6 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore }: AlertPanel
   if (alerts.length === 0) {
     return (
       <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow p-3 sm:p-6">
-        <div className="flex items-center space-x-2 mb-3 sm:mb-4">
-          <h3 className="text-base sm:text-lg font-medium text-yellow-600 dark:text-yellow-400">Equipment Alerts</h3>
-        </div>
         <p className="text-yellow-700 dark:text-yellow-600 text-sm sm:text-base">No equipment alerts at this time.</p>
       </div>
     );
@@ -59,14 +56,6 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore }: AlertPanel
 
   return (
     <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow">
-      <div className="p-3 sm:p-6 border-b border-yellow-200 dark:border-yellow-800">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <h3 className="text-base sm:text-lg font-medium text-yellow-600 dark:text-yellow-400">Equipment Alerts</h3>
-          </div>
-        </div>
-      </div>
-      
       <div 
         className="max-h-96 overflow-y-auto"
         onMouseDown={(e) => e.stopPropagation()}

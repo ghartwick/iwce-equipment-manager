@@ -145,7 +145,7 @@ export function useInventory(refreshKey?: number) {
 
   const loadAlerts = async (daysAgo: number = 7) => {
   const alerts = await alertsFirebaseService.getRecentAlerts(50, daysAgo);
-  setAlerts(alerts);
+  setAlerts(alerts.filter(a => a.type === 'change'));
 };
 
   const addProduct = async (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {

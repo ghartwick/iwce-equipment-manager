@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { FileText, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertPanel } from '../components/AlertPanel';
+import { alertsFirebaseService } from '../services/alertsFirebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
 import { UserManagementService, AppUser } from '../services/userManagementService';
-import { Equipment } from '../types';
+import { Equipment, StockAlert } from '../types';
 import { 
   format, 
   startOfMonth, 
@@ -46,6 +48,20 @@ export default function ReportsPage() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
+  const [repairAlerts, setRepairAlerts] = useState<StockAlert[]>([]);
+  const [showRepairAlerts, setShowRepairAlerts] = useState(false);
+
+  useEffect(() => {
+    alertsFirebaseService.getAllRepairAlerts().then(setRepairAlerts).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    const handleToggleAlerts = () => {
+      setShowRepairAlerts(v => !v);
+    };
+    window.addEventListener('toggleAlerts', handleToggleAlerts);
+    return () => window.removeEventListener('toggleAlerts', handleToggleAlerts);
+  }, []);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -411,10 +427,20 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 gap-2">
+          {/* Repair Alerts Panel */}
+          {showRepairAlerts && (
+            <div>
+              <AlertPanel
+                alerts={repairAlerts}
+                products={Object.values(equipmentData)}
+              />
+            </div>
+          )}
+
           {/* Calendar */}
           <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <button
                 onClick={handlePreviousMonth}
                 className="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
@@ -427,13 +453,13 @@ export default function ReportsPage() {
                 {format(currentMonth, 'MMMM yyyy')}
               </h2>
               <button
-                onClick={handleNextMonth}
-                className="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+                  onClick={handleNextMonth}
+                  className="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
             </div>
 
             {/* Week Days */}
@@ -651,8 +677,16 @@ export default function ReportsPage() {
                         Maintenance Reports ({maintenanceReports.length})
                       </h4>
                       <div className="space-y-2">
-                        {maintenanceReports.map(report => (
-                          <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                        {maintenanceReports.map(report => {
+                          const m = report.maintenance;
+                          const hasRepairOrNotes = !!m.notes?.trim() || [
+                            m.stepsHandRails, m.tiresTracks, m.bucket, m.cuttingEdgeTeeth,
+                            m.hoses, m.batteryCableBeltHosesFilterGuards, m.backupAlarm,
+                            m.fireExtinguisher, m.gauges, m.horn, m.spillKit, m.glass,
+                            m.mirror, m.rollOverProtection, m.seatBeltSeat, m.allFluidsLevel
+                          ].some(v => v === 'Repair');
+                          return (
+                          <div key={report.id} className={`rounded-lg border ${hasRepairOrNotes ? 'bg-red-50 dark:bg-red-900/20 border-red-400 dark:border-red-700' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'}`}>
                             <button
                               type="button"
                               onClick={() => setExpandedReport(expandedReport === report.id ? null : report.id)}
@@ -717,7 +751,8 @@ export default function ReportsPage() {
                               </div>
                             )}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

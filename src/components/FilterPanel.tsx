@@ -63,6 +63,7 @@ export function FilterPanel({
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryGroup, setNewCategoryGroup] = useState<'heavy' | 'field' | 'fleet' | ''>('');
   const [isCategoryFormCollapsed, setIsCategoryFormCollapsed] = useState(true);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -93,7 +94,7 @@ export function FilterPanel({
     return nameA.localeCompare(nameB);
   });
 
-  // Build sets of category IDs/names used by each equipment type
+  // Build sets of category IDs/names used by each equipment type (for legacy categories without managementGroup)
   const heavyCatKeys = new Set<string>();
   const fieldCatKeys = new Set<string>();
   const fleetCatKeys = new Set<string>();
@@ -109,19 +110,30 @@ export function FilterPanel({
   const matchesCat = (cat: Category, keys: Set<string>) =>
     keys.has(cat.id) || keys.has(cat.name);
 
-  const heavyCategories = sortCats(categories.filter(c => matchesCat(c, heavyCatKeys)));
-  const fieldCategories = sortCats(categories.filter(c => matchesCat(c, fieldCatKeys) && !matchesCat(c, heavyCatKeys)));
-  const fleetCategories = sortCats(categories.filter(c => matchesCat(c, fleetCatKeys) && !matchesCat(c, heavyCatKeys) && !matchesCat(c, fieldCatKeys)));
-  const uncategorized = sortCats(categories.filter(c => !matchesCat(c, heavyCatKeys) && !matchesCat(c, fieldCatKeys) && !matchesCat(c, fleetCatKeys)));
+  // Prefer managementGroup field; fall back to product-type matching for legacy categories
+  const getGroup = (c: Category) => {
+    if (c.managementGroup) return c.managementGroup;
+    if (matchesCat(c, heavyCatKeys)) return 'heavy';
+    if (matchesCat(c, fieldCatKeys)) return 'field';
+    if (matchesCat(c, fleetCatKeys)) return 'fleet';
+    return null;
+  };
+
+  const heavyCategories = sortCats(categories.filter(c => getGroup(c) === 'heavy'));
+  const fieldCategories = sortCats(categories.filter(c => getGroup(c) === 'field'));
+  const fleetCategories = sortCats(categories.filter(c => getGroup(c) === 'fleet'));
+  const uncategorized = sortCats(categories.filter(c => !getGroup(c)));
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
       onAddCategory({
         name: newCategoryName.trim(),
         description: '',
-        color: '#FFB700' // Default Bruins gold color
+        color: '#FFB700',
+        ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {})
       });
       setNewCategoryName('');
+      setNewCategoryGroup('');
       setShowAddCategory(false);
     }
   };
@@ -130,6 +142,7 @@ export function FilterPanel({
     const category = categories.find(cat => cat.id === categoryId);
     if (category) {
       setNewCategoryName(category.name);
+      setNewCategoryGroup(category.managementGroup || '');
       setEditingCategoryId(categoryId);
       setShowAddCategory(false);
     }
@@ -140,9 +153,11 @@ export function FilterPanel({
       onEditCategory(editingCategoryId, {
         name: newCategoryName.trim(),
         description: '',
-        color: '#FFB700' // Default Bruins gold color
+        color: '#FFB700',
+        ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {})
       });
       setNewCategoryName('');
+      setNewCategoryGroup('');
       setEditingCategoryId(null);
     }
   };
@@ -150,6 +165,7 @@ export function FilterPanel({
   const handleCancelEdit = () => {
     setEditingCategoryId(null);
     setNewCategoryName('');
+    setNewCategoryGroup('');
   };
 
   return (
@@ -164,13 +180,23 @@ export function FilterPanel({
             placeholder="Category name"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') setShowAddCategory(false); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') { setShowAddCategory(false); setNewCategoryGroup(''); } }}
             autoFocus
             className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
           />
+          <select
+            value={newCategoryGroup}
+            onChange={(e) => setNewCategoryGroup(e.target.value as 'heavy' | 'field' | 'fleet' | '')}
+            className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
+          >
+            <option value="">— No Management Group —</option>
+            <option value="heavy">Heavy Equipment</option>
+            <option value="field">Field Tools</option>
+            <option value="fleet">Fleet</option>
+          </select>
           <div className="flex justify-end space-x-2">
             <button
-              onClick={() => { setShowAddCategory(false); setNewCategoryName(''); }}
+              onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryGroup(''); }}
               className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-600"
             >
               Cancel
@@ -200,6 +226,16 @@ export function FilterPanel({
             autoFocus
             className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
           />
+          <select
+            value={newCategoryGroup}
+            onChange={(e) => setNewCategoryGroup(e.target.value as 'heavy' | 'field' | 'fleet' | '')}
+            className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
+          >
+            <option value="">— No Management Group —</option>
+            <option value="heavy">Heavy Equipment</option>
+            <option value="field">Field Tools</option>
+            <option value="fleet">Fleet</option>
+          </select>
           <div className="flex justify-end space-x-2">
             <button
               onClick={handleCancelEdit}

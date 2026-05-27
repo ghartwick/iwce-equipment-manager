@@ -62,6 +62,7 @@ export interface Category {
   name: string;
   description: string;
   color: string;
+  managementGroup?: 'heavy' | 'field' | 'fleet';
 }
 
 export interface StockAlert {

@@ -5,6 +5,21 @@ export interface ImportedRow {
   description?: string;
 }
 
+export interface EquipmentRow {
+  name: string;
+  description?: string;
+  serialNumber?: string;
+  year?: string;
+  make?: string;
+  model?: string;
+  category?: string;
+  site?: string;
+  employee?: string;
+  locationNotes?: string;
+  repair?: boolean;
+  repairDescription?: string;
+}
+
 /**
  * Parse an Excel or CSV file and extract rows with name and optional description columns.
  * Accepts .xlsx, .xls, and .csv files.
@@ -70,6 +85,86 @@ export function parseExcelFile(file: File): Promise<ImportedRow[]> {
       reject(new Error('Failed to read the file.'));
     };
 
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+const FIELD_ALIASES: Record<keyof EquipmentRow, string[]> = {
+  name:              ['name', 'unit', 'unit name', 'equipment name', 'vehicle name'],
+  description:       ['description', 'desc'],
+  serialNumber:      ['serial', 'serial number', 'serialnumber', 'serial #', 'serial no', 'vin', 'vin number'],
+  year:              ['year', 'yr', 'model year'],
+  make:              ['make', 'manufacturer', 'brand', 'mfg'],
+  model:             ['model', 'model name', 'model number', 'model #'],
+  category:          ['category', 'cat', 'type', 'equipment type', 'class'],
+  site:              ['site', 'location', 'job site', 'jobsite'],
+  employee:          ['employee', 'assigned to', 'operator', 'driver', 'assigned', 'user'],
+  locationNotes:     ['notes', 'location notes', 'locationnotes', 'note', 'comments', 'remarks'],
+  repair:            ['repair', 'repair needed', 'needs repair'],
+  repairDescription: ['repair description', 'repairdescription', 'repair notes', 'repair reason'],
+};
+
+/**
+ * Parse an Excel/CSV file into EquipmentRow objects.
+ * Maps column headers (case-insensitive) to equipment fields using common aliases.
+ * Unknown columns are silently ignored.
+ */
+export function parseEquipmentExcel(file: File): Promise<EquipmentRow[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: '' });
+
+        if (jsonData.length === 0) {
+          reject(new Error('The file is empty or has no data rows.'));
+          return;
+        }
+
+        // Build a map from lowercased Excel column header → EquipmentRow field
+        const colMap: Record<string, keyof EquipmentRow> = {};
+        for (const excelKey of Object.keys(jsonData[0])) {
+          const lower = excelKey.toLowerCase().trim();
+          for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
+            if (aliases.includes(lower)) {
+              colMap[excelKey] = field as keyof EquipmentRow;
+              break;
+            }
+          }
+        }
+
+        const rows: EquipmentRow[] = jsonData
+          .map((row) => {
+            const out: Partial<EquipmentRow> = {};
+            for (const [excelKey, field] of Object.entries(colMap)) {
+              const raw = String(row[excelKey] ?? '').trim();
+              if (!raw) continue;
+              if (field === 'repair') {
+                out.repair = ['yes', 'true', '1', 'x'].includes(raw.toLowerCase());
+              } else {
+                (out as any)[field] = raw;
+              }
+            }
+            return out as EquipmentRow;
+          })
+          .filter((r) => r.name && r.name.length > 0);
+
+        if (rows.length === 0) {
+          reject(new Error('No valid entries found. Make sure there is a "Name" column.'));
+          return;
+        }
+
+        resolve(rows);
+      } catch {
+        reject(new Error('Failed to parse the file. Please ensure it is a valid Excel or CSV file.'));
+      }
+    };
+
+    reader.onerror = () => reject(new Error('Failed to read the file.'));
     reader.readAsArrayBuffer(file);
   });
 }

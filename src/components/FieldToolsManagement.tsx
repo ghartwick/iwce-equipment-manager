@@ -26,7 +26,7 @@ export function FieldToolsManagement({ currentUser, asPage = false }: FieldTools
   // Use the inventory hook but we'll filter for field tools only
   const {
     products: allProducts,
-    categories,
+    categories: allCategories,
     loading,
     addProduct,
     updateProduct,
@@ -37,6 +37,9 @@ export function FieldToolsManagement({ currentUser, asPage = false }: FieldTools
   const fieldTools = allProducts.filter(tool => 
     !tool.equipmentType || tool.equipmentType === 'field'
   );
+
+  // Only show categories assigned to field tools (or without a management group)
+  const categories = allCategories.filter((c) => c.managementGroup === 'field' || !c.managementGroup);
 
   // Apply search and alert filters
   const filteredTools = fieldTools.filter(tool => {

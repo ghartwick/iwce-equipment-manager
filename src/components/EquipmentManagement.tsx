@@ -9,7 +9,7 @@ import { userManagementService, AppUser } from '../services/userManagementServic
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { EquipmentLog } from './EquipmentLog';
 import { Category, Equipment } from '../types';
-import { parseExcelFile } from '../utils/excelImport';
+import { parseEquipmentExcel } from '../utils/excelImport';
 
 interface EquipmentService {
   getAllEquipment(): Promise<Equipment[]>;
@@ -27,11 +27,13 @@ interface EquipmentManagementProps {
   useEmployeeColumn?: boolean;
   hideTimecardColumn?: boolean;
   hideParentUnit?: boolean;
+  categoryGroupFilter?: 'heavy' | 'field' | 'fleet';
+  showClearAll?: boolean;
 }
 
 const EMPTY_FORM = { name: '', description: '', serialNumber: '', year: '', make: '', model: '', category: '', site: '', employee: '', repair: false, repairDescription: '', locationNotes: '', isActive: true, showInInventory: true, showInTimecard: true, parentId: '' };
 
-export function EquipmentManagement({ currentUser, asPage = false, title = 'Heavy Equipment', service, useEmployeeColumn = false, hideTimecardColumn = false, hideParentUnit = false }: EquipmentManagementProps) {
+export function EquipmentManagement({ currentUser, asPage = false, title = 'Heavy Equipment', service, useEmployeeColumn = false, hideTimecardColumn = false, hideParentUnit = false, categoryGroupFilter, showClearAll = false }: EquipmentManagementProps) {
   const svc = service ?? equipmentManagementService;
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -59,7 +61,10 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
 
   const loadCategories = async () => {
     try {
-      const loaded = await getCategories();
+      const allCats = await getCategories();
+      const loaded = categoryGroupFilter
+        ? allCats.filter(c => c.managementGroup === categoryGroupFilter || !c.managementGroup)
+        : allCats;
       setCategories([...loaded].sort((a, b) => {
         const numA = parseFloat(a.name), numB = parseFloat(b.name);
         if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
@@ -271,18 +276,30 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
     setImporting(true);
     setError(null);
     try {
-      const rows = await parseExcelFile(file);
+      const rows = await parseEquipmentExcel(file);
       for (const row of rows) {
+        // Resolve category name → ID if possible
+        const catId = (() => {
+          if (!row.category) return '';
+          const match = categories.find(
+            c => c.name.toLowerCase() === row.category!.toLowerCase() || c.id === row.category
+          );
+          return match ? match.id : '';
+        })();
         await svc.addEquipment({
           name: row.name,
           description: row.description || '',
-          serialNumber: '',
-          category: '',
-          site: '',
-          employee: '',
+          serialNumber: row.serialNumber || '',
+          year: row.year || '',
+          make: row.make || '',
+          model: row.model || '',
+          category: catId,
+          site: row.site || '',
+          employee: row.employee || '',
+          locationNotes: row.locationNotes || '',
+          repair: row.repair ?? false,
+          repairDescription: row.repairDescription || '',
           equipmentType: 'heavy',
-          repair: false,
-          repairDescription: '',
           isActive: true,
           showInInventory: true,
           showInTimecard: true,
@@ -345,6 +362,23 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                   <span>{importing ? 'Importing...' : 'Import Excel'}</span>
                 </button>
                 <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImportExcel} className="hidden" />
+                {showClearAll && (
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm(`Delete ALL ${equipment.length} items from ${title}? This cannot be undone.`)) return;
+                      try {
+                        await Promise.all(equipment.map(e => svc.deleteEquipment(e.id)));
+                        setSuccess(`All ${title} data deleted.`);
+                        await loadEquipment();
+                      } catch {
+                        setError('Failed to delete all items.');
+                      }
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Delete All Data
+                  </button>
+                )}
               </>
             )}
           </div>

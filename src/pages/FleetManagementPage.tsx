@@ -15,6 +15,8 @@ export default function FleetManagementPage() {
       useEmployeeColumn
       hideTimecardColumn
       hideParentUnit
+      categoryGroupFilter="fleet"
+      showClearAll
       onClose={() => navigate(-1)}
       currentUser={user ? { username: user.username, role: user.role } : null}
     />

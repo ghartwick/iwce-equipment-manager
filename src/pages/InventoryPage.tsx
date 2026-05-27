@@ -12,6 +12,7 @@ import { Equipment } from '../types';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
+import { fleetManagementService } from '../services/fleetManagementService';
 
 function InventoryPage() {
   const navigate = useNavigate();
@@ -39,21 +40,24 @@ function InventoryPage() {
   const alertsRef = useRef<HTMLDivElement>(null);
   const [sites, setSites] = useState<Site[]>([]);
   const [appUsers, setAppUsers] = useState<AppUser[]>([]);
+  const [fleetProducts, setFleetProducts] = useState<Equipment[]>([]);
 
   const hasRestored = useRef(false);
 
-  // Fetch sites and users for inline editing
+  // Fetch sites, users, and fleet data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [loadedSites, loadedUsers] = await Promise.all([
+        const [loadedSites, loadedUsers, loadedFleet] = await Promise.all([
           siteManagementService.getActiveSites(),
           userManagementService.getAllUsers(),
+          fleetManagementService.getAllEquipment(),
         ]);
         setSites(loadedSites);
         setAppUsers(loadedUsers);
+        setFleetProducts(loadedFleet);
       } catch (error) {
-        console.error('Error fetching sites/users:', error);
+        console.error('Error fetching sites/users/fleet:', error);
       }
     };
     fetchData();
@@ -293,10 +297,12 @@ function InventoryPage() {
                   categories={categories}
                   selectedCategory={selectedCategory}
                   onCategoryChange={setSelectedCategory}
+                  fleetProducts={fleetProducts}
                   onAddCategory={addCategory}
                   onDeleteCategory={deleteCategory}
                   onEditCategory={editCategory}
                   userRole={user?.role}
+                  products={products}
                 />
               </div>
             </div>
@@ -364,10 +370,12 @@ function InventoryPage() {
                     categories={categories}
                     selectedCategory={selectedCategory}
                     onCategoryChange={setSelectedCategory}
+                    fleetProducts={fleetProducts}
                     onAddCategory={addCategory}
                     onDeleteCategory={deleteCategory}
                     onEditCategory={editCategory}
                     userRole={user?.role}
+                    products={products}
                   />
                 </div>
               </div>

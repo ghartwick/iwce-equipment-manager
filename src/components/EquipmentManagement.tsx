@@ -5,23 +5,38 @@ import { QRCodeSVG } from 'qrcode.react';
 import { equipmentManagementService } from '../services/equipmentManagementService';
 import { getCategories } from '../services/firebaseService';
 import { siteManagementService, Site } from '../services/siteManagementService';
+import { userManagementService, AppUser } from '../services/userManagementService';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { EquipmentLog } from './EquipmentLog';
 import { Category, Equipment } from '../types';
 import { parseExcelFile } from '../utils/excelImport';
 
+interface EquipmentService {
+  getAllEquipment(): Promise<Equipment[]>;
+  addEquipment(data: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<string>;
+  updateEquipment(id: string, updates: Partial<Omit<Equipment, 'id' | 'createdAt'>>, user?: { username: string; role: string }): Promise<void>;
+  deleteEquipment(id: string): Promise<void>;
+}
+
 interface EquipmentManagementProps {
   onClose: () => void;
   currentUser: { username: string; role: string } | null;
   asPage?: boolean;
+  title?: string;
+  service?: EquipmentService;
+  useEmployeeColumn?: boolean;
+  hideTimecardColumn?: boolean;
+  hideParentUnit?: boolean;
 }
 
 const EMPTY_FORM = { name: '', description: '', serialNumber: '', year: '', make: '', model: '', category: '', site: '', employee: '', repair: false, repairDescription: '', locationNotes: '', isActive: true, showInInventory: true, showInTimecard: true, parentId: '' };
 
-export function EquipmentManagement({ currentUser, asPage = false }: EquipmentManagementProps) {
+export function EquipmentManagement({ currentUser, asPage = false, title = 'Heavy Equipment', service, useEmployeeColumn = false, hideTimecardColumn = false, hideParentUnit = false }: EquipmentManagementProps) {
+  const svc = service ?? equipmentManagementService;
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<Equipment | null>(null);
@@ -39,6 +54,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
     loadEquipment();
     loadCategories();
     loadSites();
+    if (useEmployeeColumn) loadUsers();
   }, []);
 
   const loadCategories = async () => {
@@ -63,9 +79,18 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
     }
   };
 
+  const loadUsers = async () => {
+    try {
+      const loaded = await userManagementService.getAllUsers();
+      setUsers(loaded.filter(u => u.isActive).sort((a, b) => a.name.localeCompare(b.name)));
+    } catch (err) {
+      console.error('Error loading users:', err);
+    }
+  };
+
   const loadEquipment = async () => {
     try {
-      const serviceEquipment = await equipmentManagementService.getAllEquipment();
+      const serviceEquipment = await svc.getAllEquipment();
       // Convert Date objects to strings and ensure all required fields
       const convertedEquipment: Equipment[] = serviceEquipment.map(item => ({
         ...item,
@@ -132,11 +157,11 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
           });
         }
         
-        await equipmentManagementService.updateEquipment(editingItem.id, formData);
+        await svc.updateEquipment(editingItem.id, formData);
         setSuccess('Equipment updated successfully');
         setEditingItem(null);
       } else {
-        const newId = await equipmentManagementService.addEquipment({ ...formData, equipmentType: 'heavy', createdBy: currentUser?.username });
+        const newId = await svc.addEquipment({ ...formData, equipmentType: 'heavy', createdBy: currentUser?.username });
         
         // Log the creation to history
         if (currentUser) {
@@ -186,7 +211,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
   const handleDelete = async (item: Equipment) => {
     if (!window.confirm(`Are you sure you want to delete "${item.name}"?`)) return;
     try {
-      await equipmentManagementService.deleteEquipment(item.id);
+      await svc.deleteEquipment(item.id);
       setSuccess('Equipment deleted successfully');
       await loadEquipment();
     } catch {
@@ -196,7 +221,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
 
   const handleToggleInventory = async (item: Equipment) => {
     try {
-      await equipmentManagementService.updateEquipment(item.id, { showInInventory: !item.showInInventory });
+      await svc.updateEquipment(item.id, { showInInventory: !item.showInInventory });
       setSuccess(`Inventory ${!item.showInInventory ? 'enabled' : 'disabled'} for ${item.name}`);
       await loadEquipment();
     } catch {
@@ -206,7 +231,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
 
   const handleToggleTimecard = async (item: Equipment) => {
     try {
-      await equipmentManagementService.updateEquipment(item.id, { showInTimecard: !item.showInTimecard });
+      await svc.updateEquipment(item.id, { showInTimecard: !item.showInTimecard });
       setSuccess(`Timecard ${!item.showInTimecard ? 'enabled' : 'disabled'} for ${item.name}`);
       await loadEquipment();
     } catch {
@@ -216,11 +241,21 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
 
   const handleSiteChange = async (item: Equipment, newSite: string) => {
     try {
-      await equipmentManagementService.updateEquipment(item.id, { site: newSite });
+      await svc.updateEquipment(item.id, { site: newSite });
       setSuccess(`Site updated to ${newSite || 'Unassigned'} for ${item.name}`);
       await loadEquipment();
     } catch {
       setError('Failed to update site');
+    }
+  };
+
+  const handleEmployeeChange = async (item: Equipment, newEmployee: string) => {
+    try {
+      await svc.updateEquipment(item.id, { employee: newEmployee });
+      setSuccess(`Employee updated to ${newEmployee || 'Unassigned'} for ${item.name}`);
+      await loadEquipment();
+    } catch {
+      setError('Failed to update employee');
     }
   };
 
@@ -238,8 +273,8 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
     try {
       const rows = await parseExcelFile(file);
       for (const row of rows) {
-        await equipmentManagementService.addEquipment({
-          name: row.name, 
+        await svc.addEquipment({
+          name: row.name,
           description: row.description || '',
           serialNumber: '',
           category: '',
@@ -248,8 +283,8 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
           equipmentType: 'heavy',
           repair: false,
           repairDescription: '',
-          isActive: true, 
-          showInInventory: true, 
+          isActive: true,
+          showInInventory: true,
           showInTimecard: true,
           createdBy: currentUser?.username
         });
@@ -267,7 +302,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
   const inner = (
     <>
         {/* Header */}
-        <div className="px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-700 dark:bg-yellow-900 dark:bg-opacity-30"><h2 className="text-xl font-semibold text-yellow-100 dark:text-yellow-300">Manage Heavy Equipment</h2>
+        <div className="px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 bg-yellow-700 dark:bg-yellow-900 dark:bg-opacity-30"><h2 className="text-xl font-semibold text-yellow-100 dark:text-yellow-300">Manage {title}</h2>
         </div>
 
         <div className="p-4 overflow-y-auto">
@@ -288,7 +323,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <input
               type="text"
-              placeholder="Search heavy equipment..."
+              placeholder={`Search ${title.toLowerCase()}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 px-4 py-2 border border-yellow-600 rounded-lg bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
@@ -318,7 +353,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
           {showAddForm && (
             <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
               <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3">
-                Add Heavy Equipment
+                Add {title}
               </h3>
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -368,26 +403,41 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
-                  <select
-                    value={formData.site}
-                    onChange={(e) => setFormData({ ...formData, site: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  >
-                    <option value="">Select Site</option>
-                    {sites.map((site) => (
-                      <option key={site.id} value={site.name}>{site.name}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={formData.parentId}
-                    onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
-                    className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  >
-                    <option value="">No Parent (Original Unit)</option>
-                    {equipment.filter(e => !e.parentId && e.id !== editingItem?.id).map((e) => (
-                      <option key={e.id} value={e.id}>{e.name}</option>
-                    ))}
-                  </select>
+                  {useEmployeeColumn ? (
+                    <select
+                      value={formData.employee}
+                      onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    >
+                      <option value="">Select Employee</option>
+                      {users.map((u) => (
+                        <option key={u.id} value={u.name}>{u.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={formData.site}
+                      onChange={(e) => setFormData({ ...formData, site: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    >
+                      <option value="">Select Site</option>
+                      {sites.map((site) => (
+                        <option key={site.id} value={site.name}>{site.name}</option>
+                      ))}
+                    </select>
+                  )}
+                  {!hideParentUnit && (
+                    <select
+                      value={formData.parentId}
+                      onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
+                      className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    >
+                      <option value="">No Parent (Original Unit)</option>
+                      {equipment.filter(e => !e.parentId && e.id !== editingItem?.id).map((e) => (
+                        <option key={e.id} value={e.id}>{e.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">
@@ -412,10 +462,12 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                       <span>Show in Inventory</span>
                     </label>
                   )}
-                  <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                    <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
-                    <span>Show in Timecard</span>
-                  </label>
+                  {!hideTimecardColumn && (
+                    <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                      <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                      <span>Show in Timecard</span>
+                    </label>
+                  )}
                 </div>
                 <div className="flex space-x-2">
                   <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">
@@ -431,10 +483,10 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
 
           {/* Equipment Table grouped by category */}
           {loading ? (
-            <div className="text-center py-8 text-yellow-600 dark:text-yellow-400">Loading heavy equipment...</div>
+            <div className="text-center py-8 text-yellow-600 dark:text-yellow-400">Loading {title.toLowerCase()}...</div>
           ) : filteredEquipment.length === 0 ? (
             <div className="text-center py-8 text-yellow-600 dark:text-yellow-400">
-              {searchTerm ? 'No equipment found matching your search.' : 'No heavy equipment found.'}
+              {searchTerm ? 'No equipment found matching your search.' : `No ${title.toLowerCase()} found.`}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -442,18 +494,18 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                 <thead>
                   <tr className="bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30">
                     <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Name</th>
-                    <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Site</th>
+                    <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">{useEmployeeColumn ? 'Employee' : 'Site'}</th>
                     <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Inventory</th>
-                    <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Timecard</th>
+                    {!hideTimecardColumn && <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Timecard</th>}
                     <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Status</th>
                     <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(() => {
-                    // First, separate parents and variants
-                    const parents = filteredEquipment.filter(item => !item.parentId);
-                    const variants = filteredEquipment.filter(item => item.parentId);
+                    // When parent units are hidden, show all items; otherwise only top-level parents
+                    const parents = hideParentUnit ? filteredEquipment : filteredEquipment.filter(item => !item.parentId);
+                    const variants = hideParentUnit ? [] : filteredEquipment.filter(item => item.parentId);
                     
                     // Group parents by category
                     const grouped = parents.reduce((acc, item) => {
@@ -505,18 +557,31 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                   )}
                                 </td>
                               <td className="px-4 py-2">
-                                <select
-                                  value={item.site || ''}
-                                  onChange={(e) => handleSiteChange(item, e.target.value)}
-                                  className="px-2 py-1 rounded bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-sm focus:ring-2 focus:ring-yellow-500"
-                                >
-                                  <option value="">Unassigned</option>
-                                  {sites.map((site) => (
-                                    <option key={site.id} value={site.name}>
-                                      {site.name}
-                                    </option>
-                                  ))}
-                                </select>
+                                {useEmployeeColumn ? (
+                                  <select
+                                    value={item.employee || ''}
+                                    onChange={(e) => handleEmployeeChange(item, e.target.value)}
+                                    className="px-2 py-1 rounded bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-sm focus:ring-2 focus:ring-yellow-500"
+                                  >
+                                    <option value="">Unassigned</option>
+                                    {users.map((u) => (
+                                      <option key={u.id} value={u.name}>{u.name}</option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <select
+                                    value={item.site || ''}
+                                    onChange={(e) => handleSiteChange(item, e.target.value)}
+                                    className="px-2 py-1 rounded bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-sm focus:ring-2 focus:ring-yellow-500"
+                                  >
+                                    <option value="">Unassigned</option>
+                                    {sites.map((site) => (
+                                      <option key={site.id} value={site.name}>
+                                        {site.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
                               </td>
                               <td className="px-4 py-2 text-center">
                                 <button
@@ -531,19 +596,21 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                   {item.showInInventory ? '✓' : '-'}
                                 </button>
                               </td>
-                              <td className="px-4 py-2 text-center">
-                                <button
-                                  onClick={() => handleToggleTimecard(item)}
-                                  className={`p-1 rounded transition-colors ${
-                                    item.showInTimecard 
-                                      ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 dark:hover:bg-opacity-30' 
-                                      : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                  }`}
-                                  title={item.showInTimecard ? 'Remove from timecard' : 'Add to timecard'}
-                                >
-                                  {item.showInTimecard ? '✓' : '-'}
-                                </button>
-                              </td>
+                              {!hideTimecardColumn && (
+                                <td className="px-4 py-2 text-center">
+                                  <button
+                                    onClick={() => handleToggleTimecard(item)}
+                                    className={`p-1 rounded transition-colors ${
+                                      item.showInTimecard 
+                                        ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 dark:hover:bg-opacity-30' 
+                                        : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                    }`}
+                                    title={item.showInTimecard ? 'Remove from timecard' : 'Add to timecard'}
+                                  >
+                                    {item.showInTimecard ? '✓' : '-'}
+                                  </button>
+                                </td>
+                              )}
                               <td className="px-4 py-2">
                                 {!item.isActive ? (
                                   <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs rounded">Inactive</span>
@@ -605,7 +672,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                 <td colSpan={6} className="px-4 py-0">
                                   <div className="p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg mt-2">
                                     <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3">
-                                      Edit Heavy Equipment: {item.name}
+                                      Edit {title}: {item.name}
                                     </h3>
                                     <form onSubmit={handleSubmit} className="space-y-3">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -655,26 +722,41 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                                           ))}
                                         </select>
-                                        <select
-                                          value={formData.site}
-                                          onChange={(e) => setFormData({ ...formData, site: e.target.value })}
-                                          className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                        >
-                                          <option value="">Select Site</option>
-                                          {sites.map(site => (
-                                            <option key={site.id} value={site.name}>{site.name}</option>
-                                          ))}
-                                        </select>
-                                        <select
-                                          value={formData.parentId}
-                                          onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
-                                          className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                        >
-                                          <option value="">No Parent (Original Unit)</option>
-                                          {equipment.filter(e => !e.parentId && e.id !== editingItem?.id).map((e) => (
-                                            <option key={e.id} value={e.id}>{e.name}</option>
-                                          ))}
-                                        </select>
+                                        {useEmployeeColumn ? (
+                                          <select
+                                            value={formData.employee}
+                                            onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
+                                            className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                          >
+                                            <option value="">Select Employee</option>
+                                            {users.map((u) => (
+                                              <option key={u.id} value={u.name}>{u.name}</option>
+                                            ))}
+                                          </select>
+                                        ) : (
+                                          <select
+                                            value={formData.site}
+                                            onChange={(e) => setFormData({ ...formData, site: e.target.value })}
+                                            className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                          >
+                                            <option value="">Select Site</option>
+                                            {sites.map(site => (
+                                              <option key={site.id} value={site.name}>{site.name}</option>
+                                            ))}
+                                          </select>
+                                        )}
+                                        {!hideParentUnit && (
+                                          <select
+                                            value={formData.parentId}
+                                            onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
+                                            className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                          >
+                                            <option value="">No Parent (Original Unit)</option>
+                                            {equipment.filter(e => !e.parentId && e.id !== editingItem?.id).map((e) => (
+                                              <option key={e.id} value={e.id}>{e.name}</option>
+                                            ))}
+                                          </select>
+                                        )}
                                       </div>
                                       <div className="flex items-center space-x-6 text-sm">
                                         <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
@@ -687,10 +769,12 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                             <span>Show in Inventory</span>
                                           </label>
                                         )}
-                                        <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                          <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
-                                          <span>Show in Timecard</span>
-                                        </label>
+                                        {!hideTimecardColumn && (
+                                          <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                            <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                            <span>Show in Timecard</span>
+                                          </label>
+                                        )}
                                       </div>
                                       <div className="flex space-x-2">
                                         <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">
@@ -727,19 +811,21 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                   <td className="px-4 py-2 text-center">
                                     <span className="text-gray-400 text-sm">-</span>
                                   </td>
-                                  <td className="px-4 py-2 text-center">
-                                    <button
-                                      onClick={() => handleToggleTimecard(variant)}
-                                      className={`p-1 rounded transition-colors ${
-                                        variant.showInTimecard 
-                                          ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 dark:hover:bg-opacity-30' 
-                                          : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                      }`}
-                                      title={variant.showInTimecard ? 'Remove from timecard' : 'Add to timecard'}
-                                    >
-                                      {variant.showInTimecard ? '✓' : '-'}
-                                    </button>
-                                  </td>
+                                  {!hideTimecardColumn && (
+                                    <td className="px-4 py-2 text-center">
+                                      <button
+                                        onClick={() => handleToggleTimecard(variant)}
+                                        className={`p-1 rounded transition-colors ${
+                                          variant.showInTimecard 
+                                            ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900 dark:hover:bg-opacity-30' 
+                                            : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                        }`}
+                                        title={variant.showInTimecard ? 'Remove from timecard' : 'Add to timecard'}
+                                      >
+                                        {variant.showInTimecard ? '✓' : '-'}
+                                      </button>
+                                    </td>
+                                  )}
                                   <td className="px-4 py-2">
                                     {/* No status badge for variants */}
                                   </td>
@@ -783,7 +869,7 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                     <td colSpan={6} className="px-4 py-0">
                                       <div className="p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg mt-2">
                                         <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3">
-                                          Edit Heavy Equipment: {variant.name}
+                                          Edit {title}: {variant.name}
                                         </h3>
                                         <form onSubmit={handleSubmit} className="space-y-3">
                                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -815,26 +901,41 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                                               ))}
                                             </select>
-                                            <select
-                                              value={formData.site}
-                                              onChange={(e) => setFormData({ ...formData, site: e.target.value })}
-                                              className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                            >
-                                              <option value="">Select Site</option>
-                                              {sites.map(site => (
-                                                <option key={site.id} value={site.name}>{site.name}</option>
-                                              ))}
-                                            </select>
-                                            <select
-                                              value={formData.parentId}
-                                              onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
-                                              className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                                            >
-                                              <option value="">No Parent (Original Unit)</option>
-                                              {equipment.filter(e => !e.parentId && e.id !== editingItem?.id).map((e) => (
-                                                <option key={e.id} value={e.id}>{e.name}</option>
-                                              ))}
-                                            </select>
+                                            {useEmployeeColumn ? (
+                                              <select
+                                                value={formData.employee}
+                                                onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                              >
+                                                <option value="">Select Employee</option>
+                                                {users.map((u) => (
+                                                  <option key={u.id} value={u.name}>{u.name}</option>
+                                                ))}
+                                              </select>
+                                            ) : (
+                                              <select
+                                                value={formData.site}
+                                                onChange={(e) => setFormData({ ...formData, site: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                              >
+                                                <option value="">Select Site</option>
+                                                {sites.map(site => (
+                                                  <option key={site.id} value={site.name}>{site.name}</option>
+                                                ))}
+                                              </select>
+                                            )}
+                                            {!hideParentUnit && (
+                                              <select
+                                                value={formData.parentId}
+                                                onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
+                                                className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                              >
+                                                <option value="">No Parent (Original Unit)</option>
+                                                {equipment.filter(e => !e.parentId && e.id !== editingItem?.id).map((e) => (
+                                                  <option key={e.id} value={e.id}>{e.name}</option>
+                                                ))}
+                                              </select>
+                                            )}
                                           </div>
                                           <div className="flex items-center space-x-6 text-sm">
                                             <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
@@ -847,10 +948,12 @@ export function EquipmentManagement({ currentUser, asPage = false }: EquipmentMa
                                                 <span>Show in Inventory</span>
                                               </label>
                                             )}
-                                            <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                              <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
-                                              <span>Show in Timecard</span>
-                                            </label>
+                                            {!hideTimecardColumn && (
+                                              <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                                <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                                <span>Show in Timecard</span>
+                                              </label>
+                                            )}
                                           </div>
                                           <div className="flex space-x-2">
                                             <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">

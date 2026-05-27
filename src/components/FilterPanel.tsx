@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Filter, Plus, Trash2, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
-import { Category } from '../types';
+import { Category, Equipment } from '../types';
 
 interface FilterPanelProps {
   categories: Category[];
@@ -10,6 +10,8 @@ interface FilterPanelProps {
   onDeleteCategory: (categoryId: string) => void;
   onEditCategory: (categoryId: string, category: Omit<Category, 'id'>) => void;
   userRole?: 'admin' | 'supervisor' | 'field';
+  products?: Equipment[];
+  fleetProducts?: Equipment[];
 }
 
 export function FilterPanel({ 
@@ -19,7 +21,9 @@ export function FilterPanel({
   onAddCategory,
   onDeleteCategory,
   onEditCategory,
-  userRole
+  userRole,
+  products = [],
+  fleetProducts = []
 }: FilterPanelProps) {
 
   const scrollToCategory = (categoryId: string) => {
@@ -80,22 +84,35 @@ export function FilterPanel({
     };
   }, [isCategoryFormCollapsed]);
 
-  // Sort categories alphabetically and numerically
-  const sortedCategories = [...categories].sort((a, b) => {
+  const sortCats = (cats: Category[]) => [...cats].sort((a, b) => {
     const nameA = a.name.toLowerCase();
     const nameB = b.name.toLowerCase();
-    
-    // Try numeric comparison first
     const numA = parseFloat(nameA);
     const numB = parseFloat(nameB);
-    
-    if (!isNaN(numA) && !isNaN(numB)) {
-      return numA - numB;
-    }
-    
-    // Fall back to alphabetical comparison
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
     return nameA.localeCompare(nameB);
   });
+
+  // Build sets of category IDs/names used by each equipment type
+  const heavyCatKeys = new Set<string>();
+  const fieldCatKeys = new Set<string>();
+  const fleetCatKeys = new Set<string>();
+  products.forEach(p => {
+    if (!p.category) return;
+    if (p.equipmentType === 'heavy') heavyCatKeys.add(p.category);
+    else fieldCatKeys.add(p.category);
+  });
+  fleetProducts.forEach(p => {
+    if (p.category) fleetCatKeys.add(p.category);
+  });
+
+  const matchesCat = (cat: Category, keys: Set<string>) =>
+    keys.has(cat.id) || keys.has(cat.name);
+
+  const heavyCategories = sortCats(categories.filter(c => matchesCat(c, heavyCatKeys)));
+  const fieldCategories = sortCats(categories.filter(c => matchesCat(c, fieldCatKeys) && !matchesCat(c, heavyCatKeys)));
+  const fleetCategories = sortCats(categories.filter(c => matchesCat(c, fleetCatKeys) && !matchesCat(c, heavyCatKeys) && !matchesCat(c, fieldCatKeys)));
+  const uncategorized = sortCats(categories.filter(c => !matchesCat(c, heavyCatKeys) && !matchesCat(c, fieldCatKeys) && !matchesCat(c, fleetCatKeys)));
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
@@ -136,6 +153,71 @@ export function FilterPanel({
   };
 
   return (
+    <>
+    {/* Add Category Modal */}
+    {showAddCategory && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="bg-yellow-100 dark:bg-gray-900 border border-yellow-500 dark:border-yellow-700 rounded-lg shadow-2xl p-6 w-80 space-y-4">
+          <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Add Category</h3>
+          <input
+            type="text"
+            placeholder="Category name"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') setShowAddCategory(false); }}
+            autoFocus
+            className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
+          />
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => { setShowAddCategory(false); setNewCategoryName(''); }}
+              className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddCategory}
+              className="px-3 py-1.5 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600 font-medium"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Edit Category Modal */}
+    {editingCategoryId && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="bg-yellow-100 dark:bg-gray-900 border border-yellow-500 dark:border-yellow-700 rounded-lg shadow-2xl p-6 w-80 space-y-4">
+          <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Edit Category</h3>
+          <input
+            type="text"
+            placeholder="Category name"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateCategory(); if (e.key === 'Escape') handleCancelEdit(); }}
+            autoFocus
+            className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
+          />
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={handleCancelEdit}
+              className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleUpdateCategory}
+              className="px-3 py-1.5 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600 font-medium"
+            >
+              Update
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     <div ref={panelRef} className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow p-2 sm:p-4">
       <div 
         className="flex items-center justify-between mb-2 sm:mb-3 cursor-pointer"
@@ -177,59 +259,6 @@ export function FilterPanel({
 
       {!isCategoryFormCollapsed && (
         <>
-          {showAddCategory && (
-            <div className="hidden sm:block mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
-              <input
-                type="text"
-                placeholder="Category name"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-              />
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleAddCategory}
-                  className="px-2 py-1 sm:px-3 sm:py-1 bg-yellow-500 text-black text-xs sm:text-sm rounded hover:bg-yellow-600"
-                >
-                  Add
-                </button>
-                <button
-                  onClick={() => setShowAddCategory(false)}
-                  className="px-2 py-1 sm:px-3 sm:py-1 bg-gray-200 dark:bg-gray-300 text-gray-700 text-xs sm:text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
-          {editingCategoryId && (
-            <div className="hidden sm:block mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg space-y-2 sm:space-y-3">
-              <h4 className="text-xs sm:text-sm font-medium text-yellow-700 dark:text-yellow-200">Edit Category</h4>
-              <input
-                type="text"
-                placeholder="Category name"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                className="w-full px-2 py-1 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-              />
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleUpdateCategory}
-                  className="px-2 py-1 sm:px-3 sm:py-1 bg-yellow-500 text-black text-xs sm:text-sm rounded hover:bg-yellow-600"
-                >
-                  Update
-                </button>
-                <button
-                  onClick={handleCancelEdit}
-                  className="px-2 py-1 sm:px-3 sm:py-1 bg-gray-200 dark:bg-gray-300 text-gray-700 text-xs sm:text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
           <div className="space-y-1 sm:space-y-2">
             <button
               role="button"
@@ -242,51 +271,90 @@ export function FilterPanel({
             >
               All Categories
             </button>
-            {sortedCategories.map((category) => (
-              <div
-                role="button"
-                key={category.id}
-                onClick={() => scrollToCategory(category.id)}
-                className={`relative group flex items-center justify-between w-full px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm cursor-pointer ${
-                  selectedCategory === category.id
-                    ? 'bg-yellow-600 text-black'
-                    : 'hover:bg-yellow-200 dark:hover:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
-                }`}
-              >
-                <div className="flex items-center space-x-2 flex-1">
-                  <span>{category.name}</span>
-                </div>
-                {userRole === 'admin' && (
-                  <div className="hidden sm:flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditCategory(category.id);
-                      }}
-                      className="p-1 text-yellow-500 hover:text-yellow-300"
-                      title="Edit category"
-                    >
-                      <Edit2 className="h-2 w-2 sm:h-3 sm:w-3" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
-                          onDeleteCategory(category.id);
-                        }
-                      }}
-                      className="p-1 text-red-500 hover:text-red-300"
-                      title="Delete category"
-                    >
-                      <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
-                    </button>
+
+            {/* Helper to render a category button */}
+            {(() => {
+              const renderCategory = (category: Category) => (
+                <div
+                  role="button"
+                  key={category.id}
+                  onClick={() => scrollToCategory(category.id)}
+                  className={`relative group flex items-center justify-between w-full px-2 py-1 sm:px-3 sm:py-2 rounded-md transition-colors text-xs sm:text-sm cursor-pointer ${
+                    selectedCategory === category.id
+                      ? 'bg-yellow-600 text-black'
+                      : 'hover:bg-yellow-200 dark:hover:bg-yellow-900 text-yellow-700 dark:text-yellow-200'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2 flex-1">
+                    <span>{category.name}</span>
                   </div>
-                )}
-              </div>
-            ))}
+                  {userRole === 'admin' && (
+                    <div className="hidden sm:flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEditCategory(category.id); }}
+                        className="p-1 text-yellow-500 hover:text-yellow-300"
+                        title="Edit category"
+                      >
+                        <Edit2 className="h-2 w-2 sm:h-3 sm:w-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
+                            onDeleteCategory(category.id);
+                          }
+                        }}
+                        className="p-1 text-red-500 hover:text-red-300"
+                        title="Delete category"
+                      >
+                        <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+
+              return (
+                <>
+                  {heavyCategories.length > 0 && (
+                    <div>
+                      <p className="px-2 pt-2 pb-1 text-xs font-semibold text-yellow-600 dark:text-yellow-500 uppercase tracking-wide">
+                        Heavy Equipment
+                      </p>
+                      {heavyCategories.map(renderCategory)}
+                    </div>
+                  )}
+                  {fieldCategories.length > 0 && (
+                    <div>
+                      <p className="px-2 pt-2 pb-1 text-xs font-semibold text-yellow-600 dark:text-yellow-500 uppercase tracking-wide">
+                        Field Tools
+                      </p>
+                      {fieldCategories.map(renderCategory)}
+                    </div>
+                  )}
+                  <div>
+                    <p className="px-2 pt-2 pb-1 text-xs font-semibold text-yellow-600 dark:text-yellow-500 uppercase tracking-wide">
+                      Fleet
+                    </p>
+                    {fleetCategories.map(renderCategory)}
+                  </div>
+                  {uncategorized.length > 0 && (
+                    <div>
+                      {(heavyCategories.length > 0 || fieldCategories.length > 0 || fleetCategories.length > 0) && (
+                        <p className="px-2 pt-2 pb-1 text-xs font-semibold text-yellow-600 dark:text-yellow-500 uppercase tracking-wide">
+                          Other
+                        </p>
+                      )}
+                      {uncategorized.map(renderCategory)}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </>
       )}
     </div>
+    </>
   );
 }

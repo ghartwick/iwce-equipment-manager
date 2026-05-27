@@ -13,6 +13,7 @@ const GamePage = React.lazy(() => import('./pages/GamePage'));
 const EquipmentPage = React.lazy(() => import('./pages/EquipmentPage'));
 const ShopPage = React.lazy(() => import('./pages/ShopPage'));
 const HeavyEquipmentManagementPage = React.lazy(() => import('./pages/HeavyEquipmentManagementPage'));
+const FleetManagementPage = React.lazy(() => import('./pages/FleetManagementPage'));
 const FieldToolsManagementPage = React.lazy(() => import('./pages/FieldToolsManagementPage'));
 const SmallToolsManagementPage = React.lazy(() => import('./pages/SmallToolsManagementPage'));
 const SiteManagementPage = React.lazy(() => import('./pages/SiteManagementPage'));
@@ -98,6 +99,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <ShopPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/manage/fleet" element={
+          isAuthenticated ? (
+            <Layout>
+              <FleetManagementPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

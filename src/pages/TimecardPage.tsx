@@ -91,6 +91,7 @@ export default function TimecardPage() {
   const [showSummary, setShowSummary] = useState(false);
   const [poCounts, setPoCounts] = useState<Record<string, number>>({});
   const [posForDate, setPosForDate] = useState<PurchaseOrder[]>([]);
+  const [hoveredAttachment, setHoveredAttachment] = useState<TimecardAttachment | null>(null);
 
   // User management
   const [users, setUsers] = useState<AppUser[]>([]);
@@ -1248,12 +1249,26 @@ export default function TimecardPage() {
                       <div className="space-y-2">
                         {attachmentsForDate.map((attachment) => {
                           const uploader = users.find(u => u.id === attachment.uploadedBy);
+                          const isImage = attachment.fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
                           return (
                             <div
                               key={attachment.id}
                               className="bg-yellow-100 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg p-3"
                             >
-                              <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-start gap-3">
+                                {isImage && (
+                                  <div
+                                    className="flex-shrink-0 w-20 h-20 border border-yellow-400 dark:border-yellow-700 rounded overflow-hidden cursor-pointer hover:border-yellow-600 dark:hover:border-yellow-500 transition-colors"
+                                    onMouseEnter={() => setHoveredAttachment(attachment)}
+                                    onMouseLeave={() => setHoveredAttachment(null)}
+                                  >
+                                    <img
+                                      src={attachment.fileUrl}
+                                      alt={attachment.fileName}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1">
                                     <a
@@ -1287,6 +1302,20 @@ export default function TimecardPage() {
                           );
                         })}
                       </div>
+
+                      {/* Attachment Preview Overlay */}
+                      {hoveredAttachment && (
+                        <div
+                          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-none"
+                        >
+                          <div className="relative inline-block" style={{ transform: 'scale(0.75)', transformOrigin: 'center' }}>
+                            <img
+                              src={hoveredAttachment.fileUrl}
+                              alt={hoveredAttachment.fileName}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

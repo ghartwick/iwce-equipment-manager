@@ -61,7 +61,12 @@ export function EditSitePage() {
         description: siteData.description || '',
         isActive: siteData.isActive
       });
-      setCodes(siteData.codes || []);
+      setCodes((siteData.codes || []).sort((a, b) => {
+        const numA = parseFloat(a.name);
+        const numB = parseFloat(b.name);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return a.name.localeCompare(b.name);
+      }));
       setLinkedSites(siteData.linkedSites || []);
     } catch (error: any) {
       setError(error?.message || 'Failed to load site');
@@ -97,10 +102,16 @@ export function EditSitePage() {
       return;
     }
     
-    setCodes([...codes, { 
+    const updatedCodes = [...codes, { 
       name: newCode.trim(), 
       description: newCodeDescription.trim() 
-    }]);
+    }];
+    setCodes(updatedCodes.sort((a, b) => {
+      const numA = parseFloat(a.name);
+      const numB = parseFloat(b.name);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.name.localeCompare(b.name);
+    }));
     setNewCode('');
     setNewCodeDescription('');
     setShowAddCode(false);
@@ -127,7 +138,13 @@ export function EditSitePage() {
       if (newCodes.length === 0) {
         setError('No new codes to import (all codes already exist)');
       } else {
-        setCodes([...codes, ...newCodes]);
+        const updatedCodes = [...codes, ...newCodes];
+        setCodes(updatedCodes.sort((a, b) => {
+          const numA = parseFloat(a.name);
+          const numB = parseFloat(b.name);
+          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+          return a.name.localeCompare(b.name);
+        }));
         setSuccess(`Imported ${newCodes.length} code${newCodes.length !== 1 ? 's' : ''}`);
       }
     } catch (err: any) {

@@ -55,6 +55,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
   const [photosLoading, setPhotosLoading] = useState(false);
   const [photosUploading, setPhotosUploading] = useState(false);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [hoveredPhoto, setHoveredPhoto] = useState<EquipmentPhoto | null>(null);
 
   const getEquipmentUrl = (id: string) => {
     const baseUrl = 'https://iwce-equipment-manager.vercel.app';
@@ -666,30 +667,49 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                   {photosLoading ? (
                     <p className="text-xs text-yellow-600 dark:text-yellow-400">Loading photos...</p>
                   ) : equipmentPhotos.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {equipmentPhotos.map(photo => (
-                        <div key={photo.id} className="relative group">
-                          <a href={photo.fileUrl} target="_blank" rel="noopener noreferrer">
+                    <>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {equipmentPhotos.map(photo => (
+                          <div
+                            key={photo.id}
+                            className="relative group"
+                            onMouseEnter={() => setHoveredPhoto(photo)}
+                            onMouseLeave={() => setHoveredPhoto(null)}
+                          >
+                            <a href={photo.fileUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                              <img
+                                src={photo.fileUrl}
+                                alt={photo.fileName}
+                                className="w-full h-24 object-cover rounded border border-yellow-300 dark:border-yellow-700 cursor-pointer hover:border-yellow-500 transition-colors"
+                              />
+                            </a>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-0.5">{photo.fileName}</p>
+                            {user?.role === 'admin' && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleDeletePhoto(photo); }}
+                                className="absolute top-1 right-1 p-0.5 bg-red-600 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Delete photo"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Hover Preview Overlay */}
+                      {hoveredPhoto && (
+                        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-none">
+                          <div className="relative inline-block" style={{ transform: 'scale(0.75)', transformOrigin: 'center' }}>
                             <img
-                              src={photo.fileUrl}
-                              alt={photo.fileName}
-                              className="w-full h-24 object-cover rounded border border-yellow-300 dark:border-yellow-700"
+                              src={hoveredPhoto.fileUrl}
+                              alt={hoveredPhoto.fileName}
                             />
-                          </a>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-0.5">{photo.fileName}</p>
-                          {user?.role === 'admin' && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeletePhoto(photo)}
-                              className="absolute top-1 right-1 p-0.5 bg-red-600 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Delete photo"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          )}
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      )}
+                    </>
                   ) : (
                     <p className="text-xs text-yellow-600 dark:text-yellow-400">No photos yet.</p>
                   )}

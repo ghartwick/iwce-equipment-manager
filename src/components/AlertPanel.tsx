@@ -16,6 +16,11 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore }: AlertPanel
     return product ? product.name : 'Unknown Equipment';
   };
 
+  const formatMessage = (message: string) => {
+    // Strip "Note:" prefix if present for backward compatibility
+    return message.replace(/^Note:\s*/i, '');
+  };
+
   const handleLoadMore = async () => {
     if (isLoading || !onLoadMore) return;
     setIsLoading(true);
@@ -76,7 +81,7 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore }: AlertPanel
                             {getProductName(alert.productId)}
                           </p>
                           <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                            {alert.message.split('\n').map((line, index) => (
+                            {formatMessage(alert.message).split('\n').map((line, index) => (
                               <p key={index} className={index > 0 ? 'mt-1' : ''}>
                                 {line}
                               </p>

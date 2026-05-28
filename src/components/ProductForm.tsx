@@ -21,9 +21,10 @@ interface ProductFormProps {
   userRole?: 'admin' | 'supervisor' | 'field';
   categories?: Category[];
   allowFullEdit?: boolean;
+  useEmployeeColumn?: boolean;
 }
 
-export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false, useEmployeeColumn = false }: ProductFormProps) {
   const formRef = React.useRef<HTMLFormElement>(null);
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -266,9 +267,9 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       const hasRepairs = repairFields.some(v => v === 'Repair');
       const hasNotes = !!maintenance.notes?.trim();
       if (hasRepairs || hasNotes) {
-        const messageParts: string[] = [];
+        const messageParts: string[] = [product.name || 'Unknown equipment'];
         if (repairItems.length > 0) messageParts.push(`Repairs needed: ${repairItems.join(', ')}`);
-        if (hasNotes) messageParts.push(`Note: ${maintenance.notes}`);
+        if (hasNotes) messageParts.push(maintenance.notes || '');
         try {
           await alertsFirebaseService.addAlert({
             productId: product.id,
@@ -536,6 +537,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
               >
                 <option value="">Employee</option>
                 <option value="Office">Office</option>
+                <option value="Shop">Shop</option>
                 <option value="Broken">Broken</option>
                 <option value="Out For Repair">Out For Repair</option>
                 <option value="Missing">Missing</option>
@@ -550,28 +552,50 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
 
           {isEditing && product?.equipmentType === 'heavy' && (
             <div className="md:col-span-2">
-              <select
-                value={showCustomSite ? 'OTHER' : formData.site}
-                onChange={(e) => handleSiteChange(e.target.value)}
-                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-              >
-                <option value="">Site</option>
-                {sortedSites.map((site) => (
-                  <option key={site.id} value={site.name}>
-                    {site.name}
-                  </option>
-                ))}
-                <option value="OTHER">Other (type custom site)</option>
-              </select>
-              {showCustomSite && (
-                <input
-                  type="text"
-                  value={customSite}
-                  onChange={(e) => handleCustomSiteChange(e.target.value)}
-                  placeholder="Enter custom site name"
-                  className="w-full mt-2 px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-                  autoFocus
-                />
+              {useEmployeeColumn ? (
+                <select
+                  value={formData.employee}
+                  onChange={(e) => handleInputChange('employee', e.target.value)}
+                  className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                >
+                  <option value="">Employee</option>
+                  <option value="Office">Office</option>
+                  <option value="Shop">Shop</option>
+                  <option value="Broken">Broken</option>
+                  <option value="Out For Repair">Out For Repair</option>
+                  <option value="Missing">Missing</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.name}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <>
+                  <select
+                    value={showCustomSite ? 'OTHER' : formData.site}
+                    onChange={(e) => handleSiteChange(e.target.value)}
+                    className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                  >
+                    <option value="">Site</option>
+                    {sortedSites.map((site) => (
+                      <option key={site.id} value={site.name}>
+                        {site.name}
+                      </option>
+                    ))}
+                    <option value="OTHER">Other (type custom site)</option>
+                  </select>
+                  {showCustomSite && (
+                    <input
+                      type="text"
+                      value={customSite}
+                      onChange={(e) => handleCustomSiteChange(e.target.value)}
+                      placeholder="Enter custom site name"
+                      className="w-full mt-2 px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                      autoFocus
+                    />
+                  )}
+                </>
               )}
             </div>
           )}
@@ -1017,10 +1041,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
         {isEditing && product?.equipmentType === 'heavy' && userRole === 'admin' && (
           <button
             type="button"
-            onClick={() => window.location.href = `/inventory/equipment/${product.id}/shop`}
+            onClick={() => window.location.href = `/inventory/equipment/${product.id}/service`}
             className="px-4 py-3 bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-md hover:bg-yellow-400 dark:hover:bg-yellow-700 text-sm font-medium transition-colors"
           >
-            Shop
+            Service
           </button>
         )}
         </div>

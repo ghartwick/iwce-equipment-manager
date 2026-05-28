@@ -5,6 +5,7 @@ import { useInventory } from '../hooks/useInventory';
 import { ProductForm } from '../components/ProductForm';
 import { AlertPanel } from '../components/AlertPanel';
 import { Equipment } from '../types';
+import { fleetManagementService } from '../services/fleetManagementService';
 
 export default function EquipmentPage() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
@@ -13,13 +14,42 @@ export default function EquipmentPage() {
   const { products, categories, updateProduct, loading, loadAlerts, alerts } = useInventory();
 
   const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [isFleet, setIsFleet] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
   const [alertDaysAgo, setAlertDaysAgo] = useState(7);
 
   useEffect(() => {
-    if (!loading && equipmentId) {
+    const loadEquipment = async () => {
+      if (!equipmentId) return;
+      
+      // First check inventory products
       const found = products.find(p => p.id === equipmentId);
-      setEquipment(found || null);
+      if (found) {
+        setEquipment(found);
+        setIsFleet(false);
+        return;
+      }
+      
+      // If not found, check fleet collection
+      try {
+        const allFleet = await fleetManagementService.getAllEquipment();
+        const fleetItem = allFleet.find(f => f.id === equipmentId);
+        if (fleetItem) {
+          setEquipment(fleetItem);
+          setIsFleet(true);
+        } else {
+          setEquipment(null);
+          setIsFleet(false);
+        }
+      } catch (err) {
+        console.error('Error loading fleet equipment:', err);
+        setEquipment(null);
+        setIsFleet(false);
+      }
+    };
+    
+    if (!loading) {
+      loadEquipment();
     }
   }, [products, equipmentId, loading]);
 
@@ -48,7 +78,15 @@ export default function EquipmentPage() {
   const handleEdit = async (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!equipment) return;
     try {
-      await updateProduct(equipment.id, { ...productData, updatedAt: new Date().toISOString() });
+      if (isFleet) {
+        await fleetManagementService.updateEquipment(
+          equipment.id,
+          { ...productData, updatedAt: new Date().toISOString() },
+          user ? { username: user.username, role: user.role } : undefined
+        );
+      } else {
+        await updateProduct(equipment.id, { ...productData, updatedAt: new Date().toISOString() });
+      }
       
       // Check if only notes were updated (no other fields changed)
       const notesOnly = Object.keys(productData).length === 1 && 'notes' in productData;
@@ -108,6 +146,7 @@ export default function EquipmentPage() {
           onSubmit={handleEdit}
           onCancel={() => navigate('/inventory')}
           userRole={user?.role || 'field'}
+          useEmployeeColumn={isFleet}
         />
       </div>
     </main>

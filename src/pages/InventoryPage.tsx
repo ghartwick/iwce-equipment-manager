@@ -42,6 +42,20 @@ function InventoryPage() {
   const [appUsers, setAppUsers] = useState<AppUser[]>([]);
   const [fleetProducts, setFleetProducts] = useState<Equipment[]>([]);
 
+  const loadFleetData = async () => {
+    try {
+      const loadedFleet = await fleetManagementService.getAllEquipment();
+      setFleetProducts(loadedFleet);
+    } catch (error) {
+      console.error('Error loading fleet data:', error);
+    }
+  };
+
+  const handleRefreshData = async () => {
+    await refreshData();
+    await loadFleetData();
+  };
+
   const hasRestored = useRef(false);
 
   // Fetch sites, users, and fleet data
@@ -165,7 +179,9 @@ function InventoryPage() {
     };
   }, [showAlerts]);
 
-  const filteredProducts = products.filter(product => {
+  const allProducts = [...products, ...fleetProducts];
+
+  const filteredProducts = allProducts.filter(product => {
     const getCategoryName = (categoryId: string) => {
       const category = categories.find(cat => cat.id === categoryId);
       return category ? category.name.toLowerCase() : categoryId.toLowerCase();
@@ -182,20 +198,19 @@ function InventoryPage() {
     
     return matchesSearch && matchesCategory;
   }).sort((a, b) => {
-    if (selectedCategory === 'all') {
-      const getCategoryName = (categoryId: string) => {
-        const category = categories.find(cat => cat.id === categoryId);
-        return category ? category.name : categoryId;
-      };
-      const categoryA = getCategoryName(a.category || '');
-      const categoryB = getCategoryName(b.category || '');
-      if (categoryA !== categoryB) {
-        const numA = parseFloat(categoryA);
-        const numB = parseFloat(categoryB);
-        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-        return categoryA.localeCompare(categoryB);
-      }
+    // Natural sort: extract and compare numbers from strings
+    const extractNumber = (str: string): number => {
+      const match = str.match(/\d+/);
+      return match ? parseInt(match[0], 10) : NaN;
+    };
+    
+    const numA = extractNumber(a.name);
+    const numB = extractNumber(b.name);
+    
+    if (!isNaN(numA) && !isNaN(numB)) {
+      if (numA !== numB) return numA - numB;
     }
+    
     return a.name.localeCompare(b.name);
   });
 
@@ -228,7 +243,14 @@ function InventoryPage() {
   
   const handleInlineUpdate = async (productId: string, updates: Partial<Equipment>) => {
     try {
-      await updateProduct(productId, updates);
+      // Check if this is a fleet item
+      const isFleet = fleetProducts.some(p => p.id === productId);
+      if (isFleet) {
+        await fleetManagementService.updateEquipment(productId, updates, user ? { username: user.username, role: user.role } : undefined);
+        await loadFleetData();
+      } else {
+        await updateProduct(productId, updates);
+      }
     } catch (error) {
       console.error('Error updating product inline:', error);
     }
@@ -260,7 +282,7 @@ function InventoryPage() {
           <div className="mb-3" ref={alertsRef}>
             <AlertPanel 
               alerts={alerts} 
-              products={products}
+              products={allProducts}
               onLoadMore={handleLoadMoreAlerts}
               hasMore={alerts.length >= 50}
             />
@@ -314,11 +336,12 @@ function InventoryPage() {
                 onEdit={handleEditClick}
                 userRole={user?.role || 'field'}
                 showCategoryHeadings={true}
-                refreshData={refreshData}
+                refreshData={handleRefreshData}
                 onImportComplete={() => setSelectedCategory('all')}
                 sites={sites}
                 users={appUsers}
                 onInlineUpdate={handleInlineUpdate}
+                fleetProducts={fleetProducts}
               />
             </div>
           </div>
@@ -332,7 +355,7 @@ function InventoryPage() {
             <div ref={alertsRef}>
               <AlertPanel 
                 alerts={alerts} 
-                products={products}
+                products={allProducts}
                 onLoadMore={handleLoadMoreAlerts}
                 hasMore={alerts.length >= 50}
               />

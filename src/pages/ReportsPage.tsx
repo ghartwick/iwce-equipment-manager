@@ -5,6 +5,7 @@ import { alertsFirebaseService } from '../services/alertsFirebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
+import { fleetManagementService } from '../services/fleetManagementService';
 import { UserManagementService, AppUser } from '../services/userManagementService';
 import { Equipment, StockAlert } from '../types';
 import { 
@@ -24,19 +25,19 @@ import {
 export default function ReportsPage() {
   // Persist state across navigation
   const [currentMonth, setCurrentMonth] = useState(() => {
-    const saved = localStorage.getItem('reportsCurrentMonth');
+    const saved = localStorage.getItem('shopCurrentMonth');
     return saved ? new Date(saved) : new Date();
   });
   const [selectedDates, setSelectedDates] = useState<Date[]>(() => {
-    const saved = localStorage.getItem('reportsSelectedDates');
+    const saved = localStorage.getItem('shopSelectedDates');
     return saved ? JSON.parse(saved).map((d: string) => new Date(d)) : [];
   });
   const [lastSelectedDate, setLastSelectedDate] = useState<Date | null>(() => {
-    const saved = localStorage.getItem('reportsLastSelectedDate');
+    const saved = localStorage.getItem('shopLastSelectedDate');
     return saved ? new Date(saved) : null;
   });
-  const [siteFilter, setSiteFilter] = useState<string>(() => localStorage.getItem('reportsSiteFilter') || '');
-  const [userFilter, setUserFilter] = useState<string>(() => localStorage.getItem('reportsUserFilter') || '');
+  const [siteFilter, setSiteFilter] = useState<string>(() => localStorage.getItem('shopSiteFilter') || '');
+  const [userFilter, setUserFilter] = useState<string>(() => localStorage.getItem('shopUserFilter') || '');
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
   const [loading, setLoading] = useState(false);
@@ -367,39 +368,43 @@ export default function ReportsPage() {
 
   // Save filter state to localStorage
   useEffect(() => {
-    localStorage.setItem('reportsSiteFilter', siteFilter);
+    localStorage.setItem('shopSiteFilter', siteFilter);
   }, [siteFilter]);
 
   useEffect(() => {
-    localStorage.setItem('reportsUserFilter', userFilter);
+    localStorage.setItem('shopUserFilter', userFilter);
   }, [userFilter]);
 
   useEffect(() => {
-    localStorage.setItem('reportsCurrentMonth', currentMonth.toISOString());
+    localStorage.setItem('shopCurrentMonth', currentMonth.toISOString());
   }, [currentMonth]);
 
   useEffect(() => {
-    localStorage.setItem('reportsSelectedDates', JSON.stringify(selectedDates.map(d => d.toISOString())));
+    localStorage.setItem('shopSelectedDates', JSON.stringify(selectedDates.map(d => d.toISOString())));
   }, [selectedDates]);
 
   useEffect(() => {
     if (lastSelectedDate) {
-      localStorage.setItem('reportsLastSelectedDate', lastSelectedDate.toISOString());
+      localStorage.setItem('shopLastSelectedDate', lastSelectedDate.toISOString());
     } else {
-      localStorage.removeItem('reportsLastSelectedDate');
+      localStorage.removeItem('shopLastSelectedDate');
     }
   }, [lastSelectedDate]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [equipment, allUsers] = await Promise.all([
+        const [equipment, fleetEquipment, allUsers] = await Promise.all([
           equipmentManagementService.getAllEquipment(),
+          fleetManagementService.getAllEquipment(),
           userManagementService.getAllUsers()
         ]);
         
         const equipmentMap: Record<string, Equipment> = {};
         equipment.forEach(eq => {
+          equipmentMap[eq.id] = eq;
+        });
+        fleetEquipment.forEach(eq => {
           equipmentMap[eq.id] = eq;
         });
         setEquipmentData(equipmentMap);
@@ -537,7 +542,7 @@ export default function ReportsPage() {
             <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
-                  Reports for {selectedDateLabel}
+                  Shop Reports for {selectedDateLabel}
                 </h3>
                 <div className="flex space-x-2">
                   {selectedDates.length >= 1 && (

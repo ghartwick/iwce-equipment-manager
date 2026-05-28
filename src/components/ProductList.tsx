@@ -13,12 +13,13 @@ interface ProductListProps {
   onAddProduct?: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancelEdit?: () => void;
   userRole?: 'admin' | 'supervisor' | 'field';
-  showCategoryHeadings?: boolean; // New prop for category headings
-  refreshData?: () => void; // Add refresh function
-  onImportComplete?: () => void; // Add callback for import completion
+  showCategoryHeadings?: boolean;
+  refreshData?: () => void;
+  onImportComplete?: () => void;
   sites?: Site[];
   users?: AppUser[];
   onInlineUpdate?: (productId: string, updates: Partial<Equipment>) => Promise<void>;
+  fleetProducts?: Equipment[];
 }
 
 export function ProductList({
@@ -35,7 +36,12 @@ export function ProductList({
   sites,
   users,
   onInlineUpdate,
+  fleetProducts = [],
 }: ProductListProps) {
+  const sortedSites = sites ? [...sites].sort((a, b) => a.name.localeCompare(b.name)) : [];
+  const sortedUsers = users ? [...users].filter(u => u.isActive && (u.role === 'field' || u.role === 'admin' || u.role === 'supervisor')).sort((a, b) => a.name.localeCompare(b.name)) : [];
+
+  const isFleet = (productId: string) => fleetProducts.some(f => f.id === productId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<'site' | 'employee' | null>(null);
@@ -62,9 +68,6 @@ export function ProductList({
     setEditingProductId(null);
     setEditingField(null);
   };
-
-  const sortedSites = sites ? [...sites].sort((a, b) => a.name.localeCompare(b.name)) : [];
-  const sortedUsers = users ? [...users].filter(u => u.isActive && (u.role === 'field' || u.role === 'admin' || u.role === 'supervisor')).sort((a, b) => a.name.localeCompare(b.name)) : [];
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -226,6 +229,7 @@ export function ProductList({
                                         >
                                           <option value="">No Employee</option>
                                           <option value="Office">Office</option>
+                                          <option value="Shop">Shop</option>
                                           <option value="Broken">Broken</option>
                                           <option value="Out For Repair">Out For Repair</option>
                                           <option value="Missing">Missing</option>
@@ -242,7 +246,7 @@ export function ProductList({
                                         </div>
                                       )
                                     )}
-                                    {product.equipmentType === 'heavy' && (
+                                    {product.equipmentType === 'heavy' && !isFleet(product.id) && (
                                       editingProductId === product.id && editingField === 'site' ? (
                                         <select
                                           autoFocus
@@ -266,11 +270,40 @@ export function ProductList({
                                         </div>
                                       )
                                     )}
+                                    {product.equipmentType === 'heavy' && isFleet(product.id) && (
+                                      editingProductId === product.id && editingField === 'employee' ? (
+                                        <select
+                                          autoFocus
+                                          value={product.employee || ''}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => handleInlineChange(product.id, 'employee', e.target.value)}
+                                          onBlur={() => { setEditingProductId(null); setEditingField(null); }}
+                                          className="px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 mt-1"
+                                        >
+                                          <option value="">No Employee</option>
+                                          <option value="Office">Office</option>
+                                          <option value="Shop">Shop</option>
+                                          <option value="Broken">Broken</option>
+                                          <option value="Out For Repair">Out For Repair</option>
+                                          <option value="Missing">Missing</option>
+                                          {sortedUsers.map((u) => (
+                                            <option key={u.id} value={u.name}>{u.name}</option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <div
+                                          className="break-words cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 px-0.5 rounded inline-block mt-0.5"
+                                          onClick={(e) => handleInlineFieldClick(e, product.id, 'employee')}
+                                        >
+                                          {product.employee || <span className="text-gray-400 dark:text-gray-600 italic">(set employee)</span>}
+                                        </div>
+                                      )
+                                    )}
                                   </>
                                 ) : (
                                   <>
                                     {product.employee && <div className="break-words">{product.employee}</div>}
-                                    {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
+                                    {product.site && product.equipmentType === 'heavy' && !isFleet(product.id) && <div className="break-words">{product.site}</div>}
                                   </>
                                 )}
                                 {product.locationNotes && (
@@ -363,6 +396,7 @@ export function ProductList({
                                         >
                                           <option value="">No Employee</option>
                                           <option value="Office">Office</option>
+                                          <option value="Shop">Shop</option>
                                           <option value="Broken">Broken</option>
                                           <option value="Out For Repair">Out For Repair</option>
                                           <option value="Missing">Missing</option>
@@ -379,7 +413,7 @@ export function ProductList({
                                         </div>
                                       )
                                     )}
-                                    {product.equipmentType === 'heavy' && (
+                                    {product.equipmentType === 'heavy' && !isFleet(product.id) && (
                                       editingProductId === product.id && editingField === 'site' ? (
                                         <select
                                           autoFocus
@@ -403,11 +437,40 @@ export function ProductList({
                                         </div>
                                       )
                                     )}
+                                    {product.equipmentType === 'heavy' && isFleet(product.id) && (
+                                      editingProductId === product.id && editingField === 'employee' ? (
+                                        <select
+                                          autoFocus
+                                          value={product.employee || ''}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => handleInlineChange(product.id, 'employee', e.target.value)}
+                                          onBlur={() => { setEditingProductId(null); setEditingField(null); }}
+                                          className="px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 mt-1"
+                                        >
+                                          <option value="">No Employee</option>
+                                          <option value="Office">Office</option>
+                                          <option value="Shop">Shop</option>
+                                          <option value="Broken">Broken</option>
+                                          <option value="Out For Repair">Out For Repair</option>
+                                          <option value="Missing">Missing</option>
+                                          {sortedUsers.map((u) => (
+                                            <option key={u.id} value={u.name}>{u.name}</option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <div
+                                          className="break-words cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 px-0.5 rounded inline-block mt-0.5"
+                                          onClick={(e) => handleInlineFieldClick(e, product.id, 'employee')}
+                                        >
+                                          {product.employee || <span className="text-gray-400 dark:text-gray-600 italic">(set employee)</span>}
+                                        </div>
+                                      )
+                                    )}
                                   </>
                                 ) : (
                                   <>
                                     {product.employee && <div className="break-words">{product.employee}</div>}
-                                    {product.site && product.equipmentType === 'heavy' && <div className="break-words">{product.site}</div>}
+                                    {product.site && product.equipmentType === 'heavy' && !isFleet(product.id) && <div className="break-words">{product.site}</div>}
                                   </>
                                 )}
                                 {product.locationNotes && (

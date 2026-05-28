@@ -233,7 +233,7 @@ function Layout({ children }: LayoutProps) {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setShowUserMenu(false);
-                                navigate('/reports');
+                                navigate('/shop');
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
@@ -370,7 +370,7 @@ function Layout({ children }: LayoutProps) {
                       <span>Manage Small Tools</span>
                     </button>
                     <button
-                      onClick={() => { setShowMobileMenu(false); navigate('/reports'); }}
+                      onClick={() => { setShowMobileMenu(false); navigate('/shop'); }}
                       className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                     >
                       <FileText className="h-5 w-5" />

@@ -3,11 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { shopAttachmentService } from '../services/shopAttachmentService';
-import { ShopForm } from '../components/ShopForm';
+import { AddService } from '../components/ShopForm';
 import { useAuth } from '../hooks/useAuth';
 import { equipmentManagementService } from '../services/equipmentManagementService';
+import { fleetManagementService } from '../services/fleetManagementService';
 
-export function ServicePage() {
+export function Service() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -15,12 +16,14 @@ export function ServicePage() {
   const [unitName, setUnitName] = useState<string>('');
   const [equipmentSite, setEquipmentSite] = useState<string>('');
   const [serviceInterval, setServiceInterval] = useState<number | undefined>(undefined);
+  const [serviceNotification, setServiceNotification] = useState<number | undefined>(undefined);
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
   const [shopAttachments, setShopAttachments] = useState<Record<string, any[]>>({});
   const [showShopForm, setShowShopForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [equipmentDataNotes, setEquipmentDataNotes] = useState<string[]>([]);
   const [reportsCollapsed, setReportsCollapsed] = useState(true);
+  const [hoveredAttachment, setHoveredAttachment] = useState<any | null>(null);
 
   const addEquipmentDataNote = () => {
     setEquipmentDataNotes([...equipmentDataNotes, '']);
@@ -49,8 +52,45 @@ export function ServicePage() {
     }
   };
 
+  const handleSaveServiceNotification = async () => {
+    if (!equipmentId) return;
+    try {
+      await equipmentManagementService.updateEquipment(equipmentId, {
+        serviceNotification
+      });
+      alert('Service notification saved successfully');
+    } catch (error) {
+      console.error('Error saving service notification:', error);
+      alert('Error saving service notification');
+    }
+  };
+
   useEffect(() => {
     if (equipmentId) {
+      // Load equipment name immediately - try both services
+      const loadEquipmentName = async () => {
+        try {
+          // Try equipment management first
+          let allEquipment = await equipmentManagementService.getAllEquipment();
+          let equipment = allEquipment.find(eq => eq.id === equipmentId);
+          
+          // If not found, try fleet management
+          if (!equipment) {
+            const fleetEquipment = await fleetManagementService.getAllEquipment();
+            equipment = fleetEquipment.find(eq => eq.id === equipmentId);
+          }
+          
+          if (equipment) {
+            setUnitName(equipment.name || '');
+            setEquipmentSite(equipment.site || '');
+            setServiceInterval(equipment.serviceInterval);
+            setServiceNotification(equipment.serviceNotification);
+          }
+        } catch (error) {
+          console.error('Error loading equipment data:', error);
+        }
+      };
+      loadEquipmentName();
       loadShopReports();
     }
   }, [equipmentId]);
@@ -60,19 +100,6 @@ export function ServicePage() {
     
     try {
       setLoading(true);
-      
-      // Fetch equipment data to get unit name
-      try {
-        const allEquipment = await equipmentManagementService.getAllEquipment();
-        const equipment = allEquipment.find(eq => eq.id === equipmentId);
-        if (equipment) {
-          setUnitName(equipment.name || '');
-          setEquipmentSite(equipment.site || '');
-          setServiceInterval(equipment.serviceInterval);
-        }
-      } catch (error) {
-        console.error('Error loading equipment data:', error);
-      }
       
       const reports = await shopHistoryFirebaseService.getEquipmentShopHistory(equipmentId);
       setShopReports(reports);
@@ -96,7 +123,7 @@ export function ServicePage() {
     }
   };
 
-  const handleShopSubmit = async (shopReport: { lastServicedDate?: string; lastServiceHours?: number; serviceInterval?: number; notes?: string }, files?: File[]) => {
+  const handleShopSubmit = async (shopReport: { lastServicedDate?: string; lastServiceHours?: number; serviceInterval?: number; notes?: string; files?: File[] }, previews?: string[]) => {
     if (!equipmentId || !user || !equipmentName) return;
     
     try {
@@ -109,13 +136,15 @@ export function ServicePage() {
       );
       
       // Upload files if provided
-      if (files && files.length > 0) {
-        for (const file of files) {
+      if (shopReport.files && shopReport.files.length > 0) {
+        for (let i = 0; i < shopReport.files.length; i++) {
+          const preview = previews?.[i] || '';
           await shopAttachmentService.uploadAttachment({
             shopReportId: reportId,
             equipmentId,
             equipmentName,
-            file,
+            file: shopReport.files[i],
+            thumbnailUrl: preview,
             uploadedBy: user.id
           });
         }
@@ -194,11 +223,32 @@ export function ServicePage() {
                 value={serviceInterval || ''}
                 onChange={(e) => setServiceInterval(e.target.value ? parseFloat(e.target.value) : undefined)}
                 className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                placeholder="Enter service interval in hours"
+                placeholder="Enter Service Interval"
               />
               <button
                 type="button"
                 onClick={handleSaveServiceInterval}
+                className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+
+          {/* Service Notification */}
+          <div className="mb-4">
+            <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Set Service Notification</label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                value={serviceNotification || ''}
+                onChange={(e) => setServiceNotification(e.target.value ? parseFloat(e.target.value) : undefined)}
+                className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="Enter Service Notification"
+              />
+              <button
+                type="button"
+                onClick={handleSaveServiceNotification}
                 className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
               >
                 Save
@@ -317,16 +367,37 @@ export function ServicePage() {
                             <div className="text-xs text-gray-700 dark:text-gray-300 mb-2">
                               <strong>Attachments:</strong>
                             </div>
-                            <div className="space-y-1">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                               {shopAttachments[report.id!].map((attachment, index) => (
                                 <a
                                   key={index}
                                   href={attachment.fileUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="block text-xs text-yellow-600 dark:text-yellow-400 hover:underline"
+                                  className="relative bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded-md border border-yellow-300 dark:border-yellow-700 hover:border-yellow-500 dark:hover:border-yellow-600 transition-colors"
                                 >
-                                  {attachment.fileName}
+                                  {attachment.thumbnailUrl ? (
+                                    <div
+                                      className="w-full h-20 border border-yellow-400 dark:border-yellow-700 rounded overflow-hidden cursor-pointer"
+                                      onMouseEnter={() => setHoveredAttachment(attachment)}
+                                      onMouseLeave={() => setHoveredAttachment(null)}
+                                    >
+                                      <img 
+                                        src={attachment.thumbnailUrl} 
+                                        alt={attachment.fileName}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="w-full h-20 bg-yellow-100 dark:bg-yellow-800 flex items-center justify-center rounded mb-1">
+                                      <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                                        {attachment.fileName.split('.').pop()?.toUpperCase() || 'FILE'}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <span className="text-xs text-yellow-600 dark:text-yellow-400 truncate block">
+                                    {attachment.fileName}
+                                  </span>
                                 </a>
                               ))}
                             </div>
@@ -339,12 +410,26 @@ export function ServicePage() {
               ) : (
                 <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">No service reports yet.</p>
               )}
+              
+              {/* Attachment Preview Overlay */}
+              {hoveredAttachment && (
+                <div
+                  className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-none"
+                >
+                  <div className="relative inline-block" style={{ transform: 'scale(0.75)', transformOrigin: 'center' }}>
+                    <img
+                      src={hoveredAttachment.fileUrl}
+                      alt={hoveredAttachment.fileName}
+                    />
+                  </div>
+                </div>
+              )}
             </>
           )}
 
-          {/* Shop Form Modal */}
+          {/* Add Service Modal */}
           {showShopForm && (
-            <ShopForm
+            <AddService
               equipmentId={equipmentId!}
               equipmentName={equipmentName}
               onClose={() => setShowShopForm(false)}
@@ -358,4 +443,4 @@ export function ServicePage() {
   );
 }
 
-export default ServicePage;
+export default Service;

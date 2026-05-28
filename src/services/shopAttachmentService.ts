@@ -7,6 +7,7 @@ export interface ShopAttachmentInput {
   equipmentId: string;
   equipmentName: string;
   file: File;
+  thumbnailUrl?: string;
   uploadedBy: string;
 }
 
@@ -18,6 +19,7 @@ export interface ShopAttachment {
   fileName: string;
   fileUrl: string;
   filePath: string;
+  thumbnailUrl?: string;
   uploadedBy: string;
   createdAt: Date;
 }
@@ -39,6 +41,7 @@ class ShopAttachmentService {
       fileName: input.file.name,
       fileUrl,
       filePath,
+      thumbnailUrl: input.thumbnailUrl,
       uploadedBy: input.uploadedBy,
       createdAt: new Date()
     });
@@ -63,6 +66,7 @@ class ShopAttachmentService {
         fileName: data.fileName,
         fileUrl: data.fileUrl,
         filePath: data.filePath,
+        thumbnailUrl: data.thumbnailUrl,
         uploadedBy: data.uploadedBy,
         createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
       };

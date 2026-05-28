@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Clock, User, X } from 'lucide-react';
-import { Equipment } from '../types';
+import { Equipment, Category } from '../types';
 import { equipmentHistoryFirebaseService, EditHistory } from '../services/equipmentHistoryFirebaseService';
+import { getCategories } from '../services/firebaseService';
 
 interface EquipmentLogProps {
   equipment: Equipment | null;
@@ -10,6 +11,29 @@ interface EquipmentLogProps {
 
 export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
   const [history, setHistory] = useState<EditHistory[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Load categories
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const cats = await getCategories();
+        setCategories(cats);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  // Create category ID to name map
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    categories.forEach(cat => {
+      map.set(cat.id, cat.name);
+    });
+    return map;
+  }, [categories]);
 
   // Update history whenever equipment changes or component mounts
   useEffect(() => {
@@ -81,7 +105,7 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-yellow-600 dark:text-yellow-400 flex items-center space-x-2">
           <Clock className="h-5 w-5" />
-          <span>Equipment Edit History</span>
+          <span>History</span>
         </h2>
         <button
           onClick={onClose}
@@ -91,12 +115,7 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
         </button>
       </div>
 
-      <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-        <h3 className="text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Current Equipment</h3>
-        <p className="text-gray-900 dark:text-yellow-100 font-medium">{equipment.name}</p>
-        <p className="text-yellow-700 dark:text-yellow-600 text-sm">Serial: {equipment.serialNumber}</p>
-      </div>
-
+      
       <div className="space-y-3">
         {history.length === 0 ? (
           <div className="text-center py-8">
@@ -133,9 +152,12 @@ export function EquipmentLog({ equipment, onClose }: EquipmentLogProps) {
                     }
                     
                     // Regular field changes
+                    const displayValue = change.field === 'category' && change.newValue
+                      ? (categoryMap.get(change.newValue) || change.newValue)
+                      : (change.newValue || '(empty)');
                     return (
                       <div key={index} className="text-xs bg-gray-100 dark:bg-black dark:bg-opacity-30 rounded p-1">
-                        <span className="font-medium">{getFieldLabel(change.field)}:</span> <span className="text-green-600 dark:text-green-400">{change.newValue || '(empty)'}</span>
+                        <span className="font-medium">{getFieldLabel(change.field)}:</span> <span className="text-green-600 dark:text-green-400">{displayValue}</span>
                       </div>
                     );
                   })}

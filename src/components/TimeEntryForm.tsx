@@ -6,6 +6,8 @@ import { Site, siteManagementService } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
 import { smallToolsManagementService } from '../services/smallToolsManagementService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
+import { fleetManagementService } from '../services/fleetManagementService';
+import { Equipment } from '../types';
 import { Alert } from './Alert';
 
 interface TimeEntryFormProps {
@@ -439,6 +441,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const [sitesData, setSitesData] = useState<Site[]>([]);
   const [smallToolsOptionsState, setSmallToolsOptionsState] = useState<string[]>([]);
   const [allEquipmentData, setAllEquipmentData] = useState<{id: string; name: string; description?: string; site?: string; parentId?: string}[]>([]);
+  const [fleetEquipment, setFleetEquipment] = useState<Equipment[]>([]);
+  const [truckNumber, setTruckNumber] = useState('');
   const [workEntries, setWorkEntries] = useState<WorkEntry[]>([
     {
       id: '1',
@@ -607,6 +611,9 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         const equipment = await equipmentManagementService.getTimecardEquipment();
         const equipmentData = equipment.map(item => ({ id: item.id, name: item.name, description: item.description || '', site: item.site, parentId: item.parentId }));
         setAllEquipmentData(equipmentData);
+
+        const fleet = await fleetManagementService.getAllEquipment();
+        setFleetEquipment(fleet.filter(t => t.isActive));
       } catch (error) {
         console.error('Failed to load dropdown options:', error);
       }
@@ -664,6 +671,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       setJob(entry.job || '');
       setHours(entry.hours);
       setTravelHours(entry.travelHours?.toString() || '');
+      setTruckNumber((entry as any).truckNumber || '');
       
       // Load work entries from existing entry or create default
       if (entry.workEntries && entry.workEntries.length > 0) {
@@ -732,6 +740,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       setJob('');
       setHours(0);
       setTravelHours('');
+      setTruckNumber('');
       setWorkEntries([{
         id: '1',
         notes: '',
@@ -778,6 +787,22 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       }
     }
   }, [entry, jobOptions]);
+
+  const assignTruckToEmployee = async () => {
+    if (!truckNumber) return;
+    const truck = fleetEquipment.find(t => t.name === truckNumber);
+    if (!truck) return;
+    if (truck.employee === user.name) return;
+    try {
+      await fleetManagementService.updateEquipment(
+        truck.id,
+        { employee: user.name },
+        { username: user.username, role: user.role }
+      );
+    } catch (error) {
+      console.error('Failed to assign truck to employee:', error);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -887,6 +912,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     if (entry?.submittedBy) cleanEntryData.submittedBy = entry.submittedBy;
     if (entry?.lastEditedBy) cleanEntryData.lastEditedBy = entry.lastEditedBy;
     if (entry?.lastEditedAt) cleanEntryData.lastEditedAt = entry.lastEditedAt;
+    if (truckNumber) cleanEntryData.truckNumber = truckNumber;
 
     // Create final data object without JSON stringify/parse to preserve all fields
     const finalData: any = {
@@ -898,6 +924,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       isUpdate: true,
     };
 
+    assignTruckToEmployee();
     onSubmit(finalData);
   };
 
@@ -1020,7 +1047,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     finalData.clockOut = clockOutDate;
     finalData.submittedAt = new Date();
 
+    if (truckNumber) finalData.truckNumber = truckNumber;
+
     try {
+      assignTruckToEmployee();
       await onSubmit(finalData);
     } catch (error) {
       showAlert((error as Error).message);
@@ -1226,12 +1256,21 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                   <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-0.5 whitespace-nowrap">
                     Truck #
                   </label>
-                  <input
-                    type="text"
-                    className="w-12 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50"
-                    placeholder="0"
-                    maxLength={3}
-                  />
+                  <select
+                    value={truckNumber}
+                    onChange={(e) => setTruckNumber(e.target.value)}
+                    disabled={isLocked}
+                    className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                      isLocked
+                        ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300'
+                        : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
+                    }`}
+                  >
+                    <option value="">—</option>
+                    {fleetEquipment.map(truck => (
+                      <option key={truck.id} value={truck.name}>{truck.name}</option>
+                    ))}
+                  </select>
                 </div>
             </div>
         </div>

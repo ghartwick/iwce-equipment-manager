@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pencil } from 'lucide-react';
 import { Equipment, Category } from '../types';
+import { ServiceNotificationItem } from '../services/serviceNotificationService';
 
 interface MobileProductListProps {
   products: Equipment[];
@@ -8,6 +9,7 @@ interface MobileProductListProps {
   selectedEquipmentId?: string;
   onCancelEdit?: () => void;
   categories: Category[];
+  serviceNotifications?: ServiceNotificationItem[];
 }
 
 export function MobileProductList({ 
@@ -15,8 +17,10 @@ export function MobileProductList({
   onEdit,
   selectedEquipmentId,
   onCancelEdit,
-  categories
+  categories,
+  serviceNotifications = [],
 }: MobileProductListProps) {
+  const getServiceStatus = (productId: string) => serviceNotifications.find(n => n.equipmentId === productId);
   if (products.length === 0) {
     return (
       <div className="p-8 text-center">
@@ -64,20 +68,34 @@ export function MobileProductList({
             
             {/* Products in this category */}
             {categoryProducts.map((product) => {
-                            
+              const serviceStatus = getServiceStatus(product.id);
+              const isRepairStatus = product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')));
+              
+              const getCardBg = () => {
+                if (serviceStatus?.status === 'due') return 'bg-red-100 dark:bg-red-950';
+                if (serviceStatus?.status === 'schedule') return 'bg-yellow-200 dark:bg-yellow-900';
+                if (isRepairStatus) return 'bg-red-100 dark:bg-red-950';
+                return 'bg-yellow-200 dark:bg-black';
+              };
+
               return (
                 <React.Fragment key={product.id}>
                   <div 
-                    className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? 'bg-red-100 dark:bg-red-950' : 'bg-yellow-200 dark:bg-black'} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
+                    className={`p-3 border-b border-yellow-200 dark:border-yellow-800 ${getCardBg()} ${selectedEquipmentId === product.id ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}
                   >
                     {/* Equipment Name - Primary */}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className={`text-sm font-medium ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-yellow-100'} break-words`}>
+                        <h3 className={`text-sm font-medium ${isRepairStatus ? 'text-red-600 dark:text-red-400' : serviceStatus?.status === 'due' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-yellow-100'} break-words`}>
                           {product.name}
                         </h3>
                         {product.description && (
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 break-words">{product.description}</p>
+                        )}
+                        {serviceStatus && (
+                          <p className={`text-xs font-semibold mt-0.5 ${serviceStatus.status === 'due' ? 'text-red-600 dark:text-red-400' : 'text-yellow-700 dark:text-yellow-400'}`}>
+                            {serviceStatus.message}
+                          </p>
                         )}
                       </div>
                       {/* Edit Button */}

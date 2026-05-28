@@ -2,6 +2,25 @@ import { useState, useEffect, useRef } from 'react';
 import { Filter, Plus, Trash2, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Category, Equipment } from '../types';
 
+const ALL_MAINTENANCE_ITEMS = [
+  { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
+  { key: 'tiresTracks', label: 'Tires/Tracks' },
+  { key: 'bucket', label: 'Bucket' },
+  { key: 'cuttingEdgeTeeth', label: 'Cutting Edge/Teeth' },
+  { key: 'hoses', label: 'Hoses' },
+  { key: 'batteryCableBeltHosesFilterGuards', label: 'Battery Cable, Belt, Hoses, Filter, Guards' },
+  { key: 'backupAlarm', label: 'Backup Alarm' },
+  { key: 'fireExtinguisher', label: 'Fire Extinguisher' },
+  { key: 'gauges', label: 'Gauges' },
+  { key: 'horn', label: 'Horn' },
+  { key: 'spillKit', label: 'Spill Kit' },
+  { key: 'glass', label: 'Glass (all sides)' },
+  { key: 'mirror', label: 'Mirror' },
+  { key: 'rollOverProtection', label: 'Roll Over Protection' },
+  { key: 'seatBeltSeat', label: 'Seat Belt/Seat' },
+  { key: 'allFluidsLevel', label: 'All Fluids Level' },
+];
+
 interface FilterPanelProps {
   categories: Category[];
   selectedCategory: string;
@@ -65,6 +84,9 @@ export function FilterPanel({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryGroup, setNewCategoryGroup] = useState<'heavy' | 'field' | 'fleet' | ''>('');
   const [isCategoryFormCollapsed, setIsCategoryFormCollapsed] = useState(true);
+  const [addStep, setAddStep] = useState<1 | 2>(1);
+  const [selectedMaintenanceItems, setSelectedMaintenanceItems] = useState<string[]>([]);
+  const [customItemInput, setCustomItemInput] = useState('');
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Detect clicks outside the panel to collapse it
@@ -124,16 +146,30 @@ export function FilterPanel({
   const fleetCategories = sortCats(categories.filter(c => getGroup(c) === 'fleet'));
   const uncategorized = sortCats(categories.filter(c => !getGroup(c)));
 
+  const handleAddCustomItem = () => {
+    const label = customItemInput.trim();
+    if (!label) return;
+    const key = `custom:${label}`;
+    if (!selectedMaintenanceItems.includes(key)) {
+      setSelectedMaintenanceItems(prev => [...prev, key]);
+    }
+    setCustomItemInput('');
+  };
+
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
       onAddCategory({
         name: newCategoryName.trim(),
         description: '',
         color: '#FFB700',
-        ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {})
+        ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {}),
+        maintenanceItems: selectedMaintenanceItems,
       });
       setNewCategoryName('');
       setNewCategoryGroup('');
+      setSelectedMaintenanceItems([]);
+      setCustomItemInput('');
+      setAddStep(1);
       setShowAddCategory(false);
     }
   };
@@ -143,6 +179,7 @@ export function FilterPanel({
     if (category) {
       setNewCategoryName(category.name);
       setNewCategoryGroup(category.managementGroup || '');
+      setSelectedMaintenanceItems(category.maintenanceItems || []);
       setEditingCategoryId(categoryId);
       setShowAddCategory(false);
     }
@@ -154,10 +191,13 @@ export function FilterPanel({
         name: newCategoryName.trim(),
         description: '',
         color: '#FFB700',
-        ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {})
+        ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {}),
+        maintenanceItems: selectedMaintenanceItems,
       });
       setNewCategoryName('');
       setNewCategoryGroup('');
+      setSelectedMaintenanceItems([]);
+      setCustomItemInput('');
       setEditingCategoryId(null);
     }
   };
@@ -166,6 +206,8 @@ export function FilterPanel({
     setEditingCategoryId(null);
     setNewCategoryName('');
     setNewCategoryGroup('');
+    setSelectedMaintenanceItems([]);
+    setCustomItemInput('');
   };
 
   return (
@@ -173,41 +215,132 @@ export function FilterPanel({
     {/* Add Category Modal */}
     {showAddCategory && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="bg-yellow-100 dark:bg-gray-900 border border-yellow-500 dark:border-yellow-700 rounded-lg shadow-2xl p-6 w-80 space-y-4">
-          <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Add Category</h3>
-          <input
-            type="text"
-            placeholder="Category name"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') { setShowAddCategory(false); setNewCategoryGroup(''); } }}
-            autoFocus
-            className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
-          />
-          <select
-            value={newCategoryGroup}
-            onChange={(e) => setNewCategoryGroup(e.target.value as 'heavy' | 'field' | 'fleet' | '')}
-            className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
-          >
-            <option value="">— No Management Group —</option>
-            <option value="heavy">Heavy Equipment</option>
-            <option value="field">Field Tools</option>
-            <option value="fleet">Fleet</option>
-          </select>
-          <div className="flex justify-end space-x-2">
-            <button
-              onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryGroup(''); }}
-              className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddCategory}
-              className="px-3 py-1.5 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600 font-medium"
-            >
-              Add
-            </button>
-          </div>
+        <div className={`bg-yellow-100 dark:bg-gray-900 border border-yellow-500 dark:border-yellow-700 rounded-lg shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto ${addStep === 2 ? 'w-[32rem]' : 'w-80'}`}>
+          {addStep === 1 ? (
+            <>
+              <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Add Category</h3>
+              <input
+                type="text"
+                placeholder="Category name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && newCategoryName.trim()) setAddStep(2); if (e.key === 'Escape') { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryGroup(''); setAddStep(1); setSelectedMaintenanceItems([]); } }}
+                autoFocus
+                className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
+              />
+              <select
+                value={newCategoryGroup}
+                onChange={(e) => setNewCategoryGroup(e.target.value as 'heavy' | 'field' | 'fleet' | '')}
+                className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
+              >
+                <option value="">— No Management Group —</option>
+                <option value="heavy">Heavy Equipment</option>
+                <option value="field">Field Tools</option>
+                <option value="fleet">Fleet</option>
+              </select>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryGroup(''); setAddStep(1); setSelectedMaintenanceItems([]); }}
+                  className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { if (newCategoryName.trim()) setAddStep(2); }}
+                  disabled={!newCategoryName.trim()}
+                  className="px-3 py-1.5 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Select Maintenance Items</h3>
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">Category: <span className="font-medium">{newCategoryName}</span></p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allKeys = ALL_MAINTENANCE_ITEMS.map(i => i.key);
+                    const allSelected = allKeys.every(k => selectedMaintenanceItems.includes(k));
+                    if (allSelected) {
+                      setSelectedMaintenanceItems(prev => prev.filter(k => k.startsWith('custom:')));
+                    } else {
+                      setSelectedMaintenanceItems(prev => [...new Set([...prev, ...allKeys])]);
+                    }
+                  }}
+                  className="px-2 py-1 text-xs bg-yellow-200 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 border border-yellow-500 rounded hover:bg-yellow-300 dark:hover:bg-yellow-800 font-medium"
+                >
+                  {ALL_MAINTENANCE_ITEMS.every(i => selectedMaintenanceItems.includes(i.key)) ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pr-1 pb-3">
+                {ALL_MAINTENANCE_ITEMS.map(({ key, label }) => (
+                  <label key={key} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedMaintenanceItems.includes(key)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedMaintenanceItems(prev => [...prev, key]);
+                        } else {
+                          setSelectedMaintenanceItems(prev => prev.filter(k => k !== key));
+                        }
+                      }}
+                      className="rounded border-yellow-600 text-yellow-600 focus:ring-yellow-500"
+                    />
+                    <span className="text-xs text-gray-900 dark:text-yellow-100">{label}</span>
+                  </label>
+                ))}
+                {selectedMaintenanceItems.filter(k => k.startsWith('custom:')).map(k => (
+                  <label key={k} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked
+                      onChange={() => setSelectedMaintenanceItems(prev => prev.filter(i => i !== k))}
+                      className="rounded border-yellow-600 text-yellow-600 focus:ring-yellow-500"
+                    />
+                    <span className="text-xs text-gray-900 dark:text-yellow-100">{k.slice(7)}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="flex space-x-2 pt-1">
+                <input
+                  type="text"
+                  value={customItemInput}
+                  onChange={(e) => setCustomItemInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomItem(); }}
+                  placeholder="New item name..."
+                  className="flex-1 px-2 py-1 border border-yellow-600 rounded text-xs bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:outline-none focus:ring-1 focus:ring-yellow-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomItem}
+                  disabled={!customItemInput.trim()}
+                  className="px-2 py-1 bg-yellow-500 text-black text-xs rounded hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  Add Item
+                </button>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setAddStep(1)}
+                  className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleAddCategory}
+                  className="px-3 py-1.5 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600 font-medium"
+                >
+                  Add
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     )}
@@ -215,7 +348,7 @@ export function FilterPanel({
     {/* Edit Category Modal */}
     {editingCategoryId && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="bg-yellow-100 dark:bg-gray-900 border border-yellow-500 dark:border-yellow-700 rounded-lg shadow-2xl p-6 w-80 space-y-4">
+        <div className="bg-yellow-100 dark:bg-gray-900 border border-yellow-500 dark:border-yellow-700 rounded-lg shadow-2xl p-6 w-[32rem] space-y-4 max-h-[90vh] overflow-y-auto">
           <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Edit Category</h3>
           <input
             type="text"
@@ -236,6 +369,74 @@ export function FilterPanel({
             <option value="field">Field Tools</option>
             <option value="fleet">Fleet</option>
           </select>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300">Maintenance Items</p>
+              <button
+                type="button"
+                onClick={() => {
+                  const allKeys = ALL_MAINTENANCE_ITEMS.map(i => i.key);
+                  const allSelected = allKeys.every(k => selectedMaintenanceItems.includes(k));
+                  if (allSelected) {
+                    setSelectedMaintenanceItems(prev => prev.filter(k => k.startsWith('custom:')));
+                  } else {
+                    setSelectedMaintenanceItems(prev => [...new Set([...prev, ...allKeys])]);
+                  }
+                }}
+                className="px-2 py-1 text-xs bg-yellow-200 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 border border-yellow-500 rounded hover:bg-yellow-300 dark:hover:bg-yellow-800 font-medium"
+              >
+                {ALL_MAINTENANCE_ITEMS.every(i => selectedMaintenanceItems.includes(i.key)) ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pr-1 pb-3">
+              {ALL_MAINTENANCE_ITEMS.map(({ key, label }) => (
+                <label key={key} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedMaintenanceItems.includes(key)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedMaintenanceItems(prev => [...prev, key]);
+                      } else {
+                        setSelectedMaintenanceItems(prev => prev.filter(k => k !== key));
+                      }
+                    }}
+                    className="rounded border-yellow-600 text-yellow-600 focus:ring-yellow-500"
+                  />
+                  <span className="text-xs text-gray-900 dark:text-yellow-100">{label}</span>
+                </label>
+              ))}
+              {selectedMaintenanceItems.filter(k => k.startsWith('custom:')).map(k => (
+                <label key={k} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked
+                    onChange={() => setSelectedMaintenanceItems(prev => prev.filter(i => i !== k))}
+                    className="rounded border-yellow-600 text-yellow-600 focus:ring-yellow-500"
+                  />
+                  <span className="text-xs text-gray-900 dark:text-yellow-100">{k.slice(7)}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex space-x-2 pt-1">
+              <input
+                type="text"
+                value={customItemInput}
+                onChange={(e) => setCustomItemInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomItem(); }}
+                placeholder="New item name..."
+                className="flex-1 px-2 py-1 border border-yellow-600 rounded text-xs bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:outline-none focus:ring-1 focus:ring-yellow-500"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomItem}
+                disabled={!customItemInput.trim()}
+                className="px-2 py-1 bg-yellow-500 text-black text-xs rounded hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                Add Item
+              </button>
+            </div>
+          </div>
           <div className="flex justify-end space-x-2">
             <button
               onClick={handleCancelEdit}

@@ -62,7 +62,7 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               {/* Hours */}
               <div>
-                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Hours</label>
+                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Hours/KM</label>
                 <input
                   type="number"
                   value={maintenance.hours || ''}

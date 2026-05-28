@@ -13,6 +13,7 @@ export interface Equipment {
   repair: boolean;
   repairDescription?: string;
   serviceInterval?: number;
+  serviceNotification?: number;
   locationNotes?: string;
   notes?: EquipmentNote[];
   isActive: boolean;
@@ -63,6 +64,7 @@ export interface Category {
   description: string;
   color: string;
   managementGroup?: 'heavy' | 'field' | 'fleet';
+  maintenanceItems?: string[];
 }
 
 export interface StockAlert {

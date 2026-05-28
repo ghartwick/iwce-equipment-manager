@@ -13,28 +13,47 @@ interface ShopFormProps {
   equipmentId: string;
   equipmentName: string;
   onClose: () => void;
-  onSubmit: (shopReport: ShopReport) => Promise<void>;
+  onSubmit: (shopReport: ShopReport, previews?: string[]) => Promise<void>;
   initialServiceInterval?: number;
 }
 
-export function ShopForm({ equipmentName, onClose, onSubmit, initialServiceInterval }: ShopFormProps) {
+export function AddService({ equipmentName, onClose, onSubmit, initialServiceInterval }: ShopFormProps) {
   const [shopReport, setShopReport] = useState<ShopReport>({
     serviceInterval: initialServiceInterval,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
     if (!selectedFiles || selectedFiles.length === 0) return;
 
     const newFiles = [...files, ...Array.from(selectedFiles)];
+    const newPreviews = [...filePreviews];
+
+    // Generate previews for image files
+    for (const file of Array.from(selectedFiles)) {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newPreviews.push(e.target?.result as string);
+          setFilePreviews([...newPreviews]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        newPreviews.push('');
+      }
+    }
+
     setFiles(newFiles);
   };
 
   const removeFile = (index: number) => {
     const newFiles = files.filter((_, i) => i !== index);
+    const newPreviews = filePreviews.filter((_, i) => i !== index);
     setFiles(newFiles);
+    setFilePreviews(newPreviews);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +62,7 @@ export function ShopForm({ equipmentName, onClose, onSubmit, initialServiceInter
     
     setIsSubmitting(true);
     try {
-      await onSubmit({ ...shopReport, files });
+      await onSubmit({ ...shopReport, files }, filePreviews);
       onClose();
     } catch (error) {
       console.error('Error submitting shop report:', error);
@@ -58,7 +77,7 @@ export function ShopForm({ equipmentName, onClose, onSubmit, initialServiceInter
       <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
-            Shop Report - {equipmentName}
+            Service Report - {equipmentName}
           </h2>
           <button onClick={onClose} className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500">
             <X className="h-5 w-5" />
@@ -66,9 +85,8 @@ export function ShopForm({ equipmentName, onClose, onSubmit, initialServiceInter
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Shop Section */}
+          {/* Service Section */}
           <div className="border-t border-yellow-400 dark:border-yellow-600 pt-4">
-            <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-3">Shop</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Serviced Date */}
               <div>
@@ -84,7 +102,7 @@ export function ShopForm({ equipmentName, onClose, onSubmit, initialServiceInter
 
               {/* Serviced Hours At */}
               <div>
-                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Serviced Hours At</label>
+                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Serviced At</label>
                 <input
                   type="number"
                   value={shopReport.lastServiceHours || ''}
@@ -92,27 +110,16 @@ export function ShopForm({ equipmentName, onClose, onSubmit, initialServiceInter
                   className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
-
-              {/* Service Interval */}
-              <div>
-                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Service Interval</label>
-                <input
-                  type="number"
-                  value={shopReport.serviceInterval || ''}
-                  onChange={(e) => setShopReport({ ...shopReport, serviceInterval: e.target.value ? parseFloat(e.target.value) : undefined })}
-                  className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-              </div>
             </div>
           </div>
 
           {/* Notes Section */}
-          <div className="border-t border-yellow-400 dark:border-yellow-600 pt-4">
+          <div className="pt-2">
             <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-3">Notes</h3>
             <textarea
               value={shopReport.notes || ''}
               onChange={(e) => setShopReport({ ...shopReport, notes: e.target.value })}
-              placeholder="Enter any additional notes about this shop report..."
+              placeholder="Enter any additional notes about this service report..."
               rows={3}
               className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
             />
@@ -142,20 +149,33 @@ export function ShopForm({ equipmentName, onClose, onSubmit, initialServiceInter
             </div>
             
             {files.length > 0 && (
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {files.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between bg-yellow-50 dark:bg-yellow-900/20 px-3 py-2 rounded-md border border-yellow-300 dark:border-yellow-700">
-                    <span className="text-xs text-yellow-700 dark:text-yellow-300 truncate flex-1">
-                      {file.name}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(index)}
-                      className="ml-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                      disabled={isSubmitting}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                  <div key={index} className="relative bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded-md border border-yellow-300 dark:border-yellow-700">
+                    {filePreviews[index] ? (
+                      <img 
+                        src={filePreviews[index]} 
+                        alt={file.name}
+                        className="w-full h-24 object-cover rounded mb-1"
+                      />
+                    ) : (
+                      <div className="w-full h-24 bg-yellow-100 dark:bg-yellow-800 flex items-center justify-center rounded mb-1">
+                        <span className="text-xs text-yellow-600 dark:text-yellow-400">{file.type.split('/')[1]?.toUpperCase() || 'FILE'}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-yellow-700 dark:text-yellow-300 truncate flex-1 mr-2">
+                        {file.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 flex-shrink-0"
+                        disabled={isSubmitting}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

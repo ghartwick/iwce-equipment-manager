@@ -79,7 +79,7 @@ export function MaintenanceHistory({ equipment, onClose }: MaintenanceHistoryPro
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-yellow-600 dark:text-yellow-400 flex items-center space-x-2">
           <Wrench className="h-5 w-5" />
-          <span>Maintenance History</span>
+          <span>History</span>
         </h2>
         <button
           onClick={onClose}
@@ -89,12 +89,7 @@ export function MaintenanceHistory({ equipment, onClose }: MaintenanceHistoryPro
         </button>
       </div>
 
-      <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-        <h3 className="text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Equipment</h3>
-        <p className="text-gray-900 dark:text-yellow-100 font-medium">{equipment.name}</p>
-        <p className="text-yellow-700 dark:text-yellow-600 text-sm">Serial: {equipment.serialNumber}</p>
-      </div>
-
+      
       <div className="space-y-3">
         {history.length === 0 ? (
           <div className="text-center py-8">

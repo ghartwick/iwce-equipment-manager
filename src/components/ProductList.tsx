@@ -4,6 +4,7 @@ import { Equipment, Category } from '../types';
 import { exportToExcel, importFromExcel } from '../utils/exportToExcel';
 import { Site } from '../services/siteManagementService';
 import { AppUser } from '../services/userManagementService';
+import { ServiceNotificationItem } from '../services/serviceNotificationService';
 
 interface ProductListProps {
   products: Equipment[];
@@ -20,6 +21,7 @@ interface ProductListProps {
   users?: AppUser[];
   onInlineUpdate?: (productId: string, updates: Partial<Equipment>) => Promise<void>;
   fleetProducts?: Equipment[];
+  serviceNotifications?: ServiceNotificationItem[];
 }
 
 export function ProductList({
@@ -37,7 +39,9 @@ export function ProductList({
   users,
   onInlineUpdate,
   fleetProducts = [],
+  serviceNotifications = [],
 }: ProductListProps) {
+  const getServiceStatus = (productId: string) => serviceNotifications.find(n => n.equipmentId === productId);
   const sortedSites = sites ? [...sites].sort((a, b) => a.name.localeCompare(b.name)) : [];
   const sortedUsers = users ? [...users].filter(u => u.isActive && (u.role === 'field' || u.role === 'admin' || u.role === 'supervisor')).sort((a, b) => a.name.localeCompare(b.name)) : [];
 
@@ -194,26 +198,39 @@ export function ProductList({
                     </tr>
                     
                     {/* Products in this category */}
-                    {categoryProducts.map((product) => (
+                    {categoryProducts.map((product) => {
+                      const serviceStatus = getServiceStatus(product.id);
+                      const isRepairStatus = product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')));
+                      
+                      const getRowBg = () => {
+                        if (serviceStatus?.status === 'due') return selectedEquipmentId === product.id ? 'bg-red-200 dark:bg-red-900' : 'bg-red-100 dark:bg-red-950';
+                        if (serviceStatus?.status === 'schedule') return selectedEquipmentId === product.id ? 'bg-yellow-300 dark:bg-yellow-800' : 'bg-yellow-200 dark:bg-yellow-900';
+                        if (isRepairStatus) return selectedEquipmentId === product.id ? 'bg-red-200 dark:bg-red-900' : 'bg-red-100 dark:bg-red-950';
+                        return selectedEquipmentId === product.id ? 'bg-yellow-200 dark:bg-yellow-900' : 'bg-yellow-200 dark:bg-black';
+                      };
+
+                      return (
                       <React.Fragment key={product.id}>
                         <tr 
                           onClick={() => onEdit?.(product)}
                           className={`
-                            ${selectedEquipmentId === product.id 
-                              ? ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-200 dark:bg-red-900" : "bg-yellow-200 dark:bg-yellow-900") 
-                              : ((product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "bg-red-100 dark:bg-red-950" : "bg-yellow-200 dark:bg-black")
-                            } 
+                            ${getRowBg()} 
                             transition-all duration-200 cursor-pointer hover:opacity-80
                           `}
                         >
                           <td className="w-[70%] px-2 py-4">
                             <div className="max-w-xs">
-                              <div className={`text-xs sm:text-sm font-medium ${(product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')))) ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
+                              <div className={`text-xs sm:text-sm font-medium ${isRepairStatus ? "text-red-600 dark:text-red-400" : serviceStatus?.status === 'due' ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
                                 {product.name}
                                 {product.description && (
                                   <span className="text-gray-600 dark:text-gray-400 ml-2">- {product.description}</span>
                                 )}
                               </div>
+                              {serviceStatus && (
+                                <div className={`text-xs font-semibold mt-0.5 ${serviceStatus.status === 'due' ? 'text-red-600 dark:text-red-400' : 'text-yellow-700 dark:text-yellow-400'}`}>
+                                  {serviceStatus.message}
+                                </div>
+                              )}
                               <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-600 mt-1">
                                 {onInlineUpdate ? (
                                   <>
@@ -337,7 +354,8 @@ export function ProductList({
                         </tr>
                         
                                               </React.Fragment>
-                    ))}
+                    );
+                    })}
                   </React.Fragment>
                 ));
               })()

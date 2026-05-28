@@ -11,7 +11,7 @@ const TimecardPage = React.lazy(() => import('./pages/TimecardPage'));
 const TimecardEditPage = React.lazy(() => import('./pages/TimecardEditPage'));
 const GamePage = React.lazy(() => import('./pages/GamePage'));
 const EquipmentPage = React.lazy(() => import('./pages/EquipmentPage'));
-const ServicePage = React.lazy(() => import('./pages/ShopPage'));
+const Service = React.lazy(() => import('./pages/ShopPage'));
 const HeavyEquipmentManagementPage = React.lazy(() => import('./pages/HeavyEquipmentManagementPage'));
 const FleetManagementPage = React.lazy(() => import('./pages/FleetManagementPage'));
 const FieldToolsManagementPage = React.lazy(() => import('./pages/FieldToolsManagementPage'));
@@ -98,7 +98,7 @@ function AppRouter() {
         <Route path="/inventory/equipment/:equipmentId/service" element={
           isAuthenticated ? (
             <Layout>
-              <ServicePage />
+              <Service />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

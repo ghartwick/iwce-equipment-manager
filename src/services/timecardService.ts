@@ -24,6 +24,7 @@ export interface TimeEntry {
   machineHours?: number;
   labourHours?: number;
   travelHours?: number;
+  truckNumber?: string;
   smallTools?: string[];
   notes?: string;
   supervisorId?: string;

@@ -168,13 +168,13 @@ class EquipmentHistoryFirebaseService {
         }
       });
       
-      // For other fields, include all completed fields
+      // For other fields, include only if value has changed
       otherFields.forEach(field => {
         const newValue = equipment[field as keyof Equipment];
+        const oldValue = oldEquipment[field as keyof Equipment];
         
-        // For string fields, include if they have a value (completed)
-        if (newValue != null && String(newValue).trim() !== '') {
-          const oldValue = oldEquipment[field as keyof Equipment];
+        // Only record if value actually changed and new value is non-empty
+        if (newValue != null && String(newValue).trim() !== '' && String(oldValue ?? '') !== String(newValue)) {
           changes.push({
             field,
             oldValue: oldValue != null ? String(oldValue) : '(empty)',

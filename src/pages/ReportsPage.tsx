@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FileText, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
+import { serviceNotificationService, ServiceNotificationItem } from '../services/serviceNotificationService';
 import { AlertPanel } from '../components/AlertPanel';
 import { alertsFirebaseService } from '../services/alertsFirebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
@@ -52,9 +53,11 @@ export default function ReportsPage() {
   const [repairAlerts, setRepairAlerts] = useState<StockAlert[]>([]);
   const [showRepairAlerts, setShowRepairAlerts] = useState(false);
   const alertPanelRef = useRef<HTMLDivElement>(null);
+  const [serviceNotifications, setServiceNotifications] = useState<ServiceNotificationItem[]>([]);
 
   useEffect(() => {
     alertsFirebaseService.getAllRepairAlerts().then(setRepairAlerts).catch(console.error);
+    serviceNotificationService.getServiceStatuses().then(setServiceNotifications).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -452,6 +455,7 @@ export default function ReportsPage() {
               <AlertPanel
                 alerts={repairAlerts}
                 products={Object.values(equipmentData)}
+                serviceNotifications={serviceNotifications}
               />
             </div>
           )}

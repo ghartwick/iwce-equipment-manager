@@ -687,35 +687,48 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                       </div>
                     )}
                   </div>
-                  {/* Photo grid */}
+                  {/* Photo list */}
                   {photosLoading ? (
                     <p className="text-xs text-yellow-600 dark:text-yellow-400">Loading photos...</p>
                   ) : equipmentPhotos.length > 0 ? (
                     <>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <div className="space-y-2">
                         {equipmentPhotos.map(photo => (
                           <div
                             key={photo.id}
-                            className="relative group"
-                            onMouseEnter={() => setHoveredPhoto(photo)}
-                            onMouseLeave={() => setHoveredPhoto(null)}
+                            className="flex items-center gap-3 p-2 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-md"
                           >
-                            <a href={photo.fileUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                              <img
-                                src={photo.fileUrl}
-                                alt={photo.fileName}
-                                className="w-full h-24 object-cover rounded border border-yellow-300 dark:border-yellow-700 cursor-pointer hover:border-yellow-500 transition-colors"
-                              />
-                            </a>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-0.5">{photo.fileName}</p>
+                            <div className="w-16 h-16 flex-shrink-0">
+                              <a href={photo.fileUrl} target="_blank" rel="noopener noreferrer">
+                                <img
+                                  src={photo.fileUrl}
+                                  alt={photo.fileName}
+                                  className="w-full h-full object-cover rounded border border-yellow-300 dark:border-yellow-700 cursor-pointer"
+                                  onMouseEnter={() => setHoveredPhoto(photo)}
+                                  onMouseLeave={() => setHoveredPhoto(null)}
+                                />
+                              </a>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <a
+                                href={photo.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline truncate block"
+                              >
+                                {photo.fileName}
+                              </a>
+                              <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
+                                <span className="font-medium">Uploaded by:</span> {photo.uploadedBy}
+                              </p>
+                            </div>
                             {user?.role === 'admin' && (
                               <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); handleDeletePhoto(photo); }}
-                                className="absolute top-1 right-1 p-0.5 bg-red-600 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                title="Delete photo"
+                                onClick={() => handleDeletePhoto(photo)}
+                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-medium flex-shrink-0"
                               >
-                                <X className="h-3 w-3" />
+                                Delete
                               </button>
                             )}
                           </div>

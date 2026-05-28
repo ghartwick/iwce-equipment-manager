@@ -1124,7 +1124,7 @@ export default function TimecardPage() {
                         )}
                         <div className="border-t border-yellow-200 dark:border-yellow-800 my-1" />
                         <button
-                          onClick={() => { setSelectedDates([]); setShowActionsMenu(false); }}
+                          onClick={() => { setSelectedDates([]); setAttachmentsForDate([]); setPosForDate([]); setShowPOForm(false); setShowAttachments(false); setShowActionsMenu(false); }}
                           className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
                         >
                           Clear Selection

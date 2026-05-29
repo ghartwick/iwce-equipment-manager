@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { X, Upload } from 'lucide-react';
 import { EquipmentMaintenance } from '../types';
+import { maintenanceCategoriesService } from '../services/maintenanceCategoriesService';
 
 interface MaintenanceFormProps {
   equipmentId: string;
   equipmentName: string;
   onClose: () => void;
   onSubmit: (maintenance: EquipmentMaintenance, files?: File[]) => Promise<void>;
+  categoryMaintenanceItems?: string[];
 }
 
-export function MaintenanceForm({ equipmentName, onClose, onSubmit }: MaintenanceFormProps) {
+export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMaintenanceItems }: MaintenanceFormProps) {
   const [maintenance, setMaintenance] = useState<EquipmentMaintenance>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const categories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
@@ -72,23 +75,7 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit }: Maintenanc
               </div>
 
               {/* OK/NA Fields */}
-              {[
-                { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
-                { key: 'tiresTracks', label: 'Tires/Tracks' },
-                { key: 'bucket', label: 'Bucket' },
-                { key: 'cuttingEdgeTeeth', label: 'Cutting Edge/Teeth' },
-                { key: 'hoses', label: 'Hoses' },
-                { key: 'batteryCableBeltHosesFilterGuards', label: 'Battery Cable, Belt, Hoses, Filter, Guards' },
-                { key: 'backupAlarm', label: 'Backup Alarm' },
-                { key: 'fireExtinguisher', label: 'Fire Extinguisher' },
-                { key: 'gauges', label: 'Gauges' },
-                { key: 'horn', label: 'Horn' },
-                { key: 'spillKit', label: 'Spill Kit' },
-                { key: 'glass', label: 'Glass (all sides)' },
-                { key: 'mirror', label: 'Mirror' },
-                { key: 'rollOverProtection', label: 'Roll Over Protection' },
-                { key: 'seatBeltSeat', label: 'Seat Belt/Seat' },
-              ].map(({ key, label }) => (
+              {categories.map(({ key, label }) => (
                 <div key={key}>
                   <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">{label}</label>
                   <select

@@ -10,6 +10,7 @@ import { getCategories } from '../services/firebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
 import { maintenanceAttachmentService } from '../services/maintenanceAttachmentService';
 import { equipmentPhotoService, EquipmentPhoto } from '../services/equipmentPhotoService';
+import { maintenanceCategoriesService } from '../services/maintenanceCategoriesService';
 import { alertsFirebaseService } from '../services/alertsFirebaseService';
 import { useAuth } from '../hooks/useAuth';
 
@@ -239,31 +240,12 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       }
       
       // Fire shop alert if any repairs or notes exist
-      const repairFields = [
-        maintenance.stepsHandRails, maintenance.tiresTracks, maintenance.bucket,
-        maintenance.cuttingEdgeTeeth, maintenance.hoses, maintenance.batteryCableBeltHosesFilterGuards,
-        maintenance.backupAlarm, maintenance.fireExtinguisher, maintenance.gauges,
-        maintenance.horn, maintenance.spillKit, maintenance.glass, maintenance.mirror,
-        maintenance.rollOverProtection, maintenance.seatBeltSeat, maintenance.allFluidsLevel
-      ];
-      const repairItems = [
-        maintenance.stepsHandRails === 'Repair' && 'Steps/Hand Rails',
-        maintenance.tiresTracks === 'Repair' && 'Tires/Tracks',
-        maintenance.bucket === 'Repair' && 'Bucket',
-        maintenance.cuttingEdgeTeeth === 'Repair' && 'Cutting Edge/Teeth',
-        maintenance.hoses === 'Repair' && 'Hoses',
-        maintenance.batteryCableBeltHosesFilterGuards === 'Repair' && 'Battery/Cable/Belt/Hoses/Filter/Guards',
-        maintenance.backupAlarm === 'Repair' && 'Backup Alarm',
-        maintenance.fireExtinguisher === 'Repair' && 'Fire Extinguisher',
-        maintenance.gauges === 'Repair' && 'Gauges',
-        maintenance.horn === 'Repair' && 'Horn',
-        maintenance.spillKit === 'Repair' && 'Spill Kit',
-        maintenance.glass === 'Repair' && 'Glass',
-        maintenance.mirror === 'Repair' && 'Mirror',
-        maintenance.rollOverProtection === 'Repair' && 'Roll Over Protection',
-        maintenance.seatBeltSeat === 'Repair' && 'Seat Belt/Seat',
-        maintenance.allFluidsLevel === 'Repair' && 'All Fluids Level',
-      ].filter(Boolean) as string[];
+      const categoryMaintenanceItems = fetchedCategories.find(c => c.id === product.category)?.maintenanceItems;
+      const categories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
+      const repairFields = categories.map(c => (maintenance as any)[c.key]);
+      const repairItems = categories
+        .map(c => (maintenance as any)[c.key] === 'Repair' && c.label)
+        .filter(Boolean) as string[];
       const hasRepairs = repairFields.some(v => v === 'Repair');
       const hasNotes = !!maintenance.notes?.trim();
       if (hasRepairs || hasNotes) {
@@ -342,25 +324,9 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
     }
   };
 
-  const hasRepairs = (maintenance: EquipmentMaintenance): boolean => {
-    return [
-      maintenance.stepsHandRails,
-      maintenance.tiresTracks,
-      maintenance.bucket,
-      maintenance.cuttingEdgeTeeth,
-      maintenance.hoses,
-      maintenance.batteryCableBeltHosesFilterGuards,
-      maintenance.backupAlarm,
-      maintenance.fireExtinguisher,
-      maintenance.gauges,
-      maintenance.horn,
-      maintenance.spillKit,
-      maintenance.glass,
-      maintenance.mirror,
-      maintenance.rollOverProtection,
-      maintenance.seatBeltSeat,
-      maintenance.allFluidsLevel,
-    ].some(val => val === 'Repair');
+  const hasRepairs = (maintenance: EquipmentMaintenance, categoryMaintenanceItems?: string[]): boolean => {
+    const categories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
+    return categories.map(c => (maintenance as any)[c.key]).some(val => val === 'Repair');
   };
 
   const loadEquipmentPhotos = async (equipmentId: string) => {
@@ -811,7 +777,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
               {maintenanceReports.length > 0 && (
                 <div className="space-y-2 mt-3">
                   {(maintenanceCollapsed ? [maintenanceReports[0]] : maintenanceReports.slice(0, visibleReportCount)).map((report) => (
-                    <div key={report.id} className={`rounded-lg border ${hasRepairs(report.maintenance) ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'}`}>
+                    <div key={report.id} className={`rounded-lg border ${hasRepairs(report.maintenance, fetchedCategories.find(c => c.id === product.category)?.maintenanceItems) ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'}`}>
                       <div
                         onClick={() => handleMaintenanceReportExpand(report.id)}
                         className="w-full px-3 py-2 flex items-center justify-between text-left cursor-pointer"
@@ -832,45 +798,14 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                             {report.maintenance.hours && `Hours: ${report.maintenance.hours}`}
                           </div>
                           <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                            {[
-                              report.maintenance.stepsHandRails,
-                              report.maintenance.tiresTracks,
-                              report.maintenance.bucket,
-                              report.maintenance.cuttingEdgeTeeth,
-                              report.maintenance.hoses,
-                              report.maintenance.batteryCableBeltHosesFilterGuards,
-                              report.maintenance.backupAlarm,
-                              report.maintenance.fireExtinguisher,
-                              report.maintenance.gauges,
-                              report.maintenance.horn,
-                              report.maintenance.spillKit,
-                              report.maintenance.glass,
-                              report.maintenance.mirror,
-                              report.maintenance.rollOverProtection,
-                              report.maintenance.seatBeltSeat,
-                              report.maintenance.allFluidsLevel,
-                            ].filter(val => val === 'Repair').length > 0 && (
-                              <span>
-                                Repairs: {[
-                                  report.maintenance.stepsHandRails === 'Repair' && 'Steps/Hand Rails',
-                                  report.maintenance.tiresTracks === 'Repair' && 'Tires/Tracks',
-                                  report.maintenance.bucket === 'Repair' && 'Bucket',
-                                  report.maintenance.cuttingEdgeTeeth === 'Repair' && 'Cutting Edge/Teeth',
-                                  report.maintenance.hoses === 'Repair' && 'Hoses',
-                                  report.maintenance.batteryCableBeltHosesFilterGuards === 'Repair' && 'Battery/Cable/Belt/Hoses/Filter/Guards',
-                                  report.maintenance.backupAlarm === 'Repair' && 'Backup Alarm',
-                                  report.maintenance.fireExtinguisher === 'Repair' && 'Fire Extinguisher',
-                                  report.maintenance.gauges === 'Repair' && 'Gauges',
-                                  report.maintenance.horn === 'Repair' && 'Horn',
-                                  report.maintenance.spillKit === 'Repair' && 'Spill Kit',
-                                  report.maintenance.glass === 'Repair' && 'Glass',
-                                  report.maintenance.mirror === 'Repair' && 'Mirror',
-                                  report.maintenance.rollOverProtection === 'Repair' && 'Roll Over Protection',
-                                  report.maintenance.seatBeltSeat === 'Repair' && 'Seat Belt/Seat',
-                                  report.maintenance.allFluidsLevel === 'Repair' && 'All Fluids Level',
-                                ].filter(Boolean).join(', ')}
-                              </span>
-                            )}
+                            {((): string => {
+                              const categoryMaintenanceItems = fetchedCategories.find(c => c.id === product.category)?.maintenanceItems;
+                              const categories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
+                              const repairItems = categories
+                                .map(c => report.maintenance[c.key as keyof EquipmentMaintenance] === 'Repair' && c.label)
+                                .filter(Boolean) as string[];
+                              return repairItems.length > 0 ? `Repairs: ${repairItems.join(', ')}` : '';
+                            })()}
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -899,20 +834,13 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                         <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
                           <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
                             <div><strong>Hours:</strong> {report.maintenance.hours || 'N/A'}</div>
-                            <div><strong>Steps/Hand Rails:</strong> {report.maintenance.stepsHandRails || 'N/A'}</div>
-                            <div><strong>Tires/Tracks:</strong> {report.maintenance.tiresTracks || 'N/A'}</div>
-                            <div><strong>Bucket:</strong> {report.maintenance.bucket || 'N/A'}</div>
-                            <div><strong>Cutting Edge/Teeth:</strong> {report.maintenance.cuttingEdgeTeeth || 'N/A'}</div>
-                            <div><strong>Hoses:</strong> {report.maintenance.hoses || 'N/A'}</div>
-                            <div><strong>Backup Alarm:</strong> {report.maintenance.backupAlarm || 'N/A'}</div>
-                            <div><strong>Fire Extinguisher:</strong> {report.maintenance.fireExtinguisher || 'N/A'}</div>
-                            <div><strong>Gauges:</strong> {report.maintenance.gauges || 'N/A'}</div>
-                            <div><strong>Horn:</strong> {report.maintenance.horn || 'N/A'}</div>
-                            <div><strong>Spill Kit:</strong> {report.maintenance.spillKit || 'N/A'}</div>
-                            <div><strong>Glass:</strong> {report.maintenance.glass || 'N/A'}</div>
-                            <div><strong>Mirror:</strong> {report.maintenance.mirror || 'N/A'}</div>
-                            <div><strong>Seat Belt/Seat:</strong> {report.maintenance.seatBeltSeat || 'N/A'}</div>
-                            <div><strong>All Fluids Level:</strong> {report.maintenance.allFluidsLevel || 'N/A'}</div>
+                            {(() => {
+                              const categoryMaintenanceItems = fetchedCategories.find(c => c.id === product.category)?.maintenanceItems;
+                              const categories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
+                              return categories.map(c => (
+                                <div key={c.key}><strong>{c.label}:</strong> {(report.maintenance as any)[c.key] || 'N/A'}</div>
+                              ));
+                            })()}
                             {report.maintenance.lastServicedDate && (
                               <div><strong>Last Serviced:</strong> {report.maintenance.lastServicedDate}</div>
                             )}
@@ -1111,6 +1039,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
           equipmentName={product.name}
           onClose={() => setShowMaintenanceForm(false)}
           onSubmit={handleMaintenanceSubmit}
+          categoryMaintenanceItems={fetchedCategories.find(c => c.id === product.category)?.maintenanceItems}
         />
       )}
     </div>

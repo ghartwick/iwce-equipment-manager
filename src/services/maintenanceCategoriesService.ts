@@ -25,7 +25,7 @@ export const DEFAULT_MAINTENANCE_CATEGORIES: MaintenanceCategory[] = [
 class MaintenanceCategoriesService {
   getCategories(categoryMaintenanceItems?: string[]): MaintenanceCategory[] {
     if (!categoryMaintenanceItems || categoryMaintenanceItems.length === 0) {
-      return DEFAULT_MAINTENANCE_CATEGORIES;
+      return [];
     }
 
     return categoryMaintenanceItems.map(itemKey => {
@@ -38,7 +38,7 @@ class MaintenanceCategoriesService {
       if (defaultItem) {
         return defaultItem;
       }
-      // Fallback for unknown keys
+      // Fallback for unknown keys - use the key as the label
       return { key: itemKey, label: itemKey };
     });
   }

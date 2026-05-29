@@ -795,7 +795,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                             {report.maintenance.notes && `Notes: ${report.maintenance.notes.substring(0, 50)}${report.maintenance.notes.length > 50 ? '...' : ''}`}
                           </div>
                           <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                            {report.maintenance.hours && `Hours: ${report.maintenance.hours}`}
+                            {report.maintenance.hours && `Hours/KM: ${report.maintenance.hours}`}
                           </div>
                           <div className="text-xs text-red-600 dark:text-red-400 mt-1">
                             {((): string => {
@@ -833,7 +833,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                       {expandedReport === report.id && (
                         <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
                           <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
-                            <div><strong>Hours:</strong> {report.maintenance.hours || 'N/A'}</div>
+                            <div><strong>Hours/KM:</strong> {report.maintenance.hours || 'N/A'}</div>
                             {(() => {
                               const categoryMaintenanceItems = fetchedCategories.find(c => c.id === product.category)?.maintenanceItems;
                               const categories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);

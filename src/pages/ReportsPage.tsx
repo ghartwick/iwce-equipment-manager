@@ -742,7 +742,7 @@ export default function ReportsPage() {
                             {expandedReport === report.id && (
                               <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
                                 <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
-                                  <div><strong>Hours:</strong> {report.maintenance.hours || 'N/A'}</div>
+                                  <div><strong>Hours/KM:</strong> {report.maintenance.hours || 'N/A'}</div>
                                   <div><strong>Steps/Hand Rails:</strong> {report.maintenance.stepsHandRails || 'N/A'}</div>
                                   <div><strong>Tires/Tracks:</strong> {report.maintenance.tiresTracks || 'N/A'}</div>
                                   <div><strong>Bucket:</strong> {report.maintenance.bucket || 'N/A'}</div>

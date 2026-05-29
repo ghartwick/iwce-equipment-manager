@@ -46,7 +46,7 @@ export function MaintenanceHistory({ equipment, onClose }: MaintenanceHistoryPro
   const getMaintenanceSummary = (maintenance: any): string => {
     const fields: string[] = [];
     
-    if (maintenance.hours) fields.push(`Hours: ${maintenance.hours}`);
+    if (maintenance.hours) fields.push(`Hours/KM: ${maintenance.hours}`);
     if (maintenance.lastServicedDate) fields.push(`Last Serviced: ${maintenance.lastServicedDate}`);
     if (maintenance.lastServiceHours) fields.push(`Last Service Hours: ${maintenance.lastServiceHours}`);
     if (maintenance.serviceInterval) fields.push(`Service Interval: ${maintenance.serviceInterval}`);

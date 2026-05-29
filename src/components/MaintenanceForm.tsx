@@ -93,24 +93,6 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
                   </select>
                 </div>
               ))}
-
-              {/* All Fluids Level */}
-              <div>
-                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">All Fluids Level</label>
-                <select
-                  value={maintenance.allFluidsLevel || ''}
-                  onChange={(e) => {
-                    const value = e.target.value === 'OK' ? 'OK' : e.target.value === 'NA' ? 'NA' : e.target.value === 'Repair' ? 'Repair' : undefined;
-                    setMaintenance({ ...maintenance, allFluidsLevel: value });
-                  }}
-                  className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                >
-                  <option value="">Select</option>
-                  <option value="OK">OK</option>
-                  <option value="Repair">Repair</option>
-                  <option value="NA">NA</option>
-                </select>
-              </div>
             </div>
           </div>
 

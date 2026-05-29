@@ -152,7 +152,7 @@ class EquipmentHistoryFirebaseService {
     if (action === 'updated' && oldEquipment) {
       // For restricted fields (name, serialNumber, category), only include if changed
       const restrictedFields = ['name', 'serialNumber', 'category'];
-      const otherFields = ['employee', 'site', 'repairDescription', 'locationNotes']; // Removed 'notes' - handle separately
+      const otherFields = ['employee', 'site', 'repairDescription', 'locationNotes', 'serviceInterval', 'serviceNotification']; // Removed 'notes' - handle separately
       
       // Check restricted fields - only include if actually changed
       restrictedFields.forEach(field => {
@@ -230,7 +230,7 @@ class EquipmentHistoryFirebaseService {
       user: user.username,
       userRole: user.role,
       timestamp: new Date(),
-      changes: changes.length > 0 ? changes : undefined
+      changes: changes.length > 0 ? changes.filter(c => c.oldValue !== undefined && c.newValue !== undefined) : undefined
     });
   }
 }

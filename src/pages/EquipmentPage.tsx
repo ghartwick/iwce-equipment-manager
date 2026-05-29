@@ -4,8 +4,11 @@ import { useAuth } from '../hooks/useAuth';
 import { useInventory } from '../hooks/useInventory';
 import { ProductForm } from '../components/ProductForm';
 import { AlertPanel } from '../components/AlertPanel';
+import { ServiceIntervalBar } from '../components/ServiceIntervalBar';
 import { Equipment } from '../types';
 import { fleetManagementService } from '../services/fleetManagementService';
+import { maintenanceHistoryFirebaseService } from '../services/maintenanceHistoryFirebaseService';
+import { shopHistoryFirebaseService } from '../services/shopHistoryFirebaseService';
 
 export default function EquipmentPage() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
@@ -17,6 +20,8 @@ export default function EquipmentPage() {
   const [isFleet, setIsFleet] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
   const [alertDaysAgo, setAlertDaysAgo] = useState(7);
+  const [currentHours, setCurrentHours] = useState<number>(0);
+  const [nextServiceAt, setNextServiceAt] = useState<number>(0);
 
   useEffect(() => {
     const loadEquipment = async () => {
@@ -52,6 +57,35 @@ export default function EquipmentPage() {
       loadEquipment();
     }
   }, [products, equipmentId, loading]);
+
+  // Load maintenance history for service interval calculation
+  useEffect(() => {
+    const loadMaintenanceHistory = async () => {
+      if (!equipmentId || !equipment) return;
+      
+      try {
+        const history = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(equipmentId);
+        
+        if (history.length > 0) {
+          const latestReport = history[0];
+          setCurrentHours(latestReport.maintenance.hours || 0);
+        }
+        
+        // Load latest shop report to get next service due point
+        const shopHistory = await shopHistoryFirebaseService.getEquipmentShopHistory(equipmentId);
+        if (shopHistory.length > 0) {
+          const latestShopReport = shopHistory[0];
+          setNextServiceAt(latestShopReport.lastServiceHours || 0);
+        }
+      } catch (error) {
+        console.error('Error loading maintenance history:', error);
+      }
+    };
+    
+    if (equipment) {
+      loadMaintenanceHistory();
+    }
+  }, [equipmentId, equipment]);
 
   // Listen for toggleAlerts custom event
   useEffect(() => {
@@ -147,6 +181,14 @@ export default function EquipmentPage() {
           onCancel={() => navigate('/inventory')}
           userRole={user?.role || 'field'}
           useEmployeeColumn={isFleet}
+          serviceIntervalBar={equipment ? (
+            <ServiceIntervalBar
+              currentHours={currentHours}
+              nextServiceAt={nextServiceAt}
+              serviceInterval={equipment.serviceInterval || 0}
+              serviceNotification={equipment.serviceNotification || 0}
+            />
+          ) : null}
         />
       </div>
     </main>

@@ -23,9 +23,10 @@ interface ProductFormProps {
   categories?: Category[];
   allowFullEdit?: boolean;
   useEmployeeColumn?: boolean;
+  serviceIntervalBar?: React.ReactNode;
 }
 
-export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false, useEmployeeColumn = false }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false, useEmployeeColumn = false, serviceIntervalBar }: ProductFormProps) {
   const formRef = React.useRef<HTMLFormElement>(null);
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -747,6 +748,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                   </button>
                 </div>
               </div>
+
+              {serviceIntervalBar}
 
               {/* Equipment Data Notes from Maintenance Reports */}
               <div className="space-y-2 mb-4">

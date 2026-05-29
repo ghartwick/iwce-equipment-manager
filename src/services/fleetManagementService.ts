@@ -51,7 +51,9 @@ export class FleetManagementService {
           createdAt,
           updatedAt,
           createdBy: data.createdBy,
-          parentId: data.parentId || undefined
+          parentId: data.parentId || undefined,
+          serviceInterval: data.serviceInterval,
+          serviceNotification: data.serviceNotification
         };
       }).filter(item => item.name.length > 0).sort((a, b) => a.name.localeCompare(b.name));
     } catch (error: any) {
@@ -75,7 +77,7 @@ export class FleetManagementService {
     }
   }
 
-  async updateEquipment(id: string, updates: Partial<Omit<Equipment, 'id' | 'createdAt'>>, user?: { username: string; role: string }): Promise<void> {
+  async updateEquipment(id: string, updates: Partial<Omit<Equipment, 'id' | 'createdAt'>>, user?: { username: string; role: string }, skipHistoryTracking: boolean = false): Promise<void> {
     try {
       const equipmentDoc = doc(db, this.COLLECTION_NAME, id);
       const oldDoc = await getDoc(equipmentDoc);
@@ -86,7 +88,7 @@ export class FleetManagementService {
         updatedAt: Timestamp.fromDate(new Date())
       });
 
-      if (user && oldEquipment) {
+      if (!skipHistoryTracking && user && oldEquipment) {
         const newEquipment = { ...oldEquipment, ...updates } as Equipment;
 
         await equipmentHistoryFirebaseService.trackEquipmentChange(
@@ -103,7 +105,8 @@ export class FleetManagementService {
           if (key === 'updatedAt' || key === 'createdAt' || key === 'repair' || key === 'notes') return;
           if (oldValue === newValue) return;
           if (['isActive', 'showInInventory', 'showInTimecard'].includes(key)) return;
-          changes.push(String(newValue || ''));
+          if (newValue === undefined) return;
+          changes.push(String(newValue));
         });
 
         if (changes.length > 0) {

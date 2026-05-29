@@ -60,7 +60,7 @@ class ServiceNotificationService {
     // Skip if service interval or notification are not set
     if (!serviceInterval || !serviceNotification) return null;
 
-    // Get latest service report for this equipment (most recent serviced at value)
+    // Get latest service report for this equipment (most recent next service value)
     const equipmentShopReports = shopReports
       .filter(r => r.equipmentId === equipment.id && r.lastServiceHours != null)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

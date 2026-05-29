@@ -51,7 +51,9 @@ export class EquipmentManagementService {
           createdAt,
           updatedAt,
           createdBy: data.createdBy,
-          parentId: data.parentId || undefined
+          parentId: data.parentId || undefined,
+          serviceInterval: data.serviceInterval,
+          serviceNotification: data.serviceNotification
         };
       }).filter(item => item.name.length > 0).sort((a, b) => a.name.localeCompare(b.name));
     } catch (error: any) {
@@ -145,8 +147,11 @@ export class EquipmentManagementService {
           // Skip system fields
           if (['isActive', 'showInInventory', 'showInTimecard'].includes(key)) return;
           
+          // Skip if new value is undefined
+          if (newValue === undefined) return;
+          
           // Add change to alerts without field name prefix
-          changes.push(String(newValue || ''));
+          changes.push(String(newValue));
         });
         
         if (changes.length > 0) {

@@ -84,7 +84,7 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore, serviceNotif
                       {notif.message}
                     </p>
                     <p className="text-xs text-yellow-600 dark:text-yellow-600 mt-1">
-                      Current: {notif.currentHours} &middot; Serviced At: {notif.servicedAt} &middot; Interval: {notif.serviceInterval}
+                      Current: {notif.currentHours} &middot; Next Service: {notif.servicedAt} &middot; Interval: {notif.serviceInterval}
                     </p>
                   </div>
                 </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Wrench, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, Wrench, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react';
+import { ServiceIntervalBar } from '../components/ServiceIntervalBar';
 import { serviceNotificationService, ServiceNotificationItem } from '../services/serviceNotificationService';
 import { AlertPanel } from '../components/AlertPanel';
 import { alertsFirebaseService } from '../services/alertsFirebaseService';
@@ -44,6 +45,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [maintenanceCounts, setMaintenanceCounts] = useState<Record<string, number>>({});
   const [shopCounts, setShopCounts] = useState<Record<string, number>>({});
+  const [repairNoteCounts, setRepairNoteCounts] = useState<Record<string, number>>({});
   const [equipmentData, setEquipmentData] = useState<Record<string, Equipment>>({});
   const [users, setUsers] = useState<AppUser[]>([]);
   const [userManagementService] = useState(() => new UserManagementService());
@@ -54,11 +56,59 @@ export default function ReportsPage() {
   const [showRepairAlerts, setShowRepairAlerts] = useState(false);
   const alertPanelRef = useRef<HTMLDivElement>(null);
   const [serviceNotifications, setServiceNotifications] = useState<ServiceNotificationItem[]>([]);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showServiceView, setShowServiceView] = useState(false);
+  const [heavyEquipmentList, setHeavyEquipmentList] = useState<Equipment[]>([]);
+  const [fleetEquipmentList, setFleetEquipmentList] = useState<Equipment[]>([]);
+  const [equipmentServiceData, setEquipmentServiceData] = useState<Record<string, { currentHours: number; nextServiceAt: number }>>({});
+  const [serviceLoading, setServiceLoading] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     alertsFirebaseService.getAllRepairAlerts().then(setRepairAlerts).catch(console.error);
     serviceNotificationService.getServiceStatuses().then(setServiceNotifications).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const loadServiceData = async () => {
+    setServiceLoading(true);
+    try {
+      const [heavy, fleet, allMaintenance, allShop] = await Promise.all([
+        equipmentManagementService.getAllEquipment(),
+        fleetManagementService.getAllEquipment(),
+        maintenanceHistoryFirebaseService.getAllMaintenanceHistory(),
+        shopHistoryFirebaseService.getAllShopHistory(),
+      ]);
+      const hoursMap: Record<string, number> = {};
+      allMaintenance.forEach(r => {
+        if (!hoursMap[r.equipmentId] && r.maintenance?.hours) hoursMap[r.equipmentId] = r.maintenance.hours;
+      });
+      const nextServiceMap: Record<string, number> = {};
+      allShop.forEach(r => {
+        if (!nextServiceMap[r.equipmentId] && r.lastServiceHours) nextServiceMap[r.equipmentId] = r.lastServiceHours;
+      });
+      const serviceData: Record<string, { currentHours: number; nextServiceAt: number }> = {};
+      [...heavy, ...fleet].forEach(eq => {
+        serviceData[eq.id] = { currentHours: hoursMap[eq.id] || 0, nextServiceAt: nextServiceMap[eq.id] || 0 };
+      });
+      setHeavyEquipmentList(heavy.filter(e => e.serviceInterval));
+      setFleetEquipmentList(fleet.filter(e => e.serviceInterval));
+      setEquipmentServiceData(serviceData);
+    } catch (err) {
+      console.error('Error loading service data:', err);
+    } finally {
+      setServiceLoading(false);
+    }
+  };
 
   useEffect(() => {
     const handleToggleAlerts = () => {
@@ -186,12 +236,70 @@ export default function ReportsPage() {
         if (m.allFluidsLevel === 'Repair') repairItems['All Fluids Level'] = (repairItems['All Fluids Level'] || 0) + 1;
       });
 
+      // Extract units with repairs or notes
+      const unitsWithRepairsOrNotes: Array<{ equipment: string; item: string; type: 'repair' | 'note'; date: string; user: string }> = [];
+      filteredMaintenance.forEach(report => {
+        const m = report.maintenance;
+        // Check for repairs
+        const repairFields = [
+          { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
+          { key: 'tiresTracks', label: 'Tires/Tracks' },
+          { key: 'bucket', label: 'Bucket' },
+          { key: 'cuttingEdgeTeeth', label: 'Cutting Edge/Teeth' },
+          { key: 'hoses', label: 'Hoses' },
+          { key: 'batteryCableBeltHosesFilterGuards', label: 'Battery Cable, Belt, Hoses, Filter, Guards' },
+          { key: 'backupAlarm', label: 'Backup Alarm' },
+          { key: 'fireExtinguisher', label: 'Fire Extinguisher' },
+          { key: 'gauges', label: 'Gauges' },
+          { key: 'horn', label: 'Horn' },
+          { key: 'spillKit', label: 'Spill Kit' },
+          { key: 'glass', label: 'Glass (all sides)' },
+          { key: 'mirror', label: 'Mirror' },
+          { key: 'rollOverProtection', label: 'Roll Over Protection' },
+          { key: 'seatBeltSeat', label: 'Seat Belt/Seat' },
+          { key: 'allFluidsLevel', label: 'All Fluids Level' },
+        ];
+        repairFields.forEach(field => {
+          if ((m as any)[field.key] === 'Repair') {
+            unitsWithRepairsOrNotes.push({ 
+              equipment: report.equipmentName, 
+              item: field.label, 
+              type: 'repair',
+              date: format(new Date(report.createdAt), 'MMM d'),
+              user: report.createdBy
+            });
+          }
+        });
+        // Check for notes
+        if (m.notes && m.notes.trim().length > 0) {
+          unitsWithRepairsOrNotes.push({ 
+            equipment: report.equipmentName, 
+            item: m.notes, 
+            type: 'note',
+            date: format(new Date(report.createdAt), 'MMM d'),
+            user: report.createdBy
+          });
+        }
+      });
+
+      // Group by equipment
+      const groupedByEquipment: Record<string, Array<{ item: string; type: 'repair' | 'note'; date: string; user: string }>> = {};
+      unitsWithRepairsOrNotes.forEach(item => {
+        if (!groupedByEquipment[item.equipment]) {
+          groupedByEquipment[item.equipment] = [];
+        }
+        groupedByEquipment[item.equipment].push({ item: item.item, type: item.type, date: item.date, user: item.user });
+      });
+
       const analysis = {
         totalMaintenanceReports: filteredMaintenance.length,
         totalShopReports: filteredShop.length,
         reportsByUser,
         reportsByEquipment,
         repairItems,
+        unitsWithRepairsOrNotes,
+        groupedByEquipment,
+        totalRepairsAndNotes: unitsWithRepairsOrNotes.length,
         dateRange: `${format(selectedDates[0], 'MMM d')} - ${format(selectedDates[selectedDates.length - 1], 'MMM d')}`,
         uniqueUsers: Object.keys(reportsByUser).length,
         uniqueEquipment: Object.keys(reportsByEquipment).length
@@ -240,13 +348,13 @@ export default function ReportsPage() {
     setSelectedDates(nextSelectedDates);
     setLastSelectedDate(date);
 
-    // Load reports for the date to populate user filter dropdown
+    // Load reports for the dates to populate user filter dropdown
     if (nextSelectedDates.length > 0) {
-      loadReportsForDate(nextSelectedDates[0]);
+      loadReportsForDate(nextSelectedDates);
     }
   };
 
-  const loadReportsForDate = async (date: Date) => {
+  const loadReportsForDate = async (dates: Date[]) => {
     setLoading(true);
     try {
       const [maintenance, shop] = await Promise.all([
@@ -254,11 +362,11 @@ export default function ReportsPage() {
         shopHistoryFirebaseService.getAllShopHistory()
       ]);
 
-      const dateKey = formatDateKey(date);
+      const dateKeys = dates.map(d => formatDateKey(d));
 
       const filteredMaintenance = maintenance.filter(report => {
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
-        if (reportDate !== dateKey) return false;
+        if (!dateKeys.includes(reportDate)) return false;
         
         // Use stored site from report, fall back to current equipment site
         const site = report.site || equipmentData[report.equipmentId]?.site;
@@ -278,7 +386,7 @@ export default function ReportsPage() {
 
       const filteredShop = shop.filter(report => {
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
-        if (reportDate !== dateKey) return false;
+        if (!dateKeys.includes(reportDate)) return false;
         
         // Use stored site from report, fall back to current equipment site
         const site = report.site || equipmentData[report.equipmentId]?.site;
@@ -315,45 +423,66 @@ export default function ReportsPage() {
 
       const maintCounts: Record<string, number> = {};
       const shopCounts: Record<string, number> = {};
+      const repairNoteCounts: Record<string, number> = {};
+      const unitsWithNotesOrRepairs: Record<string, Set<string>> = {};
 
       maintenance.forEach(report => {
         // Use stored site from report, fall back to current equipment site
         const site = report.site || equipmentData[report.equipmentId]?.site;
-        
+
         // If siteFilter is 'all', don't filter by site
         // If siteFilter is set but report has no site, include the report (for backward compatibility)
         if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site && site !== siteFilter) return;
-        
+
         // If userFilter is 'all', don't filter by user
         if (userFilter && userFilter !== '' && userFilter !== 'all') {
           const selectedUser = users.find(u => u.id === userFilter);
           if (selectedUser && report.createdBy !== selectedUser.username) return;
         }
-        
+
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
         maintCounts[reportDate] = (maintCounts[reportDate] || 0) + 1;
+
+        // Check if unit has notes or repairs
+        const hasNotes = report.maintenance.notes && report.maintenance.notes.trim().length > 0;
+        const hasRepairs = Object.values(report.maintenance).some(
+          val => val === 'Repair'
+        );
+
+        if (hasNotes || hasRepairs) {
+          if (!unitsWithNotesOrRepairs[reportDate]) {
+            unitsWithNotesOrRepairs[reportDate] = new Set();
+          }
+          unitsWithNotesOrRepairs[reportDate].add(report.equipmentId);
+        }
       });
 
       shop.forEach(report => {
         // Use stored site from report, fall back to current equipment site
         const site = report.site || equipmentData[report.equipmentId]?.site;
-        
+
         // If siteFilter is 'all', don't filter by site
         // If siteFilter is set but report has no site, include the report (for backward compatibility)
         if (siteFilter && siteFilter !== '' && siteFilter !== 'all' && site && site !== siteFilter) return;
-        
+
         // If userFilter is 'all', don't filter by user
         if (userFilter && userFilter !== '' && userFilter !== 'all') {
           const selectedUser = users.find(u => u.id === userFilter);
           if (selectedUser && report.createdBy !== selectedUser.username) return;
         }
-        
+
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
         shopCounts[reportDate] = (shopCounts[reportDate] || 0) + 1;
       });
 
+      // Calculate repair/note counts from the Sets
+      Object.keys(unitsWithNotesOrRepairs).forEach(date => {
+        repairNoteCounts[date] = unitsWithNotesOrRepairs[date].size;
+      });
+
       setMaintenanceCounts(maintCounts);
       setShopCounts(shopCounts);
+      setRepairNoteCounts(repairNoteCounts);
     } catch (error) {
       console.error('Error loading reports for month:', error);
     }
@@ -365,7 +494,7 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (selectedDates.length > 0) {
-      loadReportsForDate(selectedDates[0]);
+      loadReportsForDate(selectedDates);
     }
   }, [siteFilter, userFilter]);
 
@@ -476,13 +605,13 @@ export default function ReportsPage() {
                 {format(currentMonth, 'MMMM yyyy')}
               </h2>
               <button
-                  onClick={handleNextMonth}
-                  className="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+                onClick={handleNextMonth}
+                className="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
 
             {/* Week Days */}
@@ -503,6 +632,7 @@ export default function ReportsPage() {
                 const dateKey = formatDateKey(day);
                 const maintCount = maintenanceCounts[dateKey] || 0;
                 const shopCount = shopCounts[dateKey] || 0;
+                const repairNoteCount = repairNoteCounts[dateKey] || 0;
 
                 return (
                   <button
@@ -524,8 +654,13 @@ export default function ReportsPage() {
                         </div>
                       )}
                       {shopCount > 0 && (
-                        <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                        <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
                           {shopCount}
+                        </div>
+                      )}
+                      {repairNoteCount > 0 && (
+                        <div className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                          {repairNoteCount}
                         </div>
                       )}
                     </div>
@@ -535,48 +670,68 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Select a Date Message */}
-          {selectedDates.length === 0 && (
-            <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
-              <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-4">Select a Date</h3>
-              <p className="text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view maintenance and shop reports.</p>
-            </div>
-          )}
-          {selectedDates.length > 0 && (
-            <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
-              <div className="flex justify-between items-center mb-6">
+          {/* Reports section — always visible, menu button matches timesheet style */}
+          <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
+              <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
-                  Shop Reports for {selectedDateLabel}
+                  {selectedDates.length > 0 ? `Shop Reports for ${selectedDateLabel}` : 'Shop Reports'}
                 </h3>
-                <div className="flex space-x-2">
-                  {selectedDates.length >= 1 && (
-                    <button
-                      onClick={() => {
-                        if (showAnalysis) {
-                          setShowAnalysis(false);
-                        } else {
-                          handleGenerateReport();
-                        }
-                      }}
-                      className="px-3 py-1.5 text-sm bg-blue-500 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-600 font-medium transition-colors"
-                    >
-                      {showAnalysis ? 'Close Report' : 'Report'}
-                    </button>
-                  )}
+                <div className="relative" ref={menuRef}>
                   <button
-                    onClick={() => {
-                      setSelectedDates([]);
-                      setMaintenanceReports([]);
-                      setShopReports([]);
-                      setShowAnalysis(false);
-                      setAnalysisResults(null);
-                    }}
-                    className="px-3 py-1.5 text-sm bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-lg hover:bg-yellow-400 dark:hover:bg-yellow-700 font-medium transition-colors"
+                    onClick={() => setShowMenu(v => !v)}
+                    className="p-1.5 rounded-lg bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 hover:bg-yellow-400 dark:hover:bg-yellow-700 transition-colors"
+                    title="More actions"
                   >
-                    Clear Selection
+                    <MoreVertical className="h-4 w-4" />
                   </button>
+                  {showMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                      <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-900 border border-yellow-300 dark:border-yellow-700 rounded-lg shadow-lg z-50 py-1">
+                        <button
+                          onClick={() => {
+                            setShowMenu(false);
+                            if (!showServiceView) loadServiceData();
+                            setShowServiceView(v => !v);
+                            setShowAnalysis(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
+                        >
+                          {showServiceView ? 'Close Service' : 'Service'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowMenu(false);
+                            if (showAnalysis) { setShowAnalysis(false); } else { handleGenerateReport(); }
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
+                        >
+                          {showAnalysis ? 'Close Report' : 'Report'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowMenu(false);
+                            setSelectedDates([]);
+                            setMaintenanceReports([]);
+                            setShopReports([]);
+                            setShowAnalysis(false);
+                            setAnalysisResults(null);
+                            setShowServiceView(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
+                        >
+                          Clear Selection
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
+              {selectedDates.length === 0 && (
+                <p className="text-sm text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view reports.</p>
+              )}
+          {selectedDates.length > 0 && (
+            <div>
 
               {/* Filter Dropdowns */}
               <div className="grid grid-cols-2 gap-2 mb-6">
@@ -636,23 +791,29 @@ export default function ReportsPage() {
                       <div className="text-sm text-blue-600 dark:text-blue-400">Total Shop Reports</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.uniqueUsers}</div>
-                      <div className="text-sm text-blue-600 dark:text-blue-400">Users</div>
+                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.totalRepairsAndNotes}</div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400">Repairs & Notes</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.uniqueEquipment}</div>
-                      <div className="text-sm text-blue-600 dark:text-blue-400">Equipment</div>
+                      <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{Object.keys(analysisResults.groupedByEquipment || {}).length}</div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400">Units with Issues</div>
                     </div>
                   </div>
 
-                  {Object.keys(analysisResults.repairItems).length > 0 && (
+                  {analysisResults.groupedByEquipment && Object.keys(analysisResults.groupedByEquipment).length > 0 && (
                     <div className="mb-4">
-                      <h5 className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Repair Items</h5>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {Object.entries(analysisResults.repairItems).map(([item, count]) => (
-                          <div key={item} className="bg-white dark:bg-black rounded px-3 py-2 border border-blue-200 dark:border-blue-800">
-                            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{item}</div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">{String(count)} report(s)</div>
+                      <h5 className="font-semibold text-blue-700 dark:text-blue-400 mb-2">Units with Repairs & Notes ({Object.keys(analysisResults.groupedByEquipment).length})</h5>
+                      <div className="space-y-2">
+                        {Object.entries(analysisResults.groupedByEquipment).map(([equipment, items]) => (
+                          <div key={equipment} className="text-sm">
+                            <div className="font-medium text-gray-900 dark:text-yellow-100 mb-1">{equipment}</div>
+                            <ul className="ml-4 space-y-1">
+                              {(items as Array<{ item: string; type: 'repair' | 'note'; date: string; user: string }>).map((item, index) => (
+                                <li key={index} className="text-gray-700 dark:text-gray-300">
+                                  {item.type === 'repair' ? 'Repair: ' : 'Note: '}{item.item} <span className="italic text-gray-400 dark:text-gray-500">({item.date} by {item.user})</span>
+                                </li>
+                              ))}
+                            </ul>
                           </div>
                         ))}
                       </div>
@@ -708,6 +869,29 @@ export default function ReportsPage() {
                             m.fireExtinguisher, m.gauges, m.horn, m.spillKit, m.glass,
                             m.mirror, m.rollOverProtection, m.seatBeltSeat, m.allFluidsLevel
                           ].some(v => v === 'Repair');
+
+                          // Get repair/note items for summary
+                          const repairFields = [
+                            { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
+                            { key: 'tiresTracks', label: 'Tires/Tracks' },
+                            { key: 'bucket', label: 'Bucket' },
+                            { key: 'cuttingEdgeTeeth', label: 'Cutting Edge/Teeth' },
+                            { key: 'hoses', label: 'Hoses' },
+                            { key: 'batteryCableBeltHosesFilterGuards', label: 'Battery Cable, Belt, Hoses, Filter, Guards' },
+                            { key: 'backupAlarm', label: 'Backup Alarm' },
+                            { key: 'fireExtinguisher', label: 'Fire Extinguisher' },
+                            { key: 'gauges', label: 'Gauges' },
+                            { key: 'horn', label: 'Horn' },
+                            { key: 'spillKit', label: 'Spill Kit' },
+                            { key: 'glass', label: 'Glass (all sides)' },
+                            { key: 'mirror', label: 'Mirror' },
+                            { key: 'rollOverProtection', label: 'Roll Over Protection' },
+                            { key: 'seatBeltSeat', label: 'Seat Belt/Seat' },
+                            { key: 'allFluidsLevel', label: 'All Fluids Level' },
+                          ];
+                          const repairItems = repairFields.filter(f => (m as any)[f.key] === 'Repair').map(f => f.label);
+                          const noteText = m.notes?.trim() || '';
+
                           return (
                           <div key={report.id} className={`rounded-lg border ${hasRepairOrNotes ? 'bg-red-50 dark:bg-red-900/20 border-red-400 dark:border-red-700' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'}`}>
                             <button
@@ -730,6 +914,13 @@ export default function ReportsPage() {
                                 {report.site && (
                                   <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                                     Site: {report.site}
+                                  </div>
+                                )}
+                                {(repairItems.length > 0 || noteText) && (
+                                  <div className="text-xs text-red-700 dark:text-red-300 mt-1 italic">
+                                    {repairItems.length > 0 && `Repair: ${repairItems.join(', ')}`}
+                                    {repairItems.length > 0 && noteText && '; '}
+                                    {noteText && `Note: ${noteText}`}
                                   </div>
                                 )}
                               </div>
@@ -806,10 +997,9 @@ export default function ReportsPage() {
                                 )}
                               </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 text-xs text-gray-700 dark:text-gray-300">
+                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
                               <div><strong>Serviced:</strong> {report.lastServicedDate || 'N/A'}</div>
-                              <div><strong>Hours:</strong> {report.lastServiceHours || 'N/A'}</div>
-                              <div><strong>Interval:</strong> {report.serviceInterval || 'N/A'}</div>
+                              <div><strong>Next Service:</strong> {report.lastServiceHours || 'N/A'}</div>
                             </div>
                             {report.notes && (
                               <div className="text-xs text-gray-700 dark:text-gray-300 mt-2">
@@ -823,6 +1013,64 @@ export default function ReportsPage() {
                   )}
 
                   {maintenanceReports.length === 0 && shopReports.length === 0 && null}
+                </>
+              )}
+            </div>
+          )}
+          </div>
+
+          {/* Service View Panel */}
+          {showServiceView && (
+            <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-4">
+              {serviceLoading ? (
+                <p className="text-xs text-yellow-600 dark:text-yellow-400">Loading service data...</p>
+              ) : (
+                <>
+                  {/* Heavy Equipment */}
+                  {heavyEquipmentList.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3 border-b border-yellow-400 dark:border-yellow-700 pb-1">Heavy Equipment</h3>
+                      <div className="space-y-3">
+                        {heavyEquipmentList.map(eq => (
+                          <div key={eq.id} className="flex items-center space-x-2">
+                            <div className="text-sm font-medium text-gray-800 dark:text-yellow-100 self-center">{eq.name}</div>
+                            <div className="w-1/2">
+                              <ServiceIntervalBar
+                                currentHours={equipmentServiceData[eq.id]?.currentHours || 0}
+                                nextServiceAt={equipmentServiceData[eq.id]?.nextServiceAt || 0}
+                                serviceInterval={eq.serviceInterval || 0}
+                                serviceNotification={eq.serviceNotification || 0}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Fleet */}
+                  {fleetEquipmentList.length > 0 && (
+                    <div>
+                      <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3 border-b border-yellow-400 dark:border-yellow-700 pb-1">Fleet</h3>
+                      <div className="space-y-3">
+                        {fleetEquipmentList.map(eq => (
+                          <div key={eq.id} className="flex items-center space-x-2">
+                            <div className="text-sm font-medium text-gray-800 dark:text-yellow-100 self-center">{eq.name}</div>
+                            <div className="w-1/2">
+                              <ServiceIntervalBar
+                                currentHours={equipmentServiceData[eq.id]?.currentHours || 0}
+                                nextServiceAt={equipmentServiceData[eq.id]?.nextServiceAt || 0}
+                                serviceInterval={eq.serviceInterval || 0}
+                                serviceNotification={eq.serviceNotification || 0}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {heavyEquipmentList.length === 0 && fleetEquipmentList.length === 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">No equipment with service intervals configured.</p>
+                  )}
                 </>
               )}
             </div>

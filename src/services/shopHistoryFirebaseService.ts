@@ -31,18 +31,18 @@ export const shopHistoryFirebaseService = {
     user: { username: string; role: string }
   ): Promise<string> => {
     try {
-      const reportData: ShopReport = {
+      const reportData: Record<string, any> = {
         equipmentId,
         equipmentName,
-        site,
-        lastServicedDate: shopReport.lastServicedDate,
-        lastServiceHours: shopReport.lastServiceHours,
-        serviceInterval: shopReport.serviceInterval,
-        notes: shopReport.notes,
         createdAt: new Date().toISOString(),
         createdBy: user.username,
         createdByRole: user.role,
       };
+      if (site !== undefined) reportData.site = site;
+      if (shopReport.lastServicedDate !== undefined) reportData.lastServicedDate = shopReport.lastServicedDate;
+      if (shopReport.lastServiceHours !== undefined) reportData.lastServiceHours = shopReport.lastServiceHours;
+      if (shopReport.serviceInterval !== undefined) reportData.serviceInterval = shopReport.serviceInterval;
+      if (shopReport.notes !== undefined) reportData.notes = shopReport.notes;
 
       const docRef = await addDoc(collection(db, SHOP_REPORTS_COLLECTION), reportData);
       return docRef.id;

@@ -102,7 +102,7 @@ export function AddService({ equipmentName, onClose, onSubmit, initialServiceInt
 
               {/* Serviced Hours At */}
               <div>
-                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Serviced At</label>
+                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Next Service</label>
                 <input
                   type="number"
                   value={shopReport.lastServiceHours || ''}

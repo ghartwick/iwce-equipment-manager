@@ -24,6 +24,8 @@ export function Service() {
   const [equipmentDataNotes, setEquipmentDataNotes] = useState<string[]>([]);
   const [reportsCollapsed, setReportsCollapsed] = useState(true);
   const [hoveredAttachment, setHoveredAttachment] = useState<any | null>(null);
+  const [editingInterval, setEditingInterval] = useState(false);
+  const [editingNotification, setEditingNotification] = useState(false);
 
   const addEquipmentDataNote = () => {
     setEquipmentDataNotes([...equipmentDataNotes, '']);
@@ -42,9 +44,14 @@ export function Service() {
   const handleSaveServiceInterval = async () => {
     if (!equipmentId) return;
     try {
-      await equipmentManagementService.updateEquipment(equipmentId, {
-        serviceInterval
-      });
+      const allEquipment = await equipmentManagementService.getAllEquipment();
+      const inEquipmentCollection = allEquipment.some(eq => eq.id === equipmentId);
+      if (inEquipmentCollection) {
+        await equipmentManagementService.updateEquipment(equipmentId, { serviceInterval });
+      } else {
+        await fleetManagementService.updateEquipment(equipmentId, { serviceInterval }, undefined, true);
+      }
+      setEditingInterval(false);
       alert('Service interval saved successfully');
     } catch (error) {
       console.error('Error saving service interval:', error);
@@ -55,9 +62,14 @@ export function Service() {
   const handleSaveServiceNotification = async () => {
     if (!equipmentId) return;
     try {
-      await equipmentManagementService.updateEquipment(equipmentId, {
-        serviceNotification
-      });
+      const allEquipment = await equipmentManagementService.getAllEquipment();
+      const inEquipmentCollection = allEquipment.some(eq => eq.id === equipmentId);
+      if (inEquipmentCollection) {
+        await equipmentManagementService.updateEquipment(equipmentId, { serviceNotification });
+      } else {
+        await fleetManagementService.updateEquipment(equipmentId, { serviceNotification }, undefined, true);
+      }
+      setEditingNotification(false);
       alert('Service notification saved successfully');
     } catch (error) {
       console.error('Error saving service notification:', error);
@@ -124,12 +136,14 @@ export function Service() {
   };
 
   const handleShopSubmit = async (shopReport: { lastServicedDate?: string; lastServiceHours?: number; serviceInterval?: number; notes?: string; files?: File[] }, previews?: string[]) => {
-    if (!equipmentId || !user || !equipmentName) return;
+    if (!equipmentId || !user) return;
+    const reportEquipmentName = equipmentName || unitName;
+    if (!reportEquipmentName) return;
     
     try {
       const reportId = await shopHistoryFirebaseService.addShopReport(
         equipmentId,
-        equipmentName,
+        reportEquipmentName,
         equipmentSite,
         shopReport,
         { username: user.username, role: user.role }
@@ -222,16 +236,31 @@ export function Service() {
                 type="number"
                 value={serviceInterval || ''}
                 onChange={(e) => setServiceInterval(e.target.value ? parseFloat(e.target.value) : undefined)}
-                className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                disabled={!!serviceInterval && !editingInterval}
+                className={`flex-1 px-2 py-1.5 border rounded-md text-xs [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                  serviceInterval && !editingInterval
+                    ? 'border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500'
+                }`}
                 placeholder="Enter Service Interval"
               />
-              <button
-                type="button"
-                onClick={handleSaveServiceInterval}
-                className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
-              >
-                Save
-              </button>
+              {serviceInterval && !editingInterval ? (
+                <button
+                  type="button"
+                  onClick={() => setEditingInterval(true)}
+                  className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
+                >
+                  Edit
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSaveServiceInterval}
+                  className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
+                >
+                  Save
+                </button>
+              )}
             </div>
           </div>
 
@@ -243,16 +272,31 @@ export function Service() {
                 type="number"
                 value={serviceNotification || ''}
                 onChange={(e) => setServiceNotification(e.target.value ? parseFloat(e.target.value) : undefined)}
-                className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                disabled={!!serviceNotification && !editingNotification}
+                className={`flex-1 px-2 py-1.5 border rounded-md text-xs [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                  serviceNotification && !editingNotification
+                    ? 'border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                    : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500'
+                }`}
                 placeholder="Enter Service Notification"
               />
-              <button
-                type="button"
-                onClick={handleSaveServiceNotification}
-                className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
-              >
-                Save
-              </button>
+              {serviceNotification && !editingNotification ? (
+                <button
+                  type="button"
+                  onClick={() => setEditingNotification(true)}
+                  className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
+                >
+                  Edit
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSaveServiceNotification}
+                  className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
+                >
+                  Save
+                </button>
+              )}
             </div>
           </div>
 
@@ -352,8 +396,7 @@ export function Service() {
                         </div>
                         <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
                           <div><strong>Serviced Date:</strong> {report.lastServicedDate || 'N/A'}</div>
-                          <div><strong>Serviced Hours At:</strong> {report.lastServiceHours || 'N/A'}</div>
-                          <div><strong>Service Interval:</strong> {report.serviceInterval || 'N/A'}</div>
+                          <div><strong>Next Service:</strong> {report.lastServiceHours || 'N/A'}</div>
                         </div>
                         {report.notes && (
                           <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">

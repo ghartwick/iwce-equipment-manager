@@ -450,7 +450,7 @@ export default function TimecardPage() {
 
   const selectedEntries = selectedDates.flatMap(date => getEntriesForDate(date));
   const selectedDateLabel = selectedDates.length === 1
-    ? format(selectedDates[0], 'MMM d, yyyy')
+    ? format(selectedDates[0], 'MMMM d, yyyy')
     : `${selectedDates.length} dates selected`;
   const selectedDateParam = selectedDates.length === 1
     ? format(selectedDates[0], 'yyyy-MM-dd')
@@ -1058,7 +1058,9 @@ export default function TimecardPage() {
             <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
-                  Time Entries for {selectedDateLabel}
+                  {showPOForm && selectedDates.length === 1
+                    ? `PO Entry for ${format(selectedDates[0], 'MMMM d, yyyy')}`
+                    : `Time Entries for ${selectedDateLabel}`}
                 </h3>
                 <div className="flex items-center gap-2 self-end sm:self-auto">
                   <button
@@ -1319,6 +1321,13 @@ export default function TimecardPage() {
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* Time Entries heading — shown here when PO form is open */}
+              {showPOForm && (
+                <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-4">
+                  Time Entries for {selectedDateLabel}
+                </h3>
               )}
 
               {/* Day Summary Panel */}

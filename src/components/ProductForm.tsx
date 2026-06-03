@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, QrCode, Download, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Clock, QrCode, Download, Plus, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
-import { Equipment, Category, EquipmentMaintenance } from '../types';
+import { Equipment, Category, EquipmentMaintenance, EquipmentNote } from '../types';
 import { EquipmentLog } from './EquipmentLog';
 import { MaintenanceForm } from './MaintenanceForm';
 import { siteManagementService, Site } from '../services/siteManagementService';
@@ -19,6 +19,7 @@ interface ProductFormProps {
   onSubmit: (product: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
   onDelete?: () => void;
+  onManage?: () => void;
   userRole?: 'admin' | 'supervisor' | 'field';
   categories?: Category[];
   allowFullEdit?: boolean;
@@ -26,7 +27,7 @@ interface ProductFormProps {
   serviceIntervalBar?: React.ReactNode;
 }
 
-export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, categories: categoriesProp, allowFullEdit = false, useEmployeeColumn = false, serviceIntervalBar }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, userRole, categories: categoriesProp, allowFullEdit = false, useEmployeeColumn = false, serviceIntervalBar }: ProductFormProps) {
   const formRef = React.useRef<HTMLFormElement>(null);
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -187,13 +188,26 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
       repairFlag = false;
     }
     
+    const existingNotes: EquipmentNote[] = product?.notes || [];
+    let updatedNotes = existingNotes;
+    if (formData.locationNotes.trim() && user) {
+      const newNote: EquipmentNote = {
+        id: `note-${Date.now()}`,
+        text: formData.locationNotes.trim(),
+        createdAt: new Date().toISOString(),
+        createdBy: user.name || user.username,
+        createdByRole: user.role,
+      };
+      updatedNotes = [newNote, ...existingNotes];
+    }
+
     const submitData = {
       ...formData,
       repair: repairFlag,
       isActive: true,
       showInInventory: true,
       showInTimecard: true,
-      notes: []
+      notes: updatedNotes
     };
     
         
@@ -405,6 +419,15 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
                   <QrCode className="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
               )}
+              {onManage && (
+                <button
+                  onClick={onManage}
+                  className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                  title="Go to management group"
+                >
+                  <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+                </button>
+              )}
               <button
                 onClick={() => setShowLog(!showLog)}
                 className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
@@ -572,6 +595,22 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
               <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
                 Notes
               </label>
+              {(product.notes && product.notes.length > 0) ? (
+                <div className="space-y-1 mb-2">
+                  {product.notes.map(note => (
+                    <div key={note.id} className="text-xs text-gray-500 dark:text-gray-400 italic">
+                      <span className="not-italic font-medium text-gray-400 dark:text-gray-500">
+                        {new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {note.createdBy}
+                      </span>
+                      {' — '}{note.text}
+                    </div>
+                  ))}
+                </div>
+              ) : product.locationNotes ? (
+                <div className="mb-2">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 italic">{product.locationNotes}</div>
+                </div>
+              ) : null}
               <textarea
                 rows={2}
                 value={formData.locationNotes}
@@ -943,6 +982,22 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, userRole, c
             <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
               Notes
             </label>
+            {(product?.notes && product.notes.length > 0) ? (
+              <div className="space-y-1 mb-2">
+                {product.notes.map(note => (
+                  <div key={note.id} className="text-xs text-gray-500 dark:text-gray-400 italic">
+                    <span className="not-italic font-medium text-gray-400 dark:text-gray-500">
+                      {new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {note.createdBy}
+                    </span>
+                    {' — '}{note.text}
+                  </div>
+                ))}
+              </div>
+            ) : product?.locationNotes ? (
+              <div className="mb-2">
+                <div className="text-xs text-gray-500 dark:text-gray-400 italic">{product.locationNotes}</div>
+              </div>
+            ) : null}
             <textarea
               rows={2}
               value={formData.locationNotes}

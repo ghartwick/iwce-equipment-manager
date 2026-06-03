@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Upload, Edit2, Trash2, Clock, QrCode, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { equipmentManagementService } from '../services/equipmentManagementService';
@@ -51,12 +52,21 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
   const [selectedItem, setSelectedItem] = useState<Equipment | null>(null);
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    loadEquipment();
-    loadCategories();
-    loadSites();
-    if (useEmployeeColumn) loadUsers();
+    const init = async () => {
+      const loaded = await loadEquipment();
+      loadCategories();
+      loadSites();
+      if (useEmployeeColumn) loadUsers();
+      const editId = searchParams.get('editId');
+      if (editId) {
+        const target = loaded.find(item => item.id === editId);
+        if (target) handleEdit(target);
+      }
+    };
+    init();
   }, []);
 
   const loadCategories = async () => {
@@ -93,7 +103,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
     }
   };
 
-  const loadEquipment = async () => {
+  const loadEquipment = async (): Promise<Equipment[]> => {
     try {
       const serviceEquipment = await svc.getAllEquipment();
       // Convert Date objects to strings and ensure all required fields
@@ -107,11 +117,13 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
         locationNotes: item.locationNotes || '',
         createdAt: item.createdAt as string,
         updatedAt: item.updatedAt as string,
-        notes: []
+        notes: item.notes || []
       }));
       setEquipment(convertedEquipment);
+      return convertedEquipment;
     } catch (err: any) {
       setError(`Failed to load equipment: ${err?.message || 'Unknown error'}`);
+      return [];
     } finally {
       setLoading(false);
     }

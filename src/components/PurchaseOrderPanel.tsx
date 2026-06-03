@@ -96,7 +96,6 @@ export function PurchaseOrderPanel({ date, submittedBy, posForDate, onPOCreated 
       const label = items.length > 1 ? ` (item ${i + 1})` : '';
       if (!item.description.trim()) { setError(`Please enter a description${label}.`); return; }
       if (!item.quantity || Number(item.quantity) <= 0) { setError(`Please enter a valid quantity${label}.`); return; }
-      if (!item.code) { setError(`Please select a code${label}.`); return; }
     }
 
     setSubmitting(true);
@@ -184,7 +183,7 @@ export function PurchaseOrderPanel({ date, submittedBy, posForDate, onPOCreated 
           <div className="hidden sm:flex gap-2 px-1 mb-1">
             <span className="w-14 flex-shrink-0 text-xs text-yellow-700 dark:text-yellow-600 font-medium">Qty</span>
             <span className="flex-1 text-xs text-yellow-700 dark:text-yellow-600 font-medium">Description</span>
-            <span className="w-44 flex-shrink-0 text-xs text-yellow-700 dark:text-yellow-600 font-medium">Code</span>
+            <span className="w-44 flex-shrink-0 text-xs text-yellow-700 dark:text-yellow-600 font-medium">Code (optional)</span>
             <span className="w-8 flex-shrink-0" />
           </div>
 

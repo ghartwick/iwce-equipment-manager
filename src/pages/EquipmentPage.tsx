@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useInventory } from '../hooks/useInventory';
@@ -22,6 +22,19 @@ export default function EquipmentPage() {
   const [alertDaysAgo, setAlertDaysAgo] = useState(7);
   const [currentHours, setCurrentHours] = useState<number>(0);
   const [nextServiceAt, setNextServiceAt] = useState<number>(0);
+
+  const manageRoute = useMemo(() => {
+    const id = equipment?.id;
+    if (isFleet) return id ? `/manage/fleet?editId=${id}` : '/manage/fleet';
+    if (!equipment?.category || !categories.length) return null;
+    const cat = categories.find(c => c.id === equipment.category);
+    switch (cat?.managementGroup) {
+      case 'heavy': return id ? `/manage/heavy-equipment?editId=${id}` : '/manage/heavy-equipment';
+      case 'field': return id ? `/manage/field-tools?editId=${id}` : '/manage/field-tools';
+      case 'fleet': return id ? `/manage/fleet?editId=${id}` : '/manage/fleet';
+      default: return null;
+    }
+  }, [isFleet, equipment, categories]);
 
   useEffect(() => {
     const loadEquipment = async () => {
@@ -179,6 +192,7 @@ export default function EquipmentPage() {
           product={equipment}
           onSubmit={handleEdit}
           onCancel={() => navigate('/inventory')}
+          onManage={manageRoute ? () => navigate(manageRoute) : undefined}
           userRole={user?.role || 'field'}
           useEmployeeColumn={isFleet}
           serviceIntervalBar={equipment ? (

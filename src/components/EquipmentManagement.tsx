@@ -553,31 +553,43 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                     const parents = hideParentUnit ? filteredEquipment : filteredEquipment.filter(item => !item.parentId);
                     const variants = hideParentUnit ? [] : filteredEquipment.filter(item => item.parentId);
                     
-                    // Group parents by category
-                    const grouped = parents.reduce((acc, item) => {
+                    // Group ACTIVE parents by category
+                    const grouped = parents.filter(i => i.isActive).reduce((acc, item) => {
                       const name = getCategoryName(item.category || '');
                       if (!acc[name]) acc[name] = [];
                       acc[name].push(item);
                       return acc;
                     }, {} as Record<string, Equipment[]>);
 
-                    // Sort parents within each category
-                    Object.keys(grouped).forEach(key => {
-                      grouped[key].sort((a, b) => {
-                        const numA = parseFloat(a.name), numB = parseFloat(b.name);
-                        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-                        return a.name.localeCompare(b.name);
+                    // Group INACTIVE parents by category
+                    const inactiveGrouped = parents.filter(i => !i.isActive).reduce((acc, item) => {
+                      const name = getCategoryName(item.category || '');
+                      if (!acc[name]) acc[name] = [];
+                      acc[name].push(item);
+                      return acc;
+                    }, {} as Record<string, Equipment[]>);
+
+                    // Sort helper
+                    const sortGroup = (g: Record<string, Equipment[]>) => {
+                      Object.keys(g).forEach(key => {
+                        g[key].sort((a, b) => {
+                          const numA = parseFloat(a.name), numB = parseFloat(b.name);
+                          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                          return a.name.localeCompare(b.name);
+                        });
                       });
-                    });
+                      return Object.entries(g).sort(([a], [b]) => {
+                        const numA = parseFloat(a), numB = parseFloat(b);
+                        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                        return a.localeCompare(b);
+                      });
+                    };
 
-                    // Sort categories
-                    const sortedGroups = Object.entries(grouped).sort(([a], [b]) => {
-                      const numA = parseFloat(a), numB = parseFloat(b);
-                      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-                      return a.localeCompare(b);
-                    });
+                    const sortedGroups = sortGroup(grouped);
+                    const sortedInactiveGroups = sortGroup(inactiveGrouped);
+                    const inactiveCount = parents.filter(i => !i.isActive).length;
 
-                    return sortedGroups.map(([categoryName, items]) => (
+                    return (<>{sortedGroups.map(([categoryName, items]) => (
                       <React.Fragment key={categoryName}>
                         <tr>
                           <td colSpan={6} className="px-4 py-2 bg-yellow-700 bg-opacity-40 border-b border-yellow-700">
@@ -595,7 +607,6 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                               <tr className="border-t border-yellow-200 dark:border-yellow-800">
                                 <td className="px-4 py-2 text-gray-900 dark:text-yellow-100">
                                   {item.name}
-                                  {!item.isActive && <span className="ml-2 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-500 text-xs rounded">Inactive</span>}
                                   {item.locationNotes && (
                                     <div className="text-xs text-gray-600 dark:text-gray-400 italic mt-1 break-words">
                                       {item.locationNotes}
@@ -1020,7 +1031,109 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                           );
                         })}
                       </React.Fragment>
-                    ));
+                    ))}
+                    {/* Inactive Section */}
+                    {inactiveCount > 0 && (<>
+                      <tr>
+                        <td colSpan={6} className="px-4 py-3 bg-gray-200 dark:bg-gray-800 border-t-4 border-gray-400 dark:border-gray-600">
+                          <span className="text-base font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+                            Inactive ({inactiveCount})
+                          </span>
+                        </td>
+                      </tr>
+                      {sortedInactiveGroups.map(([categoryName, items]) => (
+                        <React.Fragment key={`inactive-${categoryName}`}>
+                          <tr>
+                            <td colSpan={6} className="px-4 py-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700">
+                              <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                {categoryName} ({items.length})
+                              </span>
+                            </td>
+                          </tr>
+                          {items.map((item) => (
+                            <tr key={item.id} className="border-t border-gray-200 dark:border-gray-800 opacity-60">
+                              <td className="px-4 py-2 text-gray-600 dark:text-gray-400">
+                                {item.name}
+                                {item.locationNotes && (
+                                  <div className="text-xs text-gray-500 italic mt-1 break-words">{item.locationNotes}</div>
+                                )}
+                              </td>
+                              <td className="px-4 py-2 text-gray-500 dark:text-gray-500 text-sm">{item.site || item.employee || '—'}</td>
+                              <td className="px-4 py-2 text-center text-gray-400">{item.showInInventory ? '✓' : '-'}</td>
+                              {!hideTimecardColumn && <td className="px-4 py-2 text-center text-gray-400">{item.showInTimecard ? '✓' : '-'}</td>}
+                              <td className="px-4 py-2">
+                                <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-500 text-xs rounded">Inactive</span>
+                              </td>
+                              <td className="px-4 py-2">
+                                <div className="flex space-x-1">
+                                  <button onClick={() => handleEdit(item)} className="p-1 text-yellow-600 hover:text-yellow-500" title="Edit"><Edit2 className="h-4 w-4" /></button>
+                                  {currentUser?.role === 'admin' && (
+                                    <button onClick={() => handleDelete(item)} className="p-1 text-red-600 hover:text-red-500" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                          {editingItem && items.some(i => i.id === editingItem.id) && (
+                            <tr>
+                              <td colSpan={6} className="px-4 py-0">
+                                <div className="p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg mt-2">
+                                  <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3">Edit {title}: {editingItem.name}</h3>
+                                  <form onSubmit={handleSubmit} className="space-y-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      <input type="text" required placeholder="Equipment Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <input type="text" placeholder="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <input type="text" placeholder="Serial Number" value={formData.serialNumber} onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <input type="text" placeholder="Year" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <input type="text" placeholder="Make" value={formData.make} onChange={(e) => setFormData({ ...formData, make: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <input type="text" placeholder="Model" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                        <option value="">Select Category</option>
+                                        {categories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
+                                      </select>
+                                      {useEmployeeColumn ? (
+                                        <select value={formData.employee} onChange={(e) => setFormData({ ...formData, employee: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                          <option value="">Select Employee</option>
+                                          {users.map(u => (<option key={u.id} value={u.name}>{u.name}</option>))}
+                                        </select>
+                                      ) : (
+                                        <select value={formData.site} onChange={(e) => setFormData({ ...formData, site: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                          <option value="">Select Site</option>
+                                          {sites.map(s => (<option key={s.id} value={s.name}>{s.name}</option>))}
+                                        </select>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-wrap gap-4">
+                                      <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                        <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                        <span>Active</span>
+                                      </label>
+                                      {!formData.parentId && (
+                                        <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                          <input type="checkbox" checked={formData.showInInventory} onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                          <span>Show in Inventory</span>
+                                        </label>
+                                      )}
+                                      {!hideTimecardColumn && (
+                                        <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
+                                          <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                          <span>Show in Timecard</span>
+                                        </label>
+                                      )}
+                                    </div>
+                                    <div className="flex space-x-2 justify-end">
+                                      <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">Update Equipment</button>
+                                      <button type="button" onClick={cancelForm} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm">Cancel</button>
+                                    </div>
+                                  </form>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </>)}
+                    </>);
                   })()}
                 </tbody>
               </table>

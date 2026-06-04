@@ -21,7 +21,8 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    isActive: true
+    isActive: true,
+    flagRed: false
   });
   const [showInactive, setShowInactive] = useState(false);
  
@@ -54,7 +55,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
       });
       setSuccess('Site added successfully');
       setShowAddForm(false);
-      setFormData({ name: '', description: '', isActive: true });
+      setFormData({ name: '', description: '', isActive: true, flagRed: false });
       await loadSites();
     } catch (error) {
       setError('Failed to add site');
@@ -92,7 +93,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
 
   const cancelForm = () => {
     setShowAddForm(false);
-    setFormData({ name: '', description: '', isActive: true });
+    setFormData({ name: '', description: '', isActive: true, flagRed: false });
   };
 
   const filteredSites = sites.filter(site =>
@@ -206,6 +207,16 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
                     className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
                   />
                   <label htmlFor="isActive" className="text-sm text-yellow-700 dark:text-yellow-300">Active</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="flagRed"
+                    checked={formData.flagRed}
+                    onChange={(e) => setFormData({ ...formData, flagRed: e.target.checked })}
+                    className="rounded border-red-600 text-red-500 focus:ring-red-500"
+                  />
+                  <label htmlFor="flagRed" className="text-sm text-red-700 dark:text-red-300 font-medium">Flag Red</label>
                 </div>
                 <div className="flex space-x-2">
                   <button

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Check, MoreVertical } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -84,12 +84,12 @@ export default function TimecardPage() {
   const [attachmentsForDate, setAttachmentsForDate] = useState<TimecardAttachment[]>([]);
   const [sitesData, setSitesData] = useState<Site[]>([]);
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
-  const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
+  const [monthAttachments, setMonthAttachments] = useState<TimecardAttachment[]>([]);
   const [lockedDates, setLockedDates] = useState<Set<string>>(new Set());
   const [showPOForm, setShowPOForm] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [poCounts, setPoCounts] = useState<Record<string, number>>({});
+  const [monthPOs, setMonthPOs] = useState<PurchaseOrder[]>([]);
   const [posForDate, setPosForDate] = useState<PurchaseOrder[]>([]);
   const [hoveredAttachment, setHoveredAttachment] = useState<TimecardAttachment | null>(null);
 
@@ -242,14 +242,7 @@ export default function TimecardPage() {
     const loadAttachmentsForMonth = async () => {
       try {
         const attachments = await timecardAttachmentService.getAttachmentsForRange(startDate, endDate);
-        const counts: Record<string, number> = {};
-        
-        attachments.forEach(attachment => {
-          const key = formatDateKey(new Date(attachment.date));
-          counts[key] = (counts[key] || 0) + 1;
-        });
-        
-        setAttachmentCounts(counts);
+        setMonthAttachments(attachments);
       } catch (error) {
         // Error loading attachments
       }
@@ -282,12 +275,7 @@ export default function TimecardPage() {
     const loadPOCountsForMonth = async () => {
       try {
         const pos = await purchaseOrderService.getPOsForRange(startDate, endDate);
-        const counts: Record<string, number> = {};
-        pos.forEach(po => {
-          const key = formatDateKey(new Date(po.date));
-          counts[key] = (counts[key] || 0) + 1;
-        });
-        setPoCounts(counts);
+        setMonthPOs(pos);
       } catch {
         // ignore
       }
@@ -320,6 +308,38 @@ export default function TimecardPage() {
 
     loadLockedDates();
   }, [startDate, endDate]);
+
+  // Must be before any early returns (Rules of Hooks)
+  const toDateSafe = (val: any): Date => {
+    if (!val) return new Date();
+    if (val instanceof Date) return val;
+    if (typeof val.toDate === 'function') return val.toDate();
+    return new Date(val);
+  };
+
+  const filteredAttachmentCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const filtered = siteFilter && siteFilter !== 'all'
+      ? monthAttachments.filter(a => a.site === siteFilter)
+      : monthAttachments;
+    filtered.forEach(a => {
+      const key = formatDateKey(toDateSafe(a.date));
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [monthAttachments, siteFilter]);
+
+  const filteredPOCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const filtered = siteFilter && siteFilter !== 'all'
+      ? monthPOs.filter(po => po.site === siteFilter)
+      : monthPOs;
+    filtered.forEach(po => {
+      const key = formatDateKey(toDateSafe(po.date));
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [monthPOs, siteFilter]);
 
   if (loading) {
     return (
@@ -535,19 +555,16 @@ export default function TimecardPage() {
       setAttachmentCode('');
       setAttachmentFilesWithDesc([]);
       setShowAttachments(false);
-      // Update attachment counts
-      setAttachmentCounts(prev => {
-        const next = { ...prev };
-        const key = formatDateKey(selectedDates[0]);
-        next[key] = (next[key] || 0) + attachmentFilesWithDesc.length;
-        return next;
-      });
-      // Refresh attachment list for the selected date
+      // Refresh attachment list for the selected date and update month array
       const date = selectedDates[0];
       const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
       const attachments = await timecardAttachmentService.getAttachmentsForRange(startOfDay, endOfDay);
       setAttachmentsForDate(attachments);
+      setMonthAttachments(prev => [
+        ...prev.filter(a => formatDateKey(toDateSafe(a.date)) !== formatDateKey(date)),
+        ...attachments
+      ]);
       alert(`${attachmentFilesWithDesc.length} attachment(s) uploaded successfully.`);
     } catch (error) {
       console.error('Error uploading attachment:', error);
@@ -565,18 +582,7 @@ export default function TimecardPage() {
       await timecardAttachmentService.deleteAttachment(attachment.id, attachment.filePath);
       // Refresh attachment list
       setAttachmentsForDate(prev => prev.filter(a => a.id !== attachment.id));
-      // Update attachment counts
-      const date = selectedDates[0];
-      setAttachmentCounts(prev => {
-        const next = { ...prev };
-        const remainingAttachments = attachmentsForDate.filter(a => a.id !== attachment.id);
-        if (remainingAttachments.length === 0) {
-          delete next[formatDateKey(date)];
-        } else {
-          next[formatDateKey(date)] = remainingAttachments.length;
-        }
-        return next;
-      });
+      setMonthAttachments(prev => prev.filter(a => a.id !== attachment.id));
     } catch (error) {
       alert('Failed to delete attachment.');
     }
@@ -998,8 +1004,8 @@ export default function TimecardPage() {
                 const isSelected = selectedDates.some(selected => isSameDay(day, selected));
                 const isTodayDate = isToday(day);
                 const dateKey = formatDateKey(day);
-                const attachmentCount = attachmentCounts[dateKey] || 0;
-                const poCount = poCounts[dateKey] || 0;
+                const attachmentCount = filteredAttachmentCounts[dateKey] || 0;
+                const poCount = filteredPOCounts[dateKey] || 0;
                 const isLocked = lockedDates.has(dateKey);
 
                 return (
@@ -1018,8 +1024,16 @@ export default function TimecardPage() {
                       {format(day, 'd')}
                       {(() => {
                         const dayEntries = getEntriesForDate(day);
-                        const submittedCount = dayEntries.filter(entry => entry.status === 'submitted').length;
-                        const draftCount = dayEntries.filter(entry => !entry.status || entry.status === 'draft').length;
+                        const filteredDayEntries = (() => {
+                          if (!user || (!siteFilter && !employeeFilter)) return dayEntries;
+                          let f = dayEntries.filter(e => canSeeEntry(e, user!, supervisorUserIds));
+                          if (siteFilter && siteFilter !== 'all') f = f.filter(e => e.job === siteFilter);
+                          if (employeeFilter === 'self') f = f.filter(e => e.userId === user!.id);
+                          else if (employeeFilter && employeeFilter !== 'all') f = f.filter(e => e.userId === employeeFilter);
+                          return f;
+                        })();
+                        const submittedCount = filteredDayEntries.filter(entry => entry.status === 'submitted').length;
+                        const draftCount = filteredDayEntries.filter(entry => !entry.status || entry.status === 'draft').length;
 
                         return (
                           <>
@@ -1060,7 +1074,9 @@ export default function TimecardPage() {
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
                   {showPOForm && selectedDates.length === 1
                     ? `PO Entry for ${format(selectedDates[0], 'MMMM d, yyyy')}`
-                    : `Time Entries for ${selectedDateLabel}`}
+                    : showAttachments && selectedDates.length === 1
+                    ? `Attachment Entry for ${format(selectedDates[0], 'MMMM d, yyyy')}`
+                    : `Entries for ${selectedDateLabel}`}
                 </h3>
                 <div className="flex items-center gap-2 self-end sm:self-auto">
                   <button
@@ -1074,6 +1090,16 @@ export default function TimecardPage() {
                   >
                     Add Time Card
                   </button>
+                  {/* Clear Selection */}
+                  {selectedDates.length > 0 && (
+                    <button
+                      onClick={() => { setSelectedDates([]); setAttachmentsForDate([]); setPosForDate([]); setShowPOForm(false); setShowAttachments(false); }}
+                      className="px-3 py-1.5 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 font-medium transition-colors whitespace-nowrap"
+                      title="Clear date selection"
+                    >
+                      Clear
+                    </button>
+                  )}
                   {/* Actions overflow menu */}
                   <div className="relative">
                     <button
@@ -1088,13 +1114,13 @@ export default function TimecardPage() {
                         <div className="fixed inset-0 z-40" onClick={() => setShowActionsMenu(false)} />
                         <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-900 border border-yellow-300 dark:border-yellow-700 rounded-lg shadow-lg z-50 py-1">
                         <button
-                          onClick={() => { setShowAttachments(prev => !prev); setShowActionsMenu(false); }}
+                          onClick={() => { setShowAttachments(prev => !prev); setShowPOForm(false); setShowActionsMenu(false); }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
                         >
                           Attachments
                         </button>
                         <button
-                          onClick={() => { setShowPOForm(prev => !prev); setShowActionsMenu(false); }}
+                          onClick={() => { setShowPOForm(prev => !prev); setShowAttachments(false); setShowActionsMenu(false); }}
                           disabled={!selectedDateParam}
                           className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40 disabled:opacity-50"
                         >
@@ -1124,13 +1150,6 @@ export default function TimecardPage() {
                             {showPOForm ? 'Export POs' : 'Export'}
                           </button>
                         )}
-                        <div className="border-t border-yellow-200 dark:border-yellow-800 my-1" />
-                        <button
-                          onClick={() => { setSelectedDates([]); setAttachmentsForDate([]); setPosForDate([]); setShowPOForm(false); setShowAttachments(false); setShowActionsMenu(false); }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
-                        >
-                          Clear Selection
-                        </button>
                       </div>
                       </>
                     )}
@@ -1144,9 +1163,15 @@ export default function TimecardPage() {
                     date={selectedDates[0]}
                     submittedBy={user?.name ?? user?.username ?? 'Unknown'}
                     posForDate={posForDate}
+                    onClose={() => setShowPOForm(false)}
                     onPOCreated={(poNumber) => {
                       const key = formatDateKey(selectedDates[0]);
-                      setPoCounts(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
+                      purchaseOrderService.getPOsForDate(selectedDates[0]).then(pos => {
+                        setMonthPOs(prev => [
+                          ...prev.filter(p => formatDateKey(toDateSafe(p.date)) !== key),
+                          ...pos
+                        ]);
+                      });
                       purchaseOrderService.getPOsForDate(selectedDates[0]).then(setPosForDate);
                       void poNumber;
                     }}
@@ -1231,7 +1256,7 @@ export default function TimecardPage() {
                     </div>
                   ))}
                 </div>
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={handleAttachmentSubmit}
@@ -1240,6 +1265,13 @@ export default function TimecardPage() {
                       title={selectedDates.length === 1 ? 'Upload attachment' : 'Select a single date to attach'}
                     >
                       {attachmentSubmitting ? 'Uploading...' : 'Submit Attachment'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAttachments(false)}
+                      className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-yellow-100 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap"
+                    >
+                      Close
                     </button>
                   </div>
 
@@ -1418,8 +1450,7 @@ export default function TimecardPage() {
                       }}
                       className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     >
-                      <option value="">None</option>
-                      <option value="all">All</option>
+                      <option value="">All Sites</option>
                       {getUniqueSites().map(site => (
                         <option key={site} value={site}>{site}</option>
                       ))}
@@ -1438,11 +1469,10 @@ export default function TimecardPage() {
                       }}
                       className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-400"
                     >
-                      <option value="">None</option>
+                      <option value="">All Employees</option>
                       {(user?.role === 'supervisor' || user?.role === 'admin') && (
                         <option value="self">Your Time Card</option>
                       )}
-                      <option value="all">All</option>
                       {getUniqueEmployees().map(employee => (
                         <option key={employee.id} value={employee.id}>
                           {employee.name || employee.username}
@@ -1523,14 +1553,9 @@ export default function TimecardPage() {
                           const hasSpecificFilter = (siteFilter && siteFilter !== '' && siteFilter !== 'all') || 
                                                   (employeeFilter && employeeFilter !== '' && employeeFilter !== 'all' && employeeFilter !== 'self');
                           
-                          if (showAll) {
-                            // "All" selected - show all other users' entries
+                          if (showAll || !hasSpecificFilter) {
+                            // No filter or "All" selected - show all other users' entries
                             return otherUsersEntries;
-                          }
-                          
-                          if (!hasSpecificFilter) {
-                            // No filters selected - don't show other users' entries
-                            return [];
                           }
                           
                           // Apply specific filters
@@ -1547,7 +1572,7 @@ export default function TimecardPage() {
                           return filtered;
                         })() : [];
 
-                        const showGrouped = siteFilter === 'all' || employeeFilter === 'all';
+                        const showGrouped = !siteFilter || siteFilter === 'all' || employeeFilter === 'all';
                         const siteGroups: { site: string | null; entries: any[] }[] = [];
                         if (showGrouped) {
                           const groupMap: Record<string, any[]> = {};
@@ -1703,26 +1728,22 @@ export default function TimecardPage() {
                             {/* Other Time Cards Section (Admins/Supervisors only) */}
                             {otherEntries.length > 0 && (
                               <div className="border-t border-yellow-200 dark:border-yellow-700 pt-4 mt-4">
-                                <div className="mb-3">
-                                  <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">
-                                    {(() => {
-                                      if (siteFilter === 'all' || employeeFilter === 'all') {
-                                        return 'All Time Cards';
-                                      } else if (employeeFilter === 'self') {
-                                        return 'Your Time Card';
-                                      } else if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
-                                        const employeeName = getBestDisplayName(users.find(u => u.id === employeeFilter));
-                                        return `${siteFilter} - ${employeeName}'s Time Cards`;
-                                      } else if (siteFilter && siteFilter !== 'all') {
-                                        return `${siteFilter} Time Cards`;
-                                      } else if (employeeFilter && employeeFilter !== 'all') {
-                                        return `${getBestDisplayName(users.find(u => u.id === employeeFilter))}'s Time Cards`;
-                                      } else {
-                                        return 'Other Time Cards';
-                                      }
-                                    })()}
-                                  </h4>
-                                </div>
+                                {(() => {
+                                  const label = (() => {
+                                    if (employeeFilter === 'self') return 'Your Time Card';
+                                    if (siteFilter && siteFilter !== 'all' && employeeFilter && employeeFilter !== 'all') {
+                                      return `${siteFilter} - ${getBestDisplayName(users.find(u => u.id === employeeFilter))}'s Time Cards`;
+                                    }
+                                    if (siteFilter && siteFilter !== 'all') return `${siteFilter} Time Cards`;
+                                    if (employeeFilter && employeeFilter !== 'all') return `${getBestDisplayName(users.find(u => u.id === employeeFilter))}'s Time Cards`;
+                                    return null;
+                                  })();
+                                  return label ? (
+                                    <div className="mb-3">
+                                      <h4 className="text-yellow-700 dark:text-yellow-300 font-semibold text-lg">{label}</h4>
+                                    </div>
+                                  ) : null;
+                                })()}
                                 <div className={showGrouped ? 'space-y-4' : 'space-y-3'}>
                                     {siteGroups.map(({ site, entries }) => (
                                       <div key={site ?? 'ungrouped'}>

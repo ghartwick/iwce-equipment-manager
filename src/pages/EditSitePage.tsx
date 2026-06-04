@@ -16,7 +16,8 @@ export function EditSitePage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    isActive: true
+    isActive: true,
+    flagRed: false
   });
   
   const [linkedSites, setLinkedSites] = useState<string[]>([]);
@@ -59,7 +60,8 @@ export function EditSitePage() {
       setFormData({
         name: siteData.name,
         description: siteData.description || '',
-        isActive: siteData.isActive
+        isActive: siteData.isActive,
+        flagRed: siteData.flagRed || false
       });
       setCodes((siteData.codes || []).sort((a, b) => {
         const numA = parseFloat(a.name);
@@ -245,7 +247,7 @@ export function EditSitePage() {
                   />
                 </div>
               </div>
-              <div className="mt-4">
+              <div className="mt-4 flex items-center space-x-6">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -254,6 +256,15 @@ export function EditSitePage() {
                     className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
                   />
                   <span className="text-sm text-yellow-700 dark:text-yellow-300">Active</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.flagRed}
+                    onChange={(e) => setFormData({ ...formData, flagRed: e.target.checked })}
+                    className="rounded border-red-600 text-red-500 focus:ring-red-500"
+                  />
+                  <span className="text-sm text-red-700 dark:text-red-300 font-medium">Flag Red</span>
                 </label>
               </div>
             </div>

@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { X, Edit2, Trash2, Plus, Clock, QrCode } from 'lucide-react';
 import { Equipment } from '../types';
 import { useInventory } from '../hooks/useInventory';
@@ -13,6 +14,7 @@ interface FieldToolsManagementProps {
 }
 
 export function FieldToolsManagement({ currentUser, asPage = false }: FieldToolsManagementProps) {
+  const navigate = useNavigate();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTool, setEditingTool] = useState<Equipment | null>(null);
   const editFormRef = useRef<HTMLDivElement>(null);
@@ -22,6 +24,8 @@ export function FieldToolsManagement({ currentUser, asPage = false }: FieldTools
   const [searchTerm, setSearchTerm] = useState('');
   const [showAlertsOnly, setShowAlertsOnly] = useState(false);
   const [showMissingOnly, setShowMissingOnly] = useState(false);
+  const [searchParams] = useSearchParams();
+  const hasAutoOpenedRef = useRef(false);
 
   // Use the inventory hook but we'll filter for field tools only
   const {
@@ -40,6 +44,23 @@ export function FieldToolsManagement({ currentUser, asPage = false }: FieldTools
 
   // Only show categories assigned to field tools (or without a management group)
   const categories = allCategories.filter((c) => c.managementGroup === 'field' || !c.managementGroup);
+
+  // Auto-open edit form if editId is present in URL
+  useEffect(() => {
+    if (hasAutoOpenedRef.current) return;
+    
+    const init = async () => {
+      const editId = searchParams.get('editId');
+      if (editId) {
+        const target = fieldTools.find(item => item.id === editId);
+        if (target) {
+          handleEdit(target);
+          hasAutoOpenedRef.current = true;
+        }
+      }
+    };
+    init();
+  }, [fieldTools]);
 
   // Apply search and alert filters
   const filteredTools = fieldTools.filter(tool => {
@@ -94,6 +115,14 @@ export function FieldToolsManagement({ currentUser, asPage = false }: FieldTools
     setTimeout(() => {
       editFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTool(null);
+    // Clear editId from URL to prevent auto-reopening
+    if (searchParams.get('editId')) {
+      navigate('/manage/field-tools', { replace: true });
+    }
   };
 
   const handleDeleteTool = async (tool: Equipment) => {
@@ -283,7 +312,7 @@ export function FieldToolsManagement({ currentUser, asPage = false }: FieldTools
                                     <ProductForm
                                       product={editingTool}
                                       onSubmit={handleUpdateTool}
-                                      onCancel={() => setEditingTool(null)}
+                                      onCancel={handleCancelEdit}
                                       onDelete={currentUser?.role === 'admin' ? () => handleDeleteTool(editingTool) : undefined}
                                       userRole={currentUser?.role === 'admin' ? 'admin' : currentUser?.role === 'supervisor' ? 'supervisor' : 'field'}
                                       allowFullEdit={true}
@@ -470,7 +499,7 @@ export function FieldToolsManagement({ currentUser, asPage = false }: FieldTools
                                 categories={categories}
                                 product={editingTool}
                                 onSubmit={handleUpdateTool}
-                                onCancel={() => setEditingTool(null)}
+                                onCancel={handleCancelEdit}
                                 onDelete={currentUser?.role === 'admin' ? () => handleDeleteTool(editingTool) : undefined}
                                 userRole={currentUser?.role === 'admin' ? 'admin' : currentUser?.role === 'supervisor' ? 'supervisor' : 'field'}
                                 allowFullEdit={true}

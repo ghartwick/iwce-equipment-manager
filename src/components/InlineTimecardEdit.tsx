@@ -68,6 +68,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
   const [dirty, setDirty] = useState(false);
 
   // Edit state mirrors the entry fields
+  const [dateStr, setDateStr] = useState('');
   const [clockIn, setClockIn] = useState('');
   const [clockOut, setClockOut] = useState('');
   const [job, setJob] = useState('');
@@ -92,6 +93,8 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
   useEffect(() => {
     const inDate = entry.clockIn ? toDate(entry.clockIn) : null;
     const outDate = entry.clockOut ? toDate(entry.clockOut) : null;
+    const entryDateVal = entry.date ? toDate(entry.date) : null;
+    setDateStr(entryDateVal ? format(entryDateVal, 'yyyy-MM-dd') : '');
     setClockIn(inDate ? format(inDate, 'HH:mm') : '');
     setClockOut(outDate ? format(outDate, 'HH:mm') : '');
     setJob(entry.job || '');
@@ -198,13 +201,13 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const entryDate = toDate(entry.date);
+      const targetDate = dateStr ? new Date(dateStr + 'T12:00:00') : toDate(entry.date);
       const [inH, inM] = clockIn.split(':').map(Number);
       const [outH, outM] = clockOut.split(':').map(Number);
 
-      const newClockIn = new Date(entryDate);
+      const newClockIn = new Date(targetDate);
       newClockIn.setHours(inH, inM, 0, 0);
-      const newClockOut = new Date(entryDate);
+      const newClockOut = new Date(targetDate);
       newClockOut.setHours(outH, outM, 0, 0);
 
       const workedHours = calcHours(newClockIn, newClockOut) ?? 0;
@@ -223,6 +226,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
       }));
 
       const updates: Partial<TimeEntry> = {
+        date: targetDate,
         clockIn: newClockIn,
         clockOut: newClockOut,
         hours: workedHours,
@@ -250,6 +254,8 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
     // Re-init from entry to discard changes
     const inDate = entry.clockIn ? toDate(entry.clockIn) : null;
     const outDate = entry.clockOut ? toDate(entry.clockOut) : null;
+    const cancelDateVal = entry.date ? toDate(entry.date) : null;
+    setDateStr(cancelDateVal ? format(cancelDateVal, 'yyyy-MM-dd') : '');
     setClockIn(inDate ? format(inDate, 'HH:mm') : '');
     setClockOut(outDate ? format(outDate, 'HH:mm') : '');
     setJob(entry.job || '');
@@ -283,6 +289,33 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
 
   return (
     <div ref={containerRef} className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-700 space-y-2" onClick={(e) => e.stopPropagation()}>
+      {/* Date - editable */}
+      {isEditing && (
+        <div className="text-xs">
+          <EditableField
+            displayValue={dateStr ? format(new Date(dateStr + 'T12:00:00'), 'MMM d, yyyy') : '--'}
+            isEditing={isEditing}
+            editingField={editingField}
+            fieldName="date"
+            onStartEdit={handleFieldClick}
+            className="text-yellow-700 dark:text-yellow-600 font-medium"
+          >
+            <span className="inline-flex items-center gap-1">
+              Date:
+              <input
+                type="date"
+                value={dateStr}
+                onChange={(e) => { setDateStr(e.target.value); markDirty(); setEditingField(null); }}
+                autoFocus
+                className="px-2 py-1 text-xs rounded ring-1 ring-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100"
+                style={{ colorScheme: 'dark' }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </span>
+          </EditableField>
+        </div>
+      )}
+
       {/* Time Details */}
       <div className="flex items-center gap-2 text-xs text-yellow-700 dark:text-yellow-600">
         {(entry.clockIn || isEditing) && (

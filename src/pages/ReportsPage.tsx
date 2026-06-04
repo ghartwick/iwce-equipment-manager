@@ -26,20 +26,11 @@ import {
 
 export default function ReportsPage() {
   // Persist state across navigation
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const saved = localStorage.getItem('shopCurrentMonth');
-    return saved ? new Date(saved) : new Date();
-  });
-  const [selectedDates, setSelectedDates] = useState<Date[]>(() => {
-    const saved = localStorage.getItem('shopSelectedDates');
-    return saved ? JSON.parse(saved).map((d: string) => new Date(d)) : [];
-  });
-  const [lastSelectedDate, setLastSelectedDate] = useState<Date | null>(() => {
-    const saved = localStorage.getItem('shopLastSelectedDate');
-    return saved ? new Date(saved) : null;
-  });
-  const [siteFilter, setSiteFilter] = useState<string>(() => localStorage.getItem('shopSiteFilter') || '');
-  const [userFilter, setUserFilter] = useState<string>(() => localStorage.getItem('shopUserFilter') || '');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [lastSelectedDate, setLastSelectedDate] = useState<Date | null>(null);
+  const [siteFilter, setSiteFilter] = useState<string>('');
+  const [userFilter, setUserFilter] = useState<string>('');
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
   const [loading, setLoading] = useState(false);
@@ -497,31 +488,6 @@ export default function ReportsPage() {
       loadReportsForDate(selectedDates);
     }
   }, [siteFilter, userFilter]);
-
-  // Save filter state to localStorage
-  useEffect(() => {
-    localStorage.setItem('shopSiteFilter', siteFilter);
-  }, [siteFilter]);
-
-  useEffect(() => {
-    localStorage.setItem('shopUserFilter', userFilter);
-  }, [userFilter]);
-
-  useEffect(() => {
-    localStorage.setItem('shopCurrentMonth', currentMonth.toISOString());
-  }, [currentMonth]);
-
-  useEffect(() => {
-    localStorage.setItem('shopSelectedDates', JSON.stringify(selectedDates.map(d => d.toISOString())));
-  }, [selectedDates]);
-
-  useEffect(() => {
-    if (lastSelectedDate) {
-      localStorage.setItem('shopLastSelectedDate', lastSelectedDate.toISOString());
-    } else {
-      localStorage.removeItem('shopLastSelectedDate');
-    }
-  }, [lastSelectedDate]);
 
   useEffect(() => {
     const loadData = async () => {

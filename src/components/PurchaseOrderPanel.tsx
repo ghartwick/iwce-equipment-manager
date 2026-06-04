@@ -24,9 +24,10 @@ interface Props {
   submittedBy: string;
   posForDate: PurchaseOrder[];
   onPOCreated: (poNumber: number) => void;
+  onClose?: () => void;
 }
 
-export function PurchaseOrderPanel({ date, submittedBy, posForDate, onPOCreated }: Props) {
+export function PurchaseOrderPanel({ date, submittedBy, posForDate, onPOCreated, onClose }: Props) {
   const [nextPONumber, setNextPONumber] = useState<number | null>(null);
   const [sites, setSites] = useState<Site[]>([]);
   const [allCodes, setAllCodes] = useState<Code[]>([]);
@@ -276,7 +277,7 @@ export function PurchaseOrderPanel({ date, submittedBy, posForDate, onPOCreated 
         )}
 
         {/* Submit */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
           <button
             type="submit"
             disabled={submitting || nextPONumber === null}
@@ -285,6 +286,15 @@ export function PurchaseOrderPanel({ date, submittedBy, posForDate, onPOCreated 
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {submitting ? 'Submitting...' : `Submit PO${items.length > 1 ? ` (${items.length} items)` : ''}`}
           </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-yellow-100 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap"
+            >
+              Close
+            </button>
+          )}
         </div>
       </form>
 

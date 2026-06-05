@@ -41,7 +41,7 @@ export class FleetManagementService {
           category: data.category || '',
           site: data.site || '',
           employee: data.employee || '',
-          equipmentType: 'heavy' as const,
+          equipmentType: 'field' as const,
           repair: data.repair ?? false,
           repairDescription: data.repairDescription || '',
           notes: data.notes || [],

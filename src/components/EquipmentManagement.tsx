@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Upload, Edit2, Trash2, Clock, QrCode, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { equipmentManagementService } from '../services/equipmentManagementService';
+import { fleetManagementService } from '../services/fleetManagementService';
 import { getCategories } from '../services/firebaseService';
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
@@ -69,12 +70,19 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
     init();
   }, []);
 
+  // Reload categories when switching between add and edit modes
+  useEffect(() => {
+    loadCategories();
+  }, [editingItem]);
+
   const loadCategories = async () => {
     try {
       const allCats = await getCategories();
-      const loaded = categoryGroupFilter
-        ? allCats.filter(c => c.managementGroup === categoryGroupFilter || !c.managementGroup)
-        : allCats;
+      // When editing, show all categories to allow moving between groups
+      // When adding, filter by managementGroup
+      const loaded = editingItem || !categoryGroupFilter
+        ? allCats
+        : allCats.filter(c => c.managementGroup === categoryGroupFilter || !c.managementGroup);
       setCategories([...loaded].sort((a, b) => {
         const numA = parseFloat(a.name), numB = parseFloat(b.name);
         if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
@@ -174,11 +182,71 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
           });
         }
         
-        await svc.updateEquipment(editingItem.id, formData);
-        setSuccess('Equipment updated successfully');
+        // Determine equipmentType based on category's managementGroup
+        const selectedCategory = categories.find(c => c.id === formData.category);
+        const newManagementGroup = selectedCategory?.managementGroup;
+
+        // Check if we need to move equipment between collections
+        const currentEquipmentType = editingItem.equipmentType;
+        const isFleet = service === fleetManagementService || svc === fleetManagementService;
+
+        // Determine target collection and equipmentType
+        let targetService: any = equipmentManagementService;
+        let targetEquipmentType: 'heavy' | 'field' = 'heavy';
+
+        if (newManagementGroup === 'heavy') {
+          targetService = equipmentManagementService;
+          targetEquipmentType = 'heavy';
+        } else if (newManagementGroup === 'field') {
+          targetService = equipmentManagementService;
+          targetEquipmentType = 'field';
+        } else if (newManagementGroup === 'fleet') {
+          targetService = fleetManagementService;
+          targetEquipmentType = 'field'; // Fleet uses 'field' type in the Equipment interface
+        } else {
+          // Default to heavy if no management group specified
+          targetService = equipmentManagementService;
+          targetEquipmentType = 'heavy';
+        }
+
+        // Check if we need to move between collections
+        const needsMove = (isFleet && newManagementGroup !== 'fleet') ||
+                         (!isFleet && newManagementGroup === 'fleet') ||
+                         (!isFleet && currentEquipmentType !== targetEquipmentType);
+
+        if (needsMove) {
+          // Moving between collections or changing equipmentType within equipment collection
+          await svc.deleteEquipment(editingItem.id);
+          const newId = await targetService.addEquipment({ ...formData, equipmentType: targetEquipmentType, createdBy: currentUser?.username });
+
+          // Log the move to history
+          if (currentUser) {
+            await equipmentHistoryFirebaseService.addHistory({
+              equipmentId: newId,
+              equipmentName: formData.name,
+              action: 'updated',
+              timestamp: new Date(),
+              user: currentUser.username,
+              userRole: currentUser.role || 'admin',
+              changes: [
+                { field: 'equipmentType', oldValue: currentEquipmentType, newValue: targetEquipmentType }
+              ]
+            });
+          }
+
+          setSuccess('Equipment moved successfully');
+        } else {
+          // Same collection - just update
+          const equipmentType = newManagementGroup === 'heavy' ? 'heavy' as const : 'field' as const;
+          await svc.updateEquipment(editingItem.id, { ...formData, equipmentType });
+          setSuccess('Equipment updated successfully');
+        }
         setEditingItem(null);
       } else {
-        const newId = await svc.addEquipment({ ...formData, equipmentType: 'heavy', createdBy: currentUser?.username });
+        const selectedCategory = categories.find(c => c.id === formData.category);
+        const equipmentType = selectedCategory?.managementGroup === 'heavy' ? 'heavy' as const : 'field' as const;
+
+        const newId = await svc.addEquipment({ ...formData, equipmentType, createdBy: currentUser?.username });
         
         // Log the creation to history
         if (currentUser) {

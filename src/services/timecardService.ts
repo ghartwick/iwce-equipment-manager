@@ -1,6 +1,7 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserManagementService } from './userManagementService';
+import { fleetManagementService } from './fleetManagementService';
 
 export interface EquipmentEntry {
   id: string;
@@ -321,6 +322,59 @@ class TimecardService {
       submittedAt: new Date(),
       submittedBy: userId || entry.userId,
     });
+
+    // Update fleet equipment employee if equipment is selected
+    await this.updateFleetEquipmentEmployee(entry, userId || entry.userId);
+  }
+
+  // Update fleet equipment employee based on timecard equipment selection
+  private async updateFleetEquipmentEmployee(entry: TimeEntry, currentUserId: string): Promise<void> {
+    try {
+      // Get all equipment from work entries
+      const equipmentNames: string[] = [];
+      if (entry.equipment && entry.equipment.length > 0) {
+        equipmentNames.push(...entry.equipment);
+      }
+      if (entry.workEntries) {
+        entry.workEntries.forEach(workEntry => {
+          if (workEntry.equipment && workEntry.equipment.length > 0) {
+            equipmentNames.push(...workEntry.equipment);
+          }
+          if (workEntry.equipmentEntries) {
+            workEntry.equipmentEntries.forEach(eqEntry => {
+              if (eqEntry.equipment && eqEntry.equipment.trim() !== '') {
+                equipmentNames.push(eqEntry.equipment);
+              }
+            });
+          }
+        });
+      }
+
+      if (equipmentNames.length === 0) return;
+
+      // Get all fleet equipment
+      const fleetEquipment = await fleetManagementService.getAllEquipment();
+
+      // Get user info for history tracking
+      const allUsers = await this.userManagementService.getAllUsers();
+      const user = allUsers.find(u => u.id === currentUserId);
+      if (!user) return;
+
+      // Update each equipment that is in fleet and has a different employee
+      for (const equipmentName of equipmentNames) {
+        const equipment = fleetEquipment.find(eq => eq.name === equipmentName);
+        if (equipment && equipment.employee !== user.username) {
+          await fleetManagementService.updateEquipment(
+            equipment.id,
+            { employee: user.username },
+            { username: user.username, role: user.role }
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error updating fleet equipment employee:', error);
+      // Don't fail the timecard submission if equipment update fails
+    }
   }
 
   // Find all duplicate entries for a user/date/site combination (admin utility)

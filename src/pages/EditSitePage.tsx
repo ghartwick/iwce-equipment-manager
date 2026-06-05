@@ -16,8 +16,7 @@ export function EditSitePage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    isActive: true,
-    flagRed: false
+    isActive: true
   });
   
   const [linkedSites, setLinkedSites] = useState<string[]>([]);
@@ -60,8 +59,7 @@ export function EditSitePage() {
       setFormData({
         name: siteData.name,
         description: siteData.description || '',
-        isActive: siteData.isActive,
-        flagRed: siteData.flagRed || false
+        isActive: siteData.isActive
       });
       setCodes((siteData.codes || []).sort((a, b) => {
         const numA = parseFloat(a.name);
@@ -184,7 +182,7 @@ export function EditSitePage() {
   return (
     <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
       <div className="max-w-5xl mx-auto">
-        <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
+        <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl">
           {/* Header */}
           <div className="bg-yellow-700 dark:bg-yellow-900 dark:bg-opacity-30 px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex justify-between items-center">
             <div className="flex items-center space-x-4">
@@ -257,15 +255,6 @@ export function EditSitePage() {
                   />
                   <span className="text-sm text-yellow-700 dark:text-yellow-300">Active</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.flagRed}
-                    onChange={(e) => setFormData({ ...formData, flagRed: e.target.checked })}
-                    className="rounded border-red-600 text-red-500 focus:ring-red-500"
-                  />
-                  <span className="text-sm text-red-700 dark:text-red-300 font-medium">Flag Red</span>
-                </label>
               </div>
             </div>
 
@@ -314,7 +303,7 @@ export function EditSitePage() {
 
                 {/* Dropdown panel */}
                 {linkedDropdownOpen && (
-                  <div className="absolute z-20 mt-1 w-full bg-yellow-50 dark:bg-gray-900 border border-yellow-400 dark:border-yellow-700 rounded-lg shadow-lg overflow-hidden">
+                  <div className="absolute z-50 mt-1 w-full bg-yellow-50 dark:bg-gray-900 border border-yellow-400 dark:border-yellow-700 rounded-lg shadow-lg overflow-hidden">
                     {/* Search */}
                     <div className="p-2 border-b border-yellow-300 dark:border-yellow-700">
                       <input
@@ -334,7 +323,7 @@ export function EditSitePage() {
                           <p className="px-3 py-2 text-sm text-yellow-600 dark:text-yellow-500">No sites match.</p>
                         ) : (
                           allSites
-                            .filter(s => s.isActive && s.name.toLowerCase().includes(linkedSearch.toLowerCase()))
+                            .filter(s => s.isActive && (linkedSites.includes(s.name) || s.name.toLowerCase().includes(linkedSearch.toLowerCase())))
                             .map(s => {
                               const checked = linkedSites.includes(s.name);
                               return (

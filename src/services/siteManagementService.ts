@@ -30,13 +30,19 @@ export class SiteManagementService {
       
       return snapshot.docs.map(doc => {
         const data = doc.data();
+        const codes = (data.codes || []).map((c: any) =>
+          typeof c === 'string' ? { name: c, description: '' } : c
+        );
         return {
           id: doc.id,
           name: data.name,
           description: data.description || '',
-          codes: (data.codes || []).map((c: any) =>
-            typeof c === 'string' ? { name: c, description: '' } : c
-          ),
+          codes: codes.sort((a: SiteCode, b: SiteCode) => {
+            const numA = parseFloat(a.name);
+            const numB = parseFloat(b.name);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.name.localeCompare(b.name);
+          }),
           linkedSites: data.linkedSites || [],
           isActive: data.isActive ?? true,
           flagRed: data.flagRed ?? false,
@@ -62,13 +68,19 @@ export class SiteManagementService {
       }
       
       const data = snapshot.data();
+      const codes = (data.codes || []).map((c: any) =>
+        typeof c === 'string' ? { name: c, description: '' } : c
+      );
       return {
         id: snapshot.id,
         name: data.name,
         description: data.description || '',
-        codes: (data.codes || []).map((c: any) =>
-          typeof c === 'string' ? { name: c, description: '' } : c
-        ),
+        codes: codes.sort((a: SiteCode, b: SiteCode) => {
+          const numA = parseFloat(a.name);
+          const numB = parseFloat(b.name);
+          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+          return a.name.localeCompare(b.name);
+        }),
         linkedSites: data.linkedSites || [],
         isActive: data.isActive ?? true,
         flagRed: data.flagRed ?? false,

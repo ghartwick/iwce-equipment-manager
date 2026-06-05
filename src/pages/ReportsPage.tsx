@@ -8,6 +8,7 @@ import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../service
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
 import { fleetManagementService } from '../services/fleetManagementService';
+import { getCategories } from '../services/firebaseService';
 import { UserManagementService, AppUser } from '../services/userManagementService';
 import { Equipment, StockAlert } from '../types';
 import { 
@@ -52,6 +53,7 @@ export default function ReportsPage() {
   const [heavyEquipmentList, setHeavyEquipmentList] = useState<Equipment[]>([]);
   const [fleetEquipmentList, setFleetEquipmentList] = useState<Equipment[]>([]);
   const [equipmentServiceData, setEquipmentServiceData] = useState<Record<string, { currentHours: number; nextServiceAt: number }>>({});
+  const [equipmentHeavyData, setEquipmentHeavyData] = useState<Record<string, { nextServiceAt: number; completedMinorCount: number }>>({});
   const [serviceLoading, setServiceLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -73,25 +75,50 @@ export default function ReportsPage() {
   const loadServiceData = async () => {
     setServiceLoading(true);
     try {
-      const [heavy, fleet, allMaintenance, allShop] = await Promise.all([
+      const [heavy, fleet, allMaintenance, allShop, cats] = await Promise.all([
         equipmentManagementService.getAllEquipment(),
         fleetManagementService.getAllEquipment(),
         maintenanceHistoryFirebaseService.getAllMaintenanceHistory(),
         shopHistoryFirebaseService.getAllShopHistory(),
+        getCategories(),
       ]);
+
       const hoursMap: Record<string, number> = {};
       allMaintenance.forEach(r => {
         if (!hoursMap[r.equipmentId] && r.maintenance?.hours) hoursMap[r.equipmentId] = r.maintenance.hours;
       });
+
+      // Fleet: use lastServiceHours for nextServiceAt
       const nextServiceMap: Record<string, number> = {};
       allShop.forEach(r => {
         if (!nextServiceMap[r.equipmentId] && r.lastServiceHours) nextServiceMap[r.equipmentId] = r.lastServiceHours;
       });
+
+      // Heavy equipment: compute cycle start and completed minor count
+      const heavyData: Record<string, { nextServiceAt: number; completedMinorCount: number }> = {};
+      heavy.forEach(eq => {
+        const cat = cats.find(c => c.id === eq.category);
+        const isHeavy = cat?.notificationType === 'heavy' && !!eq.largeServiceInterval;
+        if (isHeavy && eq.serviceInterval && eq.largeServiceInterval) {
+          const eqShopReports = allShop.filter(r => r.equipmentId === eq.id && r.servicedAt != null);
+          const majorReports = eqShopReports.filter(r => r.serviceType === 'major')
+            .sort((a, b) => (b.servicedAt ?? 0) - (a.servicedAt ?? 0));
+          const cycleStart = majorReports.length > 0
+            ? majorReports[0].servicedAt!
+            : eqShopReports.length > 0 ? eqShopReports[0].servicedAt! : 0;
+          const completedMinors = eqShopReports.filter(
+            r => r.serviceType === 'minor' && r.servicedAt! > cycleStart
+          ).length;
+          heavyData[eq.id] = { nextServiceAt: cycleStart, completedMinorCount: completedMinors };
+        }
+      });
+      setEquipmentHeavyData(heavyData);
+
       const serviceData: Record<string, { currentHours: number; nextServiceAt: number }> = {};
       [...heavy, ...fleet].forEach(eq => {
         serviceData[eq.id] = { currentHours: hoursMap[eq.id] || 0, nextServiceAt: nextServiceMap[eq.id] || 0 };
       });
-      setHeavyEquipmentList(heavy.filter(e => e.serviceInterval));
+      setHeavyEquipmentList(heavy.filter(e => e.serviceInterval || e.largeServiceInterval));
       setFleetEquipmentList(fleet.filter(e => e.serviceInterval));
       setEquipmentServiceData(serviceData);
     } catch (err) {
@@ -1001,12 +1028,14 @@ export default function ReportsPage() {
                         {heavyEquipmentList.map(eq => (
                           <div key={eq.id} className="flex items-center space-x-2">
                             <div className="text-sm font-medium text-gray-800 dark:text-yellow-100 self-center">{eq.name}</div>
-                            <div className="w-1/2">
+                            <div className="flex-1">
                               <ServiceIntervalBar
                                 currentHours={equipmentServiceData[eq.id]?.currentHours || 0}
-                                nextServiceAt={equipmentServiceData[eq.id]?.nextServiceAt || 0}
+                                nextServiceAt={equipmentHeavyData[eq.id]?.nextServiceAt || equipmentServiceData[eq.id]?.nextServiceAt || 0}
                                 serviceInterval={eq.serviceInterval || 0}
                                 serviceNotification={eq.serviceNotification || 0}
+                                largeServiceInterval={eq.largeServiceInterval}
+                                completedMinorCount={equipmentHeavyData[eq.id]?.completedMinorCount}
                               />
                             </div>
                           </div>
@@ -1022,7 +1051,7 @@ export default function ReportsPage() {
                         {fleetEquipmentList.map(eq => (
                           <div key={eq.id} className="flex items-center space-x-2">
                             <div className="text-sm font-medium text-gray-800 dark:text-yellow-100 self-center">{eq.name}</div>
-                            <div className="w-1/2">
+                            <div className="flex-1">
                               <ServiceIntervalBar
                                 currentHours={equipmentServiceData[eq.id]?.currentHours || 0}
                                 nextServiceAt={equipmentServiceData[eq.id]?.nextServiceAt || 0}

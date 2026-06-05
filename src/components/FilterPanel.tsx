@@ -83,6 +83,7 @@ export function FilterPanel({
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryGroup, setNewCategoryGroup] = useState<'heavy' | 'field' | 'fleet' | ''>('');
+  const [newNotificationType, setNewNotificationType] = useState<'fleet' | 'heavy' | 'none'>('none');
   const [isCategoryFormCollapsed, setIsCategoryFormCollapsed] = useState(true);
   const [addStep, setAddStep] = useState<1 | 2>(1);
   const [selectedMaintenanceItems, setSelectedMaintenanceItems] = useState<string[]>([]);
@@ -163,10 +164,12 @@ export function FilterPanel({
         description: '',
         color: '#FFB700',
         ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {}),
+        notificationType: newNotificationType,
         maintenanceItems: selectedMaintenanceItems,
       });
       setNewCategoryName('');
       setNewCategoryGroup('');
+      setNewNotificationType('none');
       setSelectedMaintenanceItems([]);
       setCustomItemInput('');
       setAddStep(1);
@@ -179,6 +182,7 @@ export function FilterPanel({
     if (category) {
       setNewCategoryName(category.name);
       setNewCategoryGroup(category.managementGroup || '');
+      setNewNotificationType(category.notificationType || 'none');
       setSelectedMaintenanceItems(category.maintenanceItems || []);
       setEditingCategoryId(categoryId);
       setShowAddCategory(false);
@@ -192,10 +196,12 @@ export function FilterPanel({
         description: '',
         color: '#FFB700',
         ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {}),
+        notificationType: newNotificationType,
         maintenanceItems: selectedMaintenanceItems,
       });
       setNewCategoryName('');
       setNewCategoryGroup('');
+      setNewNotificationType('none');
       setSelectedMaintenanceItems([]);
       setCustomItemInput('');
       setEditingCategoryId(null);
@@ -206,6 +212,7 @@ export function FilterPanel({
     setEditingCategoryId(null);
     setNewCategoryName('');
     setNewCategoryGroup('');
+    setNewNotificationType('none');
     setSelectedMaintenanceItems([]);
     setCustomItemInput('');
   };
@@ -238,6 +245,26 @@ export function FilterPanel({
                 <option value="field">Field Tools</option>
                 <option value="fleet">Fleet</option>
               </select>
+              <div>
+                <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1.5">Maintenance Notification Type</p>
+                <div className="flex flex-col space-y-1">
+                  {(['none', 'fleet', 'heavy'] as const).map((type) => (
+                    <label key={type} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="add-notif-type"
+                        value={type}
+                        checked={newNotificationType === type}
+                        onChange={() => setNewNotificationType(type)}
+                        className="text-yellow-600 focus:ring-yellow-500"
+                      />
+                      <span className="text-xs text-gray-900 dark:text-yellow-100">
+                        {type === 'none' ? 'None' : type === 'fleet' ? 'Fleet Maintenance' : 'Heavy Equipment'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
               <div className="flex justify-end space-x-2">
                 <button
                   onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryGroup(''); setAddStep(1); setSelectedMaintenanceItems([]); }}
@@ -369,6 +396,26 @@ export function FilterPanel({
             <option value="field">Field Tools</option>
             <option value="fleet">Fleet</option>
           </select>
+          <div>
+            <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1.5">Maintenance Notification Type</p>
+            <div className="flex flex-col space-y-1 mb-3">
+              {(['none', 'fleet', 'heavy'] as const).map((type) => (
+                <label key={type} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="edit-notif-type"
+                    value={type}
+                    checked={newNotificationType === type}
+                    onChange={() => setNewNotificationType(type)}
+                    className="text-yellow-600 focus:ring-yellow-500"
+                  />
+                  <span className="text-xs text-gray-900 dark:text-yellow-100">
+                    {type === 'none' ? 'None' : type === 'fleet' ? 'Fleet Maintenance' : 'Heavy Equipment'}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300">Maintenance Items</p>

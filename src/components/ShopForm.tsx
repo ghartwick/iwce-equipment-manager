@@ -3,8 +3,9 @@ import { X, Upload } from 'lucide-react';
 
 interface ShopReport {
   lastServicedDate?: string;
-  lastServiceHours?: number;
+  servicedAt?: number;
   serviceInterval?: number;
+  serviceType?: 'minor' | 'major';
   notes?: string;
   files?: File[];
 }
@@ -14,13 +15,14 @@ interface ShopFormProps {
   equipmentName: string;
   onClose: () => void;
   onSubmit: (shopReport: ShopReport, previews?: string[]) => Promise<void>;
-  initialServiceInterval?: number;
+  serviceInterval?: number;
+  notificationType?: 'fleet' | 'heavy' | 'none';
 }
 
-export function AddService({ equipmentName, onClose, onSubmit, initialServiceInterval }: ShopFormProps) {
-  const [shopReport, setShopReport] = useState<ShopReport>({
-    serviceInterval: initialServiceInterval,
-  });
+export function AddService({ equipmentName, onClose, onSubmit, serviceInterval, notificationType }: ShopFormProps) {
+  const [shopReport, setShopReport] = useState<ShopReport>(
+    notificationType === 'heavy' ? { serviceType: 'minor' } : {}
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [filePreviews, setFilePreviews] = useState<string[]>([]);
@@ -100,16 +102,47 @@ export function AddService({ equipmentName, onClose, onSubmit, initialServiceInt
                 />
               </div>
 
-              {/* Serviced Hours At */}
+              {/* Serviced At (hours/km when service was performed) */}
               <div>
-                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Next Service</label>
+                <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Serviced At (hrs/km)</label>
                 <input
                   type="number"
-                  value={shopReport.lastServiceHours || ''}
-                  onChange={(e) => setShopReport({ ...shopReport, lastServiceHours: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  value={shopReport.servicedAt ?? ''}
+                  onChange={(e) => setShopReport({ ...shopReport, servicedAt: e.target.value ? parseFloat(e.target.value) : undefined })}
                   className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
+
+              {/* Service Type — heavy equipment only */}
+              {notificationType === 'heavy' ? (
+                <div>
+                  <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Service Type</label>
+                  <select
+                    value={shopReport.serviceType || 'minor'}
+                    onChange={(e) => setShopReport({ ...shopReport, serviceType: e.target.value as 'minor' | 'major' })}
+                    className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    <option value="minor">Minor Service</option>
+                    <option value="major">Major Service (Resets Cycle)</option>
+                  </select>
+                </div>
+              ) : (
+                /* Next Service - auto-calculated, read-only (fleet mode) */
+                <div>
+                  <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Next Service (auto)</label>
+                  <input
+                    type="number"
+                    readOnly
+                    value={
+                      shopReport.servicedAt != null && serviceInterval
+                        ? shopReport.servicedAt + serviceInterval
+                        : ''
+                    }
+                    placeholder={serviceInterval ? 'Enter Serviced At first' : 'Set service interval first'}
+                    className="w-full px-2 py-1.5 border border-gray-400 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs cursor-not-allowed [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+              )}
             </div>
           </div>
 

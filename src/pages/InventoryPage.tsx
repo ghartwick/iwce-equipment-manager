@@ -13,7 +13,6 @@ import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFir
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
 import { fleetManagementService } from '../services/fleetManagementService';
-import { serviceNotificationService, ServiceNotificationItem } from '../services/serviceNotificationService';
 
 function InventoryPage() {
   const navigate = useNavigate();
@@ -42,7 +41,6 @@ function InventoryPage() {
   const [sites, setSites] = useState<Site[]>([]);
   const [appUsers, setAppUsers] = useState<AppUser[]>([]);
   const [fleetProducts, setFleetProducts] = useState<Equipment[]>([]);
-  const [serviceNotifications, setServiceNotifications] = useState<ServiceNotificationItem[]>([]);
 
   const loadFleetData = async () => {
     try {
@@ -64,16 +62,14 @@ function InventoryPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [loadedSites, loadedUsers, loadedFleet, loadedNotifications] = await Promise.all([
+        const [loadedSites, loadedUsers, loadedFleet] = await Promise.all([
           siteManagementService.getActiveSites(),
           userManagementService.getAllUsers(),
           fleetManagementService.getAllEquipment(),
-          serviceNotificationService.getServiceStatuses(),
         ]);
         setSites(loadedSites);
         setAppUsers(loadedUsers);
         setFleetProducts(loadedFleet);
-        setServiceNotifications(loadedNotifications);
       } catch (error) {
         console.error('Error fetching sites/users/fleet:', error);
       }
@@ -346,7 +342,6 @@ function InventoryPage() {
                 users={appUsers}
                 onInlineUpdate={handleInlineUpdate}
                 fleetProducts={fleetProducts}
-                serviceNotifications={serviceNotifications}
               />
             </div>
           </div>
@@ -414,7 +409,6 @@ function InventoryPage() {
               products={filteredProducts}
               onEdit={handleEditClick}
               categories={categories}
-              serviceNotifications={serviceNotifications}
             />
           </div>
         </div>

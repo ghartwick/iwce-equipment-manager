@@ -13,6 +13,7 @@ export interface Equipment {
   repair: boolean;
   repairDescription?: string;
   serviceInterval?: number;
+  largeServiceInterval?: number;
   serviceNotification?: number;
   locationNotes?: string;
   notes?: EquipmentNote[];
@@ -55,6 +56,7 @@ export interface EquipmentMaintenance {
   rollOverProtection?: 'OK' | 'Repair' | 'NA';
   seatBeltSeat?: 'OK' | 'Repair' | 'NA';
   allFluidsLevel?: 'OK' | 'Repair' | 'NA';
+  serviceNotificationTriggered?: boolean;
   notes?: string;
 }
 
@@ -64,6 +66,7 @@ export interface Category {
   description: string;
   color: string;
   managementGroup?: 'heavy' | 'field' | 'fleet';
+  notificationType?: 'fleet' | 'heavy' | 'none';
   maintenanceItems?: string[];
 }
 

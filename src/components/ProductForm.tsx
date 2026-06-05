@@ -12,6 +12,7 @@ import { maintenanceAttachmentService } from '../services/maintenanceAttachmentS
 import { equipmentPhotoService, EquipmentPhoto } from '../services/equipmentPhotoService';
 import { maintenanceCategoriesService } from '../services/maintenanceCategoriesService';
 import { alertsFirebaseService } from '../services/alertsFirebaseService';
+import { shopHistoryFirebaseService } from '../services/shopHistoryFirebaseService';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProductFormProps {
@@ -277,6 +278,49 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
           });
         } catch (alertErr) {
           console.error('Failed to save repair alert:', alertErr);
+        }
+      }
+
+      // Check service notification threshold (fleet and heavy equipment)
+      if (product.serviceInterval && product.serviceNotification && maintenance.hours != null) {
+        try {
+          const [shopHistory, cats] = await Promise.all([
+            shopHistoryFirebaseService.getEquipmentShopHistory(product.id),
+            product.category ? getCategories() : Promise.resolve([]),
+          ]);
+          const cat = cats.find(c => c.id === product.category);
+          const isHeavy = cat?.notificationType === 'heavy' && !!product.largeServiceInterval;
+
+          // For heavy: baseline = latest MAJOR service. For fleet: latest any service.
+          const relevantReports = isHeavy
+            ? shopHistory.filter(r => r.serviceType === 'major' && r.servicedAt != null)
+            : shopHistory;
+
+          if (relevantReports.length > 0) {
+            const latest = relevantReports[0];
+            const servicedAt = latest.servicedAt
+              ?? (latest.lastServiceHours != null ? latest.lastServiceHours - (latest.serviceInterval || product.serviceInterval) : null);
+
+            if (servicedAt != null) {
+              let triggered = false;
+              if (isHeavy) {
+                const subIndex = Math.floor((maintenance.hours - servicedAt) / product.serviceInterval);
+                const subStart = servicedAt + subIndex * product.serviceInterval;
+                triggered = maintenance.hours >= subStart + product.serviceNotification;
+              } else {
+                triggered = maintenance.hours >= servicedAt + product.serviceNotification;
+              }
+
+              if (triggered) {
+                await maintenanceHistoryFirebaseService.updateMaintenanceReport(reportId, {
+                  ...maintenance,
+                  serviceNotificationTriggered: true,
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Service notification threshold check failed:', err);
         }
       }
 

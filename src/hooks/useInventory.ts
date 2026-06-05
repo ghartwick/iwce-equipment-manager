@@ -127,7 +127,10 @@ export function useInventory(refreshKey?: number) {
         equipmentType: 'heavy' as const,
         createdAt: equipment.createdAt as string,
         updatedAt: equipment.updatedAt as string,
-        lastModifiedBy: equipment.createdBy || 'System'
+        lastModifiedBy: equipment.createdBy || 'System',
+        serviceInterval: equipment.serviceInterval,
+        largeServiceInterval: equipment.largeServiceInterval,
+        serviceNotification: equipment.serviceNotification,
       }));
       
       // Merge small tools and heavy equipment

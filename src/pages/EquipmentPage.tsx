@@ -9,6 +9,7 @@ import { Equipment } from '../types';
 import { fleetManagementService } from '../services/fleetManagementService';
 import { maintenanceHistoryFirebaseService } from '../services/maintenanceHistoryFirebaseService';
 import { shopHistoryFirebaseService } from '../services/shopHistoryFirebaseService';
+import { getCategories } from '../services/firebaseService';
 
 export default function EquipmentPage() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
@@ -22,6 +23,8 @@ export default function EquipmentPage() {
   const [alertDaysAgo, setAlertDaysAgo] = useState(7);
   const [currentHours, setCurrentHours] = useState<number>(0);
   const [nextServiceAt, setNextServiceAt] = useState<number>(0);
+  const [notificationType, setNotificationType] = useState<'fleet' | 'heavy' | 'none'>('none');
+  const [completedMinorCount, setCompletedMinorCount] = useState<number>(0);
 
   const manageRoute = useMemo(() => {
     const id = equipment?.id;
@@ -84,11 +87,41 @@ export default function EquipmentPage() {
           setCurrentHours(latestReport.maintenance.hours || 0);
         }
         
-        // Load latest shop report to get next service due point
+        // Load category to determine notification type
+        let catNotifType: 'fleet' | 'heavy' | 'none' = 'none';
+        if (equipment?.category) {
+          try {
+            const cats = await getCategories();
+            const cat = cats.find(c => c.id === equipment.category);
+            catNotifType = cat?.notificationType || 'none';
+            setNotificationType(catNotifType);
+          } catch {}
+        }
+
+        const isHeavy = catNotifType === 'heavy' && !!equipment?.largeServiceInterval;
+
+        // Load latest shop report
         const shopHistory = await shopHistoryFirebaseService.getEquipmentShopHistory(equipmentId);
         if (shopHistory.length > 0) {
-          const latestShopReport = shopHistory[0];
-          setNextServiceAt(latestShopReport.lastServiceHours || 0);
+          if (isHeavy) {
+            // For heavy equipment: baseline = latest MAJOR service servicedAt (for bar start)
+            const majorReports = shopHistory.filter(r => r.serviceType === 'major' && r.servicedAt != null)
+              .sort((a, b) => (b.servicedAt ?? 0) - (a.servicedAt ?? 0));
+            const baselineReport = majorReports.length > 0 ? majorReports[0] : shopHistory[0];
+            const cycleStart = baselineReport.servicedAt ?? 0;
+            setNextServiceAt(cycleStart);
+            // Count minor services completed in current cycle (after cycleStart)
+            const completedMinors = shopHistory.filter(
+              r => r.serviceType === 'minor' && r.servicedAt != null && r.servicedAt > cycleStart
+            ).length;
+            setCompletedMinorCount(completedMinors);
+          } else {
+            const r = shopHistory[0];
+            const interval = equipment?.serviceInterval || 0;
+            const nextSvc = r.nextServiceAt
+              ?? (r.servicedAt != null ? r.servicedAt + interval : r.lastServiceHours ?? 0);
+            setNextServiceAt(nextSvc);
+          }
         }
       } catch (error) {
         console.error('Error loading maintenance history:', error);
@@ -201,6 +234,8 @@ export default function EquipmentPage() {
               nextServiceAt={nextServiceAt}
               serviceInterval={equipment.serviceInterval || 0}
               serviceNotification={equipment.serviceNotification || 0}
+              largeServiceInterval={notificationType === 'heavy' ? equipment.largeServiceInterval : undefined}
+              completedMinorCount={notificationType === 'heavy' ? completedMinorCount : undefined}
             />
           ) : null}
         />

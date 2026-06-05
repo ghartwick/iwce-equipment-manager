@@ -53,6 +53,7 @@ export class FleetManagementService {
           createdBy: data.createdBy,
           parentId: data.parentId || undefined,
           serviceInterval: data.serviceInterval,
+          largeServiceInterval: data.largeServiceInterval,
           serviceNotification: data.serviceNotification
         };
       }).filter(item => item.name.length > 0).sort((a, b) => a.name.localeCompare(b.name));

@@ -434,13 +434,14 @@ export default function ReportsPage() {
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
         maintCounts[reportDate] = (maintCounts[reportDate] || 0) + 1;
 
-        // Check if unit has notes or repairs
+        // Check if unit has notes, repairs, or a triggered service notification
         const hasNotes = report.maintenance.notes && report.maintenance.notes.trim().length > 0;
         const hasRepairs = Object.values(report.maintenance).some(
           val => val === 'Repair'
         );
+        const hasServiceNotification = !!report.maintenance.serviceNotificationTriggered;
 
-        if (hasNotes || hasRepairs) {
+        if (hasNotes || hasRepairs || hasServiceNotification) {
           if (!unitsWithNotesOrRepairs[reportDate]) {
             unitsWithNotesOrRepairs[reportDate] = new Set();
           }

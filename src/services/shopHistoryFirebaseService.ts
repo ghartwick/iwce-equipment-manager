@@ -7,8 +7,11 @@ export interface ShopReport {
   equipmentName: string;
   site?: string;
   lastServicedDate?: string;
+  servicedAt?: number;
+  nextServiceAt?: number;
   lastServiceHours?: number;
   serviceInterval?: number;
+  serviceType?: 'minor' | 'major';
   notes?: string;
   createdAt: string;
   createdBy: string;
@@ -24,8 +27,11 @@ export const shopHistoryFirebaseService = {
     site: string,
     shopReport: {
       lastServicedDate?: string;
+      servicedAt?: number;
+      nextServiceAt?: number;
       lastServiceHours?: number;
       serviceInterval?: number;
+      serviceType?: 'minor' | 'major';
       notes?: string;
     },
     user: { username: string; role: string }
@@ -40,8 +46,11 @@ export const shopHistoryFirebaseService = {
       };
       if (site !== undefined) reportData.site = site;
       if (shopReport.lastServicedDate !== undefined) reportData.lastServicedDate = shopReport.lastServicedDate;
+      if (shopReport.servicedAt !== undefined) reportData.servicedAt = shopReport.servicedAt;
+      if (shopReport.nextServiceAt !== undefined) reportData.nextServiceAt = shopReport.nextServiceAt;
       if (shopReport.lastServiceHours !== undefined) reportData.lastServiceHours = shopReport.lastServiceHours;
       if (shopReport.serviceInterval !== undefined) reportData.serviceInterval = shopReport.serviceInterval;
+      if (shopReport.serviceType !== undefined) reportData.serviceType = shopReport.serviceType;
       if (shopReport.notes !== undefined) reportData.notes = shopReport.notes;
 
       const docRef = await addDoc(collection(db, SHOP_REPORTS_COLLECTION), reportData);

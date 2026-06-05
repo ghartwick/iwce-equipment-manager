@@ -85,7 +85,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   const categories = categoriesProp && categoriesProp.length > 0 ? categoriesProp : fetchedCategories;
 
   const isEditing = !!product;
-  const isChangeLocation = isEditing && !allowFullEdit && product?.equipmentType === 'heavy';
+  const isChangeLocation = isEditing && !allowFullEdit && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field');
   const formTitle = isEditing
     ? (allowFullEdit ? 'Edit Equipment' : `Change Location${product?.name ? ` — ${product.name}` : ''}`)
     : 'Add Equipment';
@@ -151,7 +151,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   // Fetch maintenance reports when product changes
   useEffect(() => {
     const fetchMaintenanceReports = async () => {
-      if (product?.equipmentType === 'heavy') {
+      if (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') {
         try {
           const reports = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id);
           setMaintenanceReports(reports);
@@ -200,6 +200,9 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
         createdByRole: user.role,
       };
       updatedNotes = [newNote, ...existingNotes];
+    } else if (!formData.locationNotes.trim() && isEditing && existingNotes.length > 0) {
+      // Clear notes if field is empty and editing
+      updatedNotes = [];
     }
 
     const submitData = {
@@ -208,7 +211,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
       isActive: true,
       showInInventory: true,
       showInTimecard: true,
-      notes: updatedNotes
+      notes: updatedNotes,
+      locationNotes: '' // Clear locationNotes since notes are saved to notes array
     };
     
         
@@ -355,7 +359,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
     try {
       await maintenanceHistoryFirebaseService.deleteMaintenanceReport(reportId);
       // Refresh maintenance reports
-      if (product?.equipmentType === 'heavy') {
+      if (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') {
         const reports = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id);
         setMaintenanceReports(reports);
         setVisibleReportCount(10);
@@ -527,23 +531,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
             </div>
           )}
 
-          {(!isEditing || product?.equipmentType !== 'heavy') && (
-            <div>
-              <input
-                type="text"
-                value={formData.serialNumber}
-                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
-                disabled={isEditing && !allowFullEdit}
-                className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 border rounded-md outline-none text-xs sm:text-sm ${
-                  isEditing && !allowFullEdit
-                    ? 'border-gray-400 bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                    : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500'
-                }`}
-                placeholder="Serial Number"
-              />
-            </div>
-          )}
-
           {!isEditing && (
             <div>
               <select
@@ -562,29 +549,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
             </div>
           )}
 
-          {(!isEditing || product?.equipmentType !== 'heavy') && (
-            <div>
-              <select
-                value={formData.employee}
-                onChange={(e) => handleInputChange('employee', e.target.value)}
-                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-              >
-                <option value="">Employee</option>
-                <option value="Office">Office</option>
-                <option value="Shop">Shop</option>
-                <option value="Broken">Broken</option>
-                <option value="Out For Repair">Out For Repair</option>
-                <option value="Missing">Missing</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.name}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {isEditing && product?.equipmentType === 'heavy' && (
+          {isEditing && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && (
             <div className="md:col-span-2">
               {useEmployeeColumn ? (
                 <select
@@ -634,7 +599,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
             </div>
           )}
 
-          {isEditing && product?.equipmentType === 'heavy' && (
+          {isEditing && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && (
             <div className="md:col-span-2 mt-2 sm:mt-3">
               <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
                 Notes
@@ -806,7 +771,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
           )}
 
           {/* Maintenance Section - Only for heavy equipment when editing */}
-          {isEditing && product?.equipmentType === 'heavy' && (
+          {isEditing && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && (
             <div className="md:col-span-2 mt-4 pt-4 border-t border-yellow-400 dark:border-yellow-600">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">Maintenance</h3>
@@ -1021,37 +986,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
           </div>
         )}
 
-        {isEditing && formData.equipmentType !== 'heavy' && (
-          <div className="mt-2 sm:mt-3">
-            <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-              Notes
-            </label>
-            {(product?.notes && product.notes.length > 0) ? (
-              <div className="space-y-1 mb-2">
-                {product.notes.map(note => (
-                  <div key={note.id} className="text-xs text-gray-500 dark:text-gray-400 italic">
-                    <span className="not-italic font-medium text-gray-400 dark:text-gray-500">
-                      {new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {note.createdBy}
-                    </span>
-                    {' — '}{note.text}
-                  </div>
-                ))}
-              </div>
-            ) : product?.locationNotes ? (
-              <div className="mb-2">
-                <div className="text-xs text-gray-500 dark:text-gray-400 italic">{product.locationNotes}</div>
-              </div>
-            ) : null}
-            <textarea
-              rows={2}
-              value={formData.locationNotes}
-              onChange={(e) => handleInputChange('locationNotes', e.target.value)}
-              placeholder="Make a note"
-              className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-            />
-          </div>
-        )}
-
         <div className="flex justify-end space-x-2 pt-4">
         {onDelete && product && userRole === 'admin' && (
           <button
@@ -1081,7 +1015,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
         >
           {isEditing ? 'Update' : 'Add Equipment'}
         </button>
-        {isEditing && product?.equipmentType === 'heavy' && userRole === 'admin' && (
+        {isEditing && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && userRole === 'admin' && (
           <button
             type="button"
             onClick={() => window.location.href = `/inventory/equipment/${product.id}/service`}

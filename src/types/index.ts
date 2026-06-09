@@ -68,11 +68,13 @@ export interface Category {
   managementGroup?: 'heavy' | 'field' | 'fleet';
   notificationType?: 'fleet' | 'heavy' | 'none';
   maintenanceItems?: string[];
+  allocationDefault?: 'site' | 'employee';
 }
 
 export interface StockAlert {
   id: string;
   productId: string;
+  productName?: string;
   type: 'low_stock' | 'out_of_stock' | 'repair' | 'change';
   message: string;
   createdAt: string;

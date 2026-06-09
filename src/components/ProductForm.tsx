@@ -13,6 +13,8 @@ import { equipmentPhotoService, EquipmentPhoto } from '../services/equipmentPhot
 import { maintenanceCategoriesService } from '../services/maintenanceCategoriesService';
 import { alertsFirebaseService } from '../services/alertsFirebaseService';
 import { shopHistoryFirebaseService } from '../services/shopHistoryFirebaseService';
+import { repairListService, RepairListCheckedItem } from '../services/repairListService';
+import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProductFormProps {
@@ -54,6 +56,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   const [maintenanceCollapsed, setMaintenanceCollapsed] = useState(true);
   const [visibleReportCount, setVisibleReportCount] = useState(10);
   const [hiddenMaintenanceNoteIds, setHiddenMaintenanceNoteIds] = useState<string[]>([]);
+  const [checkedRepairItems, setCheckedRepairItems] = useState<Record<string, RepairListCheckedItem>>({});
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [photosExpanded, setPhotosExpanded] = useState(false);
   const [equipmentPhotos, setEquipmentPhotos] = useState<EquipmentPhoto[]>([]);
@@ -86,6 +89,16 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
 
   const isEditing = !!product;
   const isChangeLocation = isEditing && !allowFullEdit && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field');
+
+  // Override useEmployeeColumn based on the selected category's allocationDefault
+  const selectedCatId = formData.category || product?.category || '';
+  const selectedCat = categories.find(c => c.id === selectedCatId || c.name === selectedCatId);
+  const effectiveEmployeeColumn = selectedCat?.allocationDefault === 'employee'
+    ? true
+    : selectedCat?.allocationDefault === 'site'
+      ? false
+      : useEmployeeColumn;
+
   const formTitle = isEditing
     ? (allowFullEdit ? 'Edit Equipment' : `Change Location${product?.name ? ` — ${product.name}` : ''}`)
     : 'Add Equipment';
@@ -148,14 +161,20 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
     }
   }, [product, sites]);
 
-  // Fetch maintenance reports when product changes
+  // Fetch maintenance reports and checked repair items when product changes
   useEffect(() => {
     const fetchMaintenanceReports = async () => {
       if (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') {
         try {
-          const reports = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id);
+          const [reports, checked] = await Promise.all([
+            maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id),
+            repairListService.getCheckedItems(),
+          ]);
           setMaintenanceReports(reports);
           setVisibleReportCount(10);
+          const checkedMap: Record<string, RepairListCheckedItem> = {};
+          checked.forEach(c => { checkedMap[c.itemId] = c; });
+          setCheckedRepairItems(checkedMap);
         } catch (error) {
           console.error('Error fetching maintenance reports:', error);
         }
@@ -275,6 +294,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
         try {
           await alertsFirebaseService.addAlert({
             productId: product.id,
+            productName: product.name,
             type: 'repair',
             message: messageParts.join(' | '),
             createdAt: new Date().toISOString(),
@@ -367,6 +387,28 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
     } catch (error) {
       console.error('Error deleting maintenance report:', error);
       alert('Error deleting maintenance report: ' + (error as Error).message);
+    }
+  };
+
+  const handleResolveRepair = async (itemId: string, fieldLabel: string) => {
+    if (!user || !product) return;
+    await repairListService.checkItem(itemId, user.name || user.username);
+    setCheckedRepairItems(prev => ({
+      ...prev,
+      [itemId]: { itemId, checkedBy: user.name || user.username, checkedAt: new Date().toISOString() },
+    }));
+    try {
+      await equipmentHistoryFirebaseService.addHistory({
+        equipmentId: product.id,
+        equipmentName: product.name,
+        action: 'updated',
+        timestamp: new Date(),
+        user: user.name || user.username,
+        userRole: user.role,
+        changes: [{ field: 'repair', oldValue: `${fieldLabel}: Repair`, newValue: 'Resolved' }],
+      });
+    } catch (err) {
+      console.error('Failed to log repair resolution:', err);
     }
   };
 
@@ -551,7 +593,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
 
           {isEditing && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && (
             <div className="md:col-span-2">
-              {useEmployeeColumn ? (
+              {effectiveEmployeeColumn ? (
                 <select
                   value={formData.employee}
                   onChange={(e) => handleInputChange('employee', e.target.value)}
@@ -798,6 +840,53 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
               </div>
 
               {serviceIntervalBar}
+
+              {/* Pending Repairs from Maintenance Reports */}
+              {(() => {
+                const categoryMaintenanceItems = fetchedCategories.find(c => c.id === product.category)?.maintenanceItems;
+                const mCategories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
+                const pendingItems: { id: string; label: string; createdBy: string; createdAt: string }[] = [];
+                maintenanceReports.forEach(report => {
+                  mCategories.forEach(({ key, label }) => {
+                    if ((report.maintenance as any)[key] === 'Repair') {
+                      const itemId = `${report.id}_${key}`;
+                      if (!checkedRepairItems[itemId]) {
+                        pendingItems.push({ id: itemId, label, createdBy: report.createdBy, createdAt: report.createdAt });
+                      }
+                    }
+                  });
+                  if (report.maintenance.notes?.trim()) {
+                    const itemId = `${report.id}_note`;
+                    if (!checkedRepairItems[itemId]) {
+                      pendingItems.push({ id: itemId, label: `Note: ${report.maintenance.notes.trim()}`, createdBy: report.createdBy, createdAt: report.createdAt });
+                    }
+                  }
+                });
+                if (pendingItems.length === 0) return null;
+                return (
+                  <div className="mb-4 space-y-1.5">
+                    <h4 className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide mb-2">Pending Repairs / Notes</h4>
+                    {pendingItems.map(item => (
+                      <div key={item.id} className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-md px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={false}
+                          onChange={() => handleResolveRepair(item.id, item.label)}
+                          disabled={user?.role !== 'admin'}
+                          className={`mt-0.5 flex-shrink-0 rounded border-red-400 text-red-600 focus:ring-red-500 ${user?.role === 'admin' ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}`}
+                          title={user?.role === 'admin' ? 'Mark as resolved' : 'Admin only'}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs font-medium text-red-700 dark:text-red-300">{item.label}</span>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {item.createdBy}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* Equipment Data Notes from Maintenance Reports */}
               <div className="space-y-2 mb-4">

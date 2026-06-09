@@ -84,6 +84,7 @@ export function FilterPanel({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryGroup, setNewCategoryGroup] = useState<'heavy' | 'field' | 'fleet' | ''>('');
   const [newNotificationType, setNewNotificationType] = useState<'fleet' | 'heavy' | 'none'>('none');
+  const [newAllocationDefault, setNewAllocationDefault] = useState<'site' | 'employee' | ''>('');
   const [isCategoryFormCollapsed, setIsCategoryFormCollapsed] = useState(true);
   const [addStep, setAddStep] = useState<1 | 2>(1);
   const [selectedMaintenanceItems, setSelectedMaintenanceItems] = useState<string[]>([]);
@@ -166,10 +167,12 @@ export function FilterPanel({
         ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {}),
         notificationType: newNotificationType,
         maintenanceItems: selectedMaintenanceItems,
+        ...(newAllocationDefault ? { allocationDefault: newAllocationDefault } : {}),
       });
       setNewCategoryName('');
       setNewCategoryGroup('');
       setNewNotificationType('none');
+      setNewAllocationDefault('');
       setSelectedMaintenanceItems([]);
       setCustomItemInput('');
       setAddStep(1);
@@ -183,6 +186,7 @@ export function FilterPanel({
       setNewCategoryName(category.name);
       setNewCategoryGroup(category.managementGroup || '');
       setNewNotificationType(category.notificationType || 'none');
+      setNewAllocationDefault(category.allocationDefault || '');
       setSelectedMaintenanceItems(category.maintenanceItems || []);
       setEditingCategoryId(categoryId);
       setShowAddCategory(false);
@@ -198,10 +202,12 @@ export function FilterPanel({
         ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {}),
         notificationType: newNotificationType,
         maintenanceItems: selectedMaintenanceItems,
+        ...(newAllocationDefault ? { allocationDefault: newAllocationDefault } : {}),
       });
       setNewCategoryName('');
       setNewCategoryGroup('');
       setNewNotificationType('none');
+      setNewAllocationDefault('');
       setSelectedMaintenanceItems([]);
       setCustomItemInput('');
       setEditingCategoryId(null);
@@ -213,6 +219,7 @@ export function FilterPanel({
     setNewCategoryName('');
     setNewCategoryGroup('');
     setNewNotificationType('none');
+    setNewAllocationDefault('');
     setSelectedMaintenanceItems([]);
     setCustomItemInput('');
   };
@@ -264,6 +271,18 @@ export function FilterPanel({
                     </label>
                   ))}
                 </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1.5">Default Allocation</p>
+                <select
+                  value={newAllocationDefault}
+                  onChange={(e) => setNewAllocationDefault(e.target.value as 'site' | 'employee' | '')}
+                  className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
+                >
+                  <option value="">— No Default —</option>
+                  <option value="site">Allocated to Site</option>
+                  <option value="employee">Allocated to Employee</option>
+                </select>
               </div>
               <div className="flex justify-end space-x-2">
                 <button
@@ -415,6 +434,18 @@ export function FilterPanel({
                 </label>
               ))}
             </div>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1.5">Default Allocation</p>
+            <select
+              value={newAllocationDefault}
+              onChange={(e) => setNewAllocationDefault(e.target.value as 'site' | 'employee' | '')}
+              className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
+            >
+              <option value="">— No Default —</option>
+              <option value="site">Allocated to Site</option>
+              <option value="employee">Allocated to Employee</option>
+            </select>
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">

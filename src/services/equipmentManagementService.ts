@@ -159,6 +159,7 @@ export class EquipmentManagementService {
           try {
             await alertsFirebaseService.addAlert({
               productId: id,
+              productName: oldEquipment?.name,
               type: 'change',
               message: changes.join('\n'),
               createdAt: new Date().toISOString(),

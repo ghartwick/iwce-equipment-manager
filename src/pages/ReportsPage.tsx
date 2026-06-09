@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Wrench, ChevronDown, ChevronUp, MoreVertical } from 'lucide-react';
+import { FileText, Wrench, ChevronDown, ChevronUp, MoreVertical, CheckSquare, Square } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { repairListService, RepairListCheckedItem } from '../services/repairListService';
 import { ServiceIntervalBar } from '../components/ServiceIntervalBar';
 import { serviceNotificationService, ServiceNotificationItem } from '../services/serviceNotificationService';
 import { AlertPanel } from '../components/AlertPanel';
@@ -56,6 +58,14 @@ export default function ReportsPage() {
   const [equipmentHeavyData, setEquipmentHeavyData] = useState<Record<string, { nextServiceAt: number; completedMinorCount: number }>>({});
   const [serviceLoading, setServiceLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const [showRepairList, setShowRepairList] = useState(false);
+  const [repairListItems, setRepairListItems] = useState<Array<{
+    id: string; reportId: string; equipmentName: string;
+    field: string; type: 'repair' | 'note'; createdBy: string; createdAt: string;
+  }>>([]);
+  const [checkedRepairItems, setCheckedRepairItems] = useState<Record<string, RepairListCheckedItem>>({});
+  const [repairListLoading, setRepairListLoading] = useState(false);
 
   useEffect(() => {
     alertsFirebaseService.getAllRepairAlerts().then(setRepairAlerts).catch(console.error);
@@ -71,6 +81,67 @@ export default function ReportsPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const repairFields = [
+    { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
+    { key: 'tiresTracks', label: 'Tires/Tracks' },
+    { key: 'bucket', label: 'Bucket' },
+    { key: 'cuttingEdgeTeeth', label: 'Cutting Edge/Teeth' },
+    { key: 'hoses', label: 'Hoses' },
+    { key: 'batteryCableBeltHosesFilterGuards', label: 'Battery/Cable/Belt/Hoses/Filter/Guards' },
+    { key: 'backupAlarm', label: 'Backup Alarm' },
+    { key: 'fireExtinguisher', label: 'Fire Extinguisher' },
+    { key: 'gauges', label: 'Gauges' },
+    { key: 'horn', label: 'Horn' },
+    { key: 'spillKit', label: 'Spill Kit' },
+    { key: 'glass', label: 'Glass (all sides)' },
+    { key: 'mirror', label: 'Mirror' },
+    { key: 'rollOverProtection', label: 'Roll Over Protection' },
+    { key: 'seatBeltSeat', label: 'Seat Belt/Seat' },
+    { key: 'allFluidsLevel', label: 'All Fluids Level' },
+  ];
+
+  const loadRepairList = async () => {
+    setRepairListLoading(true);
+    try {
+      const [allMaintenance, checked] = await Promise.all([
+        maintenanceHistoryFirebaseService.getAllMaintenanceHistory(),
+        repairListService.getCheckedItems(),
+      ]);
+      const checkedMap: Record<string, RepairListCheckedItem> = {};
+      checked.forEach(c => { checkedMap[c.itemId] = c; });
+      setCheckedRepairItems(checkedMap);
+      const items: Array<{ id: string; reportId: string; equipmentName: string; field: string; type: 'repair' | 'note'; createdBy: string; createdAt: string; }> = [];
+      allMaintenance.forEach(report => {
+        const m = report.maintenance;
+        repairFields.forEach(f => {
+          if ((m as any)[f.key] === 'Repair') {
+            items.push({ id: `${report.id}_${f.key}`, reportId: report.id!, equipmentName: report.equipmentName, field: f.label, type: 'repair', createdBy: report.createdBy, createdAt: report.createdAt });
+          }
+        });
+        if (m.notes?.trim()) {
+          items.push({ id: `${report.id}_note`, reportId: report.id!, equipmentName: report.equipmentName, field: m.notes.trim(), type: 'note', createdBy: report.createdBy, createdAt: report.createdAt });
+        }
+      });
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setRepairListItems(items);
+    } catch (err) {
+      console.error('Error loading repair list:', err);
+    } finally {
+      setRepairListLoading(false);
+    }
+  };
+
+  const handleToggleRepairItem = async (itemId: string) => {
+    if (!user) return;
+    if (checkedRepairItems[itemId]) {
+      await repairListService.uncheckItem(itemId);
+      setCheckedRepairItems(prev => { const next = { ...prev }; delete next[itemId]; return next; });
+    } else {
+      await repairListService.checkItem(itemId, user.username);
+      setCheckedRepairItems(prev => ({ ...prev, [itemId]: { itemId, checkedBy: user.username, checkedAt: new Date().toISOString() } }));
+    }
+  };
 
   const loadServiceData = async () => {
     setServiceLoading(true);
@@ -705,6 +776,18 @@ export default function ReportsPage() {
                         <button
                           onClick={() => {
                             setShowMenu(false);
+                            if (!showRepairList) loadRepairList();
+                            setShowRepairList(v => !v);
+                            setShowServiceView(false);
+                            setShowAnalysis(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
+                        >
+                          {showRepairList ? 'Close Repair List' : 'Repair List'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowMenu(false);
                             setSelectedDates([]);
                             setMaintenanceReports([]);
                             setShopReports([]);
@@ -974,32 +1057,59 @@ export default function ReportsPage() {
                       </h4>
                       <div className="space-y-2">
                         {shopReports.map(report => (
-                          <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700 p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <div>
-                                <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">{report.equipmentName}</span>
-                                <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">by {report.createdBy}</span>
-                              </div>
-                              <div className="text-right">
-                                <span className="text-xs text-yellow-600 dark:text-yellow-400 block">
-                                  {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                                {report.site && (
-                                  <span className="text-xs text-blue-600 dark:text-blue-400 block">
-                                    Site: {report.site}
+                          <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                            <div className="px-3 py-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                                    {report.equipmentName}
                                   </span>
+                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                                    {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                  </span>
+                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
+                                    by {report.createdBy}
+                                  </span>
+                                </div>
+                              </div>
+                              {report.site && (
+                                <div className="text-xs text-blue-600 dark:text-blue-400 mb-2">
+                                  Site: {report.site}
+                                </div>
+                              )}
+                              <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
+                                <div><strong>Serviced Date:</strong> {report.lastServicedDate || 'N/A'}</div>
+                                <div><strong>Serviced At:</strong> {report.servicedAt?.toLocaleString() ?? report.lastServiceHours ?? 'N/A'}</div>
+                                {(() => {
+                                  const nextSvc = report.nextServiceAt;
+                                  return nextSvc != null ? (
+                                    <div>
+                                      <strong>Next Service:</strong> {nextSvc.toLocaleString()} hrs
+                                      {report.serviceType && (
+                                        <span className="ml-1 text-gray-500 dark:text-gray-400">
+                                          ({report.serviceType === 'major' ? 'next cycle' : 'minor'})
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : null;
+                                })()}
+                                {report.serviceType && (
+                                  <div>
+                                    <strong>Type:</strong>{' '}
+                                    <span className={report.serviceType === 'major' ? 'text-orange-600 dark:text-orange-400 font-semibold' : ''}>
+                                      {report.serviceType === 'major' ? 'Major Service' : 'Minor Service'}
+                                    </span>
+                                  </div>
                                 )}
                               </div>
+                              {report.notes && (
+                                <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
+                                  <div className="text-xs text-gray-700 dark:text-gray-300">
+                                    <strong>Notes:</strong> {report.notes}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
-                              <div><strong>Serviced:</strong> {report.lastServicedDate || 'N/A'}</div>
-                              <div><strong>Next Service:</strong> {report.lastServiceHours || 'N/A'}</div>
-                            </div>
-                            {report.notes && (
-                              <div className="text-xs text-gray-700 dark:text-gray-300 mt-2">
-                                <strong>Notes:</strong> {report.notes}
-                              </div>
-                            )}
                           </div>
                         ))}
                       </div>
@@ -1012,6 +1122,81 @@ export default function ReportsPage() {
             </div>
           )}
           </div>
+
+          {/* Repair List Panel */}
+          {showRepairList && (
+            <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300">Repair List</h3>
+                <button onClick={() => loadRepairList()} className="text-xs text-yellow-600 dark:text-yellow-400 hover:underline">Refresh</button>
+              </div>
+              {repairListLoading ? (
+                <div className="text-center py-6"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 dark:border-yellow-400 mx-auto"></div></div>
+              ) : repairListItems.length === 0 ? (
+                <p className="text-xs text-yellow-600 dark:text-yellow-400">No repair items or notes found.</p>
+              ) : (() => {
+                const unchecked = repairListItems.filter(item => !checkedRepairItems[item.id]);
+                const checked = repairListItems.filter(item => !!checkedRepairItems[item.id]);
+                const renderItem = (item: typeof repairListItems[0], isChecked: boolean) => (
+                  <div
+                    key={item.id}
+                    className={`flex items-start gap-3 px-3 py-2 rounded-lg border ${
+                      isChecked
+                        ? 'bg-gray-100 dark:bg-gray-800/40 border-gray-300 dark:border-gray-700 opacity-50'
+                        : item.type === 'repair'
+                          ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
+                          : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleToggleRepairItem(item.id)}
+                      className="mt-0.5 flex-shrink-0 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500"
+                    >
+                      {isChecked ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-sm font-medium ${isChecked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-yellow-100'}`}>
+                          {item.equipmentName}
+                        </span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                          item.type === 'repair' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                        }`}>
+                          {item.type === 'repair' ? 'Repair' : 'Note'}
+                        </span>
+                      </div>
+                      <div className={`text-xs mt-0.5 ${isChecked ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-700 dark:text-gray-300'}`}>
+                        {item.field}
+                      </div>
+                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {item.createdBy}
+                        {isChecked && checkedRepairItems[item.id] && (
+                          <span className="ml-2 italic">resolved by {checkedRepairItems[item.id].checkedBy}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+                return (
+                  <div className="space-y-2">
+                    {unchecked.length === 0 && (
+                      <p className="text-xs text-green-600 dark:text-green-400 italic">All items resolved!</p>
+                    )}
+                    {unchecked.map(item => renderItem(item, false))}
+                    {checked.length > 0 && (
+                      <>
+                        <div className="pt-2 border-t border-yellow-300 dark:border-yellow-800">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Resolved ({checked.length})</p>
+                          {checked.map(item => renderItem(item, true))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
 
           {/* Service View Panel */}
           {showServiceView && (

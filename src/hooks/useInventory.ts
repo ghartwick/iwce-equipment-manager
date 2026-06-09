@@ -275,6 +275,7 @@ export function useInventory(refreshKey?: number) {
           try {
             await alertsFirebaseService.addAlert({
               productId: id,
+              productName: product.name,
               type: 'change',
               message: changes.join('\n'),
               createdAt: new Date().toISOString(),

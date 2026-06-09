@@ -114,6 +114,7 @@ export class FleetManagementService {
           try {
             await alertsFirebaseService.addAlert({
               productId: id,
+              productName: oldEquipment.name,
               type: 'change',
               message: changes.join('\n'),
               createdAt: new Date().toISOString(),

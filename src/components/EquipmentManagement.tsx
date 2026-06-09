@@ -55,12 +55,21 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchParams] = useSearchParams();
 
+  // Derive effective allocation from the selected category's allocationDefault
+  const getEffectiveEmployeeColumn = (categoryId: string) => {
+    const cat = categories.find(c => c.id === categoryId || c.name === categoryId);
+    if (cat?.allocationDefault === 'employee') return true;
+    if (cat?.allocationDefault === 'site') return false;
+    return useEmployeeColumn;
+  };
+  const effectiveFormEmployeeColumn = getEffectiveEmployeeColumn(formData.category);
+
   useEffect(() => {
     const init = async () => {
       const loaded = await loadEquipment();
       loadCategories();
       loadSites();
-      if (useEmployeeColumn) loadUsers();
+      loadUsers();
       const editId = searchParams.get('editId');
       if (editId) {
         const target = loaded.find(item => item.id === editId);
@@ -517,7 +526,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
-                  {useEmployeeColumn ? (
+                  {effectiveFormEmployeeColumn ? (
                     <select
                       value={formData.employee}
                       onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
@@ -682,7 +691,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                   )}
                                 </td>
                               <td className="px-4 py-2">
-                                {useEmployeeColumn ? (
+                                {getEffectiveEmployeeColumn(item.category || '') ? (
                                   <select
                                     value={item.employee || ''}
                                     onChange={(e) => handleEmployeeChange(item, e.target.value)}
@@ -847,7 +856,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                                           ))}
                                         </select>
-                                        {useEmployeeColumn ? (
+                                        {effectiveFormEmployeeColumn ? (
                                           <select
                                             value={formData.employee}
                                             onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
@@ -1026,7 +1035,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                                               ))}
                                             </select>
-                                            {useEmployeeColumn ? (
+                                            {effectiveFormEmployeeColumn ? (
                                               <select
                                                 value={formData.employee}
                                                 onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
@@ -1159,7 +1168,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                         <option value="">Select Category</option>
                                         {categories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
                                       </select>
-                                      {useEmployeeColumn ? (
+                                      {effectiveFormEmployeeColumn ? (
                                         <select value={formData.employee} onChange={(e) => setFormData({ ...formData, employee: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                                           <option value="">Select Employee</option>
                                           {users.map(u => (<option key={u.id} value={u.name}>{u.name}</option>))}

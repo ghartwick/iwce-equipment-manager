@@ -13,9 +13,9 @@ interface AlertPanelProps {
 export function AlertPanel({ alerts, products, onLoadMore, hasMore, serviceNotifications = [] }: AlertPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const getProductName = (productId: string) => {
+  const getProductName = (productId: string, productName?: string) => {
     const product = products.find(p => p.id === productId);
-    return product ? product.name : 'Unknown Equipment';
+    return product?.name || productName || 'Unknown Equipment';
   };
 
   const formatMessage = (message: string) => {
@@ -106,7 +106,7 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore, serviceNotif
                       <div className="flex items-start">
                         <div>
                           <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-yellow-100">
-                            {getProductName(alert.productId)}
+                            {getProductName(alert.productId, alert.productName)}
                           </p>
                           <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 mt-1">
                             {formatMessage(alert.message).split('\n').map((line, index) => (

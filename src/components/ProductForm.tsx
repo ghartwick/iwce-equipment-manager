@@ -28,9 +28,10 @@ interface ProductFormProps {
   allowFullEdit?: boolean;
   useEmployeeColumn?: boolean;
   serviceIntervalBar?: React.ReactNode;
+  onDataUpdate?: () => void;
 }
 
-export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, userRole, categories: categoriesProp, allowFullEdit = false, useEmployeeColumn = false, serviceIntervalBar }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, userRole, categories: categoriesProp, allowFullEdit = false, useEmployeeColumn = false, serviceIntervalBar, onDataUpdate }: ProductFormProps) {
   const formRef = React.useRef<HTMLFormElement>(null);
   const { user } = useAuth();
   const [formData, setFormData] = useState({
@@ -55,7 +56,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   const [maintenanceAttachments, setMaintenanceAttachments] = useState<Record<string, any[]>>({});
   const [maintenanceCollapsed, setMaintenanceCollapsed] = useState(true);
   const [visibleReportCount, setVisibleReportCount] = useState(10);
-  const [hiddenMaintenanceNoteIds, setHiddenMaintenanceNoteIds] = useState<string[]>([]);
   const [checkedRepairItems, setCheckedRepairItems] = useState<Record<string, RepairListCheckedItem>>({});
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [photosExpanded, setPhotosExpanded] = useState(false);
@@ -64,6 +64,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   const [photosUploading, setPhotosUploading] = useState(false);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [hoveredPhoto, setHoveredPhoto] = useState<EquipmentPhoto | null>(null);
+  const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
+  const [localNotes, setLocalNotes] = useState<EquipmentNote[]>([]);
 
   const getEquipmentUrl = (id: string) => {
     const baseUrl = 'https://iwce-equipment-manager.vercel.app';
@@ -89,6 +91,13 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
 
   const isEditing = !!product;
   const isChangeLocation = isEditing && !allowFullEdit && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field');
+
+  // Sync local notes with product notes when product changes
+  useEffect(() => {
+    if (product) {
+      setLocalNotes(product.notes || []);
+    }
+  }, [product?.id, product?.notes]);
 
   // Override useEmployeeColumn based on the selected category's allocationDefault
   const selectedCatId = formData.category || product?.category || '';
@@ -207,22 +216,6 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
       // If employee is assigned but not a special status, repair should be false
       repairFlag = false;
     }
-    
-    const existingNotes: EquipmentNote[] = product?.notes || [];
-    let updatedNotes = existingNotes;
-    if (formData.locationNotes.trim() && user) {
-      const newNote: EquipmentNote = {
-        id: `note-${Date.now()}`,
-        text: formData.locationNotes.trim(),
-        createdAt: new Date().toISOString(),
-        createdBy: user.name || user.username,
-        createdByRole: user.role,
-      };
-      updatedNotes = [newNote, ...existingNotes];
-    } else if (!formData.locationNotes.trim() && isEditing && existingNotes.length > 0) {
-      // Clear notes if field is empty and editing
-      updatedNotes = [];
-    }
 
     const submitData = {
       ...formData,
@@ -230,11 +223,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
       isActive: true,
       showInInventory: true,
       showInTimecard: true,
-      notes: updatedNotes,
-      locationNotes: '' // Clear locationNotes since notes are saved to notes array
+      notes: localNotes,
+      locationNotes: ''
     };
-    
-        
+
     try {
       await onSubmit(submitData);
       // Reset form after successful submission
@@ -412,10 +404,15 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
     }
   };
 
-  const handleDeleteMaintenanceNote = (reportId: string) => {
-    if (!confirm('Are you sure you want to hide this note from the display? The note will remain in the maintenance report for historical purposes.')) return;
-    
-    setHiddenMaintenanceNoteIds([...hiddenMaintenanceNoteIds, reportId]);
+  const handleDismissMaintenanceNote = async (reportId: string) => {
+    if (!user) return;
+    if (!confirm('Confirm delete? Will remove from Repair List.')) return;
+    const itemId = `${reportId}_note`;
+    await repairListService.checkItem(itemId, user.name || user.username);
+    setCheckedRepairItems(prev => ({
+      ...prev,
+      [itemId]: { itemId, checkedBy: user.name || user.username, checkedAt: new Date().toISOString() },
+    }));
   };
 
   const handleSiteChange = (value: string) => {
@@ -426,12 +423,104 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
       setShowCustomSite(false);
       setCustomSite('');
       setFormData(prev => ({ ...prev, site: value }));
+      // Auto-save in change location mode
+      if (isChangeLocation) {
+        handleSubmit(new Event('submit') as any);
+      }
+    }
+  };
+
+  const handleEmployeeChange = (value: string) => {
+    handleInputChange('employee', value);
+    // Auto-save in change location mode
+    if (isChangeLocation) {
+      handleSubmit(new Event('submit') as any);
     }
   };
 
   const hasRepairs = (maintenance: EquipmentMaintenance, categoryMaintenanceItems?: string[]): boolean => {
     const categories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
     return categories.map(c => (maintenance as any)[c.key]).some(val => val === 'Repair');
+  };
+
+  const handleAddNote = async () => {
+    if (!product?.id) return;
+    const newNote: EquipmentNote = {
+      id: `note_${Date.now()}`,
+      text: '',
+      createdAt: new Date().toISOString(),
+      createdBy: 'Unknown',
+      createdByRole: userRole || 'user',
+    };
+    const updatedNotes = [...localNotes, newNote];
+    setLocalNotes(updatedNotes);
+    await saveNotesToEquipment(updatedNotes);
+    onDataUpdate?.();
+    setEditingNoteIndex(updatedNotes.length - 1);
+  };
+
+  const handleDeleteNote = async (index: number) => {
+    if (!product?.id) return;
+    const removedNote = localNotes[index];
+    if (!removedNote) return;
+    const updatedNotes = localNotes.filter((_, i) => i !== index);
+    setLocalNotes(updatedNotes);
+    await saveNotesToEquipment(updatedNotes);
+    // Log to history
+    await equipmentHistoryFirebaseService.addHistory({
+      equipmentId: product.id,
+      equipmentName: product.name,
+      action: 'updated',
+      timestamp: new Date(),
+      user: 'Unknown',
+      userRole: userRole || 'user',
+      changes: [{ field: 'notes', oldValue: removedNote.text, newValue: '' }],
+    });
+    onDataUpdate?.();
+    setEditingNoteIndex(null);
+  };
+
+  const handleSaveNoteText = async (index: number, text: string) => {
+    if (!product?.id) return;
+    const oldNote = localNotes[index];
+    if (!oldNote) return;
+    const updatedNotes = [...localNotes];
+    updatedNotes[index] = { ...updatedNotes[index], text };
+    setLocalNotes(updatedNotes);
+    await saveNotesToEquipment(updatedNotes);
+    // Log to history if text changed
+    if (oldNote.text !== text) {
+      await equipmentHistoryFirebaseService.addHistory({
+        equipmentId: product.id,
+        equipmentName: product.name,
+        action: 'updated',
+        timestamp: new Date(),
+        user: 'Unknown',
+      userRole: userRole || 'user',
+      changes: [{ field: 'notes', oldValue: oldNote.text, newValue: text }],
+      });
+    }
+    onDataUpdate?.();
+    setEditingNoteIndex(null);
+  };
+
+  const saveNotesToEquipment = async (notes: EquipmentNote[]) => {
+    if (!product?.id) return;
+    try {
+      // Determine which collection the equipment belongs to by checking both services
+      const { equipmentManagementService } = await import('../services/equipmentManagementService');
+      const { fleetManagementService } = await import('../services/fleetManagementService');
+      const allEquipment = await equipmentManagementService.getAllEquipment();
+      const inEquipmentCollection = allEquipment.some(eq => eq.id === product.id);
+      
+      if (inEquipmentCollection) {
+        await equipmentManagementService.updateEquipment(product.id, { notes });
+      } else {
+        await fleetManagementService.updateEquipment(product.id, { notes }, undefined, true);
+      }
+    } catch (error) {
+      console.error('Error saving notes:', error);
+    }
   };
 
   const loadEquipmentPhotos = async (equipmentId: string) => {
@@ -596,7 +685,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
               {effectiveEmployeeColumn ? (
                 <select
                   value={formData.employee}
-                  onChange={(e) => handleInputChange('employee', e.target.value)}
+                  onChange={(e) => handleEmployeeChange(e.target.value)}
                   className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
                 >
                   <option value="">Employee</option>
@@ -643,32 +732,59 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
 
           {isEditing && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && (
             <div className="md:col-span-2 mt-2 sm:mt-3">
-              <label className="block text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-300 mb-1">
-                Notes
-              </label>
-              {(product.notes && product.notes.length > 0) ? (
-                <div className="space-y-1 mb-2">
-                  {product.notes.map(note => (
-                    <div key={note.id} className="text-xs text-gray-500 dark:text-gray-400 italic">
-                      <span className="not-italic font-medium text-gray-400 dark:text-gray-500">
-                        {new Date(note.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {note.createdBy}
-                      </span>
-                      {' — '}{note.text}
+              <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1.5">Notes</label>
+              <div className="space-y-1.5 mb-2">
+                {localNotes.map((note, index) => (
+                  <div key={note.id} className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      {editingNoteIndex === index ? (
+                        <input
+                          type="text"
+                          defaultValue={note.text}
+                          autoFocus
+                          onBlur={(e) => {
+                            const newText = e.target.value;
+                            if (newText !== note.text) {
+                              handleSaveNoteText(index, newText);
+                            } else {
+                              setEditingNoteIndex(null);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveNoteText(index, e.currentTarget.value);
+                            }
+                            if (e.key === 'Escape') setEditingNoteIndex(null);
+                          }}
+                          className="w-full px-2 py-1 text-xs border border-yellow-500 rounded bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        />
+                      ) : (
+                        <p
+                          className="text-xs text-gray-500 dark:text-gray-400 italic cursor-pointer hover:text-gray-600 dark:hover:text-gray-300"
+                          onClick={() => setEditingNoteIndex(index)}
+                        >
+                          {note.text || 'Empty note'}
+                        </p>
+                      )}
                     </div>
-                  ))}
-                </div>
-              ) : product.locationNotes ? (
-                <div className="mb-2">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 italic">{product.locationNotes}</div>
-                </div>
-              ) : null}
-              <textarea
-                rows={2}
-                value={formData.locationNotes}
-                onChange={(e) => handleInputChange('locationNotes', e.target.value)}
-                placeholder="Make a note"
-                className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
-              />
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteNote(index)}
+                      className="p-1 text-red-500 hover:text-red-700 text-xs"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleAddNote}
+                className="flex items-center space-x-1 px-2 py-1 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+                <span>Add Note</span>
+              </button>
             </div>
           )}
 
@@ -855,17 +971,11 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
                       }
                     }
                   });
-                  if (report.maintenance.notes?.trim()) {
-                    const itemId = `${report.id}_note`;
-                    if (!checkedRepairItems[itemId]) {
-                      pendingItems.push({ id: itemId, label: `Note: ${report.maintenance.notes.trim()}`, createdBy: report.createdBy, createdAt: report.createdAt });
-                    }
-                  }
                 });
                 if (pendingItems.length === 0) return null;
                 return (
                   <div className="mb-4 space-y-1.5">
-                    <h4 className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide mb-2">Pending Repairs / Notes</h4>
+                    <h4 className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide mb-2">Pending Repairs</h4>
                     {pendingItems.map(item => (
                       <div key={item.id} className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-md px-3 py-2">
                         <input
@@ -888,30 +998,34 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
                 );
               })()}
 
-              {/* Equipment Data Notes from Maintenance Reports */}
-              <div className="space-y-2 mb-4">
-                <ul className="list-disc list-inside space-y-1">
-                  {maintenanceReports
-                    .filter(report => report.maintenance.notes && report.maintenance.notes.trim() !== '' && !hiddenMaintenanceNoteIds.includes(report.id!))
-                    .map((report, index) => (
-                      <li key={index} className="flex items-center justify-between text-xs text-gray-900 dark:text-yellow-100">
-                        <span>
-                          {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - {report.createdBy}: {report.maintenance.notes}
-                        </span>
-                        {user?.role === 'admin' && (
+              {/* Notes from Maintenance Reports */}
+              {maintenanceReports.some(r => r.maintenance.notes?.trim() && !checkedRepairItems[`${r.id}_note`]) && (
+                <div className="mb-4">
+                  <ul className="space-y-0.5">
+                    {maintenanceReports
+                      .filter(report => report.maintenance.notes?.trim() && !checkedRepairItems[`${report.id}_note`])
+                      .map((report) => (
+                        <li key={report.id} className="flex items-start gap-1.5 text-xs text-gray-900 dark:text-yellow-100">
+                          <span className="mt-0.5 select-none text-gray-500 dark:text-gray-400">-</span>
+                          <span className="flex-1">
+                            {report.maintenance.notes}
+                            <span className="ml-1.5 text-gray-400 dark:text-gray-500">
+                              ({new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {report.createdBy})
+                            </span>
+                          </span>
                           <button
                             type="button"
-                            onClick={() => handleDeleteMaintenanceNote(report.id!)}
-                            className="ml-2 p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                            title="Hide Note"
+                            onClick={() => handleDismissMaintenanceNote(report.id!)}
+                            className="flex-shrink-0 p-0.5 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            title="Remove from Repair List"
                           >
                             <X className="h-3 w-3" />
                           </button>
-                        )}
-                      </li>
-                    ))}
-                </ul>
-              </div>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Maintenance Reports List */}
               {maintenanceReports.length > 0 && (

@@ -18,6 +18,7 @@ export interface ServiceNotificationItem {
   serviceNotification: number;
   hoursUntilService: number;
   isFleet: boolean;
+  isCustom?: boolean;
 }
 
 class ServiceNotificationService {
@@ -40,11 +41,16 @@ class ServiceNotificationService {
         const cat = categories.find(c => c.id === equipment.category);
         const status = this.calculateStatus(equipment, allShopReports, allMaintenanceReports, false, cat);
         if (status) notifications.push(status);
+        const custom = this.calculateCustomStatuses(equipment, allMaintenanceReports, false, cat);
+        notifications.push(...custom);
       }
 
       for (const equipment of fleetEquipment) {
-        const status = this.calculateStatus(equipment, allShopReports, allMaintenanceReports, true, undefined);
+        const cat = categories.find(c => c.id === equipment.category);
+        const status = this.calculateStatus(equipment, allShopReports, allMaintenanceReports, true, cat);
         if (status) notifications.push(status);
+        const custom = this.calculateCustomStatuses(equipment, allMaintenanceReports, true, cat);
+        notifications.push(...custom);
       }
 
       return notifications;
@@ -120,7 +126,14 @@ class ServiceNotificationService {
         };
       }
 
-      return null;
+      // OK state — still return bar data
+      const nextMinorForOk = servicedAt + (Math.floor((currentHours - servicedAt) / serviceInterval) + 1) * serviceInterval;
+      return {
+        equipmentId: equipment.id, equipmentName: equipment.name,
+        status: 'ok', message: '',
+        currentHours, servicedAt, serviceInterval, serviceNotification,
+        hoursUntilService: nextMinorForOk - currentHours, isFleet,
+      };
     }
 
     // Fleet mode (original logic)
@@ -144,7 +157,47 @@ class ServiceNotificationService {
       };
     }
 
-    return null;
+    // OK state — still return bar data
+    return {
+      equipmentId: equipment.id, equipmentName: equipment.name,
+      status: 'ok', message: '',
+      currentHours, servicedAt, serviceInterval, serviceNotification,
+      hoursUntilService, isFleet,
+    };
+  }
+
+  calculateCustomStatuses(
+    equipment: Equipment,
+    maintenanceReports: MaintenanceReport[],
+    isFleet: boolean,
+    _category?: Category
+  ): ServiceNotificationItem[] {
+    const customNotifications = equipment.customNotifications;
+    if (!customNotifications || customNotifications.length === 0) return [];
+
+    const equipmentReports = maintenanceReports
+      .filter(r => r.equipmentId === equipment.id && r.maintenance?.hours != null)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    if (equipmentReports.length === 0) return [];
+
+    const currentHours = equipmentReports[0].maintenance.hours!;
+
+    return customNotifications
+      .filter(cn => currentHours >= cn.threshold)
+      .map(cn => ({
+        equipmentId: equipment.id,
+        equipmentName: equipment.name,
+        status: 'due' as ServiceStatus,
+        message: cn.description,
+        currentHours,
+        servicedAt: 0,
+        serviceInterval: 0,
+        serviceNotification: cn.threshold,
+        hoursUntilService: 0,
+        isFleet,
+        isCustom: true,
+      }));
   }
 }
 

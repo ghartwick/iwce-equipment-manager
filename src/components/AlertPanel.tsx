@@ -83,9 +83,15 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore, serviceNotif
                     <p className={`text-xs sm:text-sm font-semibold mt-0.5 ${notif.status === 'due' ? 'text-red-500 dark:text-red-400' : 'text-yellow-700 dark:text-yellow-400'}`}>
                       {notif.message}
                     </p>
-                    <p className="text-xs text-yellow-600 dark:text-yellow-600 mt-1">
-                      Current: {notif.currentHours} &middot; Next Service: {notif.servicedAt} &middot; Interval: {notif.serviceInterval}
-                    </p>
+                    {notif.isCustom ? (
+                      <p className="text-xs text-yellow-600 dark:text-yellow-600 mt-1">
+                        Current: {notif.currentHours} hr/km &middot; Threshold: {notif.serviceNotification} hr/km
+                      </p>
+                    ) : (
+                      <p className="text-xs text-yellow-600 dark:text-yellow-600 mt-1">
+                        Current: {notif.currentHours} &middot; Next Service: {notif.servicedAt} &middot; Interval: {notif.serviceInterval}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Wrench, ChevronDown, ChevronUp, MoreVertical, CheckSquare, Square } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { FileText, Wrench, MoreVertical, CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { repairListService, RepairListCheckedItem } from '../services/repairListService';
 import { ServiceIntervalBar } from '../components/ServiceIntervalBar';
@@ -46,6 +47,9 @@ export default function ReportsPage() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
+  const [expandedShopReport, setExpandedShopReport] = useState<string | null>(null);
+  const [maintenanceListCollapsed, setMaintenanceListCollapsed] = useState(false);
+  const [shopListCollapsed, setShopListCollapsed] = useState(false);
   const [repairAlerts, setRepairAlerts] = useState<StockAlert[]>([]);
   const [showRepairAlerts, setShowRepairAlerts] = useState(false);
   const alertPanelRef = useRef<HTMLDivElement>(null);
@@ -59,6 +63,7 @@ export default function ReportsPage() {
   const [serviceLoading, setServiceLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [showRepairList, setShowRepairList] = useState(false);
   const [repairListItems, setRepairListItems] = useState<Array<{
     id: string; reportId: string; equipmentName: string;
@@ -933,22 +938,22 @@ export default function ReportsPage() {
                   {/* Maintenance Reports */}
                   {maintenanceReports.length > 0 && (siteFilter || userFilter) && (
                     <div className="mb-6">
-                      <h4 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3 flex items-center gap-2">
-                        <Wrench className="h-4 w-4" />
-                        Maintenance Reports ({maintenanceReports.length})
-                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setMaintenanceListCollapsed(v => !v)}
+                        className="w-full flex items-center justify-between mb-3 text-left"
+                      >
+                        <h4 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                          <Wrench className="h-4 w-4" />
+                          Maintenance Reports ({maintenanceReports.length})
+                        </h4>
+                        {maintenanceListCollapsed ? <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /> : <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
+                      </button>
+                      {!maintenanceListCollapsed && (
                       <div className="space-y-2">
                         {maintenanceReports.map(report => {
                           const m = report.maintenance;
-                          const hasRepairOrNotes = !!m.notes?.trim() || [
-                            m.stepsHandRails, m.tiresTracks, m.bucket, m.cuttingEdgeTeeth,
-                            m.hoses, m.batteryCableBeltHosesFilterGuards, m.backupAlarm,
-                            m.fireExtinguisher, m.gauges, m.horn, m.spillKit, m.glass,
-                            m.mirror, m.rollOverProtection, m.seatBeltSeat, m.allFluidsLevel
-                          ].some(v => v === 'Repair');
-
-                          // Get repair/note items for summary
-                          const repairFields = [
+                          const allRepairFields = [
                             { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
                             { key: 'tiresTracks', label: 'Tires/Tracks' },
                             { key: 'bucket', label: 'Bucket' },
@@ -966,77 +971,66 @@ export default function ReportsPage() {
                             { key: 'seatBeltSeat', label: 'Seat Belt/Seat' },
                             { key: 'allFluidsLevel', label: 'All Fluids Level' },
                           ];
-                          const repairItems = repairFields.filter(f => (m as any)[f.key] === 'Repair').map(f => f.label);
+                          const repairItems = allRepairFields.filter(f => (m as any)[f.key] === 'Repair').map(f => f.label);
                           const noteText = m.notes?.trim() || '';
+                          const hasRepairOrNotes = repairItems.length > 0 || !!noteText;
+                          const isExpanded = expandedReport === report.id;
+                          const eq = equipmentData[report.equipmentId];
+                          const allocation = report.site || eq?.site || eq?.employee || '';
 
                           return (
                           <div key={report.id} className={`rounded-lg border ${hasRepairOrNotes ? 'bg-red-50 dark:bg-red-900/20 border-red-400 dark:border-red-700' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'}`}>
+                            {/* Compressed header — always visible */}
                             <button
                               type="button"
-                              onClick={() => setExpandedReport(expandedReport === report.id ? null : report.id)}
-                              className="w-full px-3 py-2 flex items-center justify-between text-left"
+                              onClick={() => setExpandedReport(isExpanded ? null : report.id)}
+                              className="w-full px-3 py-2 flex items-start justify-between text-left"
                             >
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
-                                    {report.equipmentName}
-                                  </span>
-                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                                    by {report.createdBy}
-                                  </span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/inventory/equipment/${report.equipmentId}`); }}
+                                    className="text-sm font-medium text-yellow-700 dark:text-yellow-300 underline hover:text-yellow-500 dark:hover:text-yellow-100"
+                                  >{report.equipmentName}</button>
+                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">{new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">by {report.createdBy}</span>
+                                  {allocation && <span className="text-xs text-blue-600 dark:text-blue-400">{allocation}</span>}
                                 </div>
-                                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                  {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </div>
-                                {report.site && (
-                                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                    Site: {report.site}
+                                {(m.hours != null || (m.lastServiceHours != null && m.serviceInterval != null)) && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 flex gap-3">
+                                    {m.hours != null && <span><strong>Hours/KM:</strong> {m.hours.toLocaleString()}</span>}
+                                    {m.lastServiceHours != null && m.serviceInterval != null && (
+                                      <span><strong>Next Service:</strong> {(m.lastServiceHours + m.serviceInterval).toLocaleString()}</span>
+                                    )}
                                   </div>
                                 )}
-                                {(repairItems.length > 0 || noteText) && (
-                                  <div className="text-xs text-red-700 dark:text-red-300 mt-1 italic">
-                                    {repairItems.length > 0 && `Repair: ${repairItems.join(', ')}`}
-                                    {repairItems.length > 0 && noteText && '; '}
-                                    {noteText && `Note: ${noteText}`}
-                                  </div>
+                                {repairItems.length > 0 && (
+                                  <div className="text-xs text-red-700 dark:text-red-300 mt-0.5"><strong>Repairs:</strong> {repairItems.join(', ')}</div>
+                                )}
+                                {noteText && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5"><strong>Note:</strong> {noteText}</div>
                                 )}
                               </div>
-                              {expandedReport === report.id ? (
-                                <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                              )}
+                              {isExpanded ? <ChevronUp className="h-4 w-4 shrink-0 mt-0.5 text-yellow-600 dark:text-yellow-400" /> : <ChevronDown className="h-4 w-4 shrink-0 mt-0.5 text-yellow-600 dark:text-yellow-400" />}
                             </button>
-                            {expandedReport === report.id && (
+                            {/* Expanded — full card */}
+                            {isExpanded && (
                               <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
                                 <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
-                                  <div><strong>Hours/KM:</strong> {report.maintenance.hours || 'N/A'}</div>
-                                  <div><strong>Steps/Hand Rails:</strong> {report.maintenance.stepsHandRails || 'N/A'}</div>
-                                  <div><strong>Tires/Tracks:</strong> {report.maintenance.tiresTracks || 'N/A'}</div>
-                                  <div><strong>Bucket:</strong> {report.maintenance.bucket || 'N/A'}</div>
-                                  <div><strong>Cutting Edge/Teeth:</strong> {report.maintenance.cuttingEdgeTeeth || 'N/A'}</div>
-                                  <div><strong>Hoses:</strong> {report.maintenance.hoses || 'N/A'}</div>
-                                  <div><strong>Backup Alarm:</strong> {report.maintenance.backupAlarm || 'N/A'}</div>
-                                  <div><strong>Fire Extinguisher:</strong> {report.maintenance.fireExtinguisher || 'N/A'}</div>
-                                  <div><strong>Gauges:</strong> {report.maintenance.gauges || 'N/A'}</div>
-                                  <div><strong>Horn:</strong> {report.maintenance.horn || 'N/A'}</div>
-                                  <div><strong>Spill Kit:</strong> {report.maintenance.spillKit || 'N/A'}</div>
-                                  <div><strong>Glass:</strong> {report.maintenance.glass || 'N/A'}</div>
-                                  <div><strong>Mirror:</strong> {report.maintenance.mirror || 'N/A'}</div>
-                                  <div><strong>Seat Belt/Seat:</strong> {report.maintenance.seatBeltSeat || 'N/A'}</div>
-                                  <div><strong>All Fluids Level:</strong> {report.maintenance.allFluidsLevel || 'N/A'}</div>
-                                  {report.maintenance.lastServicedDate && (
-                                    <div><strong>Last Serviced:</strong> {report.maintenance.lastServicedDate}</div>
-                                  )}
-                                  {report.maintenance.lastServiceHours && (
-                                    <div><strong>Last Service Hours:</strong> {report.maintenance.lastServiceHours}</div>
-                                  )}
+                                  <div><strong>Hours/KM:</strong> {m.hours || 'N/A'}</div>
+                                  <div><strong>Time:</strong> {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                  {m.lastServicedDate && <div><strong>Last Serviced:</strong> {m.lastServicedDate}</div>}
+                                  {m.lastServiceHours != null && <div><strong>Last Service Hours:</strong> {m.lastServiceHours}</div>}
+                                  {allRepairFields.map(f => {
+                                    const val = (m as any)[f.key];
+                                    if (!val || val === 'NA') return null;
+                                    return <div key={f.key} className={val === 'Repair' ? 'text-red-700 dark:text-red-300' : ''}><strong>{f.label}:</strong> {val}</div>;
+                                  })}
                                 </div>
-                                {report.maintenance.notes && (
-                                  <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
-                                    <div className="text-xs text-gray-700 dark:text-gray-300">
-                                      <strong>Notes:</strong> {report.maintenance.notes}
-                                    </div>
+                                {noteText && (
+                                  <div className="mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-800 text-xs text-gray-700 dark:text-gray-300">
+                                    <strong>Notes:</strong> {noteText}
                                   </div>
                                 )}
                               </div>
@@ -1045,74 +1039,97 @@ export default function ReportsPage() {
                           );
                         })}
                       </div>
+                      )}
                     </div>
                   )}
 
                   {/* Shop Reports */}
                   {shopReports.length > 0 && (siteFilter || userFilter) && (
                     <div>
-                      <h4 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3 flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Shop Reports ({shopReports.length})
-                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setShopListCollapsed(v => !v)}
+                        className="w-full flex items-center justify-between mb-3 text-left"
+                      >
+                        <h4 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Shop Reports ({shopReports.length})
+                        </h4>
+                        {shopListCollapsed ? <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /> : <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
+                      </button>
+                      {!shopListCollapsed && (
                       <div className="space-y-2">
-                        {shopReports.map(report => (
+                        {shopReports.map(report => {
+                          const isExpanded = expandedShopReport === report.id;
+                          return (
                           <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
-                            <div className="px-3 py-2">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
-                                    {report.equipmentName}
-                                  </span>
-                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                                    {new Date(report.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                                  </span>
-                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">
-                                    by {report.createdBy}
-                                  </span>
+                            {/* Compressed header */}
+                            <button
+                              type="button"
+                              onClick={() => setExpandedShopReport(isExpanded ? null : (report.id ?? null))}
+                              className="w-full px-3 py-2 flex items-start justify-between text-left"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); navigate(`/inventory/equipment/${report.equipmentId}`); }}
+                                    className="text-sm font-medium text-yellow-700 dark:text-yellow-300 underline hover:text-yellow-500 dark:hover:text-yellow-100"
+                                  >{report.equipmentName}</button>
+                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">{new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">by {report.createdBy}</span>
+                                  {report.site && <span className="text-xs text-blue-600 dark:text-blue-400">{report.site}</span>}
                                 </div>
-                              </div>
-                              {report.site && (
-                                <div className="text-xs text-blue-600 dark:text-blue-400 mb-2">
-                                  Site: {report.site}
-                                </div>
-                              )}
-                              <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
-                                <div><strong>Serviced Date:</strong> {report.lastServicedDate || 'N/A'}</div>
-                                <div><strong>Serviced At:</strong> {report.servicedAt?.toLocaleString() ?? report.lastServiceHours ?? 'N/A'}</div>
-                                {(() => {
-                                  const nextSvc = report.nextServiceAt;
-                                  return nextSvc != null ? (
-                                    <div>
-                                      <strong>Next Service:</strong> {nextSvc.toLocaleString()} hrs
-                                      {report.serviceType && (
-                                        <span className="ml-1 text-gray-500 dark:text-gray-400">
-                                          ({report.serviceType === 'major' ? 'next cycle' : 'minor'})
-                                        </span>
-                                      )}
-                                    </div>
-                                  ) : null;
-                                })()}
                                 {report.serviceType && (
-                                  <div>
-                                    <strong>Type:</strong>{' '}
-                                    <span className={report.serviceType === 'major' ? 'text-orange-600 dark:text-orange-400 font-semibold' : ''}>
-                                      {report.serviceType === 'major' ? 'Major Service' : 'Minor Service'}
-                                    </span>
+                                  <div className={`text-xs mt-0.5 ${report.serviceType === 'major' ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-gray-600 dark:text-gray-400'}`}>
+                                    {report.serviceType === 'major' ? 'Major Service' : 'Minor Service'}
+                                  </div>
+                                )}
+                                {(report.servicedAt != null || report.nextServiceAt != null) && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 flex gap-3">
+                                    {report.servicedAt != null && <span><strong>Serviced At:</strong> {report.servicedAt.toLocaleString()}</span>}
+                                    {report.nextServiceAt != null && <span><strong>Next Service:</strong> {report.nextServiceAt.toLocaleString()}</span>}
+                                  </div>
+                                )}
+                                {report.notes && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5"><strong>Note:</strong> {report.notes}</div>
+                                )}
+                              </div>
+                              {isExpanded ? <ChevronUp className="h-4 w-4 shrink-0 mt-0.5 text-yellow-600 dark:text-yellow-400" /> : <ChevronDown className="h-4 w-4 shrink-0 mt-0.5 text-yellow-600 dark:text-yellow-400" />}
+                            </button>
+                            {/* Expanded full card */}
+                            {isExpanded && (
+                              <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
+                                <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
+                                  <div><strong>Serviced Date:</strong> {report.lastServicedDate || 'N/A'}</div>
+                                  <div><strong>Serviced At:</strong> {report.servicedAt?.toLocaleString() ?? report.lastServiceHours ?? 'N/A'}</div>
+                                  {report.nextServiceAt != null && (
+                                    <div>
+                                      <strong>Next Service:</strong> {report.nextServiceAt.toLocaleString()} hrs
+                                      {report.serviceType && <span className="ml-1 text-gray-500 dark:text-gray-400">({report.serviceType === 'major' ? 'next cycle' : 'minor'})</span>}
+                                    </div>
+                                  )}
+                                  {report.serviceType && (
+                                    <div>
+                                      <strong>Type:</strong>{' '}
+                                      <span className={report.serviceType === 'major' ? 'text-orange-600 dark:text-orange-400 font-semibold' : ''}>
+                                        {report.serviceType === 'major' ? 'Major Service' : 'Minor Service'}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                {report.notes && (
+                                  <div className="mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-800 text-xs text-gray-700 dark:text-gray-300">
+                                    <strong>Notes:</strong> {report.notes}
                                   </div>
                                 )}
                               </div>
-                              {report.notes && (
-                                <div className="mt-3 pt-3 border-t border-yellow-200 dark:border-yellow-800">
-                                  <div className="text-xs text-gray-700 dark:text-gray-300">
-                                    <strong>Notes:</strong> {report.notes}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                            )}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
+                      )}
                     </div>
                   )}
 

@@ -39,36 +39,36 @@ export default function EquipmentPage() {
     }
   }, [isFleet, equipment, categories]);
 
-  useEffect(() => {
-    const loadEquipment = async () => {
-      if (!equipmentId) return;
-      
-      // First check inventory products
-      const found = products.find(p => p.id === equipmentId);
-      if (found) {
-        setEquipment(found);
-        setIsFleet(false);
-        return;
-      }
-      
-      // If not found, check fleet collection
-      try {
-        const allFleet = await fleetManagementService.getAllEquipment();
-        const fleetItem = allFleet.find(f => f.id === equipmentId);
-        if (fleetItem) {
-          setEquipment(fleetItem);
-          setIsFleet(true);
-        } else {
-          setEquipment(null);
-          setIsFleet(false);
-        }
-      } catch (err) {
-        console.error('Error loading fleet equipment:', err);
+  const loadEquipment = async () => {
+    if (!equipmentId) return;
+
+    // First check inventory products
+    const found = products.find(p => p.id === equipmentId);
+    if (found) {
+      setEquipment(found);
+      setIsFleet(false);
+      return;
+    }
+
+    // If not found, check fleet collection
+    try {
+      const allFleet = await fleetManagementService.getAllEquipment();
+      const fleetItem = allFleet.find(f => f.id === equipmentId);
+      if (fleetItem) {
+        setEquipment(fleetItem);
+        setIsFleet(true);
+      } else {
         setEquipment(null);
         setIsFleet(false);
       }
-    };
-    
+    } catch (err) {
+      console.error('Error loading fleet equipment:', err);
+      setEquipment(null);
+      setIsFleet(false);
+    }
+  };
+
+  useEffect(() => {
     if (!loading) {
       loadEquipment();
     }
@@ -238,6 +238,7 @@ export default function EquipmentPage() {
               completedMinorCount={notificationType === 'heavy' ? completedMinorCount : undefined}
             />
           ) : null}
+          onDataUpdate={loadEquipment}
         />
       </div>
     </main>

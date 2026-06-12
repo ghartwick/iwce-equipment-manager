@@ -3,6 +3,7 @@ import { Filter, Plus, Trash2, Edit2, ChevronDown, ChevronUp } from 'lucide-reac
 import { Category, Equipment } from '../types';
 
 const ALL_MAINTENANCE_ITEMS = [
+  { key: 'greased', label: 'Greased' },
   { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
   { key: 'tiresTracks', label: 'Tires/Tracks' },
   { key: 'bucket', label: 'Bucket' },
@@ -273,7 +274,7 @@ export function FilterPanel({
                 </div>
               </div>
               <div>
-                <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1.5">Default Allocation</p>
+                <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1.5">Allocation</p>
                 <select
                   value={newAllocationDefault}
                   onChange={(e) => setNewAllocationDefault(e.target.value as 'site' | 'employee' | '')}
@@ -436,7 +437,7 @@ export function FilterPanel({
             </div>
           </div>
           <div>
-            <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1.5">Default Allocation</p>
+            <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1.5">Allocation</p>
             <select
               value={newAllocationDefault}
               onChange={(e) => setNewAllocationDefault(e.target.value as 'site' | 'employee' | '')}

@@ -13,6 +13,7 @@ import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFir
 import { siteManagementService, Site } from '../services/siteManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
 import { fleetManagementService } from '../services/fleetManagementService';
+import { serviceNotificationService, ServiceNotificationItem } from '../services/serviceNotificationService';
 
 function InventoryPage() {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ function InventoryPage() {
   const [sites, setSites] = useState<Site[]>([]);
   const [appUsers, setAppUsers] = useState<AppUser[]>([]);
   const [fleetProducts, setFleetProducts] = useState<Equipment[]>([]);
+  const [serviceNotifications, setServiceNotifications] = useState<ServiceNotificationItem[]>([]);
 
   const loadFleetData = async () => {
     try {
@@ -51,9 +53,19 @@ function InventoryPage() {
     }
   };
 
+  const loadServiceNotifications = async () => {
+    try {
+      const statuses = await serviceNotificationService.getServiceStatuses();
+      setServiceNotifications(statuses);
+    } catch (error) {
+      console.error('Error loading service notifications:', error);
+    }
+  };
+
   const handleRefreshData = async () => {
     await refreshData();
     await loadFleetData();
+    await loadServiceNotifications();
   };
 
   const hasRestored = useRef(false);
@@ -62,14 +74,16 @@ function InventoryPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [loadedSites, loadedUsers, loadedFleet] = await Promise.all([
+        const [loadedSites, loadedUsers, loadedFleet, loadedNotifications] = await Promise.all([
           siteManagementService.getActiveSites(),
           userManagementService.getAllUsers(),
           fleetManagementService.getAllEquipment(),
+          serviceNotificationService.getServiceStatuses(),
         ]);
         setSites(loadedSites);
         setAppUsers(loadedUsers);
         setFleetProducts(loadedFleet);
+        setServiceNotifications(loadedNotifications);
       } catch (error) {
         console.error('Error fetching sites/users/fleet:', error);
       }
@@ -342,6 +356,7 @@ function InventoryPage() {
                 users={appUsers}
                 onInlineUpdate={handleInlineUpdate}
                 fleetProducts={fleetProducts}
+                serviceNotifications={serviceNotifications}
               />
             </div>
           </div>

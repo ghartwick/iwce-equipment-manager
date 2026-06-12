@@ -327,31 +327,45 @@ export function ProductList({
                                 )}
                                 {product.notes && product.notes.length > 0 && (
                                   <div className="text-xs text-gray-600 dark:text-gray-400 italic mt-1 break-words">
-                                    {product.notes[0].text}
-                                    {product.notes.length > 1 && ` (+${product.notes.length - 1} more)`}
+                                    {product.notes.map((note) => (
+                                      <div key={note.id}>- {note.text}</div>
+                                    ))}
                                   </div>
                                 )}
                               </div>
                             </div>
                           </td>
                           <td className="w-[30%] px-1 py-4">
-                            <div className="flex justify-center">
-                              <div className="flex justify-end w-3/4">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (selectedEquipmentId === product.id) {
-                                      onCancelEdit?.();
-                                    } else if (onEdit) {
-                                      onEdit?.(product);
-                                    }
-                                  }}
-                                  className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
-                                  title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
-                                >
-                                  <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
-                                </button>
-                              </div>
+                            <div className="flex items-center justify-end gap-3 pr-1">
+                              {(() => {
+                                const sn = getServiceStatus(product.id);
+                                if (!sn || !sn.serviceInterval) return null;
+                                const hoursIntoInterval = (sn.currentHours - sn.servicedAt) % sn.serviceInterval;
+                                const pct = Math.min(Math.max((hoursIntoInterval / sn.serviceInterval) * 100, 0), 100);
+                                return (
+                                  <div className="flex flex-col items-end gap-0.5 min-w-[160px]">
+                                    <div className="relative w-40 h-2 rounded-full overflow-hidden">
+                                      <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, hsl(120,80%,40%), hsl(60,80%,45%), hsl(30,80%,45%), hsl(0,80%,42%))' }} />
+                                      <div className="absolute top-0 bottom-0 right-0 bg-gray-200 dark:bg-gray-700" style={{ left: `${pct}%` }} />
+                                    </div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Due in {Math.max(0, Math.round(sn.hoursUntilService)).toLocaleString()} hr/km</span>
+                                  </div>
+                                );
+                              })()}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (selectedEquipmentId === product.id) {
+                                    onCancelEdit?.();
+                                  } else if (onEdit) {
+                                    onEdit?.(product);
+                                  }
+                                }}
+                                className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                                title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
+                              >
+                                <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -503,31 +517,45 @@ export function ProductList({
                                 )}
                                 {product.notes && product.notes.length > 0 && (
                                   <div className="text-xs text-gray-600 dark:text-gray-400 italic mt-1 break-words">
-                                    {product.notes[0].text}
-                                    {product.notes.length > 1 && ` (+${product.notes.length - 1} more)`}
+                                    {product.notes.map((note) => (
+                                      <div key={note.id}>- {note.text}</div>
+                                    ))}
                                   </div>
                                 )}
                               </div>
                             </div>
                           </td>
                           <td className="w-[30%] px-1 py-4">
-                            <div className="flex justify-center">
-                              <div className="flex justify-end w-3/4">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (selectedEquipmentId === product.id) {
-                                      onCancelEdit?.();
-                                    } else if (onEdit) {
-                                      onEdit?.(product);
-                                    }
-                                  }}
-                                  className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
-                                  title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
-                                >
-                                  <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
-                                </button>
-                              </div>
+                            <div className="flex items-center justify-end gap-3 pr-1">
+                              {(() => {
+                                const sn = getServiceStatus(product.id);
+                                if (!sn || !sn.serviceInterval) return null;
+                                const hoursIntoInterval = (sn.currentHours - sn.servicedAt) % sn.serviceInterval;
+                                const pct = Math.min(Math.max((hoursIntoInterval / sn.serviceInterval) * 100, 0), 100);
+                                return (
+                                  <div className="flex flex-col items-end gap-0.5 min-w-[160px]">
+                                    <div className="relative w-40 h-2 rounded-full overflow-hidden">
+                                      <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, hsl(120,80%,40%), hsl(60,80%,45%), hsl(30,80%,45%), hsl(0,80%,42%))' }} />
+                                      <div className="absolute top-0 bottom-0 right-0 bg-gray-200 dark:bg-gray-700" style={{ left: `${pct}%` }} />
+                                    </div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Due in {Math.max(0, Math.round(sn.hoursUntilService)).toLocaleString()} hr/km</span>
+                                  </div>
+                                );
+                              })()}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (selectedEquipmentId === product.id) {
+                                    onCancelEdit?.();
+                                  } else if (onEdit) {
+                                    onEdit?.(product);
+                                  }
+                                }}
+                                className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
+                                title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
+                              >
+                                <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
+                              </button>
                             </div>
                           </td>
                         </tr>

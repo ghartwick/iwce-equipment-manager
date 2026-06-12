@@ -8,6 +8,8 @@ import { useAuth } from '../hooks/useAuth';
 import { equipmentManagementService } from '../services/equipmentManagementService';
 import { fleetManagementService } from '../services/fleetManagementService';
 import { getCategories } from '../services/firebaseService';
+import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
+import { EquipmentNote } from '../types';
 
 export function Service() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
@@ -29,11 +31,16 @@ export function Service() {
   const [shopAttachments, setShopAttachments] = useState<Record<string, any[]>>({});
   const [showShopForm, setShowShopForm] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [equipmentDataNotes, setEquipmentDataNotes] = useState<string[]>([]);
+  const [equipmentDataNotes, setEquipmentDataNotes] = useState<EquipmentNote[]>([]);
   const [reportsCollapsed, setReportsCollapsed] = useState(true);
   const [hoveredAttachment, setHoveredAttachment] = useState<any | null>(null);
   const [editingInterval, setEditingInterval] = useState(false);
   const [editingNotification, setEditingNotification] = useState(false);
+  const [customNotifications, setCustomNotifications] = useState<Array<{ description: string; threshold: number }>>([]);
+  const [showAddCustom, setShowAddCustom] = useState(false);
+  const [newCustomDesc, setNewCustomDesc] = useState('');
+  const [newCustomThreshold, setNewCustomThreshold] = useState('');
+  const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
 
   // Compute heavy equipment cycle schedule
   const cycleInfo = useMemo(() => {
@@ -77,18 +84,77 @@ export function Service() {
     return { cycleStart, milestones, completedMinorCount: cycleMinorReports.length };
   }, [shopReports, notificationType, serviceInterval, largeServiceInterval]);
 
-  const addEquipmentDataNote = () => {
-    setEquipmentDataNotes([...equipmentDataNotes, '']);
+  const addEquipmentDataNote = async () => {
+    if (!equipmentId) return;
+    const newNote: EquipmentNote = {
+      id: `note_${Date.now()}`,
+      text: '',
+      createdAt: new Date().toISOString(),
+      createdBy: user?.name || user?.username || 'Unknown',
+      createdByRole: user?.role || 'user',
+    };
+    const updatedNotes = [...equipmentDataNotes, newNote];
+    setEquipmentDataNotes(updatedNotes);
+    setEditingNoteIndex(updatedNotes.length - 1);
+    await saveNotesToEquipment(updatedNotes);
   };
 
-  const removeEquipmentDataNote = (index: number) => {
-    setEquipmentDataNotes(equipmentDataNotes.filter((_, i) => i !== index));
+  const removeEquipmentDataNote = async (index: number) => {
+    if (!equipmentId) return;
+    const removedNote = equipmentDataNotes[index];
+    const updatedNotes = equipmentDataNotes.filter((_, i) => i !== index);
+    setEquipmentDataNotes(updatedNotes);
+    setEditingNoteIndex(null);
+    await saveNotesToEquipment(updatedNotes);
+    // Log to history
+    if (equipmentName) {
+      await equipmentHistoryFirebaseService.addHistory({
+        equipmentId,
+        equipmentName,
+        action: 'updated',
+        timestamp: new Date(),
+        user: user?.name || user?.username || 'Unknown',
+        userRole: user?.role || 'user',
+        changes: [{ field: 'notes', oldValue: removedNote.text, newValue: '' }],
+      });
+    }
   };
 
-  const updateEquipmentDataNote = (index: number, value: string) => {
+  const saveNoteText = async (index: number, text: string) => {
+    if (!equipmentId) return;
+    const oldNote = equipmentDataNotes[index];
     const newNotes = [...equipmentDataNotes];
-    newNotes[index] = value;
+    newNotes[index] = { ...newNotes[index], text };
     setEquipmentDataNotes(newNotes);
+    setEditingNoteIndex(null);
+    await saveNotesToEquipment(newNotes);
+    // Log to history if text changed
+    if (equipmentName && oldNote.text !== text) {
+      await equipmentHistoryFirebaseService.addHistory({
+        equipmentId,
+        equipmentName,
+        action: 'updated',
+        timestamp: new Date(),
+        user: user?.name || user?.username || 'Unknown',
+        userRole: user?.role || 'user',
+        changes: [{ field: 'notes', oldValue: oldNote.text, newValue: text }],
+      });
+    }
+  };
+
+  const saveNotesToEquipment = async (notes: EquipmentNote[]) => {
+    if (!equipmentId) return;
+    try {
+      const allEquipment = await equipmentManagementService.getAllEquipment();
+      const inEquipmentCollection = allEquipment.some(eq => eq.id === equipmentId);
+      if (inEquipmentCollection) {
+        await equipmentManagementService.updateEquipment(equipmentId, { notes });
+      } else {
+        await fleetManagementService.updateEquipment(equipmentId, { notes }, undefined, true);
+      }
+    } catch (error) {
+      console.error('Error saving notes:', error);
+    }
   };
 
   const handleSaveServiceInterval = async () => {
@@ -126,6 +192,23 @@ export function Service() {
     } catch (error) {
       console.error('Error saving major service interval:', error);
       alert('Error saving major service interval');
+    }
+  };
+
+  const handleSaveCustomNotifications = async (updated: Array<{ description: string; threshold: number }>) => {
+    if (!equipmentId) return;
+    try {
+      const allEquipment = await equipmentManagementService.getAllEquipment();
+      const inEquipmentCollection = allEquipment.some(eq => eq.id === equipmentId);
+      if (inEquipmentCollection) {
+        await equipmentManagementService.updateEquipment(equipmentId, { customNotifications: updated });
+      } else {
+        await fleetManagementService.updateEquipment(equipmentId, { customNotifications: updated }, undefined, true);
+      }
+      setCustomNotifications(updated);
+    } catch (error) {
+      console.error('Error saving custom notifications:', error);
+      alert('Error saving custom notifications');
     }
   };
 
@@ -172,6 +255,8 @@ export function Service() {
             setSavedLargeServiceInterval(equipment.largeServiceInterval);
             setServiceNotification(equipment.serviceNotification);
             setSavedServiceNotification(equipment.serviceNotification);
+            setCustomNotifications(equipment.customNotifications || []);
+            setEquipmentDataNotes(equipment.notes || []);
             // Load category to determine notification type
             if (equipment.category) {
               try {
@@ -431,6 +516,83 @@ export function Service() {
             </div>
           </div>
 
+          {/* Custom Notifications */}
+          {notificationType !== 'none' && (
+            <div className="mb-4">
+              <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-2">Custom Notifications</label>
+              {customNotifications.length > 0 && (
+                <div className="space-y-1.5 mb-2">
+                  {customNotifications.map((cn, i) => (
+                    <div key={i} className="flex items-center justify-between px-2 py-1.5 border border-yellow-500 rounded-md bg-yellow-50 dark:bg-yellow-900/10 text-xs">
+                      <span className="text-gray-900 dark:text-yellow-100 flex-1 min-w-0 truncate">{cn.description}</span>
+                      <span className="ml-2 text-yellow-700 dark:text-yellow-300 whitespace-nowrap">{cn.threshold.toLocaleString()} hr/km</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = customNotifications.filter((_, idx) => idx !== i);
+                          handleSaveCustomNotifications(updated);
+                        }}
+                        className="ml-2 text-red-500 hover:text-red-700 text-xs font-medium whitespace-nowrap"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {showAddCustom ? (
+                <div className="flex flex-col gap-1.5 border border-yellow-500 rounded-md p-2 bg-yellow-50 dark:bg-yellow-900/10">
+                  <input
+                    type="text"
+                    placeholder="Description (e.g. Replace brake pads)"
+                    value={newCustomDesc}
+                    onChange={(e) => setNewCustomDesc(e.target.value)}
+                    className="w-full px-2 py-1.5 border border-yellow-600 rounded-md text-xs bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      placeholder="Hr/km threshold"
+                      value={newCustomThreshold}
+                      onChange={(e) => setNewCustomThreshold(e.target.value)}
+                      className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md text-xs bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!newCustomDesc.trim() || !newCustomThreshold) return;
+                        const updated = [...customNotifications, { description: newCustomDesc.trim(), threshold: Number(newCustomThreshold) }];
+                        handleSaveCustomNotifications(updated);
+                        setNewCustomDesc('');
+                        setNewCustomThreshold('');
+                        setShowAddCustom(false);
+                      }}
+                      disabled={!newCustomDesc.trim() || !newCustomThreshold}
+                      className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowAddCustom(false); setNewCustomDesc(''); setNewCustomThreshold(''); }}
+                      className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-400 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustom(true)}
+                  className="w-full px-2 py-1.5 border border-dashed border-yellow-600 rounded-md text-xs text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+                >
+                  + Set Custom Notification
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Heavy Equipment Service Schedule */}
           {cycleInfo && (
             <div className="mb-4">
@@ -469,25 +631,43 @@ export function Service() {
           )}
 
           {/* Equipment Data Notes */}
-          <div className="space-y-2 mb-4">
-            {equipmentDataNotes.map((note, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={note}
-                  onChange={(e) => updateEquipmentDataNote(index, e.target.value)}
-                  placeholder="Enter equipment data note..."
-                  className="flex-1 px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeEquipmentDataNote(index)}
-                  className="p-1.5 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
+          <div className="mb-4">
+            <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1.5">Notes</label>
+            <div className="space-y-1.5 mb-2">
+              {equipmentDataNotes.map((note, index) => (
+                <div key={index} className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    {editingNoteIndex === index ? (
+                      <input
+                        type="text"
+                        defaultValue={note.text}
+                        autoFocus
+                        onBlur={(e) => saveNoteText(index, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveNoteText(index, e.currentTarget.value);
+                          if (e.key === 'Escape') setEditingNoteIndex(null);
+                        }}
+                        className="w-full px-2 py-1 text-xs border border-yellow-500 rounded bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      />
+                    ) : (
+                      <p
+                        className="text-xs text-gray-500 dark:text-gray-400 italic cursor-pointer hover:text-gray-600 dark:hover:text-gray-300"
+                        onClick={() => setEditingNoteIndex(index)}
+                      >
+                        {note.text || 'Empty note'}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeEquipmentDataNote(index)}
+                    className="p-1 text-red-500 hover:text-red-700 text-xs"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
             <button
               type="button"
               onClick={addEquipmentDataNote}

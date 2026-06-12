@@ -202,8 +202,8 @@ export function useInventory(refreshKey?: number) {
             const newValue = updates[key as keyof Equipment];
             
             if (key === 'notes' && Array.isArray(newValue)) {
-              const oldNotes = Array.isArray(oldValue) ? oldValue : [];
-              const newNotes = newValue;
+              const oldNotes = (Array.isArray(oldValue) ? oldValue : []) as import('../types').EquipmentNote[];
+              const newNotes = newValue as import('../types').EquipmentNote[];
               
               newNotes.forEach(newNote => {
                 if (!oldNotes.some(oldNote => oldNote.id === newNote.id)) {

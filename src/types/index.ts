@@ -25,6 +25,7 @@ export interface Equipment {
   lastModifiedBy?: string;
   createdBy?: string;
   parentId?: string;
+  customNotifications?: Array<{ description: string; threshold: number }>;
 }
 
 export interface EquipmentNote {

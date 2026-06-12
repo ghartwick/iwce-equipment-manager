@@ -82,6 +82,7 @@ export default function TimecardPage() {
   const [attachmentFilesWithDesc, setAttachmentFilesWithDesc] = useState<{ file: File; description: string }[]>([]);
   const [attachmentSubmitting, setAttachmentSubmitting] = useState(false);
   const [attachmentsForDate, setAttachmentsForDate] = useState<TimecardAttachment[]>([]);
+  const [selectedAttachmentIds, setSelectedAttachmentIds] = useState<Set<string>>(new Set());
   const [sitesData, setSitesData] = useState<Site[]>([]);
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
   const [monthAttachments, setMonthAttachments] = useState<TimecardAttachment[]>([]);
@@ -572,6 +573,51 @@ export default function TimecardPage() {
     } finally {
       setAttachmentSubmitting(false);
     }
+  };
+
+  const handleDownloadSelectedAsPdf = async () => {
+    const selected = attachmentsForDate.filter(
+      a => selectedAttachmentIds.has(a.id!) && a.fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)
+    );
+    if (selected.length === 0) {
+      alert('No image attachments selected.');
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const contentW = pageW - margin * 2;
+    const contentH = pageH - margin * 2;
+
+    for (let i = 0; i < selected.length; i++) {
+      if (i > 0) doc.addPage();
+      const attachment = selected[i];
+      const resp = await fetch(attachment.fileUrl);
+      const blob = await resp.blob();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const img = new Image();
+      await new Promise<void>((resolve) => { img.onload = () => resolve(); img.src = dataUrl; });
+      const scale = Math.min(contentW / img.width, contentH / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      const x = margin + (contentW - w) / 2;
+      const y = margin + (contentH - h) / 2;
+      const fmt = attachment.fileName.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG';
+      doc.addImage(dataUrl, fmt, x, y, w, h);
+    }
+
+    const dateStr = selectedDates.length === 1
+      ? selectedDates[0].toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+    doc.save(`attachments_${dateStr}.pdf`);
+    setSelectedAttachmentIds(new Set());
   };
 
   const handleDeleteAttachment = async (attachment: TimecardAttachment) => {
@@ -1277,19 +1323,49 @@ export default function TimecardPage() {
 
                   {attachmentsForDate.length > 0 && (
                     <div className="mt-4 border-t border-yellow-400 dark:border-yellow-700 pt-4">
-                      <h4 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 mb-3">
-                        Attachments for this date ({attachmentsForDate.length})
-                      </h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
+                          Attachments for this date ({attachmentsForDate.length})
+                        </h4>
+                        {selectedAttachmentIds.size > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleDownloadSelectedAsPdf}
+                            className="px-2.5 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-500 font-medium transition-colors"
+                          >
+                            Download {selectedAttachmentIds.size} as PDF
+                          </button>
+                        )}
+                      </div>
                       <div className="space-y-2">
                         {attachmentsForDate.map((attachment) => {
                           const uploader = users.find(u => u.id === attachment.uploadedBy);
                           const isImage = attachment.fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+                          const isSelected = selectedAttachmentIds.has(attachment.id!);
                           return (
                             <div
                               key={attachment.id}
-                              className="bg-yellow-100 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded-lg p-3"
+                              className={`bg-yellow-100 dark:bg-black border rounded-lg p-3 transition-colors ${
+                                isSelected ? 'border-blue-500 dark:border-blue-400' : 'border-yellow-400 dark:border-yellow-700'
+                              }`}
                             >
                               <div className="flex items-start gap-3">
+                                {isImage && (
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {
+                                      setSelectedAttachmentIds(prev => {
+                                        const next = new Set(prev);
+                                        if (next.has(attachment.id!)) next.delete(attachment.id!);
+                                        else next.add(attachment.id!);
+                                        return next;
+                                      });
+                                    }}
+                                    className="mt-1 flex-shrink-0 h-4 w-4 rounded border-yellow-400 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    title="Select for PDF download"
+                                  />
+                                )}
                                 {isImage && (
                                   <div
                                     className="flex-shrink-0 w-20 h-20 border border-yellow-400 dark:border-yellow-700 rounded overflow-hidden cursor-pointer hover:border-yellow-600 dark:hover:border-yellow-500 transition-colors"

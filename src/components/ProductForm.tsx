@@ -415,6 +415,34 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
     }));
   };
 
+  const autoSave = async (overrides: Partial<typeof formData>) => {
+    if (!isChangeLocation || isSubmitting) return;
+    const merged = { ...formData, ...overrides };
+    let repairFlag = merged.repair;
+    if (merged.employee === 'Out For Repair' || merged.employee === 'Broken') {
+      repairFlag = true;
+    } else if (merged.employee && merged.employee !== 'Office' && merged.employee !== 'Missing') {
+      repairFlag = false;
+    }
+    const submitData = {
+      ...merged,
+      repair: repairFlag,
+      isActive: true,
+      showInInventory: true,
+      showInTimecard: true,
+      notes: localNotes,
+      locationNotes: '',
+    };
+    try {
+      setIsSubmitting(true);
+      await onSubmit(submitData);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSiteChange = (value: string) => {
     if (value === 'OTHER') {
       setShowCustomSite(true);
@@ -423,18 +451,16 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
       setShowCustomSite(false);
       setCustomSite('');
       setFormData(prev => ({ ...prev, site: value }));
-      // Auto-save in change location mode
       if (isChangeLocation) {
-        handleSubmit(new Event('submit') as any);
+        autoSave({ site: value });
       }
     }
   };
 
   const handleEmployeeChange = (value: string) => {
     handleInputChange('employee', value);
-    // Auto-save in change location mode
     if (isChangeLocation) {
-      handleSubmit(new Event('submit') as any);
+      autoSave({ employee: value });
     }
   };
 

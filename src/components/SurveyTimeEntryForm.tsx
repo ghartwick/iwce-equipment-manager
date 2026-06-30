@@ -53,6 +53,8 @@ export function SurveyTimeEntryForm({
   const [clientId, setClientId] = useState<string>(entry?.clientId || '');
   const [site, setSite] = useState<string>(entry?.site || '');
   const [travelHours, setTravelHours] = useState<string>(entry ? String(entry.travelHours) : '');
+  const [editableDate, setEditableDate] = useState<Date>(selectedDate);
+  const [editingDate, setEditingDate] = useState(false);
 
   const newWorkEntry = (): SurveyWorkEntryState => ({
     id: Date.now().toString() + Math.random(),
@@ -178,7 +180,7 @@ export function SurveyTimeEntryForm({
     const first = builtEntries[0];
     return {
       userId: entry?.userId || user.id,
-      date: selectedDate,
+      date: editableDate,
       clientId,
       clientName: selectedClient?.name || '',
       site,
@@ -228,9 +230,32 @@ export function SurveyTimeEntryForm({
   return (
     <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg p-2">
       <div>
-        <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-1 pr-8">
-          {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
-        </h3>
+        {editingDate && canEdit ? (
+          <input
+            type="date"
+            ref={(node) => { if (node) { node.focus(); try { (node as any).showPicker(); } catch {} } }}
+            value={format(editableDate, 'yyyy-MM-dd')}
+            onChange={(e) => {
+              if (e.target.value) {
+                const [y, m, d] = e.target.value.split('-').map(Number);
+                setEditableDate(new Date(y, m - 1, d, 12, 0, 0));
+              }
+              setEditingDate(false);
+            }}
+            onBlur={() => setEditingDate(false)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setEditingDate(false); }}
+            className="text-lg font-semibold bg-transparent border-b-2 border-yellow-500 text-yellow-700 dark:text-yellow-300 focus:outline-none mb-1"
+            style={{ colorScheme: 'dark' }}
+          />
+        ) : (
+          <h3
+            onClick={() => { if (canEdit) setEditingDate(true); }}
+            className={`text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-1 pr-8 ${canEdit ? 'cursor-pointer hover:text-yellow-500 dark:hover:text-yellow-200' : ''}`}
+            title={canEdit ? 'Click to change date' : undefined}
+          >
+            {editableDate ? format(editableDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
+          </h3>
+        )}
         <div className="text-yellow-700 dark:text-yellow-600 text-sm mb-4">
           {entryOwnerName || user.name || user.username}
         </div>

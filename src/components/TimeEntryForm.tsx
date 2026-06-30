@@ -459,6 +459,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
   // Alert state
   const [alert, setAlert] = useState<{ message: string; type: 'error' | 'warning' | 'info' } | null>(null);
+  const [editableDate, setEditableDate] = useState<Date>(selectedDate);
+  const [editingDate, setEditingDate] = useState(false);
 
   const showAlert = (message: string, type: 'error' | 'warning' | 'info' = 'error') => {
     setAlert({ message, type });
@@ -737,6 +739,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         }]);
       }
     } else if (selectedDate) {
+      setEditableDate(selectedDate);
       // Reset form for new entry
       setClockIn('');
       setClockOut('');
@@ -836,10 +839,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     const outTime = new Date();
     outTime.setHours(outHours, outMinutes, 0, 0);
     
-    const clockInDate = new Date(selectedDate);
+    const clockInDate = new Date(editableDate);
     clockInDate.setHours(inHours, inMinutes, 0, 0);
     
-    const clockOutDate = new Date(selectedDate);
+    const clockOutDate = new Date(editableDate);
     clockOutDate.setHours(outHours, outMinutes, 0, 0);
 
     // Convert work entries to the format expected by the database
@@ -873,7 +876,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     const cleanEntryData: any = {
       // Preserve original userId for existing entries
       userId: entry?.userId || user.id,
-      date: selectedDate,
+      date: editableDate,
       clockIn: clockInDate,
       clockOut: clockOutDate,
       hours,
@@ -920,7 +923,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     // Create final data object without JSON stringify/parse to preserve all fields
     const finalData: any = {
       ...cleanEntryData,
-      date: selectedDate,
+      date: editableDate,
       clockIn: clockInDate,
       clockOut: clockOutDate,
       // Add flag to indicate this is an update, not a submit
@@ -983,10 +986,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     const [inHours, inMinutes] = clockIn.split(':').map(Number);
     const [outHours, outMinutes] = clockOut.split(':').map(Number);
       
-    const clockInDate = new Date(selectedDate);
+    const clockInDate = new Date(editableDate);
     clockInDate.setHours(inHours, inMinutes, 0, 0);
       
-    const clockOutDate = new Date(selectedDate);
+    const clockOutDate = new Date(editableDate);
     clockOutDate.setHours(outHours, outMinutes, 0, 0);
 
     const workEntriesData = workEntries
@@ -1014,7 +1017,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     // Create clean entry data without any undefined/null values
     const cleanEntryData: any = {
       userId: entry?.userId || user.id,
-      date: selectedDate,
+      date: editableDate,
       clockIn: clockInDate,
       clockOut: clockOutDate,
       hours,
@@ -1045,7 +1048,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     // Final cleanup - remove any remaining undefined/null values but keep Date objects
     const finalData = JSON.parse(JSON.stringify(cleanEntryData));
     // Ensure date remains a Date object
-    finalData.date = selectedDate;
+    finalData.date = editableDate;
     finalData.clockIn = clockInDate;
     finalData.clockOut = clockOutDate;
     finalData.submittedAt = new Date();
@@ -1081,9 +1084,32 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       )}
       
       <div className={isInline ? 'p-6 w-full' : ''}>
-        <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-1 pr-8">
-        {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
-      </h3>
+        {editingDate && canEdit ? (
+          <input
+            type="date"
+            ref={(node) => { if (node) { node.focus(); try { (node as any).showPicker(); } catch {} } }}
+            value={format(editableDate, 'yyyy-MM-dd')}
+            onChange={(e) => {
+              if (e.target.value) {
+                const [y, m, d] = e.target.value.split('-').map(Number);
+                setEditableDate(new Date(y, m - 1, d, 12, 0, 0));
+              }
+              setEditingDate(false);
+            }}
+            onBlur={() => setEditingDate(false)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setEditingDate(false); }}
+            className="text-lg font-semibold bg-transparent border-b-2 border-yellow-500 text-yellow-700 dark:text-yellow-300 focus:outline-none mb-1"
+            style={{ colorScheme: 'dark' }}
+          />
+        ) : (
+          <h3
+            onClick={() => { if (canEdit) setEditingDate(true); }}
+            className={`text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-1 pr-8 ${canEdit ? 'cursor-pointer hover:text-yellow-500 dark:hover:text-yellow-200' : ''}`}
+            title={canEdit ? 'Click to change date' : undefined}
+          >
+            {editableDate ? format(editableDate, 'EEEE, MMMM d, yyyy') : 'Select a Date'}
+          </h3>
+        )}
       
       <div className="text-yellow-700 dark:text-yellow-600 text-sm mb-4">
         {entryOwnerName || user.name || user.username}

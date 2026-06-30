@@ -600,7 +600,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       try {
         const sites = await siteManagementService.getActiveSites();
         setSitesData(sites);
-        setJobOptions(sites.map(site => site.name));
+        // Field crews work a single client: limit the site selector to the
+        // default field-crew client's sites (falls back to all when unset).
+        const crewSites = await siteManagementService.getFieldCrewSites();
+        setJobOptions(crewSites.map(site => site.name));
         
         const codes = await codeManagementService.getActiveCodes();
         setCodeOptionsState(codes.map(code => code.name));

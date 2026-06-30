@@ -6,12 +6,19 @@ export interface SiteCode {
   description?: string;
 }
 
+export interface SiteRole {
+  name: string;
+  costPerHour: number;
+}
+
 export interface Site {
   id: string;
   name: string;
   description?: string;
   codes?: SiteCode[];
+  roles?: SiteRole[];
   linkedSites?: string[];
+  clientId?: string;
   isActive: boolean;
   flagRed?: boolean;
   createdAt: Date;
@@ -43,7 +50,12 @@ export class SiteManagementService {
             if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
             return a.name.localeCompare(b.name);
           }),
+          roles: (data.roles || []).map((r: any) => ({
+            name: r.name,
+            costPerHour: typeof r.costPerHour === 'number' ? r.costPerHour : parseFloat(r.costPerHour) || 0,
+          })),
           linkedSites: data.linkedSites || [],
+          clientId: data.clientId || '',
           isActive: data.isActive ?? true,
           flagRed: data.flagRed ?? false,
           createdAt: data.createdAt?.toDate() || new Date(),
@@ -81,7 +93,12 @@ export class SiteManagementService {
           if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
           return a.name.localeCompare(b.name);
         }),
+        roles: (data.roles || []).map((r: any) => ({
+          name: r.name,
+          costPerHour: typeof r.costPerHour === 'number' ? r.costPerHour : parseFloat(r.costPerHour) || 0,
+        })),
         linkedSites: data.linkedSites || [],
+        clientId: data.clientId || '',
         isActive: data.isActive ?? true,
         flagRed: data.flagRed ?? false,
         createdAt: data.createdAt?.toDate() || new Date(),
@@ -98,6 +115,18 @@ export class SiteManagementService {
   async getActiveSites(): Promise<Site[]> {
     const allSites = await this.getAllSites();
     return allSites.filter(site => site.isActive);
+  }
+
+  // Get active sites for field crews: restricted to the default field-crew client.
+  // Falls back to all active sites when no default client has been set.
+  async getFieldCrewSites(): Promise<Site[]> {
+    const { clientManagementService } = await import('./clientManagementService');
+    const [activeSites, defaultClient] = await Promise.all([
+      this.getActiveSites(),
+      clientManagementService.getDefaultFieldClient(),
+    ]);
+    if (!defaultClient) return activeSites;
+    return activeSites.filter(site => site.clientId === defaultClient.id);
   }
 
   // Add new site

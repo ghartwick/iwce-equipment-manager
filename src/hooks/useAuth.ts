@@ -6,6 +6,7 @@ interface User {
   username: string;
   role: 'admin' | 'supervisor' | 'field';
   name: string;
+  isSurveyor?: boolean;
 }
 
 interface AuthState {
@@ -42,7 +43,7 @@ export function useAuth() {
             const currentUser = await userManagementService.getUserByUsername(user.username);
             if (currentUser && currentUser.isActive) {
               setAuthState({
-                user,
+                user: { ...user, isSurveyor: currentUser.isSurveyor ?? false },
                 isAuthenticated: true,
                 isLoading: false,
                 error: null,
@@ -133,6 +134,7 @@ export function useAuth() {
           // @ts-ignore - Converting from Firebase 'technician' to 'field'
           role: userRecord.role === 'technician' ? 'field' : userRecord.role,
           name: userRecord.name,
+          isSurveyor: userRecord.isSurveyor ?? false,
         };
 
         localStorage.setItem('iwce_user', JSON.stringify(user));

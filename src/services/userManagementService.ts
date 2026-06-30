@@ -11,6 +11,7 @@ export interface AppUser {
   updatedAt: string;
   createdBy?: string; // Admin who created this user
   isActive: boolean;
+  isSurveyor?: boolean; // When true, Add Time Card routes to the Surveyor timecard
 }
 
 export class UserManagementService {

@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Check, MoreVertical } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
 import { InlineTimecardEdit } from '../components/InlineTimecardEdit';
+import { TimecardModeToggle } from '../components/TimecardModeToggle';
 import { UserManagementService, AppUser } from '../services/userManagementService';
 import { codeManagementService } from '../services/codeManagementService';
 import { siteManagementService, Site } from '../services/siteManagementService';
@@ -1033,6 +1034,13 @@ export default function TimecardPage() {
                 </svg>
               </button>
             </div>
+
+            {/* Field | Survey toggle (admins and surveyors) */}
+            {(user?.role === 'admin' || user?.isSurveyor) && (
+              <div className="flex justify-center mb-4">
+                <TimecardModeToggle mode="field" />
+              </div>
+            )}
 
             {/* Week Days */}
             <div className="grid grid-cols-7 gap-2 mb-2">

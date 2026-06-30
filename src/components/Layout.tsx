@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { Plus, Bell, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car } from 'lucide-react';
+import { Plus, Bell, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car, DollarSign } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -229,6 +229,17 @@ function Layout({ children }: LayoutProps) {
                               <Wrench className="h-4 w-4" />
                               <span>Manage Small Tools</span>
                             </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowUserMenu(false);
+                                navigate('/manage/expenses');
+                              }}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
+                            >
+                              <DollarSign className="h-4 w-4" />
+                              <span>Manage Expenses</span>
+                            </button>
                           </>
                         )}
 
@@ -357,6 +368,13 @@ function Layout({ children }: LayoutProps) {
                     >
                       <Wrench className="h-5 w-5" />
                       <span>Manage Small Tools</span>
+                    </button>
+                    <button
+                      onClick={() => { setShowMobileMenu(false); navigate('/manage/expenses'); }}
+                      className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
+                    >
+                      <DollarSign className="h-5 w-5" />
+                      <span>Manage Expenses</span>
                     </button>
                   </>
                 )}

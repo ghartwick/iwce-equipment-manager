@@ -19,6 +19,9 @@ const SmallToolsManagementPage = React.lazy(() => import('./pages/SmallToolsMana
 const SiteManagementPage = React.lazy(() => import('./pages/SiteManagementPage'));
 const EditSitePage = React.lazy(() => import('./pages/EditSitePage').then(m => ({ default: m.EditSitePage })));
 const UserManagementPage = React.lazy(() => import('./pages/UserManagementPage'));
+const ExpenseManagementPage = React.lazy(() => import('./pages/ExpenseManagementPage'));
+const SurveyTimecardEditPage = React.lazy(() => import('./pages/SurveyTimecardEditPage'));
+const SurveyTimecardPage = React.lazy(() => import('./pages/SurveyTimecardPage'));
 const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
 
 // Loading fallback for lazy-loaded pages
@@ -71,6 +74,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <TimecardPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/survey-timecard" element={
+          isAuthenticated ? (
+            <Layout>
+              <SurveyTimecardPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />
@@ -148,6 +158,20 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <UserManagementPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/manage/expenses" element={
+          isAuthenticated ? (
+            <Layout>
+              <ExpenseManagementPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/survey-timecard/edit/:entryId" element={
+          isAuthenticated ? (
+            <Layout>
+              <SurveyTimecardEditPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

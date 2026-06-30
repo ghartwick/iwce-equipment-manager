@@ -36,12 +36,14 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
     name: string;
     role: FormDataRole;
     isActive: boolean;
+    isSurveyor: boolean;
   }>({
     username: '',
     password: '',
     name: '',
     role: 'field',
-    isActive: true
+    isActive: true,
+    isSurveyor: false
   });
 
   useEffect(() => {
@@ -76,7 +78,8 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
             username: formData.username,
             name: formData.name,
             role: formData.role,
-            isActive: formData.isActive
+            isActive: formData.isActive,
+            isSurveyor: formData.isSurveyor
           };
           
           // Only include password if it's not empty (user wants to change password)
@@ -113,7 +116,8 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
         password: '',
         name: '',
         role: 'field',
-        isActive: true
+        isActive: true,
+        isSurveyor: false
       });
 
       // Reload users
@@ -131,7 +135,8 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
       password: '', // Don't pre-fill password for security
       name: user.name,
       role: user.role, // AppUser already has converted role
-      isActive: user.isActive
+      isActive: user.isActive,
+      isSurveyor: user.isSurveyor ?? false
     });
     setShowAddForm(false);
   };
@@ -294,6 +299,14 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                     className="w-4 h-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
                   />
                   <label htmlFor="isActive" className="text-sm text-yellow-700 dark:text-yellow-300">Active User</label>
+                  <input
+                    type="checkbox"
+                    id="isSurveyor"
+                    checked={formData.isSurveyor}
+                    onChange={(e) => setFormData({ ...formData, isSurveyor: e.target.checked })}
+                    className="w-4 h-4 ml-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
+                  />
+                  <label htmlFor="isSurveyor" className="text-sm text-yellow-700 dark:text-yellow-300">Surveyor</label>
                 </div>
                 <div className="flex space-x-3">
                   <button
@@ -517,6 +530,14 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                         className="w-4 h-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
                       />
                       <label htmlFor="editIsActive" className="text-sm text-yellow-700 dark:text-yellow-300">Active User</label>
+                      <input
+                        type="checkbox"
+                        id="editIsSurveyor"
+                        checked={formData.isSurveyor}
+                        onChange={(e) => setFormData({ ...formData, isSurveyor: e.target.checked })}
+                        className="w-4 h-4 ml-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
+                      />
+                      <label htmlFor="editIsSurveyor" className="text-sm text-yellow-700 dark:text-yellow-300">Surveyor</label>
                     </div>
                   )}
                   <div className="flex space-x-3">

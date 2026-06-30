@@ -131,14 +131,18 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
     if (!canEdit || optionsLoaded) return;
     const loadOptions = async () => {
       try {
-        const [sitesResult, codesResult, equipResult, toolsResult] = await Promise.all([
+        const [sitesResult, crewSitesResult, codesResult, equipResult, toolsResult] = await Promise.all([
           siteManagementService.getAllSites(),
+          siteManagementService.getFieldCrewSites(),
           codeManagementService.getActiveCodes(),
           equipmentManagementService.getAllEquipment(),
           smallToolsManagementService.getAllSmallTools(),
         ]);
         const activeSites = sitesResult.filter((s: Site) => s.isActive);
-        setSites(activeSites);
+        // Field crews work a single client: the site selector is limited to the
+        // default field-crew client's sites, while full site data is retained
+        // for code/equipment filtering.
+        setSites(crewSitesResult);
         setSitesData(activeSites);
         setAllCodes(codesResult.map((c: any) => c.name));
         setAllEquipmentData(

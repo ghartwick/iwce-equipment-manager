@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { siteManagementService, Site, SiteCode } from '../services/siteManagementService';
+import { siteManagementService, Site, SiteCode, SiteRole } from '../services/siteManagementService';
 import { parseExcelFile } from '../utils/excelImport';
-import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X, DollarSign } from 'lucide-react';
 
 export function EditSitePage() {
   const { siteId } = useParams<{ siteId: string }>();
@@ -28,6 +28,9 @@ export function EditSitePage() {
   const [newCode, setNewCode] = useState('');
   const [newCodeDescription, setNewCodeDescription] = useState('');
   const [showAddCode, setShowAddCode] = useState(false);
+  const [roles, setRoles] = useState<SiteRole[]>([]);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleCost, setNewRoleCost] = useState('');
   const [importingCodes, setImportingCodes] = useState(false);
   const codeFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,6 +71,7 @@ export function EditSitePage() {
         return a.name.localeCompare(b.name);
       }));
       setLinkedSites(siteData.linkedSites || []);
+      setRoles((siteData.roles || []).slice().sort((a, b) => a.name.localeCompare(b.name)));
     } catch (error: any) {
       setError(error?.message || 'Failed to load site');
     } finally {
@@ -85,6 +89,7 @@ export function EditSitePage() {
       await siteManagementService.updateSite(site.id, {
         ...formData,
         codes,
+        roles,
         linkedSites
       });
       setSuccess('Site updated successfully');
@@ -120,6 +125,26 @@ export function EditSitePage() {
   const handleRemoveCode = (codeName: string) => {
     if (!window.confirm(`Remove code "${codeName}"?`)) return;
     setCodes(codes.filter(c => c.name !== codeName));
+  };
+
+  const handleAddRole = () => {
+    const name = newRoleName.trim();
+    const cost = parseFloat(newRoleCost);
+    if (!name) { setError('Role name is required'); return; }
+    if (isNaN(cost) || cost < 0) { setError('Enter a valid cost per hour'); return; }
+    if (roles.some(r => r.name.toLowerCase() === name.toLowerCase())) {
+      setError('A role with that name already exists');
+      return;
+    }
+    setError(null);
+    setRoles([...roles, { name, costPerHour: cost }].sort((a, b) => a.name.localeCompare(b.name)));
+    setNewRoleName('');
+    setNewRoleCost('');
+  };
+
+  const handleRemoveRole = (roleName: string) => {
+    if (!window.confirm(`Remove role "${roleName}"?`)) return;
+    setRoles(roles.filter(r => r.name !== roleName));
   };
 
   const handleImportCodes = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,6 +281,69 @@ export function EditSitePage() {
                   <span className="text-sm text-yellow-700 dark:text-yellow-300">Active</span>
                 </label>
               </div>
+            </div>
+
+            {/* Roles & Costing */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 flex items-center gap-1">
+                  <DollarSign className="h-4 w-4" /> Roles &amp; Costing
+                </h3>
+              </div>
+              <p className="text-sm text-yellow-600 dark:text-yellow-500 mb-3">
+                Roles available for survey time cards at this site. Each role's cost per hour drives the entry cost.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                <input
+                  type="text"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  placeholder="Role name"
+                  className="flex-1 px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newRoleCost}
+                  onChange={(e) => setNewRoleCost(e.target.value)}
+                  placeholder="Cost / hour"
+                  className="w-full sm:w-40 px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddRole}
+                  className="flex items-center justify-center gap-1 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm whitespace-nowrap"
+                >
+                  <Plus className="h-3 w-3" /> Add Role
+                </button>
+              </div>
+
+              {roles.length > 0 ? (
+                <div className="space-y-2">
+                  {roles.map((role) => (
+                    <div
+                      key={role.name}
+                      className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
+                    >
+                      <div>
+                        <span className="text-gray-900 dark:text-yellow-100 font-medium">{role.name}</span>
+                        <span className="text-yellow-700 dark:text-yellow-500 text-sm ml-2">${role.costPerHour.toFixed(2)}/hr</span>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveRole(role.name)}
+                        className="text-red-400 hover:text-red-300"
+                        title="Remove role"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-yellow-600 dark:text-yellow-400">No roles defined for this site yet.</p>
+              )}
             </div>
 
             {/* Linked Sites */}

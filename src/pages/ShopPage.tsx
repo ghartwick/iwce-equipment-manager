@@ -698,7 +698,7 @@ export function Service() {
                     )}
                   </button>
                 )}
-                {user?.role === 'admin' && (
+                {(user?.role === 'admin' || user?.role === 'supervisor') && (
                   <button
                     onClick={() => setShowShopForm(true)}
                     className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
@@ -732,7 +732,7 @@ export function Service() {
                               by {report.createdBy}
                             </span>
                           </div>
-                          {user?.role === 'admin' && (
+                          {(user?.role === 'admin' || user?.role === 'supervisor') && (
                             <button
                               onClick={() => report.id && handleDeleteShopReport(report.id)}
                               className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"

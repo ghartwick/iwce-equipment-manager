@@ -19,7 +19,7 @@ function Layout({ children }: LayoutProps) {
   const navigation = [
     { name: 'Inventory', href: '/inventory', icon: Package },
     { name: 'Timecard', href: '/timecard', icon: Clock },
-    ...(user?.role === 'admin' ? [{ name: 'Shop', href: '/shop', icon: FileText }] : []),
+    ...((user?.role === 'admin' || user?.role === 'supervisor') ? [{ name: 'Shop', href: '/shop', icon: FileText }] : []),
   ];
 
   const isActive = (href: string) => location.pathname === href;

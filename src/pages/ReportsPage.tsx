@@ -37,6 +37,8 @@ export default function ReportsPage() {
   const [userFilter, setUserFilter] = useState<string>('');
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
+  const [allMaintenanceReports, setAllMaintenanceReports] = useState<MaintenanceReport[]>([]);
+  const [allShopReports, setAllShopReports] = useState<ShopReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [maintenanceCounts, setMaintenanceCounts] = useState<Record<string, number>>({});
   const [shopCounts, setShopCounts] = useState<Record<string, number>>({});
@@ -498,7 +500,12 @@ export default function ReportsPage() {
         return true;
       });
 
-      // Always set reports for selected date so filter dropdowns can populate
+      // Store unfiltered (date-only) for dropdown option derivation
+      const allDateMaintenance = maintenance.filter(r => dateKeys.includes(format(new Date(r.createdAt), 'yyyy-MM-dd')));
+      const allDateShop = shop.filter(r => dateKeys.includes(format(new Date(r.createdAt), 'yyyy-MM-dd')));
+      setAllMaintenanceReports(allDateMaintenance);
+      setAllShopReports(allDateShop);
+      // Store filtered for display
       setMaintenanceReports(filteredMaintenance);
       setShopReports(filteredShop);
     } catch (error) {
@@ -625,7 +632,7 @@ export default function ReportsPage() {
   // Get unique sites from equipment that have reports for the selected date
   const getUniqueSites = () => {
     const siteSet = new Set<string>();
-    [...maintenanceReports, ...shopReports].forEach(report => {
+    [...allMaintenanceReports, ...allShopReports].forEach(report => {
       // Use the site stored in the report (at creation time), fall back to current equipment site
       const site = report.site || (equipmentData[report.equipmentId]?.site);
       if (site) {
@@ -638,7 +645,7 @@ export default function ReportsPage() {
   // Get unique users who created reports
   const getUniqueUsers = () => {
     const userSet = new Set<string>();
-    [...maintenanceReports, ...shopReports].forEach(report => {
+    [...allMaintenanceReports, ...allShopReports].forEach(report => {
       userSet.add(report.createdBy);
     });
     return users.filter(u => userSet.has(u.username)).sort((a, b) => a.name.localeCompare(b.name));

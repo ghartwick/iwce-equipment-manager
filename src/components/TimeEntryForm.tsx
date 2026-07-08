@@ -9,6 +9,7 @@ import { equipmentManagementService } from '../services/equipmentManagementServi
 import { fleetManagementService } from '../services/fleetManagementService';
 import { Equipment } from '../types';
 import { Alert } from './Alert';
+import { SiteSelectDropdown, SiteOption } from './SiteSelectDropdown';
 
 interface TimeEntryFormProps {
   selectedDate: Date;
@@ -436,7 +437,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const [customSite, setCustomSite] = useState('');
   const [hours, setHours] = useState(0);
   const [travelHours, setTravelHours] = useState('');
-  const [jobOptions, setJobOptions] = useState<string[]>([]);
+  const [jobOptions, setJobOptions] = useState<SiteOption[]>([]);
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
   const [sitesData, setSitesData] = useState<Site[]>([]);
   const [smallToolsOptionsState, setSmallToolsOptionsState] = useState<string[]>([]);
@@ -605,7 +606,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         // Field crews work a single client: limit the site selector to the
         // default field-crew client's sites (falls back to all when unset).
         const crewSites = await siteManagementService.getFieldCrewSites();
-        setJobOptions(crewSites.map(site => site.name));
+        setJobOptions(crewSites.map(site => ({ id: site.id, name: site.name, description: site.description })));
         
         const codes = await codeManagementService.getActiveCodes();
         setCodeOptionsState(codes.map(code => code.name));
@@ -784,7 +785,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   // Handle custom site initialization when editing existing entries
   useEffect(() => {
     if (entry && entry.job && jobOptions.length > 0) {
-      if (!jobOptions.includes(entry.job)) {
+      if (!jobOptions.some(o => o.name === entry.job)) {
         setJob('Other');
         setCustomSite(entry.job);
       } else {
@@ -1121,29 +1122,15 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
           <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-1">
             Site
           </label>
-          <select
+          <SiteSelectDropdown
             value={job}
-            onChange={(e) => {
-              setJob(e.target.value);
-              if (e.target.value !== 'Other') {
-                setCustomSite('');
-              }
-            }}
-            disabled={isLocked}
-            className={`w-full px-3 py-2 bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
-              isLocked 
-                ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
-                : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
-            }`}
-          >
-            <option value="">Select Site</option>
-            {jobOptions.map(jobOption => (
-              <option key={jobOption} value={jobOption}>
-                {jobOption}
-              </option>
-            ))}
-            <option value="Other">Other (specify)</option>
-          </select>
+            onChange={(val) => { setJob(val); if (val !== 'Other') setCustomSite(''); }}
+            sites={jobOptions}
+            disabled={false}
+            isLocked={isLocked}
+            placeholder="Select Site"
+            includeOther
+          />
           
           {/* Custom Site Input - Shows when "Other" is selected */}
           {job === 'Other' && (

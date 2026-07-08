@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { SiteSelectDropdown } from './SiteSelectDropdown';
 import { SurveyTimeEntry, SurveyExpenseLine } from '../services/surveyTimecardService';
 import { Client, clientManagementService } from '../services/clientManagementService';
 import { Site, siteManagementService } from '../services/siteManagementService';
@@ -279,10 +280,13 @@ export function SurveyTimeEntryForm({
           {/* Site */}
           <div>
             <label className={labelClass}>Site</label>
-            <select value={site} onChange={(e) => handleSiteChange(e.target.value)} className={inputClass} disabled={disabled || !clientId}>
-              <option value="">{clientId ? 'Select a site' : 'Select a client first'}</option>
-              {clientSites.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-            </select>
+            <SiteSelectDropdown
+              value={site}
+              onChange={handleSiteChange}
+              sites={clientSites.map(s => ({ id: s.id, name: s.name, description: s.description }))}
+              disabled={disabled || !clientId}
+              placeholder={clientId ? 'Select a site' : 'Select a client first'}
+            />
           </div>
 
           {/* Worked Hours + Travel Hours — compact row matching field timecard */}

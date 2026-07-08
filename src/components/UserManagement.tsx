@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Edit2, Trash2, Shield, Wrench, Users, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
+import { UserPlus, Edit2, Shield, Wrench, Users, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { AppUser, userManagementService } from '../services/userManagementService';
 
 interface User {
@@ -28,6 +28,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
   const [showPassword, setShowPassword] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedRoles, setExpandedRoles] = useState<Record<string, boolean>>({});
+  const [inactiveUsersCollapsed, setInactiveUsersCollapsed] = useState(true);
 
   // Form state
   const [formData, setFormData] = useState<{
@@ -338,7 +339,6 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                 <tr className="bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30">
                   <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Username</th>
                   <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Name</th>
-                  <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Status</th>
                   <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Actions</th>
                 </tr>
               </thead>
@@ -347,101 +347,125 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                   let usersToShow = filteredUsers;
                   
                   if (currentUser?.role === 'supervisor' || currentUser?.role === 'field') {
-                    // For supervisors and field users, only show their own profile
                     usersToShow = filteredUsers.filter(user => user.id === currentUser.id);
                   }
                   
-                  // Group users by role
+                  const activeUsers = usersToShow.filter(user => user.isActive);
+                  const inactiveUsers = usersToShow.filter(user => !user.isActive);
                   const roles = ['admin', 'supervisor', 'field'];
                   
-                  return roles.map((role) => {
-                    const roleUsers = usersToShow
-                      .filter(user => user.role === role)
-                      .sort((a, b) => a.name.localeCompare(b.name));
-                    
-                    if (roleUsers.length === 0) return null;
-                    
-                    const isExpanded = expandedRoles[role] || false;
-                    
-                    const toggleExpanded = () => {
-                      setExpandedRoles(prev => ({
-                        ...prev,
-                        [role]: !prev[role]
-                      }));
-                    };
-                    
-                    return (
-                      <React.Fragment key={role}>
-                        {/* Role Header Row */}
-                        <tr>
-                          <td colSpan={4} className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20">
-                            <button
-                              onClick={toggleExpanded}
-                              className="flex items-center space-x-2 text-sm font-medium text-yellow-700 dark:text-yellow-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors"
-                            >
-                              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                              {role === 'admin' && <Shield className="h-5 w-5 text-red-400" />}
-                              {role === 'supervisor' && <Users className="h-5 w-5 text-purple-400" />}
-                              {role === 'field' && <Wrench className="h-5 w-5 text-blue-400" />}
-                              <span className="capitalize">{role}s ({roleUsers.length})</span>
-                              {(currentUser?.role === 'supervisor' || currentUser?.role === 'field') && (
-                                <span className="text-xs text-yellow-600 dark:text-yellow-500 ml-2">(Your Profile Only)</span>
-                              )}
-                            </button>
-                          </td>
-                        </tr>
+                  return (
+                    <>
+                      {/* Active Users - Grouped by Role */}
+                      {roles.map((role) => {
+                        const roleUsers = activeUsers
+                          .filter(user => user.role === role)
+                          .sort((a, b) => a.name.localeCompare(b.name));
                         
-                        {/* User Rows - Only show when expanded */}
-                        {isExpanded && roleUsers.map((user) => (
-                          <tr key={user.id} className={`border-b border-yellow-200 dark:border-yellow-800 ${user.isActive ? 'bg-white dark:bg-black' : 'bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30 opacity-75'}`}>
-                            <td className="px-4 py-2">
-                              <div className="text-sm text-gray-900 dark:text-yellow-100">@{user.username}</div>
-                            </td>
-                            <td className="px-4 py-2">
-                              <div className="text-sm font-medium text-gray-900 dark:text-yellow-100">{user.name}</div>
-                            </td>
-                            <td className="px-4 py-2 text-center">
-                              <span className={`px-2 py-1 text-xs rounded-full ${user.isActive ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-400' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
-                                {user.isActive ? 'Active' : 'In Active'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2">
-                              <div className="flex items-center justify-center space-x-1">
-                                {/* Edit User - Admin, Supervisor, and Field User (own account only) */}
-                                {(currentUser?.role === 'admin' || 
-                                  currentUser?.role === 'supervisor' || 
-                                  (currentUser?.role === 'field' && user.id === currentUser?.id)) && (
-                                  <button
-                                    onClick={() => handleEdit(user)}
-                                    className="p-1 text-yellow-600 hover:text-yellow-500"
-                                    title="Edit user"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </button>
-                                )}
-                                
-                                {/* Delete User - Admin Only */}
-                                {currentUser?.role === 'admin' && (
-                                  <button
-                                    onClick={() => {
-                                      if (window.confirm(`Are you sure you want to delete user "${user.name}"?`)) {
-                                        handleDelete(user);
-                                      }
-                                    }}
-                                    className="p-1 text-red-600 hover:text-red-500"
-                                    title="Delete user"
-                                    disabled={user.id === currentUser?.id}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </div>
+                        if (roleUsers.length === 0) return null;
+                        
+                        const isExpanded = expandedRoles[role] || false;
+                        
+                        const toggleExpanded = () => {
+                          setExpandedRoles(prev => ({
+                            ...prev,
+                            [role]: !prev[role]
+                          }));
+                        };
+                        
+                        return (
+                          <React.Fragment key={role}>
+                            <tr>
+                              <td colSpan={3} className="px-4 py-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20">
+                                <button
+                                  onClick={toggleExpanded}
+                                  className="flex items-center space-x-2 text-sm font-medium text-yellow-700 dark:text-yellow-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors"
+                                >
+                                  {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                  {role === 'admin' && <Shield className="h-5 w-5 text-red-400" />}
+                                  {role === 'supervisor' && <Users className="h-5 w-5 text-purple-400" />}
+                                  {role === 'field' && <Wrench className="h-5 w-5 text-blue-400" />}
+                                  <span className="capitalize">{role}s ({roleUsers.length})</span>
+                                  {(currentUser?.role === 'supervisor' || currentUser?.role === 'field') && (
+                                    <span className="text-xs text-yellow-600 dark:text-yellow-500 ml-2">(Your Profile Only)</span>
+                                  )}
+                                </button>
+                              </td>
+                            </tr>
+                            {isExpanded && roleUsers.map((user) => (
+                              <tr key={user.id} className="border-b border-yellow-200 dark:border-yellow-800 bg-white dark:bg-black">
+                                <td className="px-4 py-2">
+                                  <div className="text-sm text-gray-900 dark:text-yellow-100">{user.username}</div>
+                                </td>
+                                <td className="px-4 py-2">
+                                  <div className="text-sm font-medium text-gray-900 dark:text-yellow-100">{user.name}</div>
+                                </td>
+                                <td className="px-4 py-2">
+                                  <div className="flex items-center justify-center space-x-1">
+                                    {(currentUser?.role === 'admin' || 
+                                      currentUser?.role === 'supervisor' || 
+                                      (currentUser?.role === 'field' && user.id === currentUser?.id)) && (
+                                      <button
+                                        onClick={() => handleEdit(user)}
+                                        className="p-1 text-yellow-600 hover:text-yellow-500"
+                                        title="Edit user"
+                                      >
+                                        <Edit2 className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </React.Fragment>
+                        );
+                      })}
+                      
+                      {/* Inactive Users - Collapsible Section */}
+                      {inactiveUsers.length > 0 && (
+                        <>
+                          <tr>
+                            <td colSpan={3} className="px-4 py-2 bg-gray-100 dark:bg-gray-900 dark:bg-opacity-30">
+                              <button
+                                onClick={() => setInactiveUsersCollapsed(prev => !prev)}
+                                className="flex items-center space-x-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                              >
+                                {inactiveUsersCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <span>Inactive Users ({inactiveUsers.length})</span>
+                              </button>
                             </td>
                           </tr>
-                        ))}
-                      </React.Fragment>
-                    );
-                  });
+                          {!inactiveUsersCollapsed && inactiveUsers
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((user) => (
+                              <tr key={user.id} className="border-b border-yellow-200 dark:border-yellow-800 bg-gray-50 dark:bg-gray-900 dark:bg-opacity-20">
+                                <td className="px-4 py-2">
+                                  <div className="text-sm text-gray-400 dark:text-gray-500 italic">{user.username}</div>
+                                </td>
+                                <td className="px-4 py-2">
+                                  <div className="text-sm font-medium text-gray-400 dark:text-gray-500 italic">{user.name}</div>
+                                </td>
+                                <td className="px-4 py-2">
+                                  <div className="flex items-center justify-center space-x-1">
+                                    {(currentUser?.role === 'admin' || 
+                                      currentUser?.role === 'supervisor' || 
+                                      (currentUser?.role === 'field' && user.id === currentUser?.id)) && (
+                                      <button
+                                        onClick={() => handleEdit(user)}
+                                        className="p-1 text-gray-400 hover:text-gray-500"
+                                        title="Edit user"
+                                      >
+                                        <Edit2 className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                        </>
+                      )}
+                    </>
+                  );
                 })()}
               </tbody>
             </table>
@@ -547,6 +571,20 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                     >
                       Update User
                     </button>
+                    {currentUser?.role === 'admin' && editingUser?.id !== currentUser?.id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete user "${editingUser?.name}"? This action cannot be undone.`)) {
+                            handleDelete(editingUser!);
+                            setEditingUser(null);
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        Delete User
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => {

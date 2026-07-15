@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
+import { AgentChat } from './AgentChat';
 import { Plus, Bell, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car, DollarSign } from 'lucide-react';
 
 interface LayoutProps {
@@ -433,8 +434,8 @@ function Layout({ children }: LayoutProps) {
       {/* Main Content */}
       {children}
 
-
-
+      {/* AI Assistant */}
+      <AgentChat />
     </div>
   );
 }

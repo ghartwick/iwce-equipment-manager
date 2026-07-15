@@ -82,6 +82,15 @@ function toGeminiContents(messages: AgentMessage[]): any[] {
   });
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** True for transient errors worth retrying (overload / rate-limit), but NOT hard quota-zero. */
+function isRetryable(status: number, bodyText: string): boolean {
+  if (status === 503) return true; // model overloaded
+  if (status === 429 && !bodyText.includes('limit: 0')) return true; // rate limited (not a hard cap)
+  return false;
+}
+
 export const geminiProvider: LlmProvider = {
   async callModel({ system, messages, tools, maxTokens = 1024 }: CallModelArgs): Promise<LlmResponse> {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -99,18 +108,29 @@ export const geminiProvider: LlmProvider = {
       generationConfig: { maxOutputTokens: maxTokens },
     };
 
-    const res = await fetch(`${API_BASE}/${model}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const url = `${API_BASE}/${model}:generateContent?key=${apiKey}`;
+    const MAX_ATTEMPTS = 4;
+    let res: Response | null = null;
+    let errText = '';
 
-    if (!res.ok) {
-      const errText = await res.text();
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) break;
+
+      errText = await res.text();
+      if (attempt < MAX_ATTEMPTS && isRetryable(res.status, errText)) {
+        // Exponential backoff: 0.8s, 1.6s, 3.2s
+        await sleep(800 * 2 ** (attempt - 1));
+        continue;
+      }
       throw new Error(`Gemini API error (${res.status}): ${errText}`);
     }
 
-    const data: any = await res.json();
+    const data: any = await res!.json();
     const candidate = data?.candidates?.[0];
     const parts: any[] = candidate?.content?.parts || [];
 

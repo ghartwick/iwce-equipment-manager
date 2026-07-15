@@ -1,4 +1,4 @@
-import { AgentMessage, CallModelArgs, LlmProvider, LlmResponse, LlmToolCall } from './provider';
+import { AgentMessage, CallModelArgs, LlmProvider, LlmResponse, LlmToolCall } from './provider.js';
 
 /**
  * OpenAI (GPT) adapter using the stable Chat Completions REST API (no SDK, so

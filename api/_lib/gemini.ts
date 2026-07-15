@@ -1,4 +1,4 @@
-import { AgentMessage, CallModelArgs, LlmProvider, LlmResponse, LlmToolCall } from './provider';
+import { AgentMessage, CallModelArgs, LlmProvider, LlmResponse, LlmToolCall } from './provider.js';
 
 /**
  * Google Gemini adapter using the stable REST API (no SDK, so no version drift).

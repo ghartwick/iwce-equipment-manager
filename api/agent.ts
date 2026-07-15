@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDb } from './_lib/firebaseAdmin';
-import { getProvider } from './_lib/providerRegistry';
-import { AgentMessage, LlmToolResult } from './_lib/provider';
-import { AgentUser, executeTool, getToolDefsForUser } from './_lib/tools';
+import { getDb } from './_lib/firebaseAdmin.js';
+import { getProvider } from './_lib/providerRegistry.js';
+import { AgentMessage, LlmToolResult } from './_lib/provider.js';
+import { AgentUser, executeTool, getToolDefsForUser } from './_lib/tools.js';
 
 const MAX_ITERATIONS = 6;
 

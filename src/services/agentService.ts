@@ -28,11 +28,16 @@ export const agentService = {
 
     if (!res.ok) {
       let detail = `Request failed (${res.status})`;
-      try {
-        const data = await res.json();
-        if (data?.error) detail = data.error;
-      } catch {
-        // ignore parse errors, keep default detail
+      // Read the raw body once, then try to parse it as JSON.
+      const raw = await res.text();
+      if (raw) {
+        try {
+          const data = JSON.parse(raw);
+          if (data?.error) detail = data.error;
+        } catch {
+          // Non-JSON body (e.g., a platform error page) - include a snippet.
+          detail = `${detail}: ${raw.slice(0, 300)}`;
+        }
       }
       throw new Error(detail);
     }

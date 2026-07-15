@@ -1,5 +1,5 @@
 import { Firestore } from 'firebase-admin/firestore';
-import { LlmToolDef } from './provider';
+import { LlmToolDef } from './provider.js';
 
 /** Authenticated user resolved server-side (authoritative role from Firestore). */
 export interface AgentUser {

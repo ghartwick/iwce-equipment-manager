@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { AgentMessage, CallModelArgs, LlmProvider, LlmResponse, LlmToolCall } from './provider';
+import { AgentMessage, CallModelArgs, LlmProvider, LlmResponse, LlmToolCall } from './provider.js';
 
 const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
 

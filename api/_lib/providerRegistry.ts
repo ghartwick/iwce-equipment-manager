@@ -1,7 +1,7 @@
-import { LlmProvider } from './provider';
-import { anthropicProvider } from './anthropic';
-import { geminiProvider } from './gemini';
-import { openaiProvider } from './openai';
+import { LlmProvider } from './provider.js';
+import { anthropicProvider } from './anthropic.js';
+import { geminiProvider } from './gemini.js';
+import { openaiProvider } from './openai.js';
 
 /**
  * Selects the active LLM provider from the LLM_PROVIDER env var.

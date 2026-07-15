@@ -64,7 +64,10 @@ function toGeminiContents(messages: AgentMessage[]): any[] {
       const parts: any[] = [];
       if (m.text) parts.push({ text: m.text });
       for (const call of m.toolCalls) {
-        parts.push({ functionCall: { name: call.name, args: call.input } });
+        const part: any = { functionCall: { name: call.name, args: call.input } };
+        // Gemini 3 requires the original thoughtSignature to be echoed back.
+        if (call.meta?.thoughtSignature) part.thoughtSignature = call.meta.thoughtSignature;
+        parts.push(part);
       }
       // Gemini requires at least one part.
       if (parts.length === 0) parts.push({ text: '' });
@@ -147,6 +150,8 @@ export const geminiProvider: LlmProvider = {
           id: `${part.functionCall.name}_${callIndex++}`,
           name: part.functionCall.name,
           input: part.functionCall.args || {},
+          // Preserve Gemini 3 thought signature so it can be replayed next turn.
+          meta: part.thoughtSignature ? { thoughtSignature: part.thoughtSignature } : undefined,
         });
       }
     }

@@ -19,6 +19,12 @@ export interface LlmToolCall {
   id: string;
   name: string;
   input: Record<string, any>;
+  /**
+   * Opaque provider-specific metadata that must be replayed on the next turn.
+   * e.g. Gemini 3 attaches a `thoughtSignature` to each function call that must
+   * be echoed back or the API rejects the follow-up request.
+   */
+  meta?: Record<string, any>;
 }
 
 export interface LlmToolResult {

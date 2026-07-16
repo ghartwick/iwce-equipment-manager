@@ -9,10 +9,15 @@ interface MaintenanceFormProps {
   onClose: () => void;
   onSubmit: (maintenance: EquipmentMaintenance, files?: File[]) => Promise<void>;
   categoryMaintenanceItems?: string[];
+  pendingRepairKeys?: string[];
 }
 
-export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMaintenanceItems }: MaintenanceFormProps) {
-  const [maintenance, setMaintenance] = useState<EquipmentMaintenance>({});
+export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMaintenanceItems, pendingRepairKeys }: MaintenanceFormProps) {
+  const [maintenance, setMaintenance] = useState<EquipmentMaintenance>(() => {
+    const initial: EquipmentMaintenance = {};
+    (pendingRepairKeys || []).forEach(key => { (initial as any)[key] = 'Repair'; });
+    return initial;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const categories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);

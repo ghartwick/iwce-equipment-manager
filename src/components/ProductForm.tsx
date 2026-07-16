@@ -270,18 +270,19 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
         }
       }
       
-      // Fire shop alert if any repairs or notes exist
+      // Fire shop alert ONLY for newly-flagged repairs (or notes).
+      // Repairs already pending on this unit must not generate a duplicate alert.
       const categoryMaintenanceItems = fetchedCategories.find(c => c.id === product.category)?.maintenanceItems;
       const categories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
-      const repairFields = categories.map(c => (maintenance as any)[c.key]);
-      const repairItems = categories
-        .map(c => (maintenance as any)[c.key] === 'Repair' && c.label)
-        .filter(Boolean) as string[];
-      const hasRepairs = repairFields.some(v => v === 'Repair');
+      const alreadyPendingKeys = new Set(computePendingRepairs().map(p => p.key));
+      const newRepairItems = categories
+        .filter(c => (maintenance as any)[c.key] === 'Repair' && !alreadyPendingKeys.has(c.key))
+        .map(c => c.label);
+      const hasNewRepairs = newRepairItems.length > 0;
       const hasNotes = !!maintenance.notes?.trim();
-      if (hasRepairs || hasNotes) {
+      if (hasNewRepairs || hasNotes) {
         const messageParts: string[] = [product.name || 'Unknown equipment'];
-        if (repairItems.length > 0) messageParts.push(`Repairs needed: ${repairItems.join(', ')}`);
+        if (newRepairItems.length > 0) messageParts.push(`Repairs needed: ${newRepairItems.join(', ')}`);
         if (hasNotes) messageParts.push(maintenance.notes || '');
         try {
           await alertsFirebaseService.addAlert({
@@ -382,13 +383,45 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
     }
   };
 
-  const handleResolveRepair = async (itemId: string, fieldLabel: string) => {
+  // Compute pending (unresolved) repairs for this unit, de-duplicated by field key.
+  // A repair field marked across multiple reports collapses into a single pending entry
+  // that tracks every underlying itemId so it can be fully cleared at once.
+  const computePendingRepairs = (): { key: string; label: string; itemIds: string[]; createdBy: string; createdAt: string }[] => {
+    if (!product) return [];
+    const categoryMaintenanceItems = fetchedCategories.find(c => c.id === product.category)?.maintenanceItems;
+    const mCategories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
+    const byKey = new Map<string, { key: string; label: string; itemIds: string[]; createdBy: string; createdAt: string }>();
+    maintenanceReports.forEach(report => {
+      mCategories.forEach(({ key, label }) => {
+        if ((report.maintenance as any)[key] === 'Repair') {
+          const itemId = `${report.id}_${key}`;
+          if (!checkedRepairItems[itemId]) {
+            const existing = byKey.get(key);
+            if (!existing) {
+              byKey.set(key, { key, label, itemIds: [itemId], createdBy: report.createdBy, createdAt: report.createdAt });
+            } else {
+              existing.itemIds.push(itemId);
+              // reports are sorted newest-first, so keep the oldest (original) occurrence's info
+              existing.createdBy = report.createdBy;
+              existing.createdAt = report.createdAt;
+            }
+          }
+        }
+      });
+    });
+    return Array.from(byKey.values());
+  };
+
+  const handleResolveRepair = async (itemIds: string[], fieldLabel: string) => {
     if (!user || !product) return;
-    await repairListService.checkItem(itemId, user.name || user.username);
-    setCheckedRepairItems(prev => ({
-      ...prev,
-      [itemId]: { itemId, checkedBy: user.name || user.username, checkedAt: new Date().toISOString() },
-    }));
+    await Promise.all(itemIds.map(id => repairListService.checkItem(id, user.name || user.username)));
+    setCheckedRepairItems(prev => {
+      const next = { ...prev };
+      itemIds.forEach(id => {
+        next[id] = { itemId: id, checkedBy: user.name || user.username, checkedAt: new Date().toISOString() };
+      });
+      return next;
+    });
     try {
       await equipmentHistoryFirebaseService.addHistory({
         equipmentId: product.id,
@@ -983,31 +1016,19 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
 
               {serviceIntervalBar}
 
-              {/* Pending Repairs from Maintenance Reports */}
+              {/* Pending Repairs from Maintenance Reports (de-duplicated by field) */}
               {(() => {
-                const categoryMaintenanceItems = fetchedCategories.find(c => c.id === product.category)?.maintenanceItems;
-                const mCategories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
-                const pendingItems: { id: string; label: string; createdBy: string; createdAt: string }[] = [];
-                maintenanceReports.forEach(report => {
-                  mCategories.forEach(({ key, label }) => {
-                    if ((report.maintenance as any)[key] === 'Repair') {
-                      const itemId = `${report.id}_${key}`;
-                      if (!checkedRepairItems[itemId]) {
-                        pendingItems.push({ id: itemId, label, createdBy: report.createdBy, createdAt: report.createdAt });
-                      }
-                    }
-                  });
-                });
+                const pendingItems = computePendingRepairs();
                 if (pendingItems.length === 0) return null;
                 return (
                   <div className="mb-4 space-y-1.5">
                     <h4 className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide mb-2">Pending Repairs</h4>
                     {pendingItems.map(item => (
-                      <div key={item.id} className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-md px-3 py-2">
+                      <div key={item.key} className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-md px-3 py-2">
                         <input
                           type="checkbox"
                           checked={false}
-                          onChange={() => handleResolveRepair(item.id, item.label)}
+                          onChange={() => handleResolveRepair(item.itemIds, item.label)}
                           disabled={user?.role !== 'admin'}
                           className={`mt-0.5 flex-shrink-0 rounded border-red-400 text-red-600 focus:ring-red-500 ${user?.role === 'admin' ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}`}
                           title={user?.role === 'admin' ? 'Mark as resolved' : 'Admin only'}
@@ -1305,6 +1326,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
           onClose={() => setShowMaintenanceForm(false)}
           onSubmit={handleMaintenanceSubmit}
           categoryMaintenanceItems={fetchedCategories.find(c => c.id === product.category)?.maintenanceItems}
+          pendingRepairKeys={computePendingRepairs().map(p => p.key)}
         />
       )}
     </div>

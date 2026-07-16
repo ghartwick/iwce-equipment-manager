@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { siteManagementService, Site, SiteCode, SiteRole } from '../services/siteManagementService';
+import { clientManagementService, Client } from '../services/clientManagementService';
 import { parseExcelFile } from '../utils/excelImport';
-import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X, DollarSign } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X } from 'lucide-react';
 
 export function EditSitePage() {
   const { siteId } = useParams<{ siteId: string }>();
@@ -33,6 +34,11 @@ export function EditSitePage() {
   const [newRoleCost, setNewRoleCost] = useState('');
   const [importingCodes, setImportingCodes] = useState(false);
   const codeFileInputRef = useRef<HTMLInputElement>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [clientAssignmentOpen, setClientAssignmentOpen] = useState(false);
+  const [rolesOpen, setRolesOpen] = useState(false);
+  const [linkedSitesOpen, setLinkedSitesOpen] = useState(false);
 
   useEffect(() => {
     if (siteId) {
@@ -53,12 +59,15 @@ export function EditSitePage() {
 
   const loadSite = async (id: string) => {
     try {
-      const [siteData, allSitesData] = await Promise.all([
+      const [siteData, allSitesData, clientsData] = await Promise.all([
         siteManagementService.getSite(id),
         siteManagementService.getAllSites(),
+        clientManagementService.getAllClients(),
       ]);
       setSite(siteData);
       setAllSites(allSitesData.filter(s => s.id !== id));
+      setClients(clientsData);
+      setSelectedClientId(siteData.clientId || '');
       setFormData({
         name: siteData.name,
         description: siteData.description || '',
@@ -76,6 +85,31 @@ export function EditSitePage() {
       setError(error?.message || 'Failed to load site');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteSite = async () => {
+    if (!site) return;
+    const confirmed = window.confirm(
+      `⚠️ Permanently delete "${site.name}"?\n\nThis cannot be undone. All codes and roles for this site will be permanently removed.`
+    );
+    if (!confirmed) return;
+    try {
+      await siteManagementService.deleteSite(site.id);
+      navigate('/manage/sites');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete site');
+    }
+  };
+
+  const handleChangeClient = async () => {
+    if (!site) return;
+    try {
+      await siteManagementService.updateSite(site.id, { clientId: selectedClientId });
+      setSite({ ...site, clientId: selectedClientId });
+      setSuccess(selectedClientId ? 'Client updated' : 'Site unassigned from client');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update client assignment');
     }
   };
 
@@ -223,6 +257,13 @@ export function EditSitePage() {
             </div>
             <div className="flex space-x-2">
               <button
+                onClick={handleDeleteSite}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete Site</span>
+              </button>
+              <button
                 onClick={handleSave}
                 className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
               >
@@ -283,182 +324,238 @@ export function EditSitePage() {
               </div>
             </div>
 
-            {/* Roles & Costing */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 flex items-center gap-1">
-                  <DollarSign className="h-4 w-4" /> Roles &amp; Costing
-                </h3>
-              </div>
-              <p className="text-sm text-yellow-600 dark:text-yellow-500 mb-3">
-                Roles available for survey time cards at this site. Each role's cost per hour drives the entry cost.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-2 mb-3">
-                <input
-                  type="text"
-                  value={newRoleName}
-                  onChange={(e) => setNewRoleName(e.target.value)}
-                  placeholder="Role name"
-                  className="flex-1 px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={newRoleCost}
-                  onChange={(e) => setNewRoleCost(e.target.value)}
-                  placeholder="Cost / hour"
-                  className="w-full sm:w-40 px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddRole}
-                  className="flex items-center justify-center gap-1 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm whitespace-nowrap"
-                >
-                  <Plus className="h-3 w-3" /> Add Role
-                </button>
-              </div>
-
-              {roles.length > 0 ? (
-                <div className="space-y-2">
-                  {roles.map((role) => (
-                    <div
-                      key={role.name}
-                      className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
+            {/* Client Assignment */}
+            <div className="mb-4 border border-yellow-300 dark:border-yellow-800 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setClientAssignmentOpen(prev => !prev)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-900/10 text-left hover:bg-yellow-100 dark:hover:bg-yellow-900/20 transition-colors"
+              >
+                <h3 className="text-base font-medium text-yellow-700 dark:text-yellow-300">Client Assignment</h3>
+                <ChevronDown className={`h-5 w-5 text-yellow-600 dark:text-yellow-400 transition-transform ${clientAssignmentOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {clientAssignmentOpen && (
+                <div className="px-4 py-4 border-t border-yellow-200 dark:border-yellow-800">
+                  <p className="text-sm text-yellow-600 dark:text-yellow-500 mb-3">
+                    Change which client this site belongs to, or leave unassigned.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                    <select
+                      value={selectedClientId}
+                      onChange={(e) => setSelectedClientId(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
-                      <div>
-                        <span className="text-gray-900 dark:text-yellow-100 font-medium">{role.name}</span>
-                        <span className="text-yellow-700 dark:text-yellow-500 text-sm ml-2">${role.costPerHour.toFixed(2)}/hr</span>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveRole(role.name)}
-                        className="text-red-400 hover:text-red-300"
-                        title="Remove role"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
+                      <option value="">— Unassigned —</option>
+                      {clients.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}{!c.isActive ? ' (inactive)' : ''}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleChangeClient}
+                      className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors whitespace-nowrap"
+                    >
+                      Change Client
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-yellow-600 dark:text-yellow-400">No roles defined for this site yet.</p>
+              )}
+            </div>
+
+            {/* Roles & Costing */}
+            <div className="mb-4 border border-yellow-300 dark:border-yellow-800 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setRolesOpen(prev => !prev)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-900/10 text-left hover:bg-yellow-100 dark:hover:bg-yellow-900/20 transition-colors"
+              >
+                <h3 className="text-base font-medium text-yellow-700 dark:text-yellow-300">Survey Tasks</h3>
+                <ChevronDown className={`h-5 w-5 text-yellow-600 dark:text-yellow-400 transition-transform ${rolesOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {rolesOpen && (
+                <div className="px-4 py-4 border-t border-yellow-200 dark:border-yellow-800">
+                  <p className="text-sm text-yellow-600 dark:text-yellow-500 mb-3">
+                    Tasks available for survey time cards at this site. Each task's cost per hour drives the entry cost.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={newRoleName}
+                      onChange={(e) => setNewRoleName(e.target.value)}
+                      placeholder="Role name"
+                      className="flex-1 px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newRoleCost}
+                      onChange={(e) => setNewRoleCost(e.target.value)}
+                      placeholder="Cost / hour"
+                      className="w-full sm:w-40 px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddRole}
+                      className="flex items-center justify-center gap-1 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm whitespace-nowrap"
+                    >
+                      <Plus className="h-3 w-3" /> Add Role
+                    </button>
+                  </div>
+
+                  {roles.length > 0 ? (
+                    <div className="space-y-2">
+                      {roles.map((role) => (
+                        <div
+                          key={role.name}
+                          className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
+                        >
+                          <div>
+                            <span className="text-gray-900 dark:text-yellow-100 font-medium">{role.name}</span>
+                            <span className="text-yellow-700 dark:text-yellow-500 text-sm ml-2">${role.costPerHour.toFixed(2)}/hr</span>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveRole(role.name)}
+                            className="text-red-400 hover:text-red-300"
+                            title="Remove role"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-yellow-600 dark:text-yellow-400">No roles defined for this site yet.</p>
+                  )}
+                </div>
               )}
             </div>
 
             {/* Linked Sites */}
-            <div className="mb-8">
-              <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-1">Co-located Sites</h3>
-              <p className="text-sm text-yellow-600 dark:text-yellow-500 mb-3">
-                Equipment from selected sites will automatically appear when workers select <strong>{formData.name || 'this site'}</strong> on their timecard.
-              </p>
+            <div className="mb-4 border border-yellow-300 dark:border-yellow-800 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setLinkedSitesOpen(prev => !prev)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-900/10 text-left hover:bg-yellow-100 dark:hover:bg-yellow-900/20 transition-colors"
+              >
+                <h3 className="text-base font-medium text-yellow-700 dark:text-yellow-300">Co-located Sites</h3>
+                <ChevronDown className={`h-5 w-5 text-yellow-600 dark:text-yellow-400 transition-transform ${linkedSitesOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {linkedSitesOpen && (
+                <div className="px-4 py-4 border-t border-yellow-200 dark:border-yellow-800">
+                  <p className="text-sm text-yellow-600 dark:text-yellow-500 mb-3">
+                    Equipment from selected sites will automatically appear when workers select <strong>{formData.name || 'this site'}</strong> on their timecard.
+                  </p>
 
-              <div className="relative" ref={linkedDropdownRef}>
-                {/* Trigger */}
-                <button
-                  type="button"
-                  onClick={() => { setLinkedDropdownOpen(prev => !prev); setLinkedSearch(''); }}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                >
-                  <span className="text-sm text-gray-900 dark:text-yellow-100 truncate">
-                    {linkedSites.length === 0
-                      ? 'None selected'
-                      : linkedSites.join(', ')}
-                  </span>
-                  <ChevronDown className={`h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 ml-2 transition-transform ${linkedDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Selected tags */}
-                {linkedSites.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {linkedSites.map(name => (
-                      <span
-                        key={name}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-yellow-400 dark:bg-yellow-700 text-yellow-900 dark:text-yellow-100 font-medium"
-                      >
-                        {name}
-                        <button
-                          type="button"
-                          onClick={() => setLinkedSites(prev => prev.filter(n => n !== name))}
-                          className="hover:text-red-700 dark:hover:text-red-300"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                  <div className="relative" ref={linkedDropdownRef}>
+                    {/* Trigger */}
+                    <button
+                      type="button"
+                      onClick={() => { setLinkedDropdownOpen(prev => !prev); setLinkedSearch(''); }}
+                      className="w-full flex items-center justify-between px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    >
+                      <span className="text-sm text-gray-900 dark:text-yellow-100 truncate">
+                        {linkedSites.length === 0
+                          ? 'None selected'
+                          : linkedSites.join(', ')}
                       </span>
-                    ))}
-                  </div>
-                )}
+                      <ChevronDown className={`h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 ml-2 transition-transform ${linkedDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
 
-                {/* Dropdown panel */}
-                {linkedDropdownOpen && (
-                  <div className="absolute z-50 mt-1 w-full bg-yellow-50 dark:bg-gray-900 border border-yellow-400 dark:border-yellow-700 rounded-lg shadow-lg overflow-hidden">
-                    {/* Search */}
-                    <div className="p-2 border-b border-yellow-300 dark:border-yellow-700">
-                      <input
-                        type="text"
-                        autoFocus
-                        value={linkedSearch}
-                        onChange={e => setLinkedSearch(e.target.value)}
-                        placeholder="Filter sites…"
-                        className="w-full px-2 py-1.5 text-sm bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded focus:outline-none focus:ring-1 focus:ring-yellow-500 text-gray-900 dark:text-yellow-100"
-                      />
-                    </div>
-                    {/* Options */}
-                    <div className="max-h-52 overflow-y-auto">
-                      {allSites
-                        .filter(s => s.isActive && s.name.toLowerCase().includes(linkedSearch.toLowerCase()))
-                        .length === 0 ? (
-                          <p className="px-3 py-2 text-sm text-yellow-600 dark:text-yellow-500">No sites match.</p>
-                        ) : (
-                          allSites
-                            .filter(s => s.isActive && (linkedSites.includes(s.name) || s.name.toLowerCase().includes(linkedSearch.toLowerCase())))
-                            .map(s => {
-                              const checked = linkedSites.includes(s.name);
-                              return (
-                                <label
-                                  key={s.id}
-                                  className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
-                                    checked
-                                      ? 'bg-yellow-100 dark:bg-yellow-900/40'
-                                      : 'hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={e => {
-                                      if (e.target.checked) {
-                                        setLinkedSites(prev => [...prev, s.name]);
-                                      } else {
-                                        setLinkedSites(prev => prev.filter(n => n !== s.name));
-                                      }
-                                    }}
-                                    className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
-                                  />
-                                  <div>
-                                    <span className="text-sm font-medium text-gray-900 dark:text-yellow-100">{s.name}</span>
-                                    {s.description && (
-                                      <p className="text-xs text-yellow-600 dark:text-yellow-500">{s.description}</p>
-                                    )}
-                                  </div>
-                                </label>
-                              );
-                            })
-                        )}
-                    </div>
-                    {/* Close */}
-                    <div className="p-2 border-t border-yellow-300 dark:border-yellow-700">
-                      <button
-                        type="button"
-                        onClick={() => setLinkedDropdownOpen(false)}
-                        className="w-full py-1 text-xs text-yellow-700 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-200 font-medium"
-                      >
-                        Done
-                      </button>
-                    </div>
+                    {/* Selected tags */}
+                    {linkedSites.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {linkedSites.map(name => (
+                          <span
+                            key={name}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-yellow-400 dark:bg-yellow-700 text-yellow-900 dark:text-yellow-100 font-medium"
+                          >
+                            {name}
+                            <button
+                              type="button"
+                              onClick={() => setLinkedSites(prev => prev.filter(n => n !== name))}
+                              className="hover:text-red-700 dark:hover:text-red-300"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Dropdown panel */}
+                    {linkedDropdownOpen && (
+                      <div className="absolute z-50 mt-1 w-full bg-yellow-50 dark:bg-gray-900 border border-yellow-400 dark:border-yellow-700 rounded-lg shadow-lg overflow-hidden">
+                        {/* Search */}
+                        <div className="p-2 border-b border-yellow-300 dark:border-yellow-700">
+                          <input
+                            type="text"
+                            autoFocus
+                            value={linkedSearch}
+                            onChange={e => setLinkedSearch(e.target.value)}
+                            placeholder="Filter sites…"
+                            className="w-full px-2 py-1.5 text-sm bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded focus:outline-none focus:ring-1 focus:ring-yellow-500 text-gray-900 dark:text-yellow-100"
+                          />
+                        </div>
+                        {/* Options */}
+                        <div className="max-h-52 overflow-y-auto">
+                          {allSites
+                            .filter(s => s.isActive && s.name.toLowerCase().includes(linkedSearch.toLowerCase()))
+                            .length === 0 ? (
+                              <p className="px-3 py-2 text-sm text-yellow-600 dark:text-yellow-500">No sites match.</p>
+                            ) : (
+                              allSites
+                                .filter(s => s.isActive && (linkedSites.includes(s.name) || s.name.toLowerCase().includes(linkedSearch.toLowerCase())))
+                                .map(s => {
+                                  const checked = linkedSites.includes(s.name);
+                                  return (
+                                    <label
+                                      key={s.id}
+                                      className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
+                                        checked
+                                          ? 'bg-yellow-100 dark:bg-yellow-900/40'
+                                          : 'hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={e => {
+                                          if (e.target.checked) {
+                                            setLinkedSites(prev => [...prev, s.name]);
+                                          } else {
+                                            setLinkedSites(prev => prev.filter(n => n !== s.name));
+                                          }
+                                        }}
+                                        className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                                      />
+                                      <div>
+                                        <span className="text-sm font-medium text-gray-900 dark:text-yellow-100">{s.name}</span>
+                                        {s.description && (
+                                          <p className="text-xs text-yellow-600 dark:text-yellow-500">{s.description}</p>
+                                        )}
+                                      </div>
+                                    </label>
+                                  );
+                                })
+                            )}
+                        </div>
+                        {/* Close */}
+                        <div className="p-2 border-t border-yellow-300 dark:border-yellow-700">
+                          <button
+                            type="button"
+                            onClick={() => setLinkedDropdownOpen(false)}
+                            className="w-full py-1 text-xs text-yellow-700 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-200 font-medium"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Site Codes */}

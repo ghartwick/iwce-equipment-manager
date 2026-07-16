@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Building2, X, ChevronDown, ChevronRight, MapPin, Star } from 'lucide-react';
+import { Plus, Edit2, Trash2, Building2, ChevronDown, ChevronRight, MapPin, Star } from 'lucide-react';
 import { Client, clientManagementService } from '../services/clientManagementService';
 import { Site, siteManagementService } from '../services/siteManagementService';
 
@@ -189,17 +189,6 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
     }
   };
 
-  const handleRemoveSiteFromClient = async (site: Site) => {
-    if (!window.confirm(`Remove "${site.name}" from this client? The site will become unassigned.`)) return;
-    try {
-      await siteManagementService.updateSite(site.id, { clientId: '' });
-      setSuccess('Site removed from client');
-      await loadData();
-    } catch (err) {
-      setError('Failed to update site');
-    }
-  };
-
   const handleAssignSite = async (site: Site) => {
     const target = assignTargets[site.id];
     if (!target) { setError('Choose a client to assign this site to'); return; }
@@ -210,17 +199,6 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
       await loadData();
     } catch (err) {
       setError('Failed to assign site');
-    }
-  };
-
-  const handleDeleteSite = async (site: Site) => {
-    if (!window.confirm(`Delete site "${site.name}"? This cannot be undone.`)) return;
-    try {
-      await siteManagementService.deleteSite(site.id);
-      setSuccess('Site deleted successfully');
-      await loadData();
-    } catch (err) {
-      setError('Failed to delete site');
     }
   };
 
@@ -386,25 +364,22 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                               <tr className="text-left text-yellow-700 dark:text-yellow-400 border-b border-yellow-200 dark:border-yellow-800">
                                 <th className="py-1 pr-2">Site</th>
                                 <th className="py-1 px-2 text-center">Codes</th>
-                                <th className="py-1 px-2 text-center">Active</th>
                                 {isAdmin && <th className="py-1 pl-2 text-right">Actions</th>}
                               </tr>
                             </thead>
                             <tbody>
-                              {clientSites.map(site => (
-                                <tr key={site.id} className="border-b border-yellow-100 dark:border-yellow-900">
-                                  <td className="py-1.5 pr-2 text-gray-900 dark:text-yellow-100">
+                              {[...clientSites].sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0)).map(site => (
+                                <tr key={site.id} className={`border-b border-yellow-100 dark:border-yellow-900 ${!site.isActive ? 'opacity-50' : ''}`}>
+                                  <td className={`py-1.5 pr-2 ${!site.isActive ? 'text-gray-400 dark:text-gray-600 italic' : 'text-gray-900 dark:text-yellow-100'}`}>
                                     {site.name}
                                     {site.flagRed && <span className="ml-2 text-xs text-red-600 dark:text-red-400">(flagged)</span>}
+                                    {!site.isActive && <span className="ml-2 text-xs">(inactive)</span>}
                                   </td>
                                   <td className="py-1.5 px-2 text-center text-yellow-700 dark:text-yellow-400">{(site.codes || []).length}</td>
-                                  <td className="py-1.5 px-2 text-center">{site.isActive ? '✓' : '-'}</td>
                                   {isAdmin && (
                                     <td className="py-1.5 pl-2">
                                       <div className="flex justify-end gap-1">
                                         <button onClick={() => navigate(`/admin/sites/edit/${site.id}`)} className="p-1 text-yellow-600 hover:text-yellow-500" title="Edit site / codes"><Edit2 className="h-4 w-4" /></button>
-                                        <button onClick={() => handleRemoveSiteFromClient(site)} className="p-1 text-orange-600 hover:text-orange-500" title="Remove from client"><X className="h-4 w-4" /></button>
-                                        <button onClick={() => handleDeleteSite(site)} className="p-1 text-red-600 hover:text-red-500" title="Delete site"><Trash2 className="h-4 w-4" /></button>
                                       </div>
                                     </td>
                                   )}

@@ -133,6 +133,19 @@ export function EditSitePage() {
     }
   };
 
+  // Immediately persist a partial update to Firestore (auto-save for codes/roles/linked sites).
+  const persistPatch = async (updates: Partial<Omit<Site, 'id' | 'createdAt'>>) => {
+    if (!site) return;
+    try {
+      await siteManagementService.updateSite(site.id, updates);
+      setSite(prev => (prev ? { ...prev, ...updates } : prev));
+      setError(null);
+      setSuccess('Changes saved');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to save changes');
+    }
+  };
+
   const handleAddCode = () => {
     if (!newCode.trim()) return;
     
@@ -141,24 +154,27 @@ export function EditSitePage() {
       return;
     }
     
-    const updatedCodes = [...codes, { 
+    const sorted = [...codes, { 
       name: newCode.trim(), 
       description: newCodeDescription.trim() 
-    }];
-    setCodes(updatedCodes.sort((a, b) => {
+    }].sort((a, b) => {
       const numA = parseFloat(a.name);
       const numB = parseFloat(b.name);
       if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
       return a.name.localeCompare(b.name);
-    }));
+    });
+    setCodes(sorted);
     setNewCode('');
     setNewCodeDescription('');
     setShowAddCode(false);
+    persistPatch({ codes: sorted });
   };
 
   const handleRemoveCode = (codeName: string) => {
     if (!window.confirm(`Remove code "${codeName}"?`)) return;
-    setCodes(codes.filter(c => c.name !== codeName));
+    const updated = codes.filter(c => c.name !== codeName);
+    setCodes(updated);
+    persistPatch({ codes: updated });
   };
 
   const handleAddRole = () => {
@@ -171,14 +187,26 @@ export function EditSitePage() {
       return;
     }
     setError(null);
-    setRoles([...roles, { name, costPerHour: cost }].sort((a, b) => a.name.localeCompare(b.name)));
+    const updated = [...roles, { name, costPerHour: cost }].sort((a, b) => a.name.localeCompare(b.name));
+    setRoles(updated);
     setNewRoleName('');
     setNewRoleCost('');
+    persistPatch({ roles: updated });
   };
 
   const handleRemoveRole = (roleName: string) => {
     if (!window.confirm(`Remove role "${roleName}"?`)) return;
-    setRoles(roles.filter(r => r.name !== roleName));
+    const updated = roles.filter(r => r.name !== roleName);
+    setRoles(updated);
+    persistPatch({ roles: updated });
+  };
+
+  const handleToggleLinkedSite = (name: string, checked: boolean) => {
+    const updated = checked
+      ? [...linkedSites, name]
+      : linkedSites.filter(n => n !== name);
+    setLinkedSites(updated);
+    persistPatch({ linkedSites: updated });
   };
 
   const handleImportCodes = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,13 +225,14 @@ export function EditSitePage() {
       if (newCodes.length === 0) {
         setError('No new codes to import (all codes already exist)');
       } else {
-        const updatedCodes = [...codes, ...newCodes];
-        setCodes(updatedCodes.sort((a, b) => {
+        const sorted = [...codes, ...newCodes].sort((a, b) => {
           const numA = parseFloat(a.name);
           const numB = parseFloat(b.name);
           if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
           return a.name.localeCompare(b.name);
-        }));
+        });
+        setCodes(sorted);
+        await persistPatch({ codes: sorted });
         setSuccess(`Imported ${newCodes.length} code${newCodes.length !== 1 ? 's' : ''}`);
       }
     } catch (err: any) {
@@ -474,7 +503,7 @@ export function EditSitePage() {
                             {name}
                             <button
                               type="button"
-                              onClick={() => setLinkedSites(prev => prev.filter(n => n !== name))}
+                              onClick={() => handleToggleLinkedSite(name, false)}
                               className="hover:text-red-700 dark:hover:text-red-300"
                             >
                               <X className="h-3 w-3" />
@@ -521,13 +550,7 @@ export function EditSitePage() {
                                       <input
                                         type="checkbox"
                                         checked={checked}
-                                        onChange={e => {
-                                          if (e.target.checked) {
-                                            setLinkedSites(prev => [...prev, s.name]);
-                                          } else {
-                                            setLinkedSites(prev => prev.filter(n => n !== s.name));
-                                          }
-                                        }}
+                                        onChange={e => handleToggleLinkedSite(s.name, e.target.checked)}
                                         className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
                                       />
                                       <div>

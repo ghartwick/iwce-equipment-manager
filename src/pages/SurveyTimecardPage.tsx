@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus, Edit2, Trash2, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Edit2, Trash2, Check, FileText } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSurveyTimecard } from '../hooks/useSurveyTimecard';
 import { UserManagementService, AppUser } from '../services/userManagementService';
 import { TimecardModeToggle } from '../components/TimecardModeToggle';
+import { SurveyInvoiceModal } from '../components/SurveyInvoiceModal';
 import {
   format,
   startOfMonth,
@@ -23,6 +24,7 @@ export default function SurveyTimecardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const {
+    entries,
     loading,
     getEntriesForDate,
     deleteEntry,
@@ -37,7 +39,8 @@ export default function SurveyTimecardPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [clientFilter, setClientFilter] = useState('');
-  const [surveyorFilter, setSurveyorFilter] = useState('');
+  const [siteFilter, setSiteFilter] = useState('');
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'supervisor';
 
@@ -59,6 +62,12 @@ export default function SurveyTimecardPage() {
     [users]
   );
 
+  // All entries the current user can see, across every date (for invoicing).
+  const invoiceVisibleEntries = useMemo(
+    () => (user ? entries.filter(e => canSeeEntry(e, user, supervisorUserIds)) : []),
+    [entries, user, supervisorUserIds]
+  );
+
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -71,7 +80,7 @@ export default function SurveyTimecardPage() {
     return getEntriesForDate(date)
       .filter(e => canSeeEntry(e, user, supervisorUserIds))
       .filter(e => !clientFilter || e.clientName === clientFilter)
-      .filter(e => !surveyorFilter || e.userId === surveyorFilter);
+      .filter(e => !siteFilter || e.site === siteFilter);
   };
 
   const selectedEntries = selectedDate ? visibleEntriesForDate(selectedDate) : [];
@@ -84,19 +93,20 @@ export default function SurveyTimecardPage() {
       .map(e => e.clientName)
       .filter(Boolean);
     return [...new Set(names)].sort();
-  }, [selectedDate, user, supervisorUserIds, clientFilter, surveyorFilter]);
+  }, [selectedDate, user, supervisorUserIds, clientFilter, siteFilter]);
 
-  const surveyorOptions = useMemo(() => {
-    if (!selectedDate || !user) return [] as AppUser[];
-    const ids = [...new Set(getEntriesForDate(selectedDate)
+  const siteOptions = useMemo(() => {
+    if (!selectedDate || !user) return [] as string[];
+    const names = getEntriesForDate(selectedDate)
       .filter(e => canSeeEntry(e, user, supervisorUserIds))
-      .map(e => e.userId))];
-    return ids.map(id => users.find(u => u.id === id)).filter(Boolean) as AppUser[];
-  }, [selectedDate, user, users, supervisorUserIds]);
+      .map(e => e.site)
+      .filter(Boolean);
+    return [...new Set(names)].sort();
+  }, [selectedDate, user, supervisorUserIds]);
 
   const handleDateClick = (day: Date) => {
     setClientFilter('');
-    setSurveyorFilter('');
+    setSiteFilter('');
     setSelectedDate(prev => (prev && isSameDay(prev, day) ? null : day));
   };
 
@@ -214,19 +224,30 @@ export default function SurveyTimecardPage() {
             <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
               {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a date'}
             </h3>
-            <button
-              onClick={handleAdd}
-              disabled={!selectedDateParam}
-              className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap disabled:opacity-50 flex items-center gap-1"
-              title={selectedDateParam ? 'Add Survey Time Card' : 'Select a date to add a survey time card'}
-            >
-              <Plus className="h-4 w-4" /> Add Survey Time Card
-            </button>
+            <div className="flex items-center gap-2">
+              {isAdminOrSupervisor && (
+                <button
+                  onClick={() => setShowInvoiceModal(true)}
+                  className="px-3 py-1.5 text-sm bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 font-medium transition-colors whitespace-nowrap flex items-center gap-1"
+                  title="Create or view invoices"
+                >
+                  <FileText className="h-4 w-4" /> Invoice
+                </button>
+              )}
+              <button
+                onClick={handleAdd}
+                disabled={!selectedDateParam}
+                className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap disabled:opacity-50 flex items-center gap-1"
+                title={selectedDateParam ? 'Add Survey Time Card' : 'Select a date to add a survey time card'}
+              >
+                <Plus className="h-4 w-4" /> Add Survey Time Card
+              </button>
+            </div>
           </div>
 
           <div className="p-4 sm:p-6">
             {/* Filters */}
-            {isAdminOrSupervisor && selectedDate && (clientOptions.length > 0 || surveyorOptions.length > 0) && (
+            {isAdminOrSupervisor && selectedDate && (clientOptions.length > 0 || siteOptions.length > 0) && (
               <div className="flex flex-col sm:flex-row gap-2 mb-4">
                 <select
                   value={clientFilter}
@@ -239,13 +260,13 @@ export default function SurveyTimecardPage() {
                   ))}
                 </select>
                 <select
-                  value={surveyorFilter}
-                  onChange={(e) => setSurveyorFilter(e.target.value)}
+                  value={siteFilter}
+                  onChange={(e) => setSiteFilter(e.target.value)}
                   className="flex-1 px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 >
-                  <option value="">All surveyors</option>
-                  {surveyorOptions.map(u => (
-                    <option key={u.id} value={u.id}>{u.name || u.username}</option>
+                  <option value="">All sites</option>
+                  {siteOptions.map(name => (
+                    <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
               </div>
@@ -323,6 +344,19 @@ export default function SurveyTimecardPage() {
           </div>
         </div>
       </div>
+
+      {user && (
+        <SurveyInvoiceModal
+          open={showInvoiceModal}
+          onClose={() => setShowInvoiceModal(false)}
+          visibleEntries={invoiceVisibleEntries}
+          user={{ id: user.id, username: user.username, name: user.name || user.username }}
+          clientFilter={clientFilter}
+          siteFilter={siteFilter}
+          entryTotalCost={entryTotalCost}
+          onInvoiced={refresh}
+        />
+      )}
     </div>
   );
 }

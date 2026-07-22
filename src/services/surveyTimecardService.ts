@@ -38,6 +38,9 @@ export interface SurveyTimeEntry {
   lastEditedBy?: string;
   lastEditedAt?: Date;
   isLocked: boolean;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  invoicedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -97,6 +100,9 @@ class SurveyTimecardService {
       lastEditedBy: data.lastEditedBy,
       lastEditedAt: data.lastEditedAt?.toDate ? data.lastEditedAt.toDate() : undefined,
       isLocked: data.isLocked ?? false,
+      invoiceId: data.invoiceId || undefined,
+      invoiceNumber: data.invoiceNumber || undefined,
+      invoicedAt: data.invoicedAt?.toDate ? data.invoicedAt.toDate() : (data.invoicedAt ? new Date(data.invoicedAt) : undefined),
       createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
       updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt),
     };
@@ -136,6 +142,10 @@ class SurveyTimecardService {
     if (updates.submittedAt) {
       const submittedAt = (updates.submittedAt as any).toDate ? (updates.submittedAt as any).toDate() : updates.submittedAt;
       updateData.submittedAt = Timestamp.fromDate(submittedAt as Date);
+    }
+    if (updates.invoicedAt) {
+      const invoicedAt = (updates.invoicedAt as any).toDate ? (updates.invoicedAt as any).toDate() : updates.invoicedAt;
+      updateData.invoicedAt = Timestamp.fromDate(invoicedAt as Date);
     }
     await updateDoc(docRef, updateData);
   }
@@ -202,6 +212,36 @@ class SurveyTimecardService {
       }
     }
     return null;
+  }
+
+  // Stamp a set of entries as invoiced (called when an invoice is generated).
+  async markEntriesInvoiced(entryIds: string[], invoiceId: string, invoiceNumber: string): Promise<void> {
+    const invoicedAt = Timestamp.fromDate(new Date());
+    await Promise.all(
+      entryIds.map(id =>
+        updateDoc(doc(db, this.collection, id), {
+          invoiceId,
+          invoiceNumber,
+          invoicedAt,
+          updatedAt: Timestamp.fromDate(new Date()),
+        })
+      )
+    );
+  }
+
+  // Clear invoice stamps so the entries return to the uninvoiced pool
+  // (used when an invoice is deleted).
+  async unmarkEntriesInvoiced(entryIds: string[]): Promise<void> {
+    await Promise.all(
+      entryIds.map(id =>
+        updateDoc(doc(db, this.collection, id), {
+          invoiceId: null,
+          invoiceNumber: null,
+          invoicedAt: null,
+          updatedAt: Timestamp.fromDate(new Date()),
+        })
+      )
+    );
   }
 
   async submitEntry(id: string, userId?: string): Promise<void> {

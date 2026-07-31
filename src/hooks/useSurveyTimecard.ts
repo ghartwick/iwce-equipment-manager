@@ -43,6 +43,16 @@ export const useSurveyTimecard = () => {
     }
   };
 
+  const updateEntry = async (id: string, updates: Partial<SurveyTimeEntry>, editedBy?: string) => {
+    try {
+      await surveyTimecardService.updateEntry(id, updates, editedBy);
+      setEntries(prev => prev.map(e => (e.id === id ? { ...e, ...updates, updatedAt: new Date() } as SurveyTimeEntry : e)));
+    } catch (err) {
+      setError('Failed to update survey time entry');
+      throw err;
+    }
+  };
+
   const submitEntry = async (id: string, userId?: string) => {
     try {
       await surveyTimecardService.submitEntry(id, userId);
@@ -74,6 +84,7 @@ export const useSurveyTimecard = () => {
     error,
     refresh: fetchEntries,
     deleteEntry,
+    updateEntry,
     submitEntry,
     getEntriesForDate,
     canEditEntry: surveyTimecardService.canEditEntry,

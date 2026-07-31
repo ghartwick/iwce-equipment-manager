@@ -688,6 +688,11 @@ export default function TimecardPage() {
     }
   };
 
+  const getEntryTotalHours = (entry: any): number => {
+    const worked = calcHours(entry.clockIn, entry.clockOut) ?? entry.hours ?? 0;
+    return worked + (entry.travelHours ?? 0);
+  };
+
   const toggleEntryExpanded = (entryId: string) => {
     setExpandedEntries(prev => {
       const newSet = new Set(prev);
@@ -1597,6 +1602,11 @@ export default function TimecardPage() {
                         const groupKey = format(date, 'yyyy-MM-dd');
                         const groupEntries = entries;
 
+                        const userDayTotals = groupEntries.reduce<Record<string, number>>((totals, entry) => {
+                          totals[entry.userId] = (totals[entry.userId] || 0) + getEntryTotalHours(entry);
+                          return totals;
+                        }, {});
+
                         // Separate entries into your cards and other cards
                         const yourEntries = groupEntries
                           .filter(entry => entry.userId === user?.id)
@@ -1704,6 +1714,9 @@ export default function TimecardPage() {
                                                 <div className="flex justify-between items-start">
                                                   <span className="text-gray-900 dark:text-yellow-100 font-medium">
                                                     {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                                    <span className="ml-2 text-sm font-normal text-yellow-700 dark:text-yellow-500">
+                                                      {userDayTotals[entry.userId]?.toFixed(2) ?? '0.00'} hrs
+                                                    </span>
                                                   </span>
                                                   <div className="flex items-center gap-2">
                                                     <button
@@ -1832,8 +1845,11 @@ export default function TimecardPage() {
                                     {siteGroups.map(({ site, entries }) => (
                                       <div key={site ?? 'ungrouped'}>
                                         {site && (
-                                          <h5 className="text-yellow-700 dark:text-yellow-400 font-semibold text-sm mb-2 mt-1 border-b border-yellow-200 dark:border-yellow-800 pb-1">
-                                            {site}
+                                          <h5 className="text-yellow-700 dark:text-yellow-400 font-semibold text-sm mb-2 mt-1 border-b border-yellow-200 dark:border-yellow-800 pb-1 flex justify-between">
+                                            <span>{site}</span>
+                                            <span>
+                                              {entries.reduce((sum, entry) => sum + getEntryTotalHours(entry), 0).toFixed(2)} hrs
+                                            </span>
                                           </h5>
                                         )}
                                         <div className="space-y-3">
@@ -1857,6 +1873,9 @@ export default function TimecardPage() {
                                               <div className="flex justify-between items-start">
                                                 <span className="text-gray-900 dark:text-yellow-100 font-medium">
                                                   {getBestDisplayName(users.find(u => u.id === entry.userId))}
+                                                  <span className="ml-2 text-sm font-normal text-yellow-700 dark:text-yellow-500">
+                                                    {userDayTotals[entry.userId]?.toFixed(2) ?? '0.00'} hrs
+                                                  </span>
                                                 </span>
                                                 <div className="flex items-center gap-2">
                                                   <button

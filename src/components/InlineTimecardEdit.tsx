@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import { Save, X, Plus } from 'lucide-react';
 import { TimeEntry, WorkEntryData, EquipmentEntry } from '../services/timecardService';
-import { siteManagementService, Site } from '../services/siteManagementService';
+import { siteManagementService, Site, normalizeSiteName } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
 import { smallToolsManagementService } from '../services/smallToolsManagementService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
@@ -131,17 +131,21 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
     if (!canEdit || optionsLoaded) return;
     const loadOptions = async () => {
       try {
+        const isCrossClientUser = user.role === 'admin' || !!(user as any).isSurveyor;
         const [sitesResult, crewSitesResult, codesResult, equipResult, toolsResult] = await Promise.all([
           siteManagementService.getAllSites(),
-          siteManagementService.getFieldCrewSites(),
+          isCrossClientUser
+            ? siteManagementService.getActiveSites()
+            : siteManagementService.getFieldCrewSites(),
           codeManagementService.getActiveCodes(),
           equipmentManagementService.getAllEquipment(),
           smallToolsManagementService.getAllSmallTools(),
         ]);
         const activeSites = sitesResult.filter((s: Site) => s.isActive);
-        // Field crews work a single client: the site selector is limited to the
-        // default field-crew client's sites, while full site data is retained
-        // for code/equipment filtering.
+        // Field/supervisor crews work a single client: the site selector is
+        // limited to the default field-crew client's sites, while full site
+        // data is retained for code/equipment filtering. Admins and surveyors
+        // work across clients so they see every active site.
         setSites(crewSitesResult);
         setSitesData(activeSites);
         setAllCodes(codesResult.map((c: any) => c.name));
@@ -162,7 +166,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
   // Filter codes by selected site (same logic as TimeEntryForm)
   const filteredCodes = useMemo(() => {
     if (job) {
-      const selectedSite = sitesData.find(s => s.name === job);
+      const selectedSite = sitesData.find(s => normalizeSiteName(s.name) === normalizeSiteName(job));
       if (selectedSite && (selectedSite as any).codes && (selectedSite as any).codes.length > 0) {
         return (selectedSite as any).codes as { name: string; description?: string }[];
       }
@@ -173,7 +177,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
   // Filter equipment by selected site + linked (co-located) sites (both directions)
   const filteredEquipment = useMemo(() => {
     if (!job) return [];
-    const selectedSite = sitesData.find(s => s.name === job);
+    const selectedSite = sitesData.find(s => normalizeSiteName(s.name) === normalizeSiteName(job));
     const forwardLinks = selectedSite?.linkedSites ?? [];
     const reverseLinks = sitesData.filter(s => s.linkedSites?.includes(job)).map(s => s.name);
     const sitesToInclude = [...new Set([job, ...forwardLinks, ...reverseLinks])];

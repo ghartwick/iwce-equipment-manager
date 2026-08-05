@@ -59,6 +59,7 @@ export interface User {
   role: 'admin' | 'supervisor' | 'field';
   name: string;
   theme?: 'light' | 'dark';
+  isSurveyor?: boolean;
 }
 
 class TimecardService {

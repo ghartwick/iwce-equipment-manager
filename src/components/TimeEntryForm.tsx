@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { TimeEntry, User } from '../services/timecardService';
-import { Site, siteManagementService } from '../services/siteManagementService';
+import { Site, siteManagementService, normalizeSiteName } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
 import { smallToolsManagementService } from '../services/smallToolsManagementService';
 import { equipmentManagementService } from '../services/equipmentManagementService';
@@ -603,10 +603,14 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       try {
         const sites = await siteManagementService.getActiveSites();
         setSitesData(sites);
-        // Field crews work a single client: limit the site selector to the
-        // default field-crew client's sites (falls back to all when unset).
-        const crewSites = await siteManagementService.getFieldCrewSites();
-        setJobOptions(crewSites.map(site => ({ id: site.id, name: site.name, description: site.description })));
+        // Field/supervisor crews work a single client: limit the site selector
+        // to the default field-crew client's sites. Admins and surveyors work
+        // across clients so they see every active site.
+        const isCrossClientUser = user.role === 'admin' || !!user.isSurveyor;
+        const jobSites = isCrossClientUser
+          ? sites
+          : await siteManagementService.getFieldCrewSites();
+        setJobOptions(jobSites.map(site => ({ id: site.id, name: site.name, description: site.description })));
         
         const codes = await codeManagementService.getActiveCodes();
         setCodeOptionsState(codes.map(code => code.name));
@@ -630,7 +634,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   // Use state-based code options, filtered by selected site
   const codeOptionsWithDetails = useMemo(() => {
     if (job) {
-      const selectedSite = sitesData.find(s => s.name === job);
+      const selectedSite = sitesData.find(s => normalizeSiteName(s.name) === normalizeSiteName(job));
       if (selectedSite && selectedSite.codes && selectedSite.codes.length > 0) {
         return selectedSite.codes;
       }
@@ -645,7 +649,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   // Use state-based equipment options, filtered by selected site + any linked (co-located) sites
   const equipmentOptions = useMemo(() => {
     if (!job) return [];
-    const selectedSite = sitesData.find(s => s.name === job);
+    const selectedSite = sitesData.find(s => normalizeSiteName(s.name) === normalizeSiteName(job));
     const forwardLinks = selectedSite?.linkedSites ?? [];
     const reverseLinks = sitesData.filter(s => s.linkedSites?.includes(job)).map(s => s.name);
     const sitesToInclude = [...new Set([job, ...forwardLinks, ...reverseLinks])];
@@ -782,18 +786,22 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     }
   }, [clockIn, clockOut]);
 
-  // Handle custom site initialization when editing existing entries
+  // Handle custom site initialization when editing existing entries.
+  // Validate against the full site list (sitesData), not the client-restricted
+  // jobOptions quick-pick list — a site can be a real, valid site without
+  // belonging to the default field-crew client's restricted dropdown.
   useEffect(() => {
-    if (entry && entry.job && jobOptions.length > 0) {
-      if (!jobOptions.some(o => o.name === entry.job)) {
+    const entryJob = entry?.job;
+    if (entryJob && sitesData.length > 0) {
+      if (!sitesData.some(s => normalizeSiteName(s.name) === normalizeSiteName(entryJob))) {
         setJob('Other');
-        setCustomSite(entry.job);
+        setCustomSite(entryJob);
       } else {
-        setJob(entry.job);
+        setJob(entryJob);
         setCustomSite('');
       }
     }
-  }, [entry, jobOptions]);
+  }, [entry, sitesData]);
 
   const assignTruckToEmployee = async () => {
     if (!truckNumber) return;

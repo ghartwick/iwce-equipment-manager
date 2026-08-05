@@ -6,6 +6,13 @@ export interface SiteCode {
   description?: string;
 }
 
+// Normalizes a site name for comparison purposes (trims whitespace, lowercases).
+// Used when matching a timecard entry's stored job/site string against the current
+// list of sites, so minor whitespace or casing differences don't break the match.
+export function normalizeSiteName(name: string): string {
+  return (name || '').trim().toLowerCase();
+}
+
 export interface SiteRole {
   name: string;
   costPerHour: number;

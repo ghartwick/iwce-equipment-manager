@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp, getDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { equipmentHistoryFirebaseService } from './equipmentHistoryFirebaseService';
 import { alertsFirebaseService } from './alertsFirebaseService';
@@ -104,6 +104,24 @@ export class EquipmentManagementService {
       return docRef.id;
     } catch (error) {
       console.error('Error adding equipment:', error);
+      throw new Error('Failed to add equipment');
+    }
+  }
+
+  // Creates the equipment doc with a specific (pre-existing) ID rather than an
+  // auto-generated one. Used when moving equipment between collections (e.g.
+  // into/out of Fleet) so the equipmentId stays the same and existing
+  // maintenance/shop history records don't get orphaned.
+  async addEquipmentWithId(id: string, data: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
+    try {
+      const equipmentDoc = doc(db, this.COLLECTION_NAME, id);
+      await setDoc(equipmentDoc, {
+        ...data,
+        createdAt: Timestamp.fromDate(new Date()),
+        updatedAt: Timestamp.fromDate(new Date())
+      });
+    } catch (error) {
+      console.error('Error adding equipment with id:', error);
       throw new Error('Failed to add equipment');
     }
   }

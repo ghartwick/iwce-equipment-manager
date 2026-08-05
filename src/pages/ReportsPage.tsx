@@ -67,10 +67,8 @@ export default function ReportsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showRepairList, setShowRepairList] = useState(false);
-  const [repairListItems, setRepairListItems] = useState<Array<{
-    id: string; reportId: string; equipmentName: string;
-    field: string; type: 'repair' | 'note'; createdBy: string; createdAt: string;
-  }>>([]);
+  type RepairListItem = { id: string; itemIds: string[]; equipmentName: string; field: string; type: 'repair' | 'note'; createdBy: string; createdAt: string; };
+  const [repairListItems, setRepairListItems] = useState<RepairListItem[]>([]);
   const [checkedRepairItems, setCheckedRepairItems] = useState<Record<string, RepairListCheckedItem>>({});
   const [repairListLoading, setRepairListLoading] = useState(false);
 
@@ -118,18 +116,36 @@ export default function ReportsPage() {
       const checkedMap: Record<string, RepairListCheckedItem> = {};
       checked.forEach(c => { checkedMap[c.itemId] = c; });
       setCheckedRepairItems(checkedMap);
-      const items: Array<{ id: string; reportId: string; equipmentName: string; field: string; type: 'repair' | 'note'; createdBy: string; createdAt: string; }> = [];
+
+      // Group repeated "Repair" flags for the same equipment+field into a single entry.
+      // allMaintenance is ordered newest-first, so overwriting on each match leaves the
+      // oldest (original) occurrence's date/reporter as the displayed info, while every
+      // underlying itemId is tracked so resolving the entry clears all of them at once.
+      const repairGroups = new Map<string, RepairListItem>();
+      const noteItems: RepairListItem[] = [];
       allMaintenance.forEach(report => {
         const m = report.maintenance;
         repairFields.forEach(f => {
           if ((m as any)[f.key] === 'Repair') {
-            items.push({ id: `${report.id}_${f.key}`, reportId: report.id!, equipmentName: report.equipmentName, field: f.label, type: 'repair', createdBy: report.createdBy, createdAt: report.createdAt });
+            const itemId = `${report.id}_${f.key}`;
+            const groupKey = `${report.equipmentId}__${f.key}`;
+            const existing = repairGroups.get(groupKey);
+            if (!existing) {
+              repairGroups.set(groupKey, { id: itemId, itemIds: [itemId], equipmentName: report.equipmentName, field: f.label, type: 'repair', createdBy: report.createdBy, createdAt: report.createdAt });
+            } else {
+              existing.itemIds.push(itemId);
+              existing.id = itemId;
+              existing.createdBy = report.createdBy;
+              existing.createdAt = report.createdAt;
+            }
           }
         });
         if (m.notes?.trim()) {
-          items.push({ id: `${report.id}_note`, reportId: report.id!, equipmentName: report.equipmentName, field: m.notes.trim(), type: 'note', createdBy: report.createdBy, createdAt: report.createdAt });
+          const itemId = `${report.id}_note`;
+          noteItems.push({ id: itemId, itemIds: [itemId], equipmentName: report.equipmentName, field: m.notes.trim(), type: 'note', createdBy: report.createdBy, createdAt: report.createdAt });
         }
       });
+      const items = [...repairGroups.values(), ...noteItems];
       items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setRepairListItems(items);
     } catch (err) {
@@ -139,14 +155,25 @@ export default function ReportsPage() {
     }
   };
 
-  const handleToggleRepairItem = async (itemId: string) => {
+  const handleToggleRepairItem = async (itemIds: string[]) => {
     if (!user) return;
-    if (checkedRepairItems[itemId]) {
-      await repairListService.uncheckItem(itemId);
-      setCheckedRepairItems(prev => { const next = { ...prev }; delete next[itemId]; return next; });
+    const allChecked = itemIds.every(id => checkedRepairItems[id]);
+    if (allChecked) {
+      await Promise.all(itemIds.map(id => repairListService.uncheckItem(id)));
+      setCheckedRepairItems(prev => {
+        const next = { ...prev };
+        itemIds.forEach(id => delete next[id]);
+        return next;
+      });
     } else {
-      await repairListService.checkItem(itemId, user.username);
-      setCheckedRepairItems(prev => ({ ...prev, [itemId]: { itemId, checkedBy: user.username, checkedAt: new Date().toISOString() } }));
+      await Promise.all(itemIds.map(id => repairListService.checkItem(id, user.username)));
+      setCheckedRepairItems(prev => {
+        const next = { ...prev };
+        itemIds.forEach(id => {
+          next[id] = { itemId: id, checkedBy: user.username, checkedAt: new Date().toISOString() };
+        });
+        return next;
+      });
     }
   };
 
@@ -544,14 +571,15 @@ export default function ReportsPage() {
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
         maintCounts[reportDate] = (maintCounts[reportDate] || 0) + 1;
 
-        // Check if unit has notes, repairs, or a triggered service notification
+        // Check if unit has notes or repairs (matches the indicator shown on report cards below;
+        // serviceNotificationTriggered is intentionally excluded since it has no corresponding
+        // visual marker in the report list and would otherwise inflate this count).
         const hasNotes = report.maintenance.notes && report.maintenance.notes.trim().length > 0;
         const hasRepairs = Object.values(report.maintenance).some(
           val => val === 'Repair'
         );
-        const hasServiceNotification = !!report.maintenance.serviceNotificationTriggered;
 
-        if (hasNotes || hasRepairs || hasServiceNotification) {
+        if (hasNotes || hasRepairs) {
           if (!unitsWithNotesOrRepairs[reportDate]) {
             unitsWithNotesOrRepairs[reportDate] = new Set();
           }
@@ -1159,9 +1187,10 @@ export default function ReportsPage() {
               ) : repairListItems.length === 0 ? (
                 <p className="text-xs text-yellow-600 dark:text-yellow-400">No repair items or notes found.</p>
               ) : (() => {
-                const unchecked = repairListItems.filter(item => !checkedRepairItems[item.id]);
-                const checked = repairListItems.filter(item => !!checkedRepairItems[item.id]);
-                const renderItem = (item: typeof repairListItems[0], isChecked: boolean) => (
+                const isItemChecked = (item: RepairListItem) => item.itemIds.every(id => checkedRepairItems[id]);
+                const unchecked = repairListItems.filter(item => !isItemChecked(item));
+                const checked = repairListItems.filter(item => isItemChecked(item));
+                const renderItem = (item: RepairListItem, isChecked: boolean) => (
                   <div
                     key={item.id}
                     className={`flex items-start gap-3 px-3 py-2 rounded-lg border ${
@@ -1174,7 +1203,7 @@ export default function ReportsPage() {
                   >
                     <button
                       type="button"
-                      onClick={() => handleToggleRepairItem(item.id)}
+                      onClick={() => handleToggleRepairItem(item.itemIds)}
                       className="mt-0.5 flex-shrink-0 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500"
                     >
                       {isChecked ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
@@ -1189,6 +1218,11 @@ export default function ReportsPage() {
                         }`}>
                           {item.type === 'repair' ? 'Repair' : 'Note'}
                         </span>
+                        {item.itemIds.length > 1 && (
+                          <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                            flagged {item.itemIds.length}×
+                          </span>
+                        )}
                       </div>
                       <div className={`text-xs mt-0.5 ${isChecked ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-700 dark:text-gray-300'}`}>
                         {item.field}

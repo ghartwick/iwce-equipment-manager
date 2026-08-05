@@ -82,9 +82,11 @@ export default function EquipmentPage() {
       try {
         const history = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(equipmentId);
         
-        if (history.length > 0) {
-          const latestReport = history[0];
-          setCurrentHours(latestReport.maintenance.hours || 0);
+        // Use the most recent report that actually recorded an hours/km value —
+        // a later report (e.g. a repair-only or note-only entry) may have left it blank.
+        const latestWithHours = history.find(r => r.maintenance?.hours != null);
+        if (latestWithHours) {
+          setCurrentHours(latestWithHours.maintenance.hours || 0);
         }
         
         // Load category to determine notification type

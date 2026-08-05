@@ -218,20 +218,20 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
           targetEquipmentType = 'heavy';
         }
 
-        // Check if we need to move between collections
-        const needsMove = (isFleet && newManagementGroup !== 'fleet') ||
-                         (!isFleet && newManagementGroup === 'fleet') ||
-                         (!isFleet && currentEquipmentType !== targetEquipmentType);
+        // Check if we need to move between collections (heavyEquipment <-> fleetEquipment)
+        const collectionChanged = (isFleet && newManagementGroup !== 'fleet') ||
+                         (!isFleet && newManagementGroup === 'fleet');
 
-        if (needsMove) {
-          // Moving between collections or changing equipmentType within equipment collection
+        if (collectionChanged) {
+          // Moving between collections: preserve the same document ID so existing
+          // maintenance/shop history (keyed by equipmentId) doesn't get orphaned.
+          await targetService.addEquipmentWithId(editingItem.id, { ...formData, equipmentType: targetEquipmentType, createdBy: currentUser?.username });
           await svc.deleteEquipment(editingItem.id);
-          const newId = await targetService.addEquipment({ ...formData, equipmentType: targetEquipmentType, createdBy: currentUser?.username });
 
           // Log the move to history
           if (currentUser) {
             await equipmentHistoryFirebaseService.addHistory({
-              equipmentId: newId,
+              equipmentId: editingItem.id,
               equipmentName: formData.name,
               action: 'updated',
               timestamp: new Date(),
@@ -245,7 +245,8 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
 
           setSuccess('Equipment moved successfully');
         } else {
-          // Same collection - just update
+          // Same collection - just update (also covers switching between heavy/field
+          // type tags within the equipment collection, without changing the ID)
           const equipmentType = newManagementGroup === 'heavy' ? 'heavy' as const : 'field' as const;
           await svc.updateEquipment(editingItem.id, { ...formData, equipmentType });
           setSuccess('Equipment updated successfully');

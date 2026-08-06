@@ -130,6 +130,13 @@ export const ServiceIntervalBar: React.FC<ServiceIntervalBarProps> = ({
   const lastServiceValue = nextServiceAt - serviceInterval;
   const hoursUsed = currentHours - lastServiceValue;
   const percentageUsed = Math.max(0, (hoursUsed / serviceInterval) * 100);
+  // Notification threshold sits at (serviceNotification / serviceInterval) of the
+  // bar, measured from the previous service point. Only render when a valid
+  // notification value is configured on the equipment.
+  const notifPct = serviceNotification > 0 && serviceNotification < serviceInterval
+    ? (serviceNotification / serviceInterval) * 100
+    : null;
+  const notifHour = notifPct != null ? lastServiceValue + serviceNotification : null;
 
   return (
     <div className="bg-white dark:bg-black rounded-lg px-4 pt-3 pb-2 mb-4">
@@ -146,10 +153,25 @@ export const ServiceIntervalBar: React.FC<ServiceIntervalBarProps> = ({
             className="absolute top-0 bottom-0 right-0 bg-gray-200 dark:bg-gray-700 transition-all duration-500"
             style={{ left: `${Math.min(percentageUsed, 100)}%` }}
           />
+          {/* Notification threshold marker — orange */}
+          {notifPct != null && (
+            <div
+              className="absolute top-0 bottom-0 w-0.5 bg-orange-500 opacity-80"
+              style={{ left: `${notifPct}%` }}
+            />
+          )}
         </div>
 
         <div className="relative" style={{ height: '32px' }}>
           <span className="absolute left-0 text-xs text-gray-500 dark:text-gray-400 top-4">{lastServiceValue.toLocaleString()}</span>
+          {notifHour != null && notifPct != null && (
+            <span
+              className="absolute -translate-x-1/2 text-xs text-orange-500 dark:text-orange-400 top-4"
+              style={{ left: `${notifPct}%` }}
+            >
+              {notifHour.toLocaleString()}
+            </span>
+          )}
           <span className="absolute right-0 text-xs text-gray-500 dark:text-gray-400 top-4">{nextServiceAt.toLocaleString()}</span>
         </div>
       </div>

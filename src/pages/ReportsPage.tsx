@@ -193,10 +193,25 @@ export default function ReportsPage() {
         if (!hoursMap[r.equipmentId] && r.maintenance?.hours) hoursMap[r.equipmentId] = r.maintenance.hours;
       });
 
-      // Fleet: use lastServiceHours for nextServiceAt
+      // Fleet: derive nextServiceAt from the LATEST shop report per equipment.
+      // Prefer the persisted nextServiceAt field, then servicedAt + interval, and
+      // fall back to legacy lastServiceHours for older records. The shop form only
+      // writes servicedAt (and ShopPage derives nextServiceAt), so filtering by
+      // lastServiceHours alone would ignore every recent report.
       const nextServiceMap: Record<string, number> = {};
-      allShop.forEach(r => {
-        if (!nextServiceMap[r.equipmentId] && r.lastServiceHours) nextServiceMap[r.equipmentId] = r.lastServiceHours;
+      fleet.forEach(eq => {
+        const eqReports = allShop
+          .filter(r => r.equipmentId === eq.id)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (eqReports.length === 0) return;
+        const latest = eqReports[0];
+        if (latest.nextServiceAt != null) {
+          nextServiceMap[eq.id] = latest.nextServiceAt;
+        } else if (latest.servicedAt != null && eq.serviceInterval) {
+          nextServiceMap[eq.id] = latest.servicedAt + eq.serviceInterval;
+        } else if (latest.lastServiceHours != null) {
+          nextServiceMap[eq.id] = latest.lastServiceHours;
+        }
       });
 
       // Heavy equipment: compute cycle start and completed minor count
@@ -1270,7 +1285,11 @@ export default function ReportsPage() {
                       <div className="space-y-3">
                         {heavyEquipmentList.map(eq => (
                           <div key={eq.id} className="flex items-center space-x-2">
-                            <div className="text-sm font-medium text-gray-800 dark:text-yellow-100 self-center">{eq.name}</div>
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/inventory/equipment/${eq.id}`)}
+                              className="text-sm font-medium text-yellow-700 dark:text-yellow-300 underline hover:text-yellow-500 dark:hover:text-yellow-100 self-center text-left"
+                            >{eq.name}</button>
                             <div className="flex-1">
                               <ServiceIntervalBar
                                 currentHours={equipmentServiceData[eq.id]?.currentHours || 0}
@@ -1293,7 +1312,11 @@ export default function ReportsPage() {
                       <div className="space-y-3">
                         {fleetEquipmentList.map(eq => (
                           <div key={eq.id} className="flex items-center space-x-2">
-                            <div className="text-sm font-medium text-gray-800 dark:text-yellow-100 self-center">{eq.name}</div>
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/inventory/equipment/${eq.id}`)}
+                              className="text-sm font-medium text-yellow-700 dark:text-yellow-300 underline hover:text-yellow-500 dark:hover:text-yellow-100 self-center text-left"
+                            >{eq.name}</button>
                             <div className="flex-1">
                               <ServiceIntervalBar
                                 currentHours={equipmentServiceData[eq.id]?.currentHours || 0}

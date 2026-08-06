@@ -1778,18 +1778,16 @@ export default function TimecardPage() {
                                                 </div>
                                                 
                                                 {/* Expanded Details - Inline Editable */}
-                                                {(expandedEntries.has(entry.id || `your-${index}`) || canEditEntry(entry, user!)) && (
+                                                {expandedEntries.has(entry.id || `your-${index}`) && (
                                                   <>
                                                   <div className="hidden sm:block">
-                                                    {expandedEntries.has(entry.id || `your-${index}`) && (
-                                                      <InlineTimecardEdit
-                                                        entry={entry}
-                                                        user={user!}
-                                                        canEdit={canEditEntry(entry, user!)}
-                                                        onSave={handleInlineSave}
-                                                        calcHours={calcHours}
-                                                      />
-                                                    )}
+                                                    <InlineTimecardEdit
+                                                      entry={entry}
+                                                      user={user!}
+                                                      canEdit={canEditEntry(entry, user!)}
+                                                      onSave={handleInlineSave}
+                                                      calcHours={calcHours}
+                                                    />
                                                   </div>
                                                   <div className="block sm:hidden">
                                                     <InlineTimecardEdit
@@ -1937,18 +1935,16 @@ export default function TimecardPage() {
                                               </div>
                                               
                                               {/* Expanded Details - Inline Editable */}
-                                              {(expandedEntries.has(entry.id || `other-${index}`) || canEditEntry(entry, user!)) && (
+                                              {expandedEntries.has(entry.id || `other-${index}`) && (
                                                 <>
                                                 <div className="hidden sm:block">
-                                                  {expandedEntries.has(entry.id || `other-${index}`) && (
-                                                    <InlineTimecardEdit
-                                                      entry={entry}
-                                                      user={user!}
-                                                      canEdit={canEditEntry(entry, user!)}
-                                                      onSave={handleInlineSave}
-                                                      calcHours={calcHours}
-                                                    />
-                                                  )}
+                                                  <InlineTimecardEdit
+                                                    entry={entry}
+                                                    user={user!}
+                                                    canEdit={canEditEntry(entry, user!)}
+                                                    onSave={handleInlineSave}
+                                                    calcHours={calcHours}
+                                                  />
                                                 </div>
                                                 <div className="block sm:hidden">
                                                   <InlineTimecardEdit

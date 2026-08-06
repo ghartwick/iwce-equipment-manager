@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Wrench, MoreVertical, CheckSquare, Square, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, Wrench, MoreVertical, CheckSquare, Square, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { repairListService, RepairListCheckedItem } from '../services/repairListService';
 import { ServiceIntervalBar } from '../components/ServiceIntervalBar';
@@ -814,6 +814,13 @@ export default function ReportsPage() {
                             if (!showServiceView) loadServiceData();
                             setShowServiceView(v => !v);
                             setShowAnalysis(false);
+                            // Clear highlighted day and filters when showing the service view
+                            if (!showServiceView) {
+                              setSelectedDates([]);
+                              setLastSelectedDate(null);
+                              setSiteFilter('');
+                              setUserFilter('');
+                            }
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
                         >
@@ -835,6 +842,13 @@ export default function ReportsPage() {
                             setShowRepairList(v => !v);
                             setShowServiceView(false);
                             setShowAnalysis(false);
+                            // Clear highlighted day and filters when showing the repair list
+                            if (!showRepairList) {
+                              setSelectedDates([]);
+                              setLastSelectedDate(null);
+                              setSiteFilter('');
+                              setUserFilter('');
+                            }
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
                         >
@@ -1195,7 +1209,17 @@ export default function ReportsPage() {
             <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300">Repair List</h3>
-                <button onClick={() => loadRepairList()} className="text-xs text-yellow-600 dark:text-yellow-400 hover:underline">Refresh</button>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => loadRepairList()} className="text-xs text-yellow-600 dark:text-yellow-400 hover:underline">Refresh</button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRepairList(false)}
+                    className="text-yellow-700 dark:text-yellow-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    aria-label="Close repair list"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
               {repairListLoading ? (
                 <div className="text-center py-6"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 dark:border-yellow-400 mx-auto"></div></div>
@@ -1274,6 +1298,17 @@ export default function ReportsPage() {
           {/* Service View Panel */}
           {showServiceView && (
             <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300">Service List</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowServiceView(false)}
+                  className="text-yellow-700 dark:text-yellow-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  aria-label="Close service list"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
               {serviceLoading ? (
                 <p className="text-xs text-yellow-600 dark:text-yellow-400">Loading service data...</p>
               ) : (

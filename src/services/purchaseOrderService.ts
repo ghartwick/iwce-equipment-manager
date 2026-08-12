@@ -25,6 +25,7 @@ export interface PurchaseOrder {
   items: POLineItem[];
   date: Date;
   submittedBy: string;
+  submittedById?: string;
   createdAt: Date;
   attachmentUrl?: string;
   attachmentName?: string;
@@ -37,6 +38,7 @@ export interface PurchaseOrderInput {
   items: Omit<POLineItem, 'id'>[];
   date: Date;
   submittedBy: string;
+  submittedById?: string;
   attachmentFile?: File;
 }
 
@@ -74,6 +76,7 @@ class PurchaseOrderService {
       items: input.items,
       date: Timestamp.fromDate(input.date),
       submittedBy: input.submittedBy,
+      ...(input.submittedById && { submittedById: input.submittedById }),
       createdAt: Timestamp.fromDate(new Date()),
       ...(attachmentUrl && { attachmentUrl, attachmentName, attachmentPath }),
     });
@@ -124,6 +127,7 @@ class PurchaseOrderService {
       items: (data.items ?? []) as POLineItem[],
       date: data.date?.toDate ? data.date.toDate() : new Date(data.date),
       submittedBy: data.submittedBy,
+      submittedById: data.submittedById,
       createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
       attachmentUrl: data.attachmentUrl,
       attachmentName: data.attachmentName,

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { TimeEntry, User } from '../services/timecardService';
+import { Client, clientManagementService } from '../services/clientManagementService';
 import { Site, siteManagementService, normalizeSiteName } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
 import { smallToolsManagementService } from '../services/smallToolsManagementService';
@@ -438,6 +439,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const [hours, setHours] = useState(0);
   const [travelHours, setTravelHours] = useState('');
   const [jobOptions, setJobOptions] = useState<SiteOption[]>([]);
+  const [clientId, setClientId] = useState('');
+  const [clientsData, setClientsData] = useState<Client[]>([]);
   const [codeOptionsState, setCodeOptionsState] = useState<string[]>([]);
   const [sitesData, setSitesData] = useState<Site[]>([]);
   const [smallToolsOptionsState, setSmallToolsOptionsState] = useState<string[]>([]);
@@ -466,6 +469,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const showAlert = (message: string, type: 'error' | 'warning' | 'info' = 'error') => {
     setAlert({ message, type });
   };
+
+  const isCrossClientUser = user.role === 'admin' || !!user.isSurveyor;
 
   // Calculate validation for hours matching (sum of ALL work entries)
   const totalMachineHours = workEntries.reduce((sum, entry) => {
@@ -597,24 +602,23 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     return options;
   };
 
-  // Load sites, codes, and small tools from database
+  // Load sites, codes, small tools, and clients from database
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const sites = await siteManagementService.getActiveSites();
+        const [sites, clients] = await Promise.all([
+          siteManagementService.getActiveSites(),
+          isCrossClientUser
+            ? clientManagementService.getActiveClients()
+            : clientManagementService.getClientsForRole(user.role as 'field' | 'supervisor'),
+        ]);
         setSitesData(sites);
-        // Field/supervisor crews work a single client: limit the site selector
-        // to the default field-crew client's sites. Admins and surveyors work
-        // across clients so they see every active site.
-        const isCrossClientUser = user.role === 'admin' || !!user.isSurveyor;
-        const jobSites = isCrossClientUser
-          ? sites
-          : await siteManagementService.getFieldCrewSites();
-        setJobOptions(jobSites.map(site => ({ id: site.id, name: site.name, description: site.description })));
-        
+        setClientsData(clients);
+        // Site options are derived from the selected client in the effect below.
+
         const codes = await codeManagementService.getActiveCodes();
         setCodeOptionsState(codes.map(code => code.name));
-        
+
         const smallTools = await smallToolsManagementService.getActiveSmallTools();
         setSmallToolsOptionsState(smallTools.map(tool => tool.name));
         
@@ -630,6 +634,21 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     };
     loadOptions();
   }, []);
+
+  // Derive available sites from the selected client (admin/surveyor) or allowed clients (field/supervisor)
+  useEffect(() => {
+    if (!clientsData.length || !sitesData.length) return;
+    if (isCrossClientUser) {
+      if (clientId) {
+        setJobOptions(sitesData.filter(s => s.clientId === clientId).map(site => ({ id: site.id, name: site.name, description: site.description })));
+      } else {
+        setJobOptions([]);
+      }
+    } else {
+      const allowedClientIds = new Set(clientsData.map(c => c.id));
+      setJobOptions(sitesData.filter(s => s.clientId && allowedClientIds.has(s.clientId)).map(site => ({ id: site.id, name: site.name, description: site.description })));
+    }
+  }, [clientId, clientsData, sitesData, isCrossClientUser]);
 
   // Use state-based code options, filtered by selected site
   const codeOptionsWithDetails = useMemo(() => {
@@ -749,6 +768,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       setClockIn('');
       setClockOut('');
       setJob('');
+      setClientId('');
       setHours(0);
       setTravelHours('');
       setTruckNumber('');
@@ -786,19 +806,22 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     }
   }, [clockIn, clockOut]);
 
-  // Handle custom site initialization when editing existing entries.
+  // Set client and site from existing entry when reference data loads.
   // Validate against the full site list (sitesData), not the client-restricted
   // jobOptions quick-pick list — a site can be a real, valid site without
-  // belonging to the default field-crew client's restricted dropdown.
+  // belonging to an allowed client.
   useEffect(() => {
     const entryJob = entry?.job;
     if (entryJob && sitesData.length > 0) {
       if (!sitesData.some(s => normalizeSiteName(s.name) === normalizeSiteName(entryJob))) {
         setJob('Other');
         setCustomSite(entryJob);
+        setClientId('');
       } else {
         setJob(entryJob);
         setCustomSite('');
+        const matchedSite = sitesData.find(s => normalizeSiteName(s.name) === normalizeSiteName(entryJob));
+        setClientId(matchedSite?.clientId || '');
       }
     }
   }, [entry, sitesData]);
@@ -828,6 +851,11 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     }
 
     // Validate site selection
+    if (isCrossClientUser && !clientId) {
+      showAlert('Please select a client');
+      return;
+    }
+
     if (!job) {
       showAlert('Please select a site');
       return;
@@ -950,6 +978,11 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     }
 
     // Validate site selection
+    if (isCrossClientUser && !clientId) {
+      showAlert('Please select a client');
+      return;
+    }
+
     if (!job) {
       showAlert('Please select a site');
       return;
@@ -1125,7 +1158,26 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       </div>
 
       <form onSubmit={handleSubmit} className={`space-y-4 ${isInline ? 'w-full' : ''}`}>
-        {/* Site Dropdown */}
+        {/* Client + Site Dropdowns */}
+        {isCrossClientUser && (
+          <div>
+            <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-1">
+              Client
+            </label>
+            <select
+              value={clientId}
+              onChange={(e) => { setClientId(e.target.value); setJob(''); setCustomSite(''); }}
+              disabled={isLocked}
+              className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-800 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50"
+            >
+              <option value="">Select Client</option>
+              {clientsData.map(client => (
+                <option key={client.id} value={client.id}>{client.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div>
           <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-1">
             Site
@@ -1134,9 +1186,9 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
             value={job}
             onChange={(val) => { setJob(val); if (val !== 'Other') setCustomSite(''); }}
             sites={jobOptions}
-            disabled={false}
+            disabled={!clientId && isCrossClientUser}
             isLocked={isLocked}
-            placeholder="Select Site"
+            placeholder={isCrossClientUser ? 'Select a client first' : 'Select Site'}
             includeOther
           />
           

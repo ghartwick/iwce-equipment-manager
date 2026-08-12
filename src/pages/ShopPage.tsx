@@ -1,15 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, X, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { shopAttachmentService } from '../services/shopAttachmentService';
 import { AddService } from '../components/ShopForm';
 import { useAuth } from '../hooks/useAuth';
 import { equipmentManagementService } from '../services/equipmentManagementService';
 import { fleetManagementService } from '../services/fleetManagementService';
-import { getCategories } from '../services/firebaseService';
+import { getCategories, updateCategory } from '../services/firebaseService';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
-import { EquipmentNote } from '../types';
+import { equipmentServiceLogService } from '../services/equipmentServiceLogService';
+import { EquipmentServiceHistory } from '../components/EquipmentServiceHistory';
+import { EquipmentNote, Category } from '../types';
 
 export function Service() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
@@ -41,6 +43,11 @@ export function Service() {
   const [newCustomDesc, setNewCustomDesc] = useState('');
   const [newCustomThreshold, setNewCustomThreshold] = useState('');
   const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
+  const [maintenanceItems, setMaintenanceItems] = useState<string[] | undefined>(undefined);
+  const [showHistory, setShowHistory] = useState(false);
+  const [category, setCategory] = useState<Category | null>(null);
+  const [categoryServiceLabels, setCategoryServiceLabels] = useState<string[]>([]);
+  const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null);
 
   // Compute heavy equipment cycle schedule
   const cycleInfo = useMemo(() => {
@@ -65,16 +72,18 @@ export function Service() {
 
     const milestones = [];
     for (let i = 1; i < numSlots; i++) {
+      const slotIndex = i - 1;
       milestones.push({
-        label: `Minor Service ${i}`,
+        label: categoryServiceLabels[slotIndex] || `Minor Service ${i}`,
         hour: cycleStart + i * serviceInterval,
         type: 'minor' as const,
         completed: cycleMinorReports.length >= i,
         report: cycleMinorReports[i - 1] ?? null,
       });
     }
+    const majorSlotIndex = numSlots - 1;
     milestones.push({
-      label: 'Major Service',
+      label: categoryServiceLabels[majorSlotIndex] || 'Major Service',
       hour: cycleStart + largeServiceInterval,
       type: 'major' as const,
       completed: false,
@@ -82,7 +91,24 @@ export function Service() {
     });
 
     return { cycleStart, milestones, completedMinorCount: cycleMinorReports.length };
-  }, [shopReports, notificationType, serviceInterval, largeServiceInterval]);
+  }, [shopReports, notificationType, serviceInterval, largeServiceInterval, categoryServiceLabels]);
+
+  const handleSaveServiceLabel = async (slotIndex: number, newLabel: string) => {
+    if (!category) return;
+    const trimmed = newLabel.trim();
+    if (!trimmed) return;
+    const next = [...categoryServiceLabels];
+    next[slotIndex] = trimmed;
+    setCategoryServiceLabels(next);
+    setCategory(prev => (prev ? { ...prev, serviceLabels: next } : null));
+    setEditingServiceIndex(null);
+    try {
+      await updateCategory(category.id, { serviceLabels: next });
+    } catch (error) {
+      console.error('Error saving service label:', error);
+      alert('Error saving service label');
+    }
+  };
 
   const addEquipmentDataNote = async () => {
     if (!equipmentId) return;
@@ -262,7 +288,10 @@ export function Service() {
               try {
                 const cats = await getCategories();
                 const cat = cats.find(c => c.id === equipment.category);
+                setCategory(cat || null);
+                setCategoryServiceLabels(cat?.serviceLabels || []);
                 setNotificationType(cat?.notificationType || 'none');
+                setMaintenanceItems(cat?.maintenanceItems);
               } catch {}
             }
           }
@@ -340,6 +369,24 @@ export function Service() {
         }
       }
       
+      // Record that this user created a service card, linked back to the report.
+      const serviceLabel = shopReport.serviceType
+        ? `${shopReport.serviceType === 'major' ? 'Major' : 'Minor'} service card created`
+        : 'Service card created';
+      await equipmentServiceLogService.addEntry({
+        equipmentId,
+        equipmentName: reportEquipmentName,
+        type: 'service_card',
+        description: shopReport.servicedAt != null
+          ? `${serviceLabel} at ${shopReport.servicedAt.toLocaleString()} hrs/km`
+          : serviceLabel,
+        createdAt: new Date().toISOString(),
+        createdBy: user.username,
+        createdByRole: user.role,
+        linkedReportId: reportId,
+        linkedReportType: 'shop',
+      });
+
       setShowShopForm(false);
       setReportsCollapsed(true);
       // Refresh shop reports and attachments
@@ -402,7 +449,26 @@ export function Service() {
               </button>
               <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">{equipmentName || unitName || 'Loading...'}</h3>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowHistory(true)}
+              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+              title="Maintenance, service & repair history"
+              aria-label="Maintenance, service and repair history"
+            >
+              <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
           </div>
+
+          {showHistory && equipmentId && (
+            <EquipmentServiceHistory
+              equipmentId={equipmentId}
+              equipmentName={equipmentName || unitName || 'Equipment'}
+              site={equipmentSite}
+              maintenanceItems={maintenanceItems}
+              onClose={() => setShowHistory(false)}
+            />
+          )}
 
           {/* Service Interval — label changes based on notification type */}
           <div className="mb-4">
@@ -618,7 +684,31 @@ export function Service() {
                       {m.completed ? '✓' : m.type === 'major' ? '★' : '○'}
                     </span>
                     <div className="min-w-0">
-                      <div className="font-medium truncate">{m.label}</div>
+                      {editingServiceIndex === i ? (
+                        <input
+                          type="text"
+                          defaultValue={categoryServiceLabels[i] || m.label}
+                          autoFocus
+                          onBlur={(e) => handleSaveServiceLabel(i, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveServiceLabel(i, e.currentTarget.value);
+                            if (e.key === 'Escape') setEditingServiceIndex(null);
+                          }}
+                          className="w-full px-1.5 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                        />
+                      ) : (
+                        <div
+                          className={`font-medium truncate ${user?.role === 'admin' || user?.role === 'supervisor' ? 'cursor-pointer hover:text-yellow-600 dark:hover:text-yellow-300' : ''}`}
+                          onClick={() => {
+                            if (user?.role === 'admin' || user?.role === 'supervisor') {
+                              setEditingServiceIndex(i);
+                            }
+                          }}
+                          title={user?.role === 'admin' || user?.role === 'supervisor' ? 'Click to rename service' : ''}
+                        >
+                          {m.label}
+                        </div>
+                      )}
                       <div className="opacity-75">{m.hour.toLocaleString()} hrs</div>
                       {m.completed && m.report?.lastServicedDate && (
                         <div className="opacity-60">{m.report.lastServicedDate}</div>

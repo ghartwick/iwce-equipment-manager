@@ -44,8 +44,8 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
       await onSubmit(maintenance, files);
       onClose();
     } catch (error) {
-      console.error('Error submitting maintenance report:', error);
-      alert('Error submitting maintenance report: ' + (error as Error).message);
+      console.error('Error submitting inspection report:', error);
+      alert('Error submitting inspection report: ' + (error as Error).message);
     } finally {
       setIsSubmitting(false);
     }
@@ -56,7 +56,7 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
       <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto mx-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
-            Maintenance Report - {equipmentName}
+            Inspection Report - {equipmentName}
           </h2>
           <button onClick={onClose} className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500">
             <X className="h-5 w-5" />
@@ -64,9 +64,9 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Maintenance Section */}
+          {/* Inspection Section */}
           <div className="border-t border-yellow-400 dark:border-yellow-600 pt-4">
-            <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-3">Maintenance</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-3">Inspection</h3>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               {/* Hours */}
               <div>
@@ -107,7 +107,7 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
             <textarea
               value={maintenance.notes || ''}
               onChange={(e) => setMaintenance({ ...maintenance, notes: e.target.value })}
-              placeholder="Enter any additional notes about this maintenance report..."
+              placeholder="Enter any additional notes about this inspection report..."
               rows={3}
               className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
             />

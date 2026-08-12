@@ -22,12 +22,13 @@ const emptyItem = (): LineItem => ({
 interface Props {
   date: Date;
   submittedBy: string;
+  submittedById?: string;
   posForDate: PurchaseOrder[];
   onPOCreated: (poNumber: number) => void;
   onClose?: () => void;
 }
 
-export function PurchaseOrderPanel({ date, submittedBy, posForDate, onPOCreated, onClose }: Props) {
+export function PurchaseOrderPanel({ date, submittedBy, submittedById, posForDate, onPOCreated, onClose }: Props) {
   const [nextPONumber, setNextPONumber] = useState<number | null>(null);
   const [sites, setSites] = useState<Site[]>([]);
   const [allCodes, setAllCodes] = useState<Code[]>([]);
@@ -111,6 +112,7 @@ export function PurchaseOrderPanel({ date, submittedBy, posForDate, onPOCreated,
         })),
         date,
         submittedBy,
+        submittedById,
         attachmentFile: attachmentFile ?? undefined,
       });
       const created = nextPONumber ?? 0;

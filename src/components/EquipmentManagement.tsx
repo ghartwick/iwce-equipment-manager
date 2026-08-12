@@ -37,6 +37,10 @@ const EMPTY_FORM = { name: '', description: '', serialNumber: '', year: '', make
 
 export function EquipmentManagement({ currentUser, asPage = false, title = 'Heavy Equipment', service, useEmployeeColumn = false, hideTimecardColumn = false, hideParentUnit = false, categoryGroupFilter, showClearAll = false }: EquipmentManagementProps) {
   const svc = service ?? equipmentManagementService;
+  const isFleet = categoryGroupFilter === 'fleet';
+  const isHeavy = categoryGroupFilter === 'heavy';
+  const showEditQRDelete = isFleet || isHeavy;
+  const tableColCount = (hideTimecardColumn ? 5 : 6) - (isFleet ? 1 : 0);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
@@ -430,7 +434,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <input
               type="text"
-              placeholder={`Search ${title.toLowerCase()}...`}
+              placeholder={`Search ${title.toLowerCase()}...`} title="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 px-4 py-2 border border-yellow-600 rounded-lg bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
@@ -482,43 +486,43 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input
-                    type="text" required placeholder="Equipment Name"
+                    type="text" required placeholder="Equipment Name" title="Equipment Name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                   <input
-                    type="text" placeholder="Description"
+                    type="text" placeholder="Description" title="Description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                   <input
-                    type="text" placeholder="Serial Number"
+                    type="text" placeholder="Serial Number" title="Serial Number"
                     value={formData.serialNumber}
                     onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                   <input
-                    type="text" placeholder="Year"
+                    type="text" placeholder="Year" title="Year"
                     value={formData.year}
                     onChange={(e) => setFormData({ ...formData, year: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                   <input
-                    type="text" placeholder="Make"
+                    type="text" placeholder="Make" title="Make"
                     value={formData.make}
                     onChange={(e) => setFormData({ ...formData, make: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                   <input
-                    type="text" placeholder="Model"
+                    type="text" placeholder="Model" title="Model"
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                   <select
-                    value={formData.category}
+                    value={formData.category} title="Select Category"
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   >
@@ -529,7 +533,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                   </select>
                   {effectiveFormEmployeeColumn ? (
                     <select
-                      value={formData.employee}
+                      value={formData.employee} title="Select Employee"
                       onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
                       className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
@@ -540,7 +544,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                     </select>
                   ) : (
                     <select
-                      value={formData.site}
+                      value={formData.site} title="Select Site"
                       onChange={(e) => setFormData({ ...formData, site: e.target.value })}
                       className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
@@ -552,7 +556,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                   )}
                   {!hideParentUnit && (
                     <select
-                      value={formData.parentId}
+                      value={formData.parentId} title="Parent Unit"
                       onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
                       className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     >
@@ -571,24 +575,24 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                     rows={2}
                     value={formData.locationNotes}
                     onChange={(e) => setFormData({ ...formData, locationNotes: e.target.value })}
-                    placeholder="Make a note"
+                    placeholder="Make a note" title="Make a note"
                     className="w-full px-3 py-2 bg-white dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                 </div>
                 <div className="flex flex-wrap gap-4">
                   <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                    <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                    <input type="checkbox" checked={formData.isActive} title="Active" onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                     <span>Active</span>
                   </label>
                   {!formData.parentId && (
                     <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                      <input type="checkbox" checked={formData.showInInventory} onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                      <input type="checkbox" checked={formData.showInInventory} title="Show in Inventory" onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                       <span>Show in Inventory</span>
                     </label>
                   )}
                   {!hideTimecardColumn && (
                     <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                      <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                      <input type="checkbox" checked={formData.showInTimecard} title="Show in Timecard" onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                       <span>Show in Timecard</span>
                     </label>
                   )}
@@ -621,7 +625,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                     <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">{useEmployeeColumn ? 'Employee' : 'Site'}</th>
                     <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Inventory</th>
                     {!hideTimecardColumn && <th className="px-4 py-2 text-center text-yellow-100 dark:text-yellow-300">Timecard</th>}
-                    <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Status</th>
+                    {!isFleet && <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Status</th>}
                     <th className="px-4 py-2 text-left text-yellow-100 dark:text-yellow-300">Actions</th>
                   </tr>
                 </thead>
@@ -670,7 +674,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                     return (<>{sortedGroups.map(([categoryName, items]) => (
                       <React.Fragment key={categoryName}>
                         <tr>
-                          <td colSpan={6} className="px-4 py-2 bg-yellow-700 bg-opacity-40 border-b border-yellow-700">
+                          <td colSpan={tableColCount} className="px-4 py-2 bg-yellow-700 bg-opacity-40 border-b border-yellow-700">
                             <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">
                               {categoryName} ({items.length})
                             </span>
@@ -746,27 +750,29 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                   </button>
                                 </td>
                               )}
-                              <td className="px-4 py-2">
-                                {!item.isActive ? (
-                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs rounded">Inactive</span>
-                                ) : (
-                                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                    item.repair
-                                      ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
-                                      : item.site === 'Out for Repair'
-                                      ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
-                                      : item.site === 'Office'
-                                      ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
-                                      : item.site === 'Shop'
-                                      ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
-                                      : item.site
-                                      ? 'bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-300'
-                                      : 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
-                                  }`}>
-                                    {item.repair ? 'Repair' : item.site === 'Out for Repair' ? 'Out for Repair' : item.site === 'Office' ? 'Office' : item.site === 'Shop' ? 'Available' : item.site ? 'In Use' : 'Available'}
-                                  </span>
-                                )}
-                              </td>
+                              {!isFleet && (
+                                <td className="px-4 py-2">
+                                  {!item.isActive ? (
+                                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs rounded">Inactive</span>
+                                  ) : (
+                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                      item.repair
+                                        ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
+                                        : item.site === 'Out for Repair'
+                                        ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-600 dark:text-red-300'
+                                        : item.site === 'Office'
+                                        ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
+                                        : item.site === 'Shop'
+                                        ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
+                                        : item.site
+                                        ? 'bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-300'
+                                        : 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-300'
+                                    }`}>
+                                      {item.repair ? 'Repair' : item.site === 'Out for Repair' ? 'Out for Repair' : item.site === 'Office' ? 'Office' : item.site === 'Shop' ? 'Available' : item.site ? 'In Use' : 'Available'}
+                                    </span>
+                                  )}
+                                </td>
+                              )}
                               <td className="px-4 py-2">
                                 <div className="flex space-x-1">
                                   <button
@@ -776,13 +782,15 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                   >
                                     <Edit2 className="h-4 w-4" />
                                   </button>
-                                  <button
-                                    onClick={() => { setSelectedItem(item); setShowQR(true); }}
-                                    className="p-1 text-purple-600 hover:text-purple-500"
-                                    title="Show QR Code"
-                                  >
-                                    <QrCode className="h-4 w-4" />
-                                  </button>
+                                  {!showEditQRDelete && (
+                                    <button
+                                      onClick={() => { setSelectedItem(item); setShowQR(true); }}
+                                      className="p-1 text-purple-600 hover:text-purple-500"
+                                      title="Show QR Code"
+                                    >
+                                      <QrCode className="h-4 w-4" />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => { setSelectedItem(item); setShowLog(true); }}
                                     className="p-1 text-blue-600 hover:text-blue-500"
@@ -790,7 +798,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                   >
                                     <Clock className="h-4 w-4" />
                                   </button>
-                                  {currentUser?.role === 'admin' && (
+                                  {!showEditQRDelete && currentUser?.role === 'admin' && (
                                     <button
                                       onClick={() => handleDelete(item)}
                                       className="p-1 text-red-600 hover:text-red-500"
@@ -804,7 +812,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                             </tr>
                             {editingItem?.id === item.id && (
                               <tr>
-                                <td colSpan={6} className="px-4 py-0">
+                                <td colSpan={tableColCount} className="px-4 py-0">
                                   <div className="p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg mt-2">
                                     <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3">
                                       Edit {title}: {item.name}
@@ -812,43 +820,43 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                     <form onSubmit={handleSubmit} className="space-y-3">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <input
-                                          type="text" required placeholder="Equipment Name"
+                                          type="text" required placeholder="Equipment Name" title="Equipment Name"
                                           value={formData.name}
                                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                           className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                         />
                                         <input
-                                          type="text" placeholder="Description"
+                                          type="text" placeholder="Description" title="Description"
                                           value={formData.description}
                                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                           className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                         />
                                         <input
-                                          type="text" placeholder="Serial Number"
+                                          type="text" placeholder="Serial Number" title="Serial Number"
                                           value={formData.serialNumber}
                                           onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
                                           className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                         />
                                         <input
-                                          type="text" placeholder="Year"
+                                          type="text" placeholder="Year" title="Year"
                                           value={formData.year}
                                           onChange={(e) => setFormData({ ...formData, year: e.target.value })}
                                           className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                         />
                                         <input
-                                          type="text" placeholder="Make"
+                                          type="text" placeholder="Make" title="Make"
                                           value={formData.make}
                                           onChange={(e) => setFormData({ ...formData, make: e.target.value })}
                                           className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                         />
                                         <input
-                                          type="text" placeholder="Model"
+                                          type="text" placeholder="Model" title="Model"
                                           value={formData.model}
                                           onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                                           className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                         />
                                         <select
-                                          value={formData.category}
+                                          value={formData.category} title="Select Category"
                                           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                           className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                         >
@@ -859,7 +867,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                         </select>
                                         {effectiveFormEmployeeColumn ? (
                                           <select
-                                            value={formData.employee}
+                                            value={formData.employee} title="Select Employee"
                                             onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
                                             className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                           >
@@ -870,7 +878,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                           </select>
                                         ) : (
                                           <select
-                                            value={formData.site}
+                                            value={formData.site} title="Select Site"
                                             onChange={(e) => setFormData({ ...formData, site: e.target.value })}
                                             className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                           >
@@ -882,7 +890,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                         )}
                                         {!hideParentUnit && (
                                           <select
-                                            value={formData.parentId}
+                                            value={formData.parentId} title="Parent Unit"
                                             onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
                                             className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                           >
@@ -895,29 +903,51 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                       </div>
                                       <div className="flex items-center space-x-6 text-sm">
                                         <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                          <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                          <input type="checkbox" checked={formData.isActive} title="Active" onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                           <span>Active</span>
                                         </label>
                                         {!formData.parentId && (
                                           <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                            <input type="checkbox" checked={formData.showInInventory} onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                            <input type="checkbox" checked={formData.showInInventory} title="Show in Inventory" onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                             <span>Show in Inventory</span>
                                           </label>
                                         )}
                                         {!hideTimecardColumn && (
                                           <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                            <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                            <input type="checkbox" checked={formData.showInTimecard} title="Show in Timecard" onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                             <span>Show in Timecard</span>
                                           </label>
                                         )}
                                       </div>
-                                      <div className="flex space-x-2">
-                                        <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">
-                                          Update Equipment
-                                        </button>
-                                        <button type="button" onClick={cancelForm} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm">
-                                          Cancel
-                                        </button>
+                                      <div className="flex items-center">
+                                        {showEditQRDelete && editingItem && currentUser?.role === 'admin' && (
+                                          <div className="flex space-x-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => { if (editingItem) handleDelete(editingItem); }}
+                                              className="px-4 py-2 bg-yellow-700 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                                            >
+                                              Delete
+                                            </button>
+                                          </div>
+                                        )}
+                                        <div className="flex space-x-2 ml-auto">
+                                          <button type="button" onClick={cancelForm} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm">
+                                            Cancel
+                                          </button>
+                                          {showEditQRDelete && editingItem && (
+                                            <button
+                                              type="button"
+                                              onClick={() => { if (editingItem) { setSelectedItem(editingItem); setShowQR(true); } }}
+                                              className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm"
+                                            >
+                                              Show QR
+                                            </button>
+                                          )}
+                                          <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">
+                                            Update Equipment
+                                          </button>
+                                        </div>
                                       </div>
                                     </form>
                                   </div>
@@ -961,9 +991,11 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                       </button>
                                     </td>
                                   )}
-                                  <td className="px-4 py-2">
-                                    {/* No status badge for variants */}
-                                  </td>
+                                  {!isFleet && (
+                                    <td className="px-4 py-2">
+                                      {/* No status badge for variants */}
+                                    </td>
+                                  )}
                                   <td className="px-4 py-2">
                                     <div className="flex space-x-1">
                                       <button
@@ -973,13 +1005,15 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                       >
                                         <Edit2 className="h-4 w-4" />
                                       </button>
-                                      <button
-                                        onClick={() => { setSelectedItem(variant); setShowQR(true); }}
-                                        className="p-1 text-purple-600 hover:text-purple-500"
-                                        title="Show QR Code"
-                                      >
-                                        <QrCode className="h-4 w-4" />
-                                      </button>
+                                      {!showEditQRDelete && (
+                                        <button
+                                          onClick={() => { setSelectedItem(variant); setShowQR(true); }}
+                                          className="p-1 text-purple-600 hover:text-purple-500"
+                                          title="Show QR Code"
+                                        >
+                                          <QrCode className="h-4 w-4" />
+                                        </button>
+                                      )}
                                       <button
                                         onClick={() => { setSelectedItem(variant); setShowLog(true); }}
                                         className="p-1 text-blue-600 hover:text-blue-500"
@@ -987,7 +1021,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                       >
                                         <Clock className="h-4 w-4" />
                                       </button>
-                                      {currentUser?.role === 'admin' && (
+                                      {!showEditQRDelete && currentUser?.role === 'admin' && (
                                         <button
                                           onClick={() => handleDelete(variant)}
                                           className="p-1 text-red-600 hover:text-red-500"
@@ -1001,7 +1035,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                 </tr>
                                 {editingItem?.id === variant.id && (
                                   <tr>
-                                    <td colSpan={6} className="px-4 py-0">
+                                    <td colSpan={tableColCount} className="px-4 py-0">
                                       <div className="p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg mt-2">
                                         <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3">
                                           Edit {title}: {variant.name}
@@ -1009,25 +1043,25 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                         <form onSubmit={handleSubmit} className="space-y-3">
                                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <input
-                                              type="text" required placeholder="Equipment Name"
+                                              type="text" required placeholder="Equipment Name" title="Equipment Name"
                                               value={formData.name}
                                               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                               className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                             />
                                             <input
-                                              type="text" placeholder="Description"
+                                              type="text" placeholder="Description" title="Description"
                                               value={formData.description}
                                               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                               className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                             />
                                             <input
-                                              type="text" placeholder="Serial Number"
+                                              type="text" placeholder="Serial Number" title="Serial Number"
                                               value={formData.serialNumber}
                                               onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
                                               className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                             />
                                             <select
-                                              value={formData.category}
+                                              value={formData.category} title="Select Category"
                                               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                               className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                             >
@@ -1038,7 +1072,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                             </select>
                                             {effectiveFormEmployeeColumn ? (
                                               <select
-                                                value={formData.employee}
+                                                value={formData.employee} title="Select Employee"
                                                 onChange={(e) => setFormData({ ...formData, employee: e.target.value })}
                                                 className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                               >
@@ -1049,7 +1083,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                               </select>
                                             ) : (
                                               <select
-                                                value={formData.site}
+                                                value={formData.site} title="Select Site"
                                                 onChange={(e) => setFormData({ ...formData, site: e.target.value })}
                                                 className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                               >
@@ -1061,7 +1095,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                             )}
                                             {!hideParentUnit && (
                                               <select
-                                                value={formData.parentId}
+                                                value={formData.parentId} title="Parent Unit"
                                                 onChange={(e) => setFormData({ ...formData, parentId: e.target.value, showInInventory: e.target.value ? false : formData.showInInventory })}
                                                 className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                               >
@@ -1074,29 +1108,51 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                           </div>
                                           <div className="flex items-center space-x-6 text-sm">
                                             <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                              <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                              <input type="checkbox" checked={formData.isActive} title="Active" onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                               <span>Active</span>
                                             </label>
                                             {!formData.parentId && (
                                               <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                                <input type="checkbox" checked={formData.showInInventory} onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                                <input type="checkbox" checked={formData.showInInventory} title="Show in Inventory" onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                                 <span>Show in Inventory</span>
                                               </label>
                                             )}
                                             {!hideTimecardColumn && (
                                               <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                                <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                                <input type="checkbox" checked={formData.showInTimecard} title="Show in Timecard" onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                                 <span>Show in Timecard</span>
                                               </label>
                                             )}
                                           </div>
-                                          <div className="flex space-x-2">
-                                            <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">
-                                              Update Equipment
-                                            </button>
-                                            <button type="button" onClick={cancelForm} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm">
-                                              Cancel
-                                            </button>
+                                          <div className="flex items-center">
+                                            {showEditQRDelete && editingItem && currentUser?.role === 'admin' && (
+                                              <div className="flex space-x-2">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => { if (editingItem) handleDelete(editingItem); }}
+                                                  className="px-4 py-2 bg-yellow-700 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                                                >
+                                                  Delete
+                                                </button>
+                                              </div>
+                                            )}
+                                            <div className="flex space-x-2 ml-auto">
+                                              <button type="button" onClick={cancelForm} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm">
+                                                Cancel
+                                              </button>
+                                              {showEditQRDelete && editingItem && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => { if (editingItem) { setSelectedItem(editingItem); setShowQR(true); } }}
+                                                  className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm"
+                                                >
+                                                  Show QR
+                                                </button>
+                                              )}
+                                              <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">
+                                                Update Equipment
+                                              </button>
+                                            </div>
                                           </div>
                                         </form>
                                       </div>
@@ -1113,7 +1169,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                     {/* Inactive Section */}
                     {inactiveCount > 0 && (<>
                       <tr>
-                        <td colSpan={6} className="px-4 py-3 bg-gray-200 dark:bg-gray-800 border-t-4 border-gray-400 dark:border-gray-600">
+                        <td colSpan={tableColCount} className="px-4 py-3 bg-gray-200 dark:bg-gray-800 border-t-4 border-gray-400 dark:border-gray-600">
                           <span className="text-base font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
                             Inactive ({inactiveCount})
                           </span>
@@ -1122,7 +1178,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                       {sortedInactiveGroups.map(([categoryName, items]) => (
                         <React.Fragment key={`inactive-${categoryName}`}>
                           <tr>
-                            <td colSpan={6} className="px-4 py-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700">
+                            <td colSpan={tableColCount} className="px-4 py-2 bg-gray-100 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700">
                               <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                                 {categoryName} ({items.length})
                               </span>
@@ -1139,13 +1195,15 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                               <td className="px-4 py-2 text-gray-500 dark:text-gray-500 text-sm">{item.site || item.employee || '—'}</td>
                               <td className="px-4 py-2 text-center text-gray-400">{item.showInInventory ? '✓' : '-'}</td>
                               {!hideTimecardColumn && <td className="px-4 py-2 text-center text-gray-400">{item.showInTimecard ? '✓' : '-'}</td>}
-                              <td className="px-4 py-2">
-                                <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-500 text-xs rounded">Inactive</span>
-                              </td>
+                              {!isFleet && (
+                                <td className="px-4 py-2">
+                                  <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-500 text-xs rounded">Inactive</span>
+                                </td>
+                              )}
                               <td className="px-4 py-2">
                                 <div className="flex space-x-1">
                                   <button onClick={() => handleEdit(item)} className="p-1 text-yellow-600 hover:text-yellow-500" title="Edit"><Edit2 className="h-4 w-4" /></button>
-                                  {currentUser?.role === 'admin' && (
+                                  {!showEditQRDelete && currentUser?.role === 'admin' && (
                                     <button onClick={() => handleDelete(item)} className="p-1 text-red-600 hover:text-red-500" title="Delete"><Trash2 className="h-4 w-4" /></button>
                                   )}
                                 </div>
@@ -1154,28 +1212,28 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                           ))}
                           {editingItem && items.some(i => i.id === editingItem.id) && (
                             <tr>
-                              <td colSpan={6} className="px-4 py-0">
+                              <td colSpan={tableColCount} className="px-4 py-0">
                                 <div className="p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg mt-2">
                                   <h3 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 mb-3">Edit {title}: {editingItem.name}</h3>
                                   <form onSubmit={handleSubmit} className="space-y-3">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                      <input type="text" required placeholder="Equipment Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
-                                      <input type="text" placeholder="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
-                                      <input type="text" placeholder="Serial Number" value={formData.serialNumber} onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
-                                      <input type="text" placeholder="Year" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
-                                      <input type="text" placeholder="Make" value={formData.make} onChange={(e) => setFormData({ ...formData, make: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
-                                      <input type="text" placeholder="Model" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
-                                      <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                      <input type="text" required placeholder="Equipment Name" title="Equipment Name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <input type="text" placeholder="Description" title="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <input type="text" placeholder="Serial Number" title="Serial Number" value={formData.serialNumber} onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <input type="text" placeholder="Year" title="Year" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <input type="text" placeholder="Make" title="Make" value={formData.make} onChange={(e) => setFormData({ ...formData, make: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <input type="text" placeholder="Model" title="Model" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                                      <select value={formData.category} title="Select Category" onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                                         <option value="">Select Category</option>
                                         {categories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
                                       </select>
                                       {effectiveFormEmployeeColumn ? (
-                                        <select value={formData.employee} onChange={(e) => setFormData({ ...formData, employee: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                        <select value={formData.employee} title="Select Employee" onChange={(e) => setFormData({ ...formData, employee: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                                           <option value="">Select Employee</option>
                                           {users.map(u => (<option key={u.id} value={u.name}>{u.name}</option>))}
                                         </select>
                                       ) : (
-                                        <select value={formData.site} onChange={(e) => setFormData({ ...formData, site: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                        <select value={formData.site} title="Select Site" onChange={(e) => setFormData({ ...formData, site: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                                           <option value="">Select Site</option>
                                           {sites.map(s => (<option key={s.id} value={s.name}>{s.name}</option>))}
                                         </select>
@@ -1183,25 +1241,47 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                     </div>
                                     <div className="flex flex-wrap gap-4">
                                       <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                        <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                        <input type="checkbox" checked={formData.isActive} title="Active" onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                         <span>Active</span>
                                       </label>
                                       {!formData.parentId && (
                                         <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                          <input type="checkbox" checked={formData.showInInventory} onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                          <input type="checkbox" checked={formData.showInInventory} title="Show in Inventory" onChange={(e) => setFormData({ ...formData, showInInventory: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                           <span>Show in Inventory</span>
                                         </label>
                                       )}
                                       {!hideTimecardColumn && (
                                         <label className="flex items-center space-x-2 text-sm text-yellow-700 dark:text-yellow-300">
-                                          <input type="checkbox" checked={formData.showInTimecard} onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                                          <input type="checkbox" checked={formData.showInTimecard} title="Show in Timecard" onChange={(e) => setFormData({ ...formData, showInTimecard: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
                                           <span>Show in Timecard</span>
                                         </label>
                                       )}
                                     </div>
-                                    <div className="flex space-x-2 justify-end">
-                                      <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">Update Equipment</button>
-                                      <button type="button" onClick={cancelForm} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm">Cancel</button>
+                                    <div className="flex items-center">
+                                      {showEditQRDelete && editingItem && currentUser?.role === 'admin' && (
+                                        <div className="flex space-x-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => { if (editingItem) handleDelete(editingItem); }}
+                                            className="px-4 py-2 bg-yellow-700 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                                          >
+                                            Delete
+                                          </button>
+                                        </div>
+                                      )}
+                                      <div className="flex space-x-2 ml-auto">
+                                        <button type="button" onClick={cancelForm} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm">Cancel</button>
+                                        {showEditQRDelete && editingItem && (
+                                          <button
+                                            type="button"
+                                            onClick={() => { if (editingItem) { setSelectedItem(editingItem); setShowQR(true); } }}
+                                            className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm"
+                                          >
+                                            Show QR
+                                          </button>
+                                        )}
+                                        <button type="submit" className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors text-sm">Update Equipment</button>
+                                      </div>
                                     </div>
                                   </form>
                                 </div>

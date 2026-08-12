@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Building2, ChevronDown, ChevronRight, MapPin, Star } from 'lucide-react';
+import { Plus, Edit2, Trash2, Building2, ChevronDown, ChevronRight, MapPin } from 'lucide-react';
 import { Client, clientManagementService } from '../services/clientManagementService';
 import { Site, siteManagementService } from '../services/siteManagementService';
 
@@ -12,6 +12,8 @@ interface ClientFormState {
   name: string;
   description: string;
   isActive: boolean;
+  allowFieldUsers: boolean;
+  allowSupervisorUsers: boolean;
 }
 
 interface SiteFormState {
@@ -21,7 +23,7 @@ interface SiteFormState {
   flagRed: boolean;
 }
 
-const emptyClientForm: ClientFormState = { name: '', description: '', isActive: true };
+const emptyClientForm: ClientFormState = { name: '', description: '', isActive: true, allowFieldUsers: false, allowSupervisorUsers: false };
 const emptySiteForm: SiteFormState = { name: '', description: '', isActive: true, flagRed: false };
 
 export function ClientManagement({ currentUser }: ClientManagementProps) {
@@ -83,6 +85,8 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
       name: client.name,
       description: client.description || '',
       isActive: client.isActive,
+      allowFieldUsers: client.allowFieldUsers ?? false,
+      allowSupervisorUsers: client.allowSupervisorUsers ?? false,
     });
     setShowClientForm(true);
   };
@@ -93,19 +97,14 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
     setClientForm(emptyClientForm);
   };
 
-  const handleSetDefault = async () => {
-    if (!editingClient) return;
-    setError(null);
-    setSuccess(null);
-    try {
-      await clientManagementService.setDefaultFieldClient(editingClient.id);
-      setEditingClient({ ...editingClient, isDefaultForFieldCrews: true });
-      setSuccess(`"${editingClient.name}" is now the default client for field crews`);
-      await loadData();
-    } catch (err) {
-      console.error('Failed to set default client:', err);
-      setError('Failed to set default field-crew client');
-    }
+  const handleToggleFieldAccess = (checked: boolean) => {
+    setClientForm(prev => ({ ...prev, allowFieldUsers: checked }));
+    if (editingClient) setEditingClient({ ...editingClient, allowFieldUsers: checked });
+  };
+
+  const handleToggleSupervisorAccess = (checked: boolean) => {
+    setClientForm(prev => ({ ...prev, allowSupervisorUsers: checked }));
+    if (editingClient) setEditingClient({ ...editingClient, allowSupervisorUsers: checked });
   };
 
   const handleClientSubmit = async (e: React.FormEvent) => {
@@ -120,6 +119,8 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
           name: clientForm.name.trim(),
           description: clientForm.description.trim(),
           isActive: clientForm.isActive,
+          allowFieldUsers: clientForm.allowFieldUsers,
+          allowSupervisorUsers: clientForm.allowSupervisorUsers,
         });
         setSuccess('Client updated successfully');
       } else {
@@ -127,6 +128,8 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
           name: clientForm.name.trim(),
           description: clientForm.description.trim(),
           isActive: clientForm.isActive,
+          allowFieldUsers: clientForm.allowFieldUsers,
+          allowSupervisorUsers: clientForm.allowSupervisorUsers,
           createdBy: currentUser?.username,
         });
         setSuccess('Client added successfully');
@@ -250,24 +253,33 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
               <label htmlFor="clientIsActive" className="text-sm text-yellow-700 dark:text-yellow-300">Active</label>
             </div>
 
-            {/* Default for field crews */}
-            {editingClient && (
-              <div className="p-3 rounded-lg border border-yellow-300 dark:border-yellow-700 bg-yellow-100/60 dark:bg-yellow-900/20">
-                <label className={labelClass}>Field Crew Default</label>
-                <p className="text-xs text-yellow-600 dark:text-yellow-500 mb-2">
-                  Field crews work a single client. The default client's sites are the only ones shown in the field timecard's site selector.
-                </p>
-                {editingClient.isDefaultForFieldCrews ? (
-                  <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium">
-                    <Star className="h-4 w-4 fill-current" /> Current field crew default
-                  </span>
-                ) : (
-                  <button type="button" onClick={handleSetDefault} className="inline-flex items-center gap-1 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors">
-                    <Star className="h-4 w-4" /> Set as Field Crew Default
-                  </button>
-                )}
+            {/* Role-based client access */}
+            <div className="p-3 rounded-lg border border-yellow-300 dark:border-yellow-700 bg-yellow-100/60 dark:bg-yellow-900/20">
+              <label className={labelClass}>Timecard Access</label>
+              <p className="text-xs text-yellow-600 dark:text-yellow-500 mb-2">
+                Checked clients are visible to the selected user roles in the timecard app. Admins always see every active client.
+              </p>
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={clientForm.allowFieldUsers}
+                    onChange={(e) => handleToggleFieldAccess(e.target.checked)}
+                    className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                  />
+                  <span className="text-sm text-yellow-700 dark:text-yellow-300">Allow field users access</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={clientForm.allowSupervisorUsers}
+                    onChange={(e) => handleToggleSupervisorAccess(e.target.checked)}
+                    className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                  />
+                  <span className="text-sm text-yellow-700 dark:text-yellow-300">Allow Supervisor users access</span>
+                </label>
               </div>
-            )}
+            </div>
 
             <div className="flex space-x-2">
               <button type="submit" className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors">
@@ -302,9 +314,14 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                       </div>
                     </button>
                     <div className="flex items-center gap-3">
-                      {client.isDefaultForFieldCrews && (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-400 font-medium" title="Default client for field crews">
-                          <Star className="h-3 w-3 fill-current" /> Field Default
+                      {client.allowFieldUsers && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-400 font-medium">
+                          Field
+                        </span>
+                      )}
+                      {client.allowSupervisorUsers && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs rounded-full bg-purple-100 dark:bg-purple-900 dark:bg-opacity-30 text-purple-700 dark:text-purple-400 font-medium">
+                          Supervisor
                         </span>
                       )}
                       <span className="text-xs text-yellow-700 dark:text-yellow-400">{clientSites.length} site(s)</span>

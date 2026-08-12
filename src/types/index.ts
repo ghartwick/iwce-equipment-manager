@@ -70,6 +70,7 @@ export interface Category {
   notificationType?: 'fleet' | 'heavy' | 'none';
   maintenanceItems?: string[];
   allocationDefault?: 'site' | 'employee';
+  serviceLabels?: string[];
 }
 
 export interface StockAlert {

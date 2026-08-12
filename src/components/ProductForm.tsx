@@ -15,6 +15,8 @@ import { alertsFirebaseService } from '../services/alertsFirebaseService';
 import { shopHistoryFirebaseService } from '../services/shopHistoryFirebaseService';
 import { repairListService, RepairListCheckedItem } from '../services/repairListService';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
+import { equipmentServiceLogService } from '../services/equipmentServiceLogService';
+import { ResolveRepairModal, ResolveRepairTarget } from './ResolveRepairModal';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProductFormProps {
@@ -57,6 +59,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   const [maintenanceCollapsed, setMaintenanceCollapsed] = useState(true);
   const [visibleReportCount, setVisibleReportCount] = useState(10);
   const [checkedRepairItems, setCheckedRepairItems] = useState<Record<string, RepairListCheckedItem>>({});
+  const [resolveTarget, setResolveTarget] = useState<ResolveRepairTarget | null>(null);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [photosExpanded, setPhotosExpanded] = useState(false);
   const [equipmentPhotos, setEquipmentPhotos] = useState<EquipmentPhoto[]>([]);
@@ -91,6 +94,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
 
   const isEditing = !!product;
   const isChangeLocation = isEditing && !allowFullEdit && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field');
+  const isFieldUser = (user?.role ?? userRole) === 'field';
 
   // Sync local notes with product notes when product changes
   useEffect(() => {
@@ -298,6 +302,37 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
         }
       }
 
+      // Log each newly flagged repair (and any note) to the unit's service log so
+      // the combined history shows what was raised, when, by whom, and links back
+      // to the inspection card that raised it.
+      const loggedAt = new Date().toISOString();
+      for (const label of newRepairItems) {
+        await equipmentServiceLogService.addEntry({
+          equipmentId: product.id,
+          equipmentName: product.name,
+          type: 'maintenance_flag',
+          description: `${label} flagged for repair`,
+          createdAt: loggedAt,
+          createdBy: user.username,
+          createdByRole: user.role,
+          linkedReportId: reportId,
+          linkedReportType: 'maintenance',
+        });
+      }
+      if (hasNotes) {
+        await equipmentServiceLogService.addEntry({
+          equipmentId: product.id,
+          equipmentName: product.name,
+          type: 'maintenance_note',
+          description: maintenance.notes!.trim(),
+          createdAt: loggedAt,
+          createdBy: user.username,
+          createdByRole: user.role,
+          linkedReportId: reportId,
+          linkedReportType: 'maintenance',
+        });
+      }
+
       // Check service notification threshold (fleet and heavy equipment)
       if (product.serviceInterval && product.serviceNotification && maintenance.hours != null) {
         try {
@@ -367,7 +402,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   };
 
   const handleDeleteMaintenanceReport = async (reportId: string) => {
-    if (!confirm('Are you sure you want to delete this maintenance report?')) return;
+    if (!confirm('Are you sure you want to delete this inspection report?')) return;
     
     try {
       await maintenanceHistoryFirebaseService.deleteMaintenanceReport(reportId);
@@ -379,7 +414,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
       }
     } catch (error) {
       console.error('Error deleting maintenance report:', error);
-      alert('Error deleting maintenance report: ' + (error as Error).message);
+      alert('Error deleting inspection report: ' + (error as Error).message);
     }
   };
 
@@ -412,7 +447,19 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
     return Array.from(byKey.values());
   };
 
-  const handleResolveRepair = async (itemIds: string[], fieldLabel: string) => {
+  const handleResolveRepair = (itemIds: string[], fieldLabel: string) => {
+    if (!user || !product) return;
+    setResolveTarget({
+      equipmentId: product.id,
+      equipmentName: product.name,
+      site: product.site,
+      itemIds,
+      label: fieldLabel,
+      kind: 'repair',
+    });
+  };
+
+  const commitResolveRepair = async (itemIds: string[], fieldLabel: string) => {
     if (!user || !product) return;
     await Promise.all(itemIds.map(id => repairListService.checkItem(id, user.name || user.username)));
     setCheckedRepairItems(prev => {
@@ -437,15 +484,38 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
     }
   };
 
-  const handleDismissMaintenanceNote = async (reportId: string) => {
+  const handleDismissMaintenanceNote = (reportId: string, noteText: string) => {
+    if (!user || !product) return;
+    setResolveTarget({
+      equipmentId: product.id,
+      equipmentName: product.name,
+      site: product.site,
+      itemIds: [`${reportId}_note`],
+      label: noteText || 'Maintenance note',
+      kind: 'note',
+    });
+  };
+
+  const commitDismissMaintenanceNote = async (itemIds: string[]) => {
     if (!user) return;
-    if (!confirm('Confirm delete? Will remove from Repair List.')) return;
-    const itemId = `${reportId}_note`;
-    await repairListService.checkItem(itemId, user.name || user.username);
-    setCheckedRepairItems(prev => ({
-      ...prev,
-      [itemId]: { itemId, checkedBy: user.name || user.username, checkedAt: new Date().toISOString() },
-    }));
+    await Promise.all(itemIds.map(id => repairListService.checkItem(id, user.name || user.username)));
+    setCheckedRepairItems(prev => {
+      const next = { ...prev };
+      itemIds.forEach(id => {
+        next[id] = { itemId: id, checkedBy: user.name || user.username, checkedAt: new Date().toISOString() };
+      });
+      return next;
+    });
+  };
+
+  const handleResolveConfirmed = async () => {
+    if (!resolveTarget) return;
+    if (resolveTarget.kind === 'note') {
+      await commitDismissMaintenanceNote(resolveTarget.itemIds);
+    } else {
+      await commitResolveRepair(resolveTarget.itemIds, resolveTarget.label);
+    }
+    setResolveTarget(null);
   };
 
   const autoSave = async (overrides: Partial<typeof formData>) => {
@@ -848,7 +918,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
           )}
 
           {/* Details collapsible section - Change Location mode only */}
-          {isChangeLocation && product && (
+          {isChangeLocation && product && !isFieldUser && (
             <div className="md:col-span-2 mt-2">
               <button
                 type="button"
@@ -878,7 +948,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
           )}
 
           {/* Photos collapsible section - Change Location mode only */}
-          {isChangeLocation && product && (
+          {isChangeLocation && product && !isFieldUser && (
             <div className="md:col-span-2 mt-2">
               <button
                 type="button"
@@ -991,7 +1061,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
           {isEditing && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && (
             <div className="md:col-span-2 mt-4 pt-4 border-t border-yellow-400 dark:border-yellow-600">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">Maintenance</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">Inspections</h3>
                 <div className="flex items-center space-x-1">
                   {maintenanceReports.length > 1 && (
                     <button
@@ -1007,7 +1077,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
                     type="button"
                     onClick={() => setShowMaintenanceForm(true)}
                     className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
-                    title="Add Maintenance Report"
+                    title="Add Inspection Report"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
@@ -1062,7 +1132,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
                           </span>
                           <button
                             type="button"
-                            onClick={() => handleDismissMaintenanceNote(report.id!)}
+                            onClick={() => handleDismissMaintenanceNote(report.id!, report.maintenance.notes?.trim() || '')}
                             className="flex-shrink-0 p-0.5 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                             title="Remove from Repair List"
                           >
@@ -1195,7 +1265,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
               )}
               
               {maintenanceReports.length === 0 && (
-                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">No maintenance reports yet.</p>
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">No inspection reports yet.</p>
               )}
             </div>
           )}
@@ -1327,6 +1397,16 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
           onSubmit={handleMaintenanceSubmit}
           categoryMaintenanceItems={fetchedCategories.find(c => c.id === product.category)?.maintenanceItems}
           pendingRepairKeys={computePendingRepairs().map(p => p.key)}
+        />
+      )}
+
+      {/* Service card prompt shown whenever a repair or note is cleared */}
+      {resolveTarget && user && (
+        <ResolveRepairModal
+          target={resolveTarget}
+          user={user}
+          onCancel={() => setResolveTarget(null)}
+          onConfirm={handleResolveConfirmed}
         />
       )}
     </div>

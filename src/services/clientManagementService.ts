@@ -6,7 +6,8 @@ export interface Client {
   name: string;
   description?: string;
   isActive: boolean;
-  isDefaultForFieldCrews?: boolean;
+  allowFieldUsers?: boolean;
+  allowSupervisorUsers?: boolean;
   createdAt: Date;
   updatedAt: Date;
   createdBy?: string;
@@ -21,7 +22,9 @@ export class ClientManagementService {
       name: data.name,
       description: data.description || '',
       isActive: data.isActive ?? true,
-      isDefaultForFieldCrews: data.isDefaultForFieldCrews ?? false,
+      // Migrate the legacy single-default flag into the new field-user access flag
+      allowFieldUsers: data.allowFieldUsers ?? data.isDefaultForFieldCrews ?? false,
+      allowSupervisorUsers: data.allowSupervisorUsers ?? false,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
       createdBy: data.createdBy,
@@ -86,30 +89,12 @@ export class ClientManagementService {
     }
   }
 
-  // Returns the client currently marked as the field-crew default, or null.
-  async getDefaultFieldClient(): Promise<Client | null> {
-    const all = await this.getAllClients();
-    return all.find(c => c.isDefaultForFieldCrews) || null;
-  }
-
-  // Marks the given client as the field-crew default and clears the flag on all others.
-  async setDefaultFieldClient(clientId: string): Promise<void> {
-    try {
-      const all = await this.getAllClients();
-      await Promise.all(
-        all
-          .filter(c => (c.id === clientId) !== !!c.isDefaultForFieldCrews)
-          .map(c =>
-            updateDoc(doc(db, this.COLLECTION_NAME, c.id), {
-              isDefaultForFieldCrews: c.id === clientId,
-              updatedAt: Timestamp.fromDate(new Date()),
-            })
-          )
-      );
-    } catch (error) {
-      console.error('Error setting default field client:', error);
-      throw new Error('Failed to set default field-crew client');
-    }
+  // Returns active clients a user with the given role is allowed to see in the timecard app.
+  async getClientsForRole(role: 'admin' | 'supervisor' | 'field'): Promise<Client[]> {
+    const all = await this.getActiveClients();
+    if (role === 'admin') return all;
+    if (role === 'supervisor') return all.filter(c => c.allowSupervisorUsers);
+    return all.filter(c => c.allowFieldUsers);
   }
 }
 

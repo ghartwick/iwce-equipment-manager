@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FileText, Wrench, MoreVertical, CheckSquare, Square, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { repairListService, RepairListCheckedItem } from '../services/repairListService';
+import { ResolveRepairModal, ResolveRepairTarget } from '../components/ResolveRepairModal';
 import { ServiceIntervalBar } from '../components/ServiceIntervalBar';
 import { serviceNotificationService, ServiceNotificationItem } from '../services/serviceNotificationService';
 import { AlertPanel } from '../components/AlertPanel';
@@ -67,10 +68,11 @@ export default function ReportsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showRepairList, setShowRepairList] = useState(false);
-  type RepairListItem = { id: string; itemIds: string[]; equipmentName: string; field: string; type: 'repair' | 'note'; createdBy: string; createdAt: string; };
+  type RepairListItem = { id: string; itemIds: string[]; equipmentId: string; equipmentName: string; site?: string; field: string; type: 'repair' | 'note'; createdBy: string; createdAt: string; };
   const [repairListItems, setRepairListItems] = useState<RepairListItem[]>([]);
   const [checkedRepairItems, setCheckedRepairItems] = useState<Record<string, RepairListCheckedItem>>({});
   const [repairListLoading, setRepairListLoading] = useState(false);
+  const [resolveTarget, setResolveTarget] = useState<ResolveRepairTarget | null>(null);
 
   useEffect(() => {
     alertsFirebaseService.getAllRepairAlerts().then(setRepairAlerts).catch(console.error);
@@ -131,7 +133,7 @@ export default function ReportsPage() {
             const groupKey = `${report.equipmentId}__${f.key}`;
             const existing = repairGroups.get(groupKey);
             if (!existing) {
-              repairGroups.set(groupKey, { id: itemId, itemIds: [itemId], equipmentName: report.equipmentName, field: f.label, type: 'repair', createdBy: report.createdBy, createdAt: report.createdAt });
+              repairGroups.set(groupKey, { id: itemId, itemIds: [itemId], equipmentId: report.equipmentId, equipmentName: report.equipmentName, site: report.site, field: f.label, type: 'repair', createdBy: report.createdBy, createdAt: report.createdAt });
             } else {
               existing.itemIds.push(itemId);
               existing.id = itemId;
@@ -142,7 +144,7 @@ export default function ReportsPage() {
         });
         if (m.notes?.trim()) {
           const itemId = `${report.id}_note`;
-          noteItems.push({ id: itemId, itemIds: [itemId], equipmentName: report.equipmentName, field: m.notes.trim(), type: 'note', createdBy: report.createdBy, createdAt: report.createdAt });
+          noteItems.push({ id: itemId, itemIds: [itemId], equipmentId: report.equipmentId, equipmentName: report.equipmentName, site: report.site, field: m.notes.trim(), type: 'note', createdBy: report.createdBy, createdAt: report.createdAt });
         }
       });
       const items = [...repairGroups.values(), ...noteItems];
@@ -155,8 +157,9 @@ export default function ReportsPage() {
     }
   };
 
-  const handleToggleRepairItem = async (itemIds: string[]) => {
+  const handleToggleRepairItem = async (item: RepairListItem) => {
     if (!user) return;
+    const itemIds = item.itemIds;
     const allChecked = itemIds.every(id => checkedRepairItems[id]);
     if (allChecked) {
       await Promise.all(itemIds.map(id => repairListService.uncheckItem(id)));
@@ -165,16 +168,32 @@ export default function ReportsPage() {
         itemIds.forEach(id => delete next[id]);
         return next;
       });
-    } else {
-      await Promise.all(itemIds.map(id => repairListService.checkItem(id, user.username)));
-      setCheckedRepairItems(prev => {
-        const next = { ...prev };
-        itemIds.forEach(id => {
-          next[id] = { itemId: id, checkedBy: user.username, checkedAt: new Date().toISOString() };
-        });
-        return next;
-      });
+      return;
     }
+    // Clearing an item always prompts for a service card so the unit keeps a
+    // full record of what was actually repaired.
+    setResolveTarget({
+      equipmentId: item.equipmentId,
+      equipmentName: item.equipmentName,
+      site: item.site,
+      itemIds,
+      label: item.field,
+      kind: item.type,
+    });
+  };
+
+  const handleResolveConfirmed = async () => {
+    if (!user || !resolveTarget) return;
+    const itemIds = resolveTarget.itemIds;
+    await Promise.all(itemIds.map(id => repairListService.checkItem(id, user.username)));
+    setCheckedRepairItems(prev => {
+      const next = { ...prev };
+      itemIds.forEach(id => {
+        next[id] = { itemId: id, checkedBy: user.username, checkedAt: new Date().toISOString() };
+      });
+      return next;
+    });
+    setResolveTarget(null);
   };
 
   const loadServiceData = async () => {
@@ -290,7 +309,7 @@ export default function ReportsPage() {
   const handleGenerateReport = async () => {
     // Check if a filter is selected
     if (!siteFilter && !userFilter) {
-      alert('Please select a filter (Site or User) to generate a report');
+      alert('Please select a filter (Site or User) to generate an analysis');
       return;
     }
     
@@ -833,7 +852,7 @@ export default function ReportsPage() {
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
                         >
-                          {showAnalysis ? 'Close Report' : 'Report'}
+                          {showAnalysis ? 'Close Analysis' : 'Analysis'}
                         </button>
                         <button
                           onClick={() => {
@@ -924,13 +943,23 @@ export default function ReportsPage() {
               {/* Analysis Results */}
               {showAnalysis && analysisResults && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-4 mb-6">
-                  <h4 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-4">
-                    Maintenance Analysis for {analysisResults.dateRange}
-                  </h4>
+                  <div className="flex items-start justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-blue-800 dark:text-blue-300">
+                      Analysis for {analysisResults.dateRange}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowAnalysis(false)}
+                      className="text-blue-800 dark:text-blue-300 hover:text-blue-600 dark:hover:text-blue-100 p-0.5"
+                      aria-label="Close analysis"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.totalMaintenanceReports}</div>
-                      <div className="text-sm text-blue-600 dark:text-blue-400">Total Maintenance Reports</div>
+                      <div className="text-sm text-blue-600 dark:text-blue-400">Total Inspection Reports</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{analysisResults.totalShopReports}</div>
@@ -1009,7 +1038,7 @@ export default function ReportsPage() {
                       >
                         <h4 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
                           <Wrench className="h-4 w-4" />
-                          Maintenance Reports ({maintenanceReports.length})
+                          Inspection Reports ({maintenanceReports.length})
                         </h4>
                         {maintenanceListCollapsed ? <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /> : <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
                       </button>
@@ -1242,16 +1271,24 @@ export default function ReportsPage() {
                   >
                     <button
                       type="button"
-                      onClick={() => handleToggleRepairItem(item.itemIds)}
+                      onClick={() => handleToggleRepairItem(item)}
                       className="mt-0.5 flex-shrink-0 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500"
                     >
                       {isChecked ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
                     </button>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-sm font-medium ${isChecked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-yellow-100'}`}>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/inventory/equipment/${item.equipmentId}`)}
+                          className={`text-sm font-medium bg-transparent border-0 p-0 m-0 cursor-pointer text-left ${
+                            isChecked
+                              ? 'line-through text-gray-400 dark:text-gray-500'
+                              : 'text-gray-800 dark:text-yellow-100 hover:text-yellow-600 dark:hover:text-yellow-400'
+                          }`}
+                        >
                           {item.equipmentName}
-                        </span>
+                        </button>
                         <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
                           item.type === 'repair' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
                         }`}>
@@ -1374,6 +1411,16 @@ export default function ReportsPage() {
           )}
         </div>
       </div>
+
+      {/* Service card prompt shown whenever a repair or note is cleared */}
+      {resolveTarget && user && (
+        <ResolveRepairModal
+          target={resolveTarget}
+          user={user}
+          onCancel={() => setResolveTarget(null)}
+          onConfirm={handleResolveConfirmed}
+        />
+      )}
     </div>
   );
 }

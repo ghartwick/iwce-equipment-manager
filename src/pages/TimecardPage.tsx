@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Check, MoreVertical } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, MoreVertical, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
 import { InlineTimecardEdit } from '../components/InlineTimecardEdit';
@@ -112,6 +112,15 @@ export default function TimecardPage() {
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   const formatDateKey = (date: Date) => format(date, 'yyyy-MM-dd');
+
+  const currentUserId = user?.id ?? '';
+  const currentUserDisplay = user?.name ?? user?.username ?? '';
+  const isAdmin = user?.role === 'admin';
+
+  const canSeeAttachment = (a: TimecardAttachment) => isAdmin || a.uploadedBy === currentUserId;
+  const canSeePO = (po: PurchaseOrder) =>
+    isAdmin ||
+    (po.submittedById ? po.submittedById === currentUserId : po.submittedBy === currentUserDisplay);
 
   const handlePreviousMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1));
@@ -244,7 +253,7 @@ export default function TimecardPage() {
     const loadAttachmentsForMonth = async () => {
       try {
         const attachments = await timecardAttachmentService.getAttachmentsForRange(startDate, endDate);
-        setMonthAttachments(attachments);
+        setMonthAttachments(attachments.filter(canSeeAttachment));
       } catch (error) {
         // Error loading attachments
       }
@@ -264,7 +273,7 @@ export default function TimecardPage() {
         const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
         const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
         const attachments = await timecardAttachmentService.getAttachmentsForRange(startOfDay, endOfDay);
-        setAttachmentsForDate(attachments);
+        setAttachmentsForDate(attachments.filter(canSeeAttachment));
       } catch (error) {
         setAttachmentsForDate([]);
       }
@@ -277,7 +286,7 @@ export default function TimecardPage() {
     const loadPOCountsForMonth = async () => {
       try {
         const pos = await purchaseOrderService.getPOsForRange(startDate, endDate);
-        setMonthPOs(pos);
+        setMonthPOs(pos.filter(canSeePO));
       } catch {
         // ignore
       }
@@ -290,7 +299,7 @@ export default function TimecardPage() {
       if (selectedDates.length !== 1) { setPosForDate([]); return; }
       try {
         const pos = await purchaseOrderService.getPOsForDate(selectedDates[0]);
-        setPosForDate(pos);
+        setPosForDate(pos.filter(canSeePO));
       } catch {
         setPosForDate([]);
       }
@@ -562,10 +571,11 @@ export default function TimecardPage() {
       const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
       const attachments = await timecardAttachmentService.getAttachmentsForRange(startOfDay, endOfDay);
-      setAttachmentsForDate(attachments);
+      const visibleAttachments = attachments.filter(canSeeAttachment);
+      setAttachmentsForDate(visibleAttachments);
       setMonthAttachments(prev => [
         ...prev.filter(a => formatDateKey(toDateSafe(a.date)) !== formatDateKey(date)),
-        ...attachments
+        ...visibleAttachments
       ]);
       alert(`${attachmentFilesWithDesc.length} attachment(s) uploaded successfully.`);
     } catch (error) {
@@ -923,7 +933,7 @@ export default function TimecardPage() {
       const rangeEnd = new Date(Math.max(...selectedDates.map(d => d.getTime())));
       rangeStart.setHours(0, 0, 0, 0);
       rangeEnd.setHours(23, 59, 59, 999);
-      pos = await purchaseOrderService.getPOsForRange(rangeStart, rangeEnd);
+      pos = (await purchaseOrderService.getPOsForRange(rangeStart, rangeEnd)).filter(canSeePO);
     }
 
     if (pos.length === 0) {
@@ -1173,17 +1183,17 @@ export default function TimecardPage() {
                         <div className="fixed inset-0 z-40" onClick={() => setShowActionsMenu(false)} />
                         <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-900 border border-yellow-300 dark:border-yellow-700 rounded-lg shadow-lg z-50 py-1">
                         <button
-                          onClick={() => { setShowAttachments(prev => !prev); setShowPOForm(false); setShowActionsMenu(false); }}
+                          onClick={() => { setShowAttachments(true); setShowPOForm(false); setShowActionsMenu(false); }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40"
                         >
                           Attachments
                         </button>
                         <button
-                          onClick={() => { setShowPOForm(prev => !prev); setShowAttachments(false); setShowActionsMenu(false); }}
+                          onClick={() => { setShowPOForm(true); setShowAttachments(false); setShowActionsMenu(false); }}
                           disabled={!selectedDateParam}
                           className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40 disabled:opacity-50"
                         >
-                          {showPOForm ? 'Hide PO' : 'PO'}
+                          PO
                         </button>
                         {(user?.role === 'admin' || user?.role === 'supervisor') && selectedDates.length === 1 && siteFilter && siteFilter !== '' && siteFilter !== 'all' && (
                           <button
@@ -1217,29 +1227,61 @@ export default function TimecardPage() {
               </div>
 
               {showPOForm && selectedDates.length === 1 && (
-                <div className="mb-6">
-                  <PurchaseOrderPanel
-                    date={selectedDates[0]}
-                    submittedBy={user?.name ?? user?.username ?? 'Unknown'}
-                    posForDate={posForDate}
-                    onClose={() => setShowPOForm(false)}
-                    onPOCreated={(poNumber) => {
-                      const key = formatDateKey(selectedDates[0]);
-                      purchaseOrderService.getPOsForDate(selectedDates[0]).then(pos => {
-                        setMonthPOs(prev => [
-                          ...prev.filter(p => formatDateKey(toDateSafe(p.date)) !== key),
-                          ...pos
-                        ]);
-                      });
-                      purchaseOrderService.getPOsForDate(selectedDates[0]).then(setPosForDate);
-                      void poNumber;
-                    }}
-                  />
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+                  onClick={() => setShowPOForm(false)}
+                >
+                  <div
+                    className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto border border-yellow-600"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between p-4 border-b border-yellow-600 bg-yellow-600 rounded-t-xl">
+                      <h2 className="text-lg font-bold text-black">Purchase Orders</h2>
+                      <button onClick={() => setShowPOForm(false)} className="p-1.5 rounded-lg hover:bg-yellow-700 text-black transition-colors">
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                    <div className="p-5">
+                      <PurchaseOrderPanel
+                        date={selectedDates[0]}
+                        submittedBy={user?.name ?? user?.username ?? 'Unknown'}
+                        submittedById={user?.id}
+                        posForDate={posForDate}
+                        onClose={() => setShowPOForm(false)}
+                        onPOCreated={(poNumber) => {
+                          const key = formatDateKey(selectedDates[0]);
+                          purchaseOrderService.getPOsForDate(selectedDates[0]).then(pos => {
+                            const visible = pos.filter(canSeePO);
+                            setMonthPOs(prev => [
+                              ...prev.filter(p => formatDateKey(toDateSafe(p.date)) !== key),
+                              ...visible
+                            ]);
+                          });
+                          purchaseOrderService.getPOsForDate(selectedDates[0]).then(pos => setPosForDate(pos.filter(canSeePO)));
+                          void poNumber;
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 
               {showAttachments && (
-                <div className="mb-6">
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+                  onClick={() => setShowAttachments(false)}
+                >
+                  <div
+                    className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto border border-yellow-600"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between p-4 border-b border-yellow-600 bg-yellow-600 rounded-t-xl">
+                      <h2 className="text-lg font-bold text-black">Attachments</h2>
+                      <button onClick={() => setShowAttachments(false)} className="p-1.5 rounded-lg hover:bg-yellow-700 text-black transition-colors">
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                    <div className="p-5">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
                     <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-600 mb-2">
@@ -1442,7 +1484,9 @@ export default function TimecardPage() {
                     </div>
                   )}
                 </div>
-              )}
+              </div>
+            </div>
+          )}
 
               {/* Time Entries heading — shown here when PO form is open */}
               {showPOForm && (

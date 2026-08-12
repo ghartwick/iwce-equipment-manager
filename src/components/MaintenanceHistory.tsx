@@ -94,7 +94,7 @@ export function MaintenanceHistory({ equipment, onClose }: MaintenanceHistoryPro
         {history.length === 0 ? (
           <div className="text-center py-8">
             <Wrench className="h-12 w-12 text-gray-600 mx-auto mb-2" />
-            <p className="text-gray-400">No maintenance reports available</p>
+            <p className="text-gray-400">No inspection reports available</p>
           </div>
         ) : (
           history.map((entry) => (

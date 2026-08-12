@@ -124,16 +124,18 @@ export class SiteManagementService {
     return allSites.filter(site => site.isActive);
   }
 
-  // Get active sites for field crews: restricted to the default field-crew client.
-  // Falls back to all active sites when no default client has been set.
-  async getFieldCrewSites(): Promise<Site[]> {
+  // Get active sites for a given user role, restricted by the client's access flags.
+  // Admins see every active site; field/supervisor users see only sites whose client
+  // has been marked as accessible to that role.
+  async getSitesForRole(role: 'admin' | 'supervisor' | 'field'): Promise<Site[]> {
     const { clientManagementService } = await import('./clientManagementService');
-    const [activeSites, defaultClient] = await Promise.all([
+    const [activeSites, allowedClients] = await Promise.all([
       this.getActiveSites(),
-      clientManagementService.getDefaultFieldClient(),
+      clientManagementService.getClientsForRole(role),
     ]);
-    if (!defaultClient) return activeSites;
-    return activeSites.filter(site => site.clientId === defaultClient.id);
+    if (role === 'admin') return activeSites;
+    const allowedClientIds = new Set(allowedClients.map(c => c.id));
+    return activeSites.filter(site => site.clientId && allowedClientIds.has(site.clientId));
   }
 
   // Add new site

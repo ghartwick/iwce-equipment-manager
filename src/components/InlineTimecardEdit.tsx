@@ -136,7 +136,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
           siteManagementService.getAllSites(),
           isCrossClientUser
             ? siteManagementService.getActiveSites()
-            : siteManagementService.getFieldCrewSites(),
+            : siteManagementService.getSitesForRole(user.role as 'field' | 'supervisor'),
           codeManagementService.getActiveCodes(),
           equipmentManagementService.getAllEquipment(),
           smallToolsManagementService.getAllSmallTools(),

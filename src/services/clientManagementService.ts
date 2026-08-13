@@ -8,6 +8,7 @@ export interface Client {
   isActive: boolean;
   allowFieldUsers?: boolean;
   allowSupervisorUsers?: boolean;
+  showSitesInInventory?: boolean;
   createdAt: Date;
   updatedAt: Date;
   createdBy?: string;
@@ -25,6 +26,7 @@ export class ClientManagementService {
       // Migrate the legacy single-default flag into the new field-user access flag
       allowFieldUsers: data.allowFieldUsers ?? data.isDefaultForFieldCrews ?? false,
       allowSupervisorUsers: data.allowSupervisorUsers ?? false,
+      showSitesInInventory: data.showSitesInInventory ?? false,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
       createdBy: data.createdBy,

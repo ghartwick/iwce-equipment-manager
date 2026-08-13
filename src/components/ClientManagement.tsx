@@ -14,6 +14,7 @@ interface ClientFormState {
   isActive: boolean;
   allowFieldUsers: boolean;
   allowSupervisorUsers: boolean;
+  showSitesInInventory: boolean;
 }
 
 interface SiteFormState {
@@ -23,7 +24,7 @@ interface SiteFormState {
   flagRed: boolean;
 }
 
-const emptyClientForm: ClientFormState = { name: '', description: '', isActive: true, allowFieldUsers: false, allowSupervisorUsers: false };
+const emptyClientForm: ClientFormState = { name: '', description: '', isActive: true, allowFieldUsers: false, allowSupervisorUsers: false, showSitesInInventory: false };
 const emptySiteForm: SiteFormState = { name: '', description: '', isActive: true, flagRed: false };
 
 export function ClientManagement({ currentUser }: ClientManagementProps) {
@@ -87,6 +88,7 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
       isActive: client.isActive,
       allowFieldUsers: client.allowFieldUsers ?? false,
       allowSupervisorUsers: client.allowSupervisorUsers ?? false,
+      showSitesInInventory: client.showSitesInInventory ?? false,
     });
     setShowClientForm(true);
   };
@@ -107,6 +109,11 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
     if (editingClient) setEditingClient({ ...editingClient, allowSupervisorUsers: checked });
   };
 
+  const handleToggleShowSitesInInventory = (checked: boolean) => {
+    setClientForm(prev => ({ ...prev, showSitesInInventory: checked }));
+    if (editingClient) setEditingClient({ ...editingClient, showSitesInInventory: checked });
+  };
+
   const handleClientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -121,6 +128,7 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
           isActive: clientForm.isActive,
           allowFieldUsers: clientForm.allowFieldUsers,
           allowSupervisorUsers: clientForm.allowSupervisorUsers,
+          showSitesInInventory: clientForm.showSitesInInventory,
         });
         setSuccess('Client updated successfully');
       } else {
@@ -130,6 +138,7 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
           isActive: clientForm.isActive,
           allowFieldUsers: clientForm.allowFieldUsers,
           allowSupervisorUsers: clientForm.allowSupervisorUsers,
+          showSitesInInventory: clientForm.showSitesInInventory,
           createdBy: currentUser?.username,
         });
         setSuccess('Client added successfully');
@@ -248,9 +257,20 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input type="checkbox" id="clientIsActive" checked={clientForm.isActive} onChange={(e) => setClientForm({ ...clientForm, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
-              <label htmlFor="clientIsActive" className="text-sm text-yellow-700 dark:text-yellow-300">Active</label>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" id="clientIsActive" checked={clientForm.isActive} onChange={(e) => setClientForm({ ...clientForm, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" />
+                <label htmlFor="clientIsActive" className="text-sm text-yellow-700 dark:text-yellow-300">Active</label>
+              </div>
+              <label className="flex items-center space-x-2">
+                <input
+                    type="checkbox"
+                    checked={clientForm.showSitesInInventory}
+                    onChange={(e) => handleToggleShowSitesInInventory(e.target.checked)}
+                    className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                />
+                <span className="text-sm text-yellow-700 dark:text-yellow-300">Show client sites in inventory</span>
+              </label>
             </div>
 
             {/* Role-based client access */}

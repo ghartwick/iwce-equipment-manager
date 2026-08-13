@@ -5,6 +5,7 @@ import { Equipment, Category, EquipmentMaintenance, EquipmentNote } from '../typ
 import { EquipmentLog } from './EquipmentLog';
 import { MaintenanceForm } from './MaintenanceForm';
 import { siteManagementService, Site } from '../services/siteManagementService';
+import { clientManagementService } from '../services/clientManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
 import { getCategories } from '../services/firebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
@@ -123,12 +124,15 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [activeSites, allUsers, loadedCategories] = await Promise.all([
+        const [activeSites, allUsers, loadedCategories, activeClients] = await Promise.all([
           siteManagementService.getActiveSites(),
           userManagementService.getAllUsers(),
-          getCategories()
+          getCategories(),
+          clientManagementService.getActiveClients()
         ]);
-        setSites(activeSites);
+        const allowedClientIds = new Set(activeClients.filter(c => c.showSitesInInventory).map(c => c.id));
+        const inventorySites = activeSites.filter(site => !site.clientId || allowedClientIds.has(site.clientId));
+        setSites(inventorySites);
         const activeUsers = allUsers
           .filter(user => user.isActive && (user.role === 'field' || user.role === 'admin' || user.role === 'supervisor'))
           .sort((a, b) => a.name.localeCompare(b.name));

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { SurveyTimeEntryForm } from '../components/SurveyTimeEntryForm';
@@ -15,6 +15,7 @@ export default function SurveyTimecardEditPage() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const isSubmittingRef = useRef(false);
   const [userManagementService] = useState(() => new UserManagementService());
 
   useEffect(() => {
@@ -47,6 +48,9 @@ export default function SurveyTimecardEditPage() {
 
   const handleSubmit = async (entryData: Partial<SurveyTimeEntry> & { isUpdate?: boolean }) => {
     if (!user) return;
+    // Prevent double-click / rapid resubmission race conditions
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     try {
       if (entryId === 'new') {
         const targetUserId = entryData.userId || user.id;
@@ -92,6 +96,8 @@ export default function SurveyTimecardEditPage() {
       navigate('/timecard?type=survey');
     } catch (err) {
       throw err;
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 

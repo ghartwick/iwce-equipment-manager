@@ -68,6 +68,13 @@ class TimecardService {
 
   // Create new time entry
   async createTimeEntry(entry: Omit<TimeEntry, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    // Final back-stop duplicate check in case two submit calls race to the service
+    if (entry.userId && entry.date && entry.job) {
+      const existing = await this.findDuplicateEntry(entry.userId, entry.date as Date, entry.job);
+      if (existing) {
+        throw new Error(`A time card for "${entry.job}" already exists on this date.`);
+      }
+    }
     const docRef = await addDoc(collection(db, this.collection), {
       ...entry,
       date: Timestamp.fromDate(entry.date),

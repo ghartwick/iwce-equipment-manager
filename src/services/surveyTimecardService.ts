@@ -109,6 +109,13 @@ class SurveyTimecardService {
   }
 
   async createEntry(entry: Omit<SurveyTimeEntry, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    // Final back-stop duplicate check in case two submit calls race to the service
+    if (entry.userId && entry.date && entry.clientId && entry.site) {
+      const existing = await this.findDuplicateEntry(entry.userId, entry.date as Date, entry.clientId, entry.site);
+      if (existing) {
+        throw new Error(`A survey time card for ${entry.clientName || entry.clientId} / ${entry.site} already exists on this date.`);
+      }
+    }
     const cleanEntry = Object.fromEntries(
       Object.entries(entry).filter(([_, v]) => v !== undefined)
     );

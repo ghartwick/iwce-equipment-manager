@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
@@ -17,6 +17,7 @@ export default function TimecardEditPage() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const isSubmittingRef = useRef(false);
   const [userManagementService] = useState(() => new UserManagementService());
 
   useEffect(() => {
@@ -58,6 +59,9 @@ export default function TimecardEditPage() {
   };
 
   const handleSubmit = async (entryData: Partial<TimeEntry> & { isUpdate?: boolean }) => {
+    // Prevent double-click / rapid resubmission race conditions
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     try {
       if (entryId === 'new') {
         // Check for duplicate (same user + date + site) before creating for both field users and admins
@@ -79,10 +83,10 @@ export default function TimecardEditPage() {
       } else {
         // Update existing entry
         if (!entry) return;
-        
+
         // Check if this is a submit action (only if isUpdate flag is not set)
         const isSubmitting = entryData.status === 'submitted' && !entryData.isUpdate;
-        
+
         if (isSubmitting) {
           // For submit action, use submitTimeEntry to preserve original submitter
           const submitUserId = entry.submittedBy || entry.userId;
@@ -110,6 +114,8 @@ export default function TimecardEditPage() {
       navigate('/timecard');
     } catch (err: any) {
       throw err;
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 

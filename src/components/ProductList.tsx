@@ -4,7 +4,8 @@ import { Equipment, Category } from '../types';
 import { exportToExcel, importFromExcel } from '../utils/exportToExcel';
 import { Site } from '../services/siteManagementService';
 import { AppUser } from '../services/userManagementService';
-import { ServiceNotificationItem } from '../services/serviceNotificationService';
+import { ServiceNotificationItem, mostUrgentPerEquipment } from '../services/serviceNotificationService';
+import { ServiceScheduleBars } from './ServiceScheduleBars';
 
 interface ProductListProps {
   products: Equipment[];
@@ -41,7 +42,14 @@ export function ProductList({
   fleetProducts = [],
   serviceNotifications = [],
 }: ProductListProps) {
-  const getServiceStatus = (productId: string) => serviceNotifications.find(n => n.equipmentId === productId);
+  // A unit now has one notification per interval, so rows summarise with the worst one.
+  const urgentByEquipment = React.useMemo(
+    () => mostUrgentPerEquipment(serviceNotifications),
+    [serviceNotifications]
+  );
+  const getServiceStatus = (productId: string) => urgentByEquipment[productId];
+  const getServiceItems = (productId: string) =>
+    serviceNotifications.filter(n => n.equipmentId === productId && !n.isCustom);
   const sortedSites = sites ? [...sites].sort((a, b) => a.name.localeCompare(b.name)) : [];
   const sortedUsers = users ? [...users].filter(u => u.isActive && (u.role === 'field' || u.role === 'admin' || u.role === 'supervisor')).sort((a, b) => a.name.localeCompare(b.name)) : [];
 
@@ -228,7 +236,7 @@ export function ProductList({
                                   <span className="text-gray-600 dark:text-gray-400 ml-2">- {product.description}</span>
                                 )}
                               </div>
-                              {serviceStatus && (
+                              {serviceStatus?.message && (
                                 <div className={`text-xs font-semibold mt-0.5 ${serviceStatus.status === 'due' ? 'text-red-600 dark:text-red-400' : 'text-yellow-700 dark:text-yellow-400'}`}>
                                   {serviceStatus.message}
                                 </div>
@@ -338,17 +346,13 @@ export function ProductList({
                           <td className="w-[30%] px-1 py-4">
                             <div className="flex items-center justify-end gap-3 pr-1">
                               {(() => {
-                                const sn = getServiceStatus(product.id);
-                                if (!sn || !sn.serviceInterval) return null;
-                                const hoursIntoInterval = (sn.currentHours - sn.servicedAt) % sn.serviceInterval;
-                                const pct = Math.min(Math.max((hoursIntoInterval / sn.serviceInterval) * 100, 0), 100);
+                                const states = getServiceItems(product.id)
+                                  .map(n => n.state)
+                                  .filter((s): s is NonNullable<typeof s> => !!s);
+                                if (states.length === 0) return null;
                                 return (
-                                  <div className="flex flex-col items-end gap-0.5 min-w-[160px]">
-                                    <div className="relative w-40 h-2 rounded-full overflow-hidden">
-                                      <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, hsl(120,80%,40%), hsl(60,80%,45%), hsl(30,80%,45%), hsl(0,80%,42%))' }} />
-                                      <div className="absolute top-0 bottom-0 right-0 bg-gray-200 dark:bg-gray-700" style={{ left: `${pct}%` }} />
-                                    </div>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Due in {Math.max(0, Math.round(sn.hoursUntilService)).toLocaleString()} hr/km</span>
+                                  <div className="w-48" onClick={(e) => e.stopPropagation()}>
+                                    <ServiceScheduleBars states={states} compact initiallyExpanded={1} />
                                   </div>
                                 );
                               })()}
@@ -528,17 +532,13 @@ export function ProductList({
                           <td className="w-[30%] px-1 py-4">
                             <div className="flex items-center justify-end gap-3 pr-1">
                               {(() => {
-                                const sn = getServiceStatus(product.id);
-                                if (!sn || !sn.serviceInterval) return null;
-                                const hoursIntoInterval = (sn.currentHours - sn.servicedAt) % sn.serviceInterval;
-                                const pct = Math.min(Math.max((hoursIntoInterval / sn.serviceInterval) * 100, 0), 100);
+                                const states = getServiceItems(product.id)
+                                  .map(n => n.state)
+                                  .filter((s): s is NonNullable<typeof s> => !!s);
+                                if (states.length === 0) return null;
                                 return (
-                                  <div className="flex flex-col items-end gap-0.5 min-w-[160px]">
-                                    <div className="relative w-40 h-2 rounded-full overflow-hidden">
-                                      <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, hsl(120,80%,40%), hsl(60,80%,45%), hsl(30,80%,45%), hsl(0,80%,42%))' }} />
-                                      <div className="absolute top-0 bottom-0 right-0 bg-gray-200 dark:bg-gray-700" style={{ left: `${pct}%` }} />
-                                    </div>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Due in {Math.max(0, Math.round(sn.hoursUntilService)).toLocaleString()} hr/km</span>
+                                  <div className="w-48" onClick={(e) => e.stopPropagation()}>
+                                    <ServiceScheduleBars states={states} compact initiallyExpanded={1} />
                                   </div>
                                 );
                               })()}

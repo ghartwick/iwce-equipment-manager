@@ -1,24 +1,96 @@
-import { shopHistoryFirebaseService, ShopReport } from './shopHistoryFirebaseService';
+import { shopHistoryFirebaseService } from './shopHistoryFirebaseService';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from './maintenanceHistoryFirebaseService';
 import { equipmentManagementService } from './equipmentManagementService';
 import { fleetManagementService } from './fleetManagementService';
 import { getCategories } from './firebaseService';
-import { Equipment, Category } from '../types';
+import { computeUnitSchedule } from './serviceScheduleMigration';
+import { ServiceDueState, dateFromDayNumber } from './serviceScheduleService';
+import { Equipment, ServiceUnit } from '../types';
 
 export type ServiceStatus = 'ok' | 'schedule' | 'due';
 
+// One item per (unit, interval). A unit with four intervals now produces four
+// independent notifications rather than a single blended one.
 export interface ServiceNotificationItem {
   equipmentId: string;
   equipmentName: string;
+  isFleet: boolean;
+  intervalId: string;
+  intervalName: string;
   status: ServiceStatus;
   message: string;
-  currentHours: number;
-  servicedAt: number;
-  serviceInterval: number;
-  serviceNotification: number;
-  hoursUntilService: number;
-  isFleet: boolean;
+  unit: ServiceUnit;
+  current: number;
+  dueAt: number | null;
+  remaining: number | null;
+  progressPct: number;
   isCustom?: boolean;
+  // Full engine output, so list views can render bars without recomputing.
+  state?: ServiceDueState;
+}
+
+const STATUS_RANK: Record<ServiceStatus, number> = { due: 0, schedule: 1, ok: 2 };
+
+// Day-based intervals carry day numbers, so they read as dates rather than meters.
+function formatTarget(state: ServiceDueState): string {
+  if (state.dueAt == null) return 'unscheduled';
+  if (state.unit === 'days') return dateFromDayNumber(state.dueAt).toLocaleDateString();
+  const suffix = state.unit === 'km' ? 'km' : 'hr';
+  return `${state.dueAt.toLocaleString()} ${suffix}`;
+}
+
+// Stable React key, since equipmentId alone is no longer unique.
+export function notificationKey(item: ServiceNotificationItem): string {
+  return `${item.equipmentId}:${item.intervalId}`;
+}
+
+// Worst status per unit, for list views that only have room for one summary.
+export function mostUrgentPerEquipment(
+  items: ServiceNotificationItem[]
+): Record<string, ServiceNotificationItem> {
+  const byEquipment: Record<string, ServiceNotificationItem> = {};
+  for (const item of items) {
+    const existing = byEquipment[item.equipmentId];
+    if (!existing) {
+      byEquipment[item.equipmentId] = item;
+      continue;
+    }
+    const rank = STATUS_RANK[item.status] - STATUS_RANK[existing.status];
+    if (rank < 0) {
+      byEquipment[item.equipmentId] = item;
+    } else if (rank === 0) {
+      const a = item.remaining ?? Number.POSITIVE_INFINITY;
+      const b = existing.remaining ?? Number.POSITIVE_INFINITY;
+      if (a < b) byEquipment[item.equipmentId] = item;
+    }
+  }
+  return byEquipment;
+}
+
+// The engine also emits healthy intervals so list views can draw bars. Alert
+// surfaces only want the ones needing action, most urgent first.
+export function actionableNotifications(
+  items: ServiceNotificationItem[]
+): ServiceNotificationItem[] {
+  return items
+    .filter(item => item.status !== 'ok')
+    .sort((a, b) => {
+      const rank = STATUS_RANK[a.status] - STATUS_RANK[b.status];
+      if (rank !== 0) return rank;
+      const left = a.remaining ?? Number.POSITIVE_INFINITY;
+      const right = b.remaining ?? Number.POSITIVE_INFINITY;
+      return left - right;
+    });
+}
+
+function groupByEquipment<T extends { equipmentId: string }>(rows: T[]): Map<string, T[]> {
+  const map = new Map<string, T[]>();
+  for (const row of rows) {
+    const list = map.get(row.equipmentId);
+    if (list) list.push(row);
+    else map.set(row.equipmentId, [row]);
+  }
+  return map;
 }
 
 class ServiceNotificationService {
@@ -35,23 +107,31 @@ class ServiceNotificationService {
         maintenanceHistoryFirebaseService.getAllMaintenanceHistory(),
       ]);
 
+      // Grouped up front so each unit is a map lookup instead of a full scan.
+      const shopByEquipment = groupByEquipment(allShopReports);
+      const maintenanceByEquipment = groupByEquipment(allMaintenanceReports);
+
       const notifications: ServiceNotificationItem[] = [];
 
-      for (const equipment of heavyEquipment) {
+      const addFor = (equipment: Equipment, isFleet: boolean) => {
         const cat = categories.find(c => c.id === equipment.category);
-        const status = this.calculateStatus(equipment, allShopReports, allMaintenanceReports, false, cat);
-        if (status) notifications.push(status);
-        const custom = this.calculateCustomStatuses(equipment, allMaintenanceReports, false, cat);
-        notifications.push(...custom);
-      }
+        const states = computeUnitSchedule(
+          equipment,
+          cat ?? null,
+          shopByEquipment.get(equipment.id) ?? [],
+          maintenanceByEquipment.get(equipment.id) ?? []
+        );
+        for (const state of states) {
+          const item = this.toNotification(equipment, state, isFleet);
+          if (item) notifications.push(item);
+        }
+        notifications.push(
+          ...this.calculateCustomStatuses(equipment, allMaintenanceReports, isFleet)
+        );
+      };
 
-      for (const equipment of fleetEquipment) {
-        const cat = categories.find(c => c.id === equipment.category);
-        const status = this.calculateStatus(equipment, allShopReports, allMaintenanceReports, true, cat);
-        if (status) notifications.push(status);
-        const custom = this.calculateCustomStatuses(equipment, allMaintenanceReports, true, cat);
-        notifications.push(...custom);
-      }
+      for (const equipment of heavyEquipment) addFor(equipment, false);
+      for (const equipment of fleetEquipment) addFor(equipment, true);
 
       return notifications;
     } catch (error) {
@@ -60,117 +140,47 @@ class ServiceNotificationService {
     }
   }
 
-  calculateStatus(
+  // Maps one interval's due state onto a notification. 'ok' and 'no-baseline'
+  // states still surface so list views can draw a bar, but only due/schedule
+  // states carry a message.
+  private toNotification(
     equipment: Equipment,
-    shopReports: ShopReport[],
-    maintenanceReports: MaintenanceReport[],
-    isFleet: boolean,
-    category?: Category
+    state: ServiceDueState,
+    isFleet: boolean
   ): ServiceNotificationItem | null {
-    const { serviceInterval, serviceNotification, largeServiceInterval } = equipment;
-    if (!serviceInterval || !serviceNotification) return null;
+    if (state.status === 'no-baseline') return null;
 
-    const isHeavy = category?.notificationType === 'heavy' && !!largeServiceInterval;
+    let status: ServiceStatus = 'ok';
+    if (state.status === 'overdue') status = 'due';
+    else if (state.status === 'due-soon') status = 'schedule';
 
-    // For heavy: baseline is the latest MAJOR service card. For fleet: latest any card.
-    const equipmentShopReports = shopReports
-      .filter(r => {
-        if (r.equipmentId !== equipment.id) return false;
-        if (isHeavy) return r.serviceType === 'major' && r.servicedAt != null;
-        return r.servicedAt != null || r.lastServiceHours != null;
-      })
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    if (equipmentShopReports.length === 0) return null;
-
-    const latest = equipmentShopReports[0];
-    const servicedAt = latest.servicedAt
-      ?? (latest.lastServiceHours != null ? latest.lastServiceHours - (latest.serviceInterval || serviceInterval) : null);
-    if (servicedAt == null) return null;
-
-    const equipmentMaintenanceReports = maintenanceReports
-      .filter(r => r.equipmentId === equipment.id && r.maintenance?.hours != null)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    if (equipmentMaintenanceReports.length === 0) return null;
-
-    const currentHours = equipmentMaintenanceReports[0].maintenance.hours!;
-
-    if (isHeavy) {
-      // Heavy mode: repeating sub-intervals within the major cycle
-      const cycleEnd = servicedAt + largeServiceInterval!;
-
-      // Service is due if we have passed the full major interval
-      if (currentHours >= cycleEnd) {
-        return {
-          equipmentId: equipment.id, equipmentName: equipment.name,
-          status: 'due', message: 'Major Service Due',
-          currentHours, servicedAt, serviceInterval, serviceNotification,
-          hoursUntilService: cycleEnd - currentHours, isFleet,
-        };
-      }
-
-      // Find which sub-interval we are currently in
-      const subIndex = Math.floor((currentHours - servicedAt) / serviceInterval);
-      const subStart = servicedAt + subIndex * serviceInterval;
-      const notifThreshold = subStart + serviceNotification;
-
-      if (currentHours >= notifThreshold) {
-        const nextMinor = subStart + serviceInterval;
-        return {
-          equipmentId: equipment.id, equipmentName: equipment.name,
-          status: 'schedule',
-          message: `Schedule Service (${nextMinor.toLocaleString()} hr service)`,
-          currentHours, servicedAt, serviceInterval, serviceNotification,
-          hoursUntilService: nextMinor - currentHours, isFleet,
-        };
-      }
-
-      // OK state — still return bar data
-      const nextMinorForOk = servicedAt + (Math.floor((currentHours - servicedAt) / serviceInterval) + 1) * serviceInterval;
-      return {
-        equipmentId: equipment.id, equipmentName: equipment.name,
-        status: 'ok', message: '',
-        currentHours, servicedAt, serviceInterval, serviceNotification,
-        hoursUntilService: nextMinorForOk - currentHours, isFleet,
-      };
-    }
-
-    // Fleet mode (original logic)
-    const hoursUntilService = (servicedAt + serviceInterval) - currentHours;
-
-    if (currentHours >= servicedAt + serviceInterval) {
-      return {
-        equipmentId: equipment.id, equipmentName: equipment.name,
-        status: 'due', message: 'Service Due',
-        currentHours, servicedAt, serviceInterval, serviceNotification,
-        hoursUntilService, isFleet,
-      };
-    }
-
-    if (currentHours >= servicedAt + serviceNotification) {
-      return {
-        equipmentId: equipment.id, equipmentName: equipment.name,
-        status: 'schedule', message: 'Schedule Service',
-        currentHours, servicedAt, serviceInterval, serviceNotification,
-        hoursUntilService, isFleet,
-      };
-    }
-
-    // OK state — still return bar data
     return {
-      equipmentId: equipment.id, equipmentName: equipment.name,
-      status: 'ok', message: '',
-      currentHours, servicedAt, serviceInterval, serviceNotification,
-      hoursUntilService, isFleet,
+      equipmentId: equipment.id,
+      equipmentName: equipment.name,
+      isFleet,
+      intervalId: state.intervalId,
+      intervalName: state.name,
+      status,
+      message: this.messageFor(state, status),
+      unit: state.unit,
+      current: state.current,
+      dueAt: state.dueAt,
+      remaining: state.remaining,
+      progressPct: state.progressPct,
+      state,
     };
+  }
+
+  private messageFor(state: ServiceDueState, status: ServiceStatus): string {
+    if (status === 'ok') return '';
+    if (status === 'due') return `${state.name} Due`;
+    return `Schedule ${state.name} (${formatTarget(state)})`;
   }
 
   calculateCustomStatuses(
     equipment: Equipment,
     maintenanceReports: MaintenanceReport[],
-    isFleet: boolean,
-    _category?: Category
+    isFleet: boolean
   ): ServiceNotificationItem[] {
     const customNotifications = equipment.customNotifications;
     if (!customNotifications || customNotifications.length === 0) return [];
@@ -188,14 +198,16 @@ class ServiceNotificationService {
       .map(cn => ({
         equipmentId: equipment.id,
         equipmentName: equipment.name,
+        isFleet,
+        intervalId: `custom-${cn.threshold}-${cn.description}`,
+        intervalName: cn.description,
         status: 'due' as ServiceStatus,
         message: cn.description,
-        currentHours,
-        servicedAt: 0,
-        serviceInterval: 0,
-        serviceNotification: cn.threshold,
-        hoursUntilService: 0,
-        isFleet,
+        unit: 'hours' as ServiceUnit,
+        current: currentHours,
+        dueAt: cn.threshold,
+        remaining: cn.threshold - currentHours,
+        progressPct: 100,
         isCustom: true,
       }));
   }

@@ -17,7 +17,7 @@ import { shopHistoryFirebaseService } from '../services/shopHistoryFirebaseServi
 import { repairListService, RepairListCheckedItem } from '../services/repairListService';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { equipmentServiceLogService } from '../services/equipmentServiceLogService';
-import { readingsFromMaintenanceReports } from '../services/serviceScheduleMigration';
+import { computeUnitSchedule, readingsFromMaintenanceReports } from '../services/serviceScheduleMigration';
 import { ResolveRepairModal, ResolveRepairTarget } from './ResolveRepairModal';
 import { useAuth } from '../hooks/useAuth';
 
@@ -345,43 +345,26 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
         });
       }
 
-      // Check service notification threshold (fleet and heavy equipment)
-      if (product.serviceInterval && product.serviceNotification && maintenance.hours != null) {
+      // Flag the reading if it pushed any interval into its warning window.
+      // Uses the shared engine so this cannot disagree with the bars or alerts.
+      if (maintenance.hours != null) {
         try {
-          const [shopHistory, cats] = await Promise.all([
+          const [shopHistory, cats, history] = await Promise.all([
             shopHistoryFirebaseService.getEquipmentShopHistory(product.id),
             product.category ? getCategories() : Promise.resolve([]),
+            maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(product.id),
           ]);
-          const cat = cats.find(c => c.id === product.category);
-          const isHeavy = cat?.notificationType === 'heavy' && !!product.largeServiceInterval;
+          const cat = cats.find(c => c.id === product.category) ?? null;
+          const states = computeUnitSchedule(product, cat, shopHistory, history);
+          const triggered = states.some(
+            s => s.status === 'due-soon' || s.status === 'overdue'
+          );
 
-          // For heavy: baseline = latest MAJOR service. For fleet: latest any service.
-          const relevantReports = isHeavy
-            ? shopHistory.filter(r => r.serviceType === 'major' && r.servicedAt != null)
-            : shopHistory;
-
-          if (relevantReports.length > 0) {
-            const latest = relevantReports[0];
-            const servicedAt = latest.servicedAt
-              ?? (latest.lastServiceHours != null ? latest.lastServiceHours - (latest.serviceInterval || product.serviceInterval) : null);
-
-            if (servicedAt != null) {
-              let triggered = false;
-              if (isHeavy) {
-                const subIndex = Math.floor((maintenance.hours - servicedAt) / product.serviceInterval);
-                const subStart = servicedAt + subIndex * product.serviceInterval;
-                triggered = maintenance.hours >= subStart + product.serviceNotification;
-              } else {
-                triggered = maintenance.hours >= servicedAt + product.serviceNotification;
-              }
-
-              if (triggered) {
-                await maintenanceHistoryFirebaseService.updateMaintenanceReport(reportId, {
-                  ...maintenance,
-                  serviceNotificationTriggered: true,
-                });
-              }
-            }
+          if (triggered) {
+            await maintenanceHistoryFirebaseService.updateMaintenanceReport(reportId, {
+              ...maintenance,
+              serviceNotificationTriggered: true,
+            });
           }
         } catch (err) {
           console.error('Service notification threshold check failed:', err);

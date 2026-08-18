@@ -1,6 +1,13 @@
-import { StockAlert, Equipment } from '../types';
+import { StockAlert, Equipment, ServiceUnit } from '../types';
 import { useState } from 'react';
-import { ServiceNotificationItem } from '../services/serviceNotificationService';
+import { ServiceNotificationItem, notificationKey, actionableNotifications } from '../services/serviceNotificationService';
+import { dateFromDayNumber } from '../services/serviceScheduleService';
+
+// Day-based intervals store day numbers, so they read as dates instead of meters.
+function formatMeter(value: number, unit: ServiceUnit): string {
+  if (unit === 'days') return dateFromDayNumber(value).toLocaleDateString();
+  return `${Math.round(value).toLocaleString()} ${unit === 'km' ? 'km' : 'hr'}`;
+}
 
 interface AlertPanelProps {
   alerts: StockAlert[];
@@ -53,7 +60,9 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore, serviceNotif
     groupedByDay[groupedByDay.length - 1].alerts.push(alert);
   });
 
-  if (alerts.length === 0 && serviceNotifications.length === 0) {
+  const actionable = actionableNotifications(serviceNotifications);
+
+  if (alerts.length === 0 && actionable.length === 0) {
     return (
       <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow p-3 sm:p-6">
         <p className="text-yellow-700 dark:text-yellow-600 text-sm sm:text-base">No equipment alerts at this time.</p>
@@ -68,14 +77,14 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore, serviceNotif
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Service Notifications */}
-        {serviceNotifications.length > 0 && (
+        {actionable.length > 0 && (
           <div>
             <div className="sticky top-0 px-3 py-1.5 sm:px-4 sm:py-2 bg-yellow-600 dark:bg-yellow-900 border-b border-yellow-300 dark:border-yellow-700 z-10">
               <p className="text-xs sm:text-sm font-semibold text-yellow-800 dark:text-yellow-300">Service Notifications</p>
             </div>
             <div className="divide-y divide-yellow-200 dark:divide-yellow-800">
-              {serviceNotifications.map((notif) => (
-                <div key={notif.equipmentId} className={`p-3 sm:p-4 ${notif.status === 'due' ? 'bg-red-50 dark:bg-red-950' : 'hover:bg-yellow-50 dark:hover:bg-yellow-950'}`}>
+              {actionable.map((notif) => (
+                <div key={notificationKey(notif)} className={`p-3 sm:p-4 ${notif.status === 'due' ? 'bg-red-50 dark:bg-red-950' : 'hover:bg-yellow-50 dark:hover:bg-yellow-950'}`}>
                   <div className="flex-1 min-w-0">
                     <p className={`text-xs sm:text-sm font-medium ${notif.status === 'due' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-yellow-100'}`}>
                       {notif.equipmentName}
@@ -83,15 +92,20 @@ export function AlertPanel({ alerts, products, onLoadMore, hasMore, serviceNotif
                     <p className={`text-xs sm:text-sm font-semibold mt-0.5 ${notif.status === 'due' ? 'text-red-500 dark:text-red-400' : 'text-yellow-700 dark:text-yellow-400'}`}>
                       {notif.message}
                     </p>
-                    {notif.isCustom ? (
-                      <p className="text-xs text-yellow-600 dark:text-yellow-600 mt-1">
-                        Current: {notif.currentHours} hr/km &middot; Threshold: {notif.serviceNotification} hr/km
-                      </p>
-                    ) : (
-                      <p className="text-xs text-yellow-600 dark:text-yellow-600 mt-1">
-                        Current: {notif.currentHours} &middot; Next Service: {notif.servicedAt} &middot; Interval: {notif.serviceInterval}
-                      </p>
-                    )}
+                    <p className="text-xs text-yellow-600 dark:text-yellow-600 mt-1">
+                      Current: {formatMeter(notif.current, notif.unit)}
+                      {notif.dueAt != null && (
+                        <> &middot; Due at: {formatMeter(notif.dueAt, notif.unit)}</>
+                      )}
+                      {notif.remaining != null && (
+                        <>
+                          {' '}&middot;{' '}
+                          {notif.remaining < 0
+                            ? `${Math.abs(Math.round(notif.remaining)).toLocaleString()} over`
+                            : `${Math.round(notif.remaining).toLocaleString()} left`}
+                        </>
+                      )}
+                    </p>
                   </div>
                 </div>
               ))}

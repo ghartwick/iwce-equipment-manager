@@ -24,15 +24,7 @@ export function Service() {
   const [equipmentName, setEquipmentName] = useState<string>('');
   const [unitName, setUnitName] = useState<string>('');
   const [equipmentSite, setEquipmentSite] = useState<string>('');
-  const [serviceInterval, setServiceInterval] = useState<number | undefined>(undefined);
-  const [largeServiceInterval, setLargeServiceInterval] = useState<number | undefined>(undefined);
-  const [serviceNotification, setServiceNotification] = useState<number | undefined>(undefined);
   const [notificationType, setNotificationType] = useState<'fleet' | 'heavy' | 'none'>('none');
-  // Track values that have been saved to DB — used for lock/edit logic (NOT the live typed value)
-  const [savedServiceInterval, setSavedServiceInterval] = useState<number | undefined>(undefined);
-  const [savedLargeServiceInterval, setSavedLargeServiceInterval] = useState<number | undefined>(undefined);
-  const [savedServiceNotification, setSavedServiceNotification] = useState<number | undefined>(undefined);
-  const [editingLargeInterval, setEditingLargeInterval] = useState(false);
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
   const [shopAttachments, setShopAttachments] = useState<Record<string, any[]>>({});
   const [showShopForm, setShowShopForm] = useState(false);
@@ -40,8 +32,6 @@ export function Service() {
   const [equipmentDataNotes, setEquipmentDataNotes] = useState<EquipmentNote[]>([]);
   const [reportsCollapsed, setReportsCollapsed] = useState(true);
   const [hoveredAttachment, setHoveredAttachment] = useState<any | null>(null);
-  const [editingInterval, setEditingInterval] = useState(false);
-  const [editingNotification, setEditingNotification] = useState(false);
   const [customNotifications, setCustomNotifications] = useState<Array<{ description: string; threshold: number }>>([]);
   const [showAddCustom, setShowAddCustom] = useState(false);
   const [newCustomDesc, setNewCustomDesc] = useState('');
@@ -50,8 +40,6 @@ export function Service() {
   const [maintenanceItems, setMaintenanceItems] = useState<string[] | undefined>(undefined);
   const [showHistory, setShowHistory] = useState(false);
   const [category, setCategory] = useState<Category | null>(null);
-  const [categoryServiceLabels, setCategoryServiceLabels] = useState<string[]>([]);
-  const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null);
   const [categoryIntervals, setCategoryIntervals] = useState<ServiceIntervalDef[]>([]);
   const [unitIntervals, setUnitIntervals] = useState<ServiceIntervalDef[]>([]);
   const [intervalOverrides, setIntervalOverrides] = useState<Record<string, ServiceIntervalOverride>>({});
@@ -71,49 +59,19 @@ export function Service() {
     );
   }, [equipment, unitIntervals, intervalOverrides, category, categoryIntervals, shopReports, maintenanceReports]);
 
-  // Compute heavy equipment cycle schedule
-  const cycleInfo = useMemo(() => {
-    if (notificationType !== 'heavy' || !serviceInterval || !largeServiceInterval) return null;
-    const reportsWithHours = shopReports.filter(r => r.servicedAt != null);
-    if (reportsWithHours.length === 0) return null;
-
-    // Cycle starts at the most recent major service's servicedAt
-    const majorReports = reportsWithHours
-      .filter(r => r.serviceType === 'major')
-      .sort((a, b) => (b.servicedAt ?? 0) - (a.servicedAt ?? 0));
-    const cycleStart = majorReports.length > 0
-      ? majorReports[0].servicedAt!
-      : reportsWithHours.sort((a, b) => (a.servicedAt ?? 0) - (b.servicedAt ?? 0))[0].servicedAt!;
-
-    const numSlots = Math.floor(largeServiceInterval / serviceInterval);
-
-    // Minor reports completed in this cycle (after cycleStart)
-    const cycleMinorReports = reportsWithHours
-      .filter(r => r.serviceType === 'minor' && r.servicedAt! > cycleStart)
-      .sort((a, b) => (a.servicedAt ?? 0) - (b.servicedAt ?? 0));
-
-    const milestones = [];
-    for (let i = 1; i < numSlots; i++) {
-      const slotIndex = i - 1;
-      milestones.push({
-        label: categoryServiceLabels[slotIndex] || `Minor Service ${i}`,
-        hour: cycleStart + i * serviceInterval,
-        type: 'minor' as const,
-        completed: cycleMinorReports.length >= i,
-        report: cycleMinorReports[i - 1] ?? null,
-      });
+  // Cards record which intervals they satisfied; older rows only carry the
+  // legacy minor/major flag.
+  const serviceLabelForReport = (report: ShopReport): string | null => {
+    if (report.intervalIds && report.intervalIds.length > 0) {
+      return report.intervalIds
+        .map(id => scheduleStates.find(s => s.intervalId === id)?.name ?? 'Service')
+        .join(', ');
     }
-    const majorSlotIndex = numSlots - 1;
-    milestones.push({
-      label: categoryServiceLabels[majorSlotIndex] || 'Major Service',
-      hour: cycleStart + largeServiceInterval,
-      type: 'major' as const,
-      completed: false,
-      report: null,
-    });
-
-    return { cycleStart, milestones, completedMinorCount: cycleMinorReports.length };
-  }, [shopReports, notificationType, serviceInterval, largeServiceInterval, categoryServiceLabels]);
+    if (report.serviceType) {
+      return report.serviceType === 'major' ? 'Major Service' : 'Minor Service';
+    }
+    return null;
+  };
 
   // Both equipment collections are in play, so every unit-level write has to
   // pick the right service. Mirrors saveNotesToEquipment.
@@ -143,23 +101,6 @@ export function Service() {
   const handleSaveIntervalOverrides = async (next: Record<string, ServiceIntervalOverride>) => {
     await saveEquipmentFields({ intervalOverrides: next });
     setIntervalOverrides(next);
-  };
-
-  const handleSaveServiceLabel = async (slotIndex: number, newLabel: string) => {
-    if (!category) return;
-    const trimmed = newLabel.trim();
-    if (!trimmed) return;
-    const next = [...categoryServiceLabels];
-    next[slotIndex] = trimmed;
-    setCategoryServiceLabels(next);
-    setCategory(prev => (prev ? { ...prev, serviceLabels: next } : null));
-    setEditingServiceIndex(null);
-    try {
-      await updateCategory(category.id, { serviceLabels: next });
-    } catch (error) {
-      console.error('Error saving service label:', error);
-      alert('Error saving service label');
-    }
   };
 
   const addEquipmentDataNote = async () => {
@@ -235,44 +176,6 @@ export function Service() {
     }
   };
 
-  const handleSaveServiceInterval = async () => {
-    if (!equipmentId) return;
-    try {
-      const allEquipment = await equipmentManagementService.getAllEquipment();
-      const inEquipmentCollection = allEquipment.some(eq => eq.id === equipmentId);
-      if (inEquipmentCollection) {
-        await equipmentManagementService.updateEquipment(equipmentId, { serviceInterval });
-      } else {
-        await fleetManagementService.updateEquipment(equipmentId, { serviceInterval }, undefined, true);
-      }
-      setSavedServiceInterval(serviceInterval);
-      setEditingInterval(false);
-      alert('Service interval saved successfully');
-    } catch (error) {
-      console.error('Error saving service interval:', error);
-      alert('Error saving service interval');
-    }
-  };
-
-  const handleSaveLargeServiceInterval = async () => {
-    if (!equipmentId) return;
-    try {
-      const allEquipment = await equipmentManagementService.getAllEquipment();
-      const inEquipmentCollection = allEquipment.some(eq => eq.id === equipmentId);
-      if (inEquipmentCollection) {
-        await equipmentManagementService.updateEquipment(equipmentId, { largeServiceInterval });
-      } else {
-        await fleetManagementService.updateEquipment(equipmentId, { largeServiceInterval }, undefined, true);
-      }
-      setSavedLargeServiceInterval(largeServiceInterval);
-      setEditingLargeInterval(false);
-      alert('Major service interval saved successfully');
-    } catch (error) {
-      console.error('Error saving major service interval:', error);
-      alert('Error saving major service interval');
-    }
-  };
-
   const handleSaveCustomNotifications = async (updated: Array<{ description: string; threshold: number }>) => {
     if (!equipmentId) return;
     try {
@@ -287,25 +190,6 @@ export function Service() {
     } catch (error) {
       console.error('Error saving custom notifications:', error);
       alert('Error saving custom notifications');
-    }
-  };
-
-  const handleSaveServiceNotification = async () => {
-    if (!equipmentId) return;
-    try {
-      const allEquipment = await equipmentManagementService.getAllEquipment();
-      const inEquipmentCollection = allEquipment.some(eq => eq.id === equipmentId);
-      if (inEquipmentCollection) {
-        await equipmentManagementService.updateEquipment(equipmentId, { serviceNotification });
-      } else {
-        await fleetManagementService.updateEquipment(equipmentId, { serviceNotification }, undefined, true);
-      }
-      setSavedServiceNotification(serviceNotification);
-      setEditingNotification(false);
-      alert('Service notification saved successfully');
-    } catch (error) {
-      console.error('Error saving service notification:', error);
-      alert('Error saving service notification');
     }
   };
 
@@ -328,12 +212,6 @@ export function Service() {
             setEquipment(equipment);
             setUnitName(equipment.name || '');
             setEquipmentSite(equipment.site || '');
-            setServiceInterval(equipment.serviceInterval);
-            setSavedServiceInterval(equipment.serviceInterval);
-            setLargeServiceInterval(equipment.largeServiceInterval);
-            setSavedLargeServiceInterval(equipment.largeServiceInterval);
-            setServiceNotification(equipment.serviceNotification);
-            setSavedServiceNotification(equipment.serviceNotification);
             setCustomNotifications(equipment.customNotifications || []);
             setEquipmentDataNotes(equipment.notes || []);
             setUnitIntervals(equipment.serviceIntervals || []);
@@ -344,7 +222,6 @@ export function Service() {
                 const cats = await getCategories();
                 const cat = cats.find(c => c.id === equipment.category);
                 setCategory(cat || null);
-                setCategoryServiceLabels(cat?.serviceLabels || []);
                 setNotificationType(cat?.notificationType || 'none');
                 setMaintenanceItems(cat?.maintenanceItems);
                 // Categories not yet migrated show their legacy configuration
@@ -404,13 +281,18 @@ export function Service() {
     const reportEquipmentName = equipmentName || unitName;
     if (!reportEquipmentName) return;
 
-    // For heavy equipment, major service resets the cycle (nextServiceAt = servicedAt + largeInterval)
-    // Minor service: nextServiceAt = servicedAt + smallInterval
-    const isHeavyMajor = notificationType === 'heavy' && shopReport.serviceType === 'major';
-    const relevantInterval = isHeavyMajor ? largeServiceInterval : serviceInterval;
-    const nextServiceAt = shopReport.servicedAt != null && relevantInterval
-      ? shopReport.servicedAt + relevantInterval
-      : undefined;
+    // Each interval now schedules itself, so the single legacy nextServiceAt
+    // field on the report is only a display hint: the soonest meter-based
+    // interval this card just reset.
+    const completedIntervals = scheduleStates.filter(s =>
+      shopReport.intervalIds?.includes(s.intervalId)
+    );
+    const nextPoints = shopReport.servicedAt == null
+      ? []
+      : completedIntervals
+          .filter(s => s.unit !== 'days')
+          .map(s => shopReport.servicedAt! + s.interval);
+    const nextServiceAt = nextPoints.length > 0 ? Math.min(...nextPoints) : undefined;
     
     try {
       const reportId = await shopHistoryFirebaseService.addShopReport(
@@ -438,14 +320,10 @@ export function Service() {
       
       // Record that this user created a service card, linked back to the report.
       // Name the intervals this card completed so the log reads meaningfully.
-      const completedNames = scheduleStates
-        .filter(s => shopReport.intervalIds?.includes(s.intervalId))
-        .map(s => s.name);
+      const completedNames = completedIntervals.map(s => s.name);
       const serviceLabel = completedNames.length > 0
         ? `Service card created — ${completedNames.join(', ')}`
-        : shopReport.serviceType
-          ? `${shopReport.serviceType === 'major' ? 'Major' : 'Minor'} service card created`
-          : 'Service card created';
+        : 'Service card created';
       await equipmentServiceLogService.addEntry({
         equipmentId,
         equipmentName: reportEquipmentName,
@@ -560,118 +438,6 @@ export function Service() {
             onSaveOverrides={handleSaveIntervalOverrides}
           />
 
-          {/* Service Interval — label changes based on notification type */}
-          <div className="mb-4">
-            <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">
-              {notificationType === 'heavy' ? 'Minor Service Interval' : 'Service Interval'}
-            </label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="number"
-                value={serviceInterval || ''}
-                onChange={(e) => setServiceInterval(e.target.value ? parseFloat(e.target.value) : undefined)}
-                disabled={!!savedServiceInterval && !editingInterval}
-                className={`flex-1 px-2 py-1.5 border rounded-md text-xs [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                  savedServiceInterval && !editingInterval
-                    ? 'border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                    : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500'
-                }`}
-                placeholder="Enter Service Interval"
-              />
-              {savedServiceInterval && !editingInterval ? (
-                <button
-                  type="button"
-                  onClick={() => setEditingInterval(true)}
-                  className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
-                >
-                  Edit
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSaveServiceInterval}
-                  className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
-                >
-                  Save
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Major Service Interval — heavy equipment only */}
-          {notificationType === 'heavy' && (
-            <div className="mb-4">
-              <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Major Service Interval</label>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="number"
-                  value={largeServiceInterval || ''}
-                  onChange={(e) => setLargeServiceInterval(e.target.value ? parseFloat(e.target.value) : undefined)}
-                  disabled={!!savedLargeServiceInterval && !editingLargeInterval}
-                  className={`flex-1 px-2 py-1.5 border rounded-md text-xs [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                    savedLargeServiceInterval && !editingLargeInterval
-                      ? 'border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                      : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500'
-                  }`}
-                  placeholder="Enter Major Service Interval"
-                />
-                {savedLargeServiceInterval && !editingLargeInterval ? (
-                  <button
-                    type="button"
-                    onClick={() => setEditingLargeInterval(true)}
-                    className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
-                  >
-                    Edit
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleSaveLargeServiceInterval}
-                    className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
-                  >
-                    Save
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Service Notification */}
-          <div className="mb-4">
-            <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Set Service Notification</label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="number"
-                value={serviceNotification || ''}
-                onChange={(e) => setServiceNotification(e.target.value ? parseFloat(e.target.value) : undefined)}
-                disabled={!!savedServiceNotification && !editingNotification}
-                className={`flex-1 px-2 py-1.5 border rounded-md text-xs [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                  savedServiceNotification && !editingNotification
-                    ? 'border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                    : 'border-yellow-600 bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500'
-                }`}
-                placeholder="Enter Service Notification"
-              />
-              {savedServiceNotification && !editingNotification ? (
-                <button
-                  type="button"
-                  onClick={() => setEditingNotification(true)}
-                  className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
-                >
-                  Edit
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSaveServiceNotification}
-                  className="px-3 py-1.5 text-xs text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 border border-yellow-600 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors"
-                >
-                  Save
-                </button>
-              )}
-            </div>
-          </div>
-
           {/* Custom Notifications */}
           {notificationType !== 'none' && (
             <div className="mb-4">
@@ -746,67 +512,6 @@ export function Service() {
                   + Set Custom Notification
                 </button>
               )}
-            </div>
-          )}
-
-          {/* Heavy Equipment Service Schedule */}
-          {cycleInfo && (
-            <div className="mb-4">
-              <h3 className="text-xs font-semibold text-yellow-700 dark:text-yellow-300 mb-2">
-                Service Schedule
-                <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
-                  (cycle from {cycleInfo.cycleStart.toLocaleString()} hrs)
-                </span>
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {cycleInfo.milestones.map((m, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md border text-xs ${
-                      m.completed
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                        : m.type === 'major'
-                          ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300'
-                          : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10 text-yellow-700 dark:text-yellow-300'
-                    }`}
-                  >
-                    <span className="text-base leading-none">
-                      {m.completed ? '✓' : m.type === 'major' ? '★' : '○'}
-                    </span>
-                    <div className="min-w-0">
-                      {editingServiceIndex === i ? (
-                        <input
-                          type="text"
-                          defaultValue={categoryServiceLabels[i] || m.label}
-                          autoFocus
-                          onBlur={(e) => handleSaveServiceLabel(i, e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSaveServiceLabel(i, e.currentTarget.value);
-                            if (e.key === 'Escape') setEditingServiceIndex(null);
-                          }}
-                          className="w-full px-1.5 py-0.5 text-xs border border-yellow-500 rounded bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                        />
-                      ) : (
-                        <div
-                          className={`font-medium truncate ${user?.role === 'admin' || user?.role === 'supervisor' ? 'cursor-pointer hover:text-yellow-600 dark:hover:text-yellow-300' : ''}`}
-                          onClick={() => {
-                            if (user?.role === 'admin' || user?.role === 'supervisor') {
-                              setEditingServiceIndex(i);
-                            }
-                          }}
-                          title={user?.role === 'admin' || user?.role === 'supervisor' ? 'Click to rename service' : ''}
-                        >
-                          {m.label}
-                        </div>
-                      )}
-                      <div className="opacity-75">{m.hour.toLocaleString()} hrs</div>
-                      {m.completed && m.report?.lastServicedDate && (
-                        <div className="opacity-60">{m.report.lastServicedDate}</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
@@ -925,34 +630,14 @@ export function Service() {
                         <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
                           <div><strong>Serviced Date:</strong> {report.lastServicedDate || 'N/A'}</div>
                           <div><strong>Serviced At:</strong> {report.servicedAt?.toLocaleString() ?? report.lastServiceHours ?? 'N/A'}</div>
-                          {(() => {
-                            // Use stored nextServiceAt, or compute it for heavy equipment
-                            let nextSvc = report.nextServiceAt;
-                            if (nextSvc == null && report.servicedAt != null && notificationType === 'heavy') {
-                              const isMajor = report.serviceType === 'major';
-                              const interval = isMajor ? largeServiceInterval : serviceInterval;
-                              if (interval) nextSvc = report.servicedAt + interval;
-                            }
-                            if (nextSvc == null && report.servicedAt != null && serviceInterval) {
-                              nextSvc = report.servicedAt + serviceInterval;
-                            }
-                            return nextSvc != null ? (
-                              <div>
-                                <strong>Next Service:</strong> {nextSvc.toLocaleString()} hrs
-                                {notificationType === 'heavy' && report.serviceType && (
-                                  <span className="ml-1 text-gray-500 dark:text-gray-400">
-                                    ({report.serviceType === 'major' ? 'next cycle' : 'minor'})
-                                  </span>
-                                )}
-                              </div>
-                            ) : null;
-                          })()}
-                          {report.serviceType && (
+                          {report.nextServiceAt != null && (
                             <div>
-                              <strong>Type:</strong>{' '}
-                              <span className={report.serviceType === 'major' ? 'text-orange-600 dark:text-orange-400 font-semibold' : ''}>
-                                {report.serviceType === 'major' ? 'Major Service' : 'Minor Service'}
-                              </span>
+                              <strong>Next Service:</strong> {report.nextServiceAt.toLocaleString()} hrs
+                            </div>
+                          )}
+                          {serviceLabelForReport(report) && (
+                            <div>
+                              <strong>Serviced:</strong> {serviceLabelForReport(report)}
                             </div>
                           )}
                         </div>

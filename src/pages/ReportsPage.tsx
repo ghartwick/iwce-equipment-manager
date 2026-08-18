@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Wrench, MoreVertical, CheckSquare, Square, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { repairListService, RepairListCheckedItem } from '../services/repairListService';
 import { ResolveRepairModal, ResolveRepairTarget } from '../components/ResolveRepairModal';
-import { ServiceIntervalBar } from '../components/ServiceIntervalBar';
+import { ServiceScheduleBars } from '../components/ServiceScheduleBars';
+import { computeUnitSchedule } from '../services/serviceScheduleMigration';
+import { ServiceDueState } from '../services/serviceScheduleService';
 import { serviceNotificationService, ServiceNotificationItem } from '../services/serviceNotificationService';
 import { AlertPanel } from '../components/AlertPanel';
 import { alertsFirebaseService } from '../services/alertsFirebaseService';
@@ -61,8 +63,7 @@ export default function ReportsPage() {
   const [showServiceView, setShowServiceView] = useState(false);
   const [heavyEquipmentList, setHeavyEquipmentList] = useState<Equipment[]>([]);
   const [fleetEquipmentList, setFleetEquipmentList] = useState<Equipment[]>([]);
-  const [equipmentServiceData, setEquipmentServiceData] = useState<Record<string, { currentHours: number; nextServiceAt: number }>>({});
-  const [equipmentHeavyData, setEquipmentHeavyData] = useState<Record<string, { nextServiceAt: number; completedMinorCount: number }>>({});
+  const [scheduleStates, setScheduleStates] = useState<Record<string, ServiceDueState[]>>({});
   const [serviceLoading, setServiceLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
@@ -196,6 +197,26 @@ export default function ReportsPage() {
     setResolveTarget(null);
   };
 
+  // Interval id -> display name, reused by the shop history cards. Sourced from
+  // the notifications already loaded on mount, so no extra fetches.
+  const intervalNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const n of serviceNotifications) map[n.intervalId] = n.intervalName;
+    return map;
+  }, [serviceNotifications]);
+
+  // Shop reports now record which intervals they satisfied; legacy rows only
+  // have the old minor/major flag.
+  const serviceLabel = (report: ShopReport): string | null => {
+    if (report.intervalIds && report.intervalIds.length > 0) {
+      return report.intervalIds.map(id => intervalNames[id] ?? 'Service').join(', ');
+    }
+    if (report.serviceType) {
+      return report.serviceType === 'major' ? 'Major Service' : 'Minor Service';
+    }
+    return null;
+  };
+
   const loadServiceData = async () => {
     setServiceLoading(true);
     try {
@@ -207,59 +228,21 @@ export default function ReportsPage() {
         getCategories(),
       ]);
 
-      const hoursMap: Record<string, number> = {};
-      allMaintenance.forEach(r => {
-        if (!hoursMap[r.equipmentId] && r.maintenance?.hours) hoursMap[r.equipmentId] = r.maintenance.hours;
-      });
-
-      // Fleet: derive nextServiceAt from the LATEST shop report per equipment.
-      // Prefer the persisted nextServiceAt field, then servicedAt + interval, and
-      // fall back to legacy lastServiceHours for older records. The shop form only
-      // writes servicedAt (and ShopPage derives nextServiceAt), so filtering by
-      // lastServiceHours alone would ignore every recent report.
-      const nextServiceMap: Record<string, number> = {};
-      fleet.forEach(eq => {
-        const eqReports = allShop
-          .filter(r => r.equipmentId === eq.id)
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        if (eqReports.length === 0) return;
-        const latest = eqReports[0];
-        if (latest.nextServiceAt != null) {
-          nextServiceMap[eq.id] = latest.nextServiceAt;
-        } else if (latest.servicedAt != null && eq.serviceInterval) {
-          nextServiceMap[eq.id] = latest.servicedAt + eq.serviceInterval;
-        } else if (latest.lastServiceHours != null) {
-          nextServiceMap[eq.id] = latest.lastServiceHours;
-        }
-      });
-
-      // Heavy equipment: compute cycle start and completed minor count
-      const heavyData: Record<string, { nextServiceAt: number; completedMinorCount: number }> = {};
-      heavy.forEach(eq => {
-        const cat = cats.find(c => c.id === eq.category);
-        const isHeavy = cat?.notificationType === 'heavy' && !!eq.largeServiceInterval;
-        if (isHeavy && eq.serviceInterval && eq.largeServiceInterval) {
-          const eqShopReports = allShop.filter(r => r.equipmentId === eq.id && r.servicedAt != null);
-          const majorReports = eqShopReports.filter(r => r.serviceType === 'major')
-            .sort((a, b) => (b.servicedAt ?? 0) - (a.servicedAt ?? 0));
-          const cycleStart = majorReports.length > 0
-            ? majorReports[0].servicedAt!
-            : eqShopReports.length > 0 ? eqShopReports[0].servicedAt! : 0;
-          const completedMinors = eqShopReports.filter(
-            r => r.serviceType === 'minor' && r.servicedAt! > cycleStart
-          ).length;
-          heavyData[eq.id] = { nextServiceAt: cycleStart, completedMinorCount: completedMinors };
-        }
-      });
-      setEquipmentHeavyData(heavyData);
-
-      const serviceData: Record<string, { currentHours: number; nextServiceAt: number }> = {};
+      // One shared engine call per unit; no page-local schedule math.
+      const states: Record<string, ServiceDueState[]> = {};
       [...heavy, ...fleet].forEach(eq => {
-        serviceData[eq.id] = { currentHours: hoursMap[eq.id] || 0, nextServiceAt: nextServiceMap[eq.id] || 0 };
+        const cat = cats.find(c => c.id === eq.category) ?? null;
+        states[eq.id] = computeUnitSchedule(
+          eq,
+          cat,
+          allShop.filter(r => r.equipmentId === eq.id),
+          allMaintenance.filter(r => r.equipmentId === eq.id)
+        );
       });
-      setHeavyEquipmentList(heavy.filter(e => e.serviceInterval || e.largeServiceInterval));
-      setFleetEquipmentList(fleet.filter(e => e.serviceInterval));
-      setEquipmentServiceData(serviceData);
+
+      setScheduleStates(states);
+      setHeavyEquipmentList(heavy.filter(e => (states[e.id]?.length ?? 0) > 0));
+      setFleetEquipmentList(fleet.filter(e => (states[e.id]?.length ?? 0) > 0));
     } catch (err) {
       console.error('Error loading service data:', err);
     } finally {
@@ -1173,9 +1156,9 @@ export default function ReportsPage() {
                                   <span className="text-xs text-yellow-600 dark:text-yellow-400">by {report.createdBy}</span>
                                   {report.site && <span className="text-xs text-blue-600 dark:text-blue-400">{report.site}</span>}
                                 </div>
-                                {report.serviceType && (
-                                  <div className={`text-xs mt-0.5 ${report.serviceType === 'major' ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-gray-600 dark:text-gray-400'}`}>
-                                    {report.serviceType === 'major' ? 'Major Service' : 'Minor Service'}
+                                {serviceLabel(report) && (
+                                  <div className="text-xs mt-0.5 text-gray-600 dark:text-gray-400">
+                                    {serviceLabel(report)}
                                   </div>
                                 )}
                                 {(report.servicedAt != null || report.nextServiceAt != null) && (
@@ -1199,15 +1182,11 @@ export default function ReportsPage() {
                                   {report.nextServiceAt != null && (
                                     <div>
                                       <strong>Next Service:</strong> {report.nextServiceAt.toLocaleString()} hrs
-                                      {report.serviceType && <span className="ml-1 text-gray-500 dark:text-gray-400">({report.serviceType === 'major' ? 'next cycle' : 'minor'})</span>}
                                     </div>
                                   )}
-                                  {report.serviceType && (
+                                  {serviceLabel(report) && (
                                     <div>
-                                      <strong>Type:</strong>{' '}
-                                      <span className={report.serviceType === 'major' ? 'text-orange-600 dark:text-orange-400 font-semibold' : ''}>
-                                        {report.serviceType === 'major' ? 'Major Service' : 'Minor Service'}
-                                      </span>
+                                      <strong>Serviced:</strong> {serviceLabel(report)}
                                     </div>
                                   )}
                                 </div>
@@ -1363,14 +1342,7 @@ export default function ReportsPage() {
                               className="text-sm font-medium text-yellow-700 dark:text-yellow-300 underline hover:text-yellow-500 dark:hover:text-yellow-100 self-center text-left"
                             >{eq.name}</button>
                             <div className="flex-1">
-                              <ServiceIntervalBar
-                                currentHours={equipmentServiceData[eq.id]?.currentHours || 0}
-                                nextServiceAt={equipmentHeavyData[eq.id]?.nextServiceAt || equipmentServiceData[eq.id]?.nextServiceAt || 0}
-                                serviceInterval={eq.serviceInterval || 0}
-                                serviceNotification={eq.serviceNotification || 0}
-                                largeServiceInterval={eq.largeServiceInterval}
-                                completedMinorCount={equipmentHeavyData[eq.id]?.completedMinorCount}
-                              />
+                              <ServiceScheduleBars states={scheduleStates[eq.id] ?? []} compact />
                             </div>
                           </div>
                         ))}
@@ -1390,12 +1362,7 @@ export default function ReportsPage() {
                               className="text-sm font-medium text-yellow-700 dark:text-yellow-300 underline hover:text-yellow-500 dark:hover:text-yellow-100 self-center text-left"
                             >{eq.name}</button>
                             <div className="flex-1">
-                              <ServiceIntervalBar
-                                currentHours={equipmentServiceData[eq.id]?.currentHours || 0}
-                                nextServiceAt={equipmentServiceData[eq.id]?.nextServiceAt || 0}
-                                serviceInterval={eq.serviceInterval || 0}
-                                serviceNotification={eq.serviceNotification || 0}
-                              />
+                              <ServiceScheduleBars states={scheduleStates[eq.id] ?? []} compact />
                             </div>
                           </div>
                         ))}

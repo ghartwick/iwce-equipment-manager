@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pencil } from 'lucide-react';
 import { Equipment, Category } from '../types';
-import { ServiceNotificationItem } from '../services/serviceNotificationService';
+import { ServiceNotificationItem, mostUrgentPerEquipment } from '../services/serviceNotificationService';
 
 interface MobileProductListProps {
   products: Equipment[];
@@ -20,7 +20,12 @@ export function MobileProductList({
   categories,
   serviceNotifications = [],
 }: MobileProductListProps) {
-  const getServiceStatus = (productId: string) => serviceNotifications.find(n => n.equipmentId === productId);
+  // A unit now has one notification per interval, so cards summarise with the worst one.
+  const urgentByEquipment = React.useMemo(
+    () => mostUrgentPerEquipment(serviceNotifications),
+    [serviceNotifications]
+  );
+  const getServiceStatus = (productId: string) => urgentByEquipment[productId];
   if (products.length === 0) {
     return (
       <div className="p-8 text-center">
@@ -92,7 +97,7 @@ export function MobileProductList({
                         {product.description && (
                           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 break-words">{product.description}</p>
                         )}
-                        {serviceStatus && (
+                        {serviceStatus?.message && (
                           <p className={`text-xs font-semibold mt-0.5 ${serviceStatus.status === 'due' ? 'text-red-600 dark:text-red-400' : 'text-yellow-700 dark:text-yellow-400'}`}>
                             {serviceStatus.message}
                           </p>

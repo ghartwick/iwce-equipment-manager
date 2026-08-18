@@ -17,6 +17,7 @@ import { shopHistoryFirebaseService } from '../services/shopHistoryFirebaseServi
 import { repairListService, RepairListCheckedItem } from '../services/repairListService';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { equipmentServiceLogService } from '../services/equipmentServiceLogService';
+import { readingsFromMaintenanceReports } from '../services/serviceScheduleMigration';
 import { ResolveRepairModal, ResolveRepairTarget } from './ResolveRepairModal';
 import { useAuth } from '../hooks/useAuth';
 
@@ -70,6 +71,13 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   const [hoveredPhoto, setHoveredPhoto] = useState<EquipmentPhoto | null>(null);
   const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
   const [localNotes, setLocalNotes] = useState<EquipmentNote[]>([]);
+
+  // Prior meter readings for this unit, used to validate a newly entered
+  // hours/km value at the point of entry.
+  const priorReadings = React.useMemo(
+    () => readingsFromMaintenanceReports(maintenanceReports),
+    [maintenanceReports]
+  );
 
   const getEquipmentUrl = (id: string) => {
     const baseUrl = 'https://iwce-equipment-manager.vercel.app';
@@ -1401,6 +1409,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
           onSubmit={handleMaintenanceSubmit}
           categoryMaintenanceItems={fetchedCategories.find(c => c.id === product.category)?.maintenanceItems}
           pendingRepairKeys={computePendingRepairs().map(p => p.key)}
+          priorReadings={priorReadings}
         />
       )}
 

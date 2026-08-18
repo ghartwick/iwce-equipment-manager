@@ -11,7 +11,11 @@ import { getCategories, updateCategory } from '../services/firebaseService';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { equipmentServiceLogService } from '../services/equipmentServiceLogService';
 import { EquipmentServiceHistory } from '../components/EquipmentServiceHistory';
-import { EquipmentNote, Category } from '../types';
+import { ServiceIntervalManager } from '../components/ServiceIntervalManager';
+import { ServiceScheduleBars } from '../components/ServiceScheduleBars';
+import { deriveLegacyIntervals, computeUnitSchedule } from '../services/serviceScheduleMigration';
+import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
+import { EquipmentNote, Category, Equipment, ServiceIntervalDef, ServiceIntervalOverride } from '../types';
 
 export function Service() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
@@ -48,6 +52,24 @@ export function Service() {
   const [category, setCategory] = useState<Category | null>(null);
   const [categoryServiceLabels, setCategoryServiceLabels] = useState<string[]>([]);
   const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null);
+  const [categoryIntervals, setCategoryIntervals] = useState<ServiceIntervalDef[]>([]);
+  const [unitIntervals, setUnitIntervals] = useState<ServiceIntervalDef[]>([]);
+  const [intervalOverrides, setIntervalOverrides] = useState<Record<string, ServiceIntervalOverride>>({});
+  const [equipment, setEquipment] = useState<Equipment | null>(null);
+  const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
+  const canEditCategory = user?.role === 'admin' || user?.role === 'supervisor';
+
+  // Fed from live interval state rather than the loaded equipment record so the
+  // bars update the moment an interval is added or overridden.
+  const scheduleStates = useMemo(() => {
+    if (!equipment) return [];
+    return computeUnitSchedule(
+      { ...equipment, serviceIntervals: unitIntervals, intervalOverrides },
+      category ? { ...category, serviceIntervals: categoryIntervals } : null,
+      shopReports,
+      maintenanceReports
+    );
+  }, [equipment, unitIntervals, intervalOverrides, category, categoryIntervals, shopReports, maintenanceReports]);
 
   // Compute heavy equipment cycle schedule
   const cycleInfo = useMemo(() => {
@@ -92,6 +114,36 @@ export function Service() {
 
     return { cycleStart, milestones, completedMinorCount: cycleMinorReports.length };
   }, [shopReports, notificationType, serviceInterval, largeServiceInterval, categoryServiceLabels]);
+
+  // Both equipment collections are in play, so every unit-level write has to
+  // pick the right service. Mirrors saveNotesToEquipment.
+  const saveEquipmentFields = async (fields: Record<string, unknown>) => {
+    if (!equipmentId) return;
+    const allEquipment = await equipmentManagementService.getAllEquipment();
+    const inEquipmentCollection = allEquipment.some(eq => eq.id === equipmentId);
+    if (inEquipmentCollection) {
+      await equipmentManagementService.updateEquipment(equipmentId, fields as any);
+    } else {
+      await fleetManagementService.updateEquipment(equipmentId, fields as any, undefined, true);
+    }
+  };
+
+  const handleSaveCategoryIntervals = async (next: ServiceIntervalDef[]) => {
+    if (!category) throw new Error('This unit has no category, so category intervals cannot be saved.');
+    await updateCategory(category.id, { serviceIntervals: next });
+    setCategoryIntervals(next);
+    setCategory(prev => (prev ? { ...prev, serviceIntervals: next } : null));
+  };
+
+  const handleSaveUnitIntervals = async (next: ServiceIntervalDef[]) => {
+    await saveEquipmentFields({ serviceIntervals: next });
+    setUnitIntervals(next);
+  };
+
+  const handleSaveIntervalOverrides = async (next: Record<string, ServiceIntervalOverride>) => {
+    await saveEquipmentFields({ intervalOverrides: next });
+    setIntervalOverrides(next);
+  };
 
   const handleSaveServiceLabel = async (slotIndex: number, newLabel: string) => {
     if (!category) return;
@@ -273,6 +325,7 @@ export function Service() {
           }
           
           if (equipment) {
+            setEquipment(equipment);
             setUnitName(equipment.name || '');
             setEquipmentSite(equipment.site || '');
             setServiceInterval(equipment.serviceInterval);
@@ -283,6 +336,8 @@ export function Service() {
             setSavedServiceNotification(equipment.serviceNotification);
             setCustomNotifications(equipment.customNotifications || []);
             setEquipmentDataNotes(equipment.notes || []);
+            setUnitIntervals(equipment.serviceIntervals || []);
+            setIntervalOverrides(equipment.intervalOverrides || {});
             // Load category to determine notification type
             if (equipment.category) {
               try {
@@ -292,6 +347,14 @@ export function Service() {
                 setCategoryServiceLabels(cat?.serviceLabels || []);
                 setNotificationType(cat?.notificationType || 'none');
                 setMaintenanceItems(cat?.maintenanceItems);
+                // Categories not yet migrated show their legacy configuration
+                // as named intervals. These are seeded locally and become
+                // persistent on the first save from the manager.
+                setCategoryIntervals(
+                  cat?.serviceIntervals?.length
+                    ? cat.serviceIntervals
+                    : deriveLegacyIntervals(equipment, cat ?? null)
+                );
               } catch {}
             }
           }
@@ -301,6 +364,10 @@ export function Service() {
       };
       loadEquipmentName();
       loadShopReports();
+      maintenanceHistoryFirebaseService
+        .getEquipmentMaintenanceHistory(equipmentId)
+        .then(setMaintenanceReports)
+        .catch(error => console.error('Error loading inspection readings:', error));
     }
   }, [equipmentId]);
 
@@ -332,7 +399,7 @@ export function Service() {
     }
   };
 
-  const handleShopSubmit = async (shopReport: { lastServicedDate?: string; servicedAt?: number; serviceInterval?: number; serviceType?: 'minor' | 'major'; notes?: string; files?: File[] }, previews?: string[]) => {
+  const handleShopSubmit = async (shopReport: { lastServicedDate?: string; servicedAt?: number; serviceInterval?: number; serviceType?: 'minor' | 'major'; intervalIds?: string[]; notes?: string; files?: File[] }, previews?: string[]) => {
     if (!equipmentId || !user) return;
     const reportEquipmentName = equipmentName || unitName;
     if (!reportEquipmentName) return;
@@ -370,9 +437,15 @@ export function Service() {
       }
       
       // Record that this user created a service card, linked back to the report.
-      const serviceLabel = shopReport.serviceType
-        ? `${shopReport.serviceType === 'major' ? 'Major' : 'Minor'} service card created`
-        : 'Service card created';
+      // Name the intervals this card completed so the log reads meaningfully.
+      const completedNames = scheduleStates
+        .filter(s => shopReport.intervalIds?.includes(s.intervalId))
+        .map(s => s.name);
+      const serviceLabel = completedNames.length > 0
+        ? `Service card created — ${completedNames.join(', ')}`
+        : shopReport.serviceType
+          ? `${shopReport.serviceType === 'major' ? 'Major' : 'Minor'} service card created`
+          : 'Service card created';
       await equipmentServiceLogService.addEntry({
         equipmentId,
         equipmentName: reportEquipmentName,
@@ -469,6 +542,23 @@ export function Service() {
               onClose={() => setShowHistory(false)}
             />
           )}
+
+          {scheduleStates.length > 0 && (
+            <div className="mb-4">
+              <ServiceScheduleBars states={scheduleStates} compact />
+            </div>
+          )}
+
+          <ServiceIntervalManager
+            categoryName={category?.name}
+            categoryIntervals={categoryIntervals}
+            unitIntervals={unitIntervals}
+            overrides={intervalOverrides}
+            canEditCategory={canEditCategory && !!category}
+            onSaveCategoryIntervals={handleSaveCategoryIntervals}
+            onSaveUnitIntervals={handleSaveUnitIntervals}
+            onSaveOverrides={handleSaveIntervalOverrides}
+          />
 
           {/* Service Interval — label changes based on notification type */}
           <div className="mb-4">
@@ -945,8 +1035,7 @@ export function Service() {
               equipmentName={equipmentName}
               onClose={() => setShowShopForm(false)}
               onSubmit={handleShopSubmit}
-              serviceInterval={serviceInterval}
-              notificationType={notificationType}
+              intervalStates={scheduleStates}
             />
           )}
         </div>

@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { X, Upload } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { X, Upload, AlertTriangle, Info } from 'lucide-react';
 import { EquipmentMaintenance } from '../types';
 import { maintenanceCategoriesService } from '../services/maintenanceCategoriesService';
+import { ServiceReading } from '../services/serviceScheduleService';
+import { validateReading } from '../services/readingValidation';
 
 interface MaintenanceFormProps {
   equipmentId: string;
@@ -10,9 +12,11 @@ interface MaintenanceFormProps {
   onSubmit: (maintenance: EquipmentMaintenance, files?: File[]) => Promise<void>;
   categoryMaintenanceItems?: string[];
   pendingRepairKeys?: string[];
+  priorReadings?: ServiceReading[];
+  maxReadingPerDay?: number;
 }
 
-export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMaintenanceItems, pendingRepairKeys }: MaintenanceFormProps) {
+export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMaintenanceItems, pendingRepairKeys, priorReadings, maxReadingPerDay }: MaintenanceFormProps) {
   const [maintenance, setMaintenance] = useState<EquipmentMaintenance>(() => {
     const initial: EquipmentMaintenance = {};
     (pendingRepairKeys || []).forEach(key => { (initial as any)[key] = 'Repair'; });
@@ -21,6 +25,17 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const categories = maintenanceCategoriesService.getCategories(categoryMaintenanceItems);
+
+  // Validated live against this unit's history so a bad reading is caught at the
+  // point of entry rather than silently corrupting the service schedule.
+  const readingCheck = useMemo(
+    () => validateReading(maintenance.hours, new Date().toISOString(), priorReadings ?? [], {
+      maxPerDay: maxReadingPerDay,
+      label: 'hours/km reading',
+    }),
+    [maintenance.hours, priorReadings, maxReadingPerDay]
+  );
+  const readingBlocked = readingCheck.severity === 'block';
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files;
@@ -38,7 +53,8 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
-    
+    if (readingBlocked) return;
+
     setIsSubmitting(true);
     try {
       await onSubmit(maintenance, files);
@@ -69,14 +85,43 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
             <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400 mb-3">Inspection</h3>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
               {/* Hours */}
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Hours/KM</label>
                 <input
                   type="number"
-                  value={maintenance.hours || ''}
+                  value={maintenance.hours ?? ''}
                   onChange={(e) => setMaintenance({ ...maintenance, hours: e.target.value ? parseFloat(e.target.value) : undefined })}
-                  className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  aria-invalid={readingBlocked}
+                  className={`w-full px-2 py-1.5 border rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                    readingBlocked
+                      ? 'border-red-600 focus:ring-red-500'
+                      : readingCheck.severity === 'warn'
+                        ? 'border-orange-500 focus:ring-orange-500'
+                        : 'border-yellow-600 focus:ring-yellow-500'
+                  }`}
                 />
+                {readingCheck.previous && !readingCheck.message && (
+                  <p className="mt-1 text-[11px] text-yellow-700/80 dark:text-yellow-300/70">
+                    Last recorded: {readingCheck.previous.value.toLocaleString()}
+                  </p>
+                )}
+                {readingCheck.message && (
+                  <p
+                    role={readingBlocked ? 'alert' : undefined}
+                    className={`mt-1 flex items-start gap-1 text-[11px] leading-snug ${
+                      readingBlocked
+                        ? 'text-red-600 dark:text-red-400'
+                        : readingCheck.severity === 'warn'
+                          ? 'text-orange-600 dark:text-orange-400'
+                          : 'text-yellow-700/80 dark:text-yellow-300/70'
+                    }`}
+                  >
+                    {readingCheck.severity === 'ok'
+                      ? <Info className="h-3 w-3 mt-px shrink-0" />
+                      : <AlertTriangle className="h-3 w-3 mt-px shrink-0" />}
+                    <span>{readingCheck.message}</span>
+                  </p>
+                )}
               </div>
 
               {/* OK/NA Fields */}
@@ -168,7 +213,8 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || readingBlocked}
+              title={readingBlocked ? 'Correct the hours/km reading before submitting' : undefined}
               className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Submit Report

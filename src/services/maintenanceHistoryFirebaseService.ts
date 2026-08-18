@@ -18,6 +18,12 @@ export interface MaintenanceReport {
   createdAt: string;
   createdBy: string;
   createdByRole: string;
+  // Voids only the meter reading, not the inspection itself. A mistyped reading
+  // corrupts the service schedule, but the inspection checks stay valid.
+  readingVoided?: boolean;
+  readingVoidedBy?: string;
+  readingVoidedAt?: string;
+  readingVoidReason?: string;
 }
 
 class MaintenanceHistoryFirebaseService {
@@ -82,7 +88,11 @@ class MaintenanceHistoryFirebaseService {
             maintenance: data.maintenance,
             createdAt: data.createdAt.toDate().toISOString(),
             createdBy: data.createdBy,
-            createdByRole: data.createdByRole
+            createdByRole: data.createdByRole,
+            readingVoided: data.readingVoided ?? false,
+            readingVoidedBy: data.readingVoidedBy,
+            readingVoidedAt: data.readingVoidedAt,
+            readingVoidReason: data.readingVoidReason
           };
         });
         
@@ -103,7 +113,11 @@ class MaintenanceHistoryFirebaseService {
             maintenance: data.maintenance,
             createdAt: data.createdAt.toDate().toISOString(),
             createdBy: data.createdBy,
-            createdByRole: data.createdByRole
+            createdByRole: data.createdByRole,
+            readingVoided: data.readingVoided ?? false,
+            readingVoidedBy: data.readingVoidedBy,
+            readingVoidedAt: data.readingVoidedAt,
+            readingVoidReason: data.readingVoidReason
           };
         });
         
@@ -136,7 +150,11 @@ class MaintenanceHistoryFirebaseService {
           maintenance: data.maintenance,
           createdAt: data.createdAt.toDate().toISOString(),
           createdBy: data.createdBy,
-          createdByRole: data.createdByRole
+          createdByRole: data.createdByRole,
+          readingVoided: data.readingVoided ?? false,
+          readingVoidedBy: data.readingVoidedBy,
+          readingVoidedAt: data.readingVoidedAt,
+          readingVoidReason: data.readingVoidReason
         };
       }) as MaintenanceReport[];
 
@@ -154,6 +172,32 @@ class MaintenanceHistoryFirebaseService {
       await deleteDoc(reportRef);
     } catch (error) {
       console.error('Failed to delete maintenance report:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Voids or restores the meter reading on an inspection card. Voided readings
+   * are excluded from service schedule calculations and from the entry-time
+   * validation floor, which is how a mistyped value gets corrected without
+   * destroying the inspection record.
+   */
+  async setReadingVoided(
+    reportId: string,
+    voided: boolean,
+    user: { username: string },
+    reason?: string
+  ): Promise<void> {
+    try {
+      const reportRef = doc(db, this.COLLECTION_NAME, reportId);
+      await updateDoc(reportRef, {
+        readingVoided: voided,
+        readingVoidedBy: voided ? user.username : null,
+        readingVoidedAt: voided ? new Date().toISOString() : null,
+        readingVoidReason: voided ? (reason ?? null) : null,
+      });
+    } catch (error) {
+      console.error('Failed to update reading void state:', error);
       throw error;
     }
   }

@@ -4,7 +4,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useInventory } from '../hooks/useInventory';
 import { ProductForm } from '../components/ProductForm';
 import { AlertPanel } from '../components/AlertPanel';
-import { ServiceIntervalBar } from '../components/ServiceIntervalBar';
+import { ServiceScheduleBars } from '../components/ServiceScheduleBars';
+import { computeUnitSchedule } from '../services/serviceScheduleMigration';
+import { ServiceDueState } from '../services/serviceScheduleService';
 import { Equipment } from '../types';
 import { fleetManagementService } from '../services/fleetManagementService';
 import { maintenanceHistoryFirebaseService } from '../services/maintenanceHistoryFirebaseService';
@@ -21,10 +23,7 @@ export default function EquipmentPage() {
   const [isFleet, setIsFleet] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
   const [alertDaysAgo, setAlertDaysAgo] = useState(7);
-  const [currentHours, setCurrentHours] = useState<number>(0);
-  const [nextServiceAt, setNextServiceAt] = useState<number>(0);
-  const [notificationType, setNotificationType] = useState<'fleet' | 'heavy' | 'none'>('none');
-  const [completedMinorCount, setCompletedMinorCount] = useState<number>(0);
+  const [scheduleStates, setScheduleStates] = useState<ServiceDueState[]>([]);
 
   const manageRoute = useMemo(() => {
     const id = equipment?.id;
@@ -74,64 +73,27 @@ export default function EquipmentPage() {
     }
   }, [products, equipmentId, loading]);
 
-  // Load maintenance history for service interval calculation
+  // Build per-interval due state. All schedule arithmetic lives in
+  // computeUnitSchedule so this page cannot drift from the other views.
   useEffect(() => {
-    const loadMaintenanceHistory = async () => {
+    const loadSchedule = async () => {
       if (!equipmentId || !equipment) return;
-      
+
       try {
-        const history = await maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(equipmentId);
-        
-        // Use the most recent report that actually recorded an hours/km value —
-        // a later report (e.g. a repair-only or note-only entry) may have left it blank.
-        const latestWithHours = history.find(r => r.maintenance?.hours != null);
-        if (latestWithHours) {
-          setCurrentHours(latestWithHours.maintenance.hours || 0);
-        }
-        
-        // Load category to determine notification type
-        let catNotifType: 'fleet' | 'heavy' | 'none' = 'none';
-        if (equipment?.category) {
-          try {
-            const cats = await getCategories();
-            const cat = cats.find(c => c.id === equipment.category);
-            catNotifType = cat?.notificationType || 'none';
-            setNotificationType(catNotifType);
-          } catch {}
-        }
-
-        const isHeavy = catNotifType === 'heavy' && !!equipment?.largeServiceInterval;
-
-        // Load latest shop report
-        const shopHistory = await shopHistoryFirebaseService.getEquipmentShopHistory(equipmentId);
-        if (shopHistory.length > 0) {
-          if (isHeavy) {
-            // For heavy equipment: baseline = latest MAJOR service servicedAt (for bar start)
-            const majorReports = shopHistory.filter(r => r.serviceType === 'major' && r.servicedAt != null)
-              .sort((a, b) => (b.servicedAt ?? 0) - (a.servicedAt ?? 0));
-            const baselineReport = majorReports.length > 0 ? majorReports[0] : shopHistory[0];
-            const cycleStart = baselineReport.servicedAt ?? 0;
-            setNextServiceAt(cycleStart);
-            // Count minor services completed in current cycle (after cycleStart)
-            const completedMinors = shopHistory.filter(
-              r => r.serviceType === 'minor' && r.servicedAt != null && r.servicedAt > cycleStart
-            ).length;
-            setCompletedMinorCount(completedMinors);
-          } else {
-            const r = shopHistory[0];
-            const interval = equipment?.serviceInterval || 0;
-            const nextSvc = r.nextServiceAt
-              ?? (r.servicedAt != null ? r.servicedAt + interval : r.lastServiceHours ?? 0);
-            setNextServiceAt(nextSvc);
-          }
-        }
+        const [maintenanceHistory, shopHistory, cats] = await Promise.all([
+          maintenanceHistoryFirebaseService.getEquipmentMaintenanceHistory(equipmentId),
+          shopHistoryFirebaseService.getEquipmentShopHistory(equipmentId),
+          getCategories(),
+        ]);
+        const cat = cats.find(c => c.id === equipment.category) ?? null;
+        setScheduleStates(computeUnitSchedule(equipment, cat, shopHistory, maintenanceHistory));
       } catch (error) {
-        console.error('Error loading maintenance history:', error);
+        console.error('Error loading service schedule:', error);
       }
     };
-    
+
     if (equipment) {
-      loadMaintenanceHistory();
+      loadSchedule();
     }
   }, [equipmentId, equipment]);
 
@@ -231,14 +193,7 @@ export default function EquipmentPage() {
           userRole={user?.role || 'field'}
           useEmployeeColumn={isFleet}
           serviceIntervalBar={equipment ? (
-            <ServiceIntervalBar
-              currentHours={currentHours}
-              nextServiceAt={nextServiceAt}
-              serviceInterval={equipment.serviceInterval || 0}
-              serviceNotification={equipment.serviceNotification || 0}
-              largeServiceInterval={notificationType === 'heavy' ? equipment.largeServiceInterval : undefined}
-              completedMinorCount={notificationType === 'heavy' ? completedMinorCount : undefined}
-            />
+            <ServiceScheduleBars states={scheduleStates} />
           ) : null}
           onDataUpdate={loadEquipment}
         />

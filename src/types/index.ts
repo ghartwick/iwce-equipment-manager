@@ -1,3 +1,27 @@
+export type ServiceUnit = 'hours' | 'km' | 'days';
+
+export type ServiceAnchor = 'rolling' | 'fixed';
+
+export interface ServiceIntervalDef {
+  id: string;
+  name: string;
+  interval: number;
+  unit: ServiceUnit;
+  notifyLead: number;
+  anchor: ServiceAnchor;
+  origin?: number;
+  isActive: boolean;
+}
+
+export interface ServiceIntervalOverride extends Partial<Omit<ServiceIntervalDef, 'id'>> {
+  disabled?: boolean;
+}
+
+export interface ResolvedServiceInterval extends ServiceIntervalDef {
+  source: 'category' | 'unit';
+  isOverridden: boolean;
+}
+
 export interface Equipment {
   id: string;
   name: string;
@@ -26,6 +50,8 @@ export interface Equipment {
   createdBy?: string;
   parentId?: string;
   customNotifications?: Array<{ description: string; threshold: number }>;
+  serviceIntervals?: ServiceIntervalDef[];
+  intervalOverrides?: Record<string, ServiceIntervalOverride>;
 }
 
 export interface EquipmentNote {
@@ -71,6 +97,7 @@ export interface Category {
   maintenanceItems?: string[];
   allocationDefault?: 'site' | 'employee';
   serviceLabels?: string[];
+  serviceIntervals?: ServiceIntervalDef[];
 }
 
 export interface StockAlert {

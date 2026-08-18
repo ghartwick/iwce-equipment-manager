@@ -12,6 +12,7 @@ export interface ShopReport {
   lastServiceHours?: number;
   serviceInterval?: number;
   serviceType?: 'minor' | 'major';
+  intervalIds?: string[];
   notes?: string;
   createdAt: string;
   createdBy: string;
@@ -32,6 +33,7 @@ export const shopHistoryFirebaseService = {
       lastServiceHours?: number;
       serviceInterval?: number;
       serviceType?: 'minor' | 'major';
+      intervalIds?: string[];
       notes?: string;
     },
     user: { username: string; role: string }
@@ -51,6 +53,7 @@ export const shopHistoryFirebaseService = {
       if (shopReport.lastServiceHours !== undefined) reportData.lastServiceHours = shopReport.lastServiceHours;
       if (shopReport.serviceInterval !== undefined) reportData.serviceInterval = shopReport.serviceInterval;
       if (shopReport.serviceType !== undefined) reportData.serviceType = shopReport.serviceType;
+      if (shopReport.intervalIds !== undefined) reportData.intervalIds = shopReport.intervalIds;
       if (shopReport.notes !== undefined) reportData.notes = shopReport.notes;
 
       const docRef = await addDoc(collection(db, SHOP_REPORTS_COLLECTION), reportData);

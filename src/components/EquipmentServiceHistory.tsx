@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, FileDown, Wrench, ClipboardList, AlertTriangle, StickyNote, CheckCircle2, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, FileDown, Wrench, ClipboardList, AlertTriangle, StickyNote, CheckCircle2, ExternalLink, ChevronDown, ChevronRight, Ban, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import { maintenanceHistoryFirebaseService, MaintenanceReport } from '../services/maintenanceHistoryFirebaseService';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { equipmentServiceLogService, ServiceLogEntry } from '../services/equipmentServiceLogService';
@@ -18,6 +19,15 @@ interface TimelineEvent {
   user: string;
   details: string[];
   link?: { label: string; path: string };
+  // Present on inspection cards that carry a meter reading, enabling the
+  // admin-only void action.
+  reading?: {
+    reportId: string;
+    value: number;
+    voided: boolean;
+    voidedBy?: string;
+    voidReason?: string;
+  };
 }
 
 interface EquipmentServiceHistoryProps {
@@ -44,6 +54,9 @@ export function EquipmentServiceHistory({
   onClose,
 }: EquipmentServiceHistoryProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canVoidReadings = user?.role === 'admin';
+  const [voidingId, setVoidingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [maintenanceReports, setMaintenanceReports] = useState<MaintenanceReport[]>([]);
   const [shopReports, setShopReports] = useState<ShopReport[]>([]);
@@ -82,7 +95,11 @@ export function EquipmentServiceHistory({
     maintenanceReports.forEach(report => {
       const m = report.maintenance as EquipmentMaintenance;
       const details: string[] = [];
-      if (m.hours != null) details.push(`Hours/KM: ${m.hours}`);
+      if (m.hours != null) {
+        details.push(report.readingVoided
+          ? `Hours/KM: ${m.hours} (VOIDED — excluded from service scheduling)`
+          : `Hours/KM: ${m.hours}`);
+      }
       categories.forEach(({ key, label }) => {
         const value = (m as any)[key];
         if (value) details.push(`${label}: ${value}`);
@@ -101,12 +118,25 @@ export function EquipmentServiceHistory({
         user: report.createdBy,
         details,
         link: { label: 'Open inspection card', path: `/inventory/equipment/${equipmentId}` },
+        reading: m.hours != null
+          ? {
+              reportId: report.id,
+              value: m.hours,
+              voided: !!report.readingVoided,
+              voidedBy: report.readingVoidedBy,
+              voidReason: report.readingVoidReason,
+            }
+          : undefined,
       });
     });
 
     shopReports.forEach(report => {
       const details: string[] = [];
-      if (report.serviceType) details.push(`Service type: ${report.serviceType === 'major' ? 'Major' : 'Minor'}`);
+      if (report.intervalIds?.length) {
+        details.push(`Intervals completed: ${report.intervalIds.length}`);
+      } else if (report.serviceType) {
+        details.push(`Service type: ${report.serviceType === 'major' ? 'Major' : 'Minor'}`);
+      }
       if (report.lastServicedDate) details.push(`Serviced date: ${report.lastServicedDate}`);
       if (report.servicedAt != null) details.push(`Serviced at: ${report.servicedAt.toLocaleString()} hrs/km`);
       if (report.nextServiceAt != null) details.push(`Next service at: ${report.nextServiceAt.toLocaleString()} hrs/km`);
@@ -162,6 +192,46 @@ export function EquipmentServiceHistory({
   useEffect(() => {
     setCollapsedIds(new Set(events.filter(e => e.kind === 'maintenance_card').map(e => e.id)));
   }, [events]);
+
+  // Voiding a reading removes it from schedule calculations and from the
+  // entry-time validation floor, without deleting the inspection record.
+  const handleToggleReadingVoid = async (reading: NonNullable<TimelineEvent['reading']>) => {
+    if (!user) return;
+    const nextVoided = !reading.voided;
+    let reason: string | undefined;
+    if (nextVoided) {
+      const entered = window.prompt(
+        `Void the reading of ${reading.value.toLocaleString()}?\n\nIt will be excluded from all service scheduling. Optionally record why:`,
+        ''
+      );
+      if (entered === null) return;
+      reason = entered.trim() || undefined;
+    }
+
+    setVoidingId(reading.reportId);
+    try {
+      await maintenanceHistoryFirebaseService.setReadingVoided(
+        reading.reportId,
+        nextVoided,
+        { username: user.username },
+        reason
+      );
+      setMaintenanceReports(prev => prev.map(r => r.id === reading.reportId
+        ? {
+            ...r,
+            readingVoided: nextVoided,
+            readingVoidedBy: nextVoided ? user.username : undefined,
+            readingVoidedAt: nextVoided ? new Date().toISOString() : undefined,
+            readingVoidReason: nextVoided ? reason : undefined,
+          }
+        : r));
+    } catch (error) {
+      console.error('Failed to update reading void state:', error);
+      alert('Error updating the reading. Please try again.');
+    } finally {
+      setVoidingId(null);
+    }
+  };
 
   const handleExport = () => {
     generateServiceHistoryPdf({
@@ -288,6 +358,28 @@ export function EquipmentServiceHistory({
                             <li key={i} className="text-xs text-gray-700 dark:text-gray-300">- {detail}</li>
                           ))}
                         </ul>
+                      )}
+                      {(!canCollapse || !isCollapsed) && event.reading && (
+                        <div className="mt-1.5">
+                          {event.reading.voided && (
+                            <p className="text-xs text-red-600 dark:text-red-400">
+                              Reading voided{event.reading.voidedBy ? ` by ${event.reading.voidedBy}` : ''}
+                              {event.reading.voidReason ? ` — ${event.reading.voidReason}` : ''}
+                            </p>
+                          )}
+                          {canVoidReadings && (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleReadingVoid(event.reading!)}
+                              disabled={voidingId === event.reading.reportId}
+                              className="mt-1 inline-flex items-center gap-1 text-xs text-red-700 dark:text-red-400 underline hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {event.reading.voided
+                                ? <><RotateCcw className="h-3 w-3" />Restore reading</>
+                                : <><Ban className="h-3 w-3" />Void reading</>}
+                            </button>
+                          )}
+                        </div>
                       )}
                       {(!canCollapse || !isCollapsed) && event.link && (
                         <button

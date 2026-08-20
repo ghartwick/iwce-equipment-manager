@@ -1,6 +1,7 @@
 import { addDoc, collection, deleteDoc, doc, getDocs, query, Timestamp, where } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { db, storage } from '../firebase';
+import { convertAttachmentToLetterPdf } from '../utils/attachmentConverter';
 
 export interface TimecardAttachmentInput {
   date: Date;
@@ -28,11 +29,12 @@ class TimecardAttachmentService {
   private readonly collectionName = 'timecardAttachments';
 
   async uploadAttachment(input: TimecardAttachmentInput): Promise<string> {
+    const fileToUpload = await convertAttachmentToLetterPdf(input.file);
     const dateKey = this.formatDateKey(input.date);
-    const filePath = `timecard-attachments/${dateKey}/${Date.now()}_${input.file.name}`;
+    const filePath = `timecard-attachments/${dateKey}/${Date.now()}_${fileToUpload.name}`;
     const storageRef = ref(storage, filePath);
 
-    await uploadBytes(storageRef, input.file);
+    await uploadBytes(storageRef, fileToUpload);
     const fileUrl = await getDownloadURL(storageRef);
 
     const docRef = await addDoc(collection(db, this.collectionName), {
@@ -40,7 +42,7 @@ class TimecardAttachmentService {
       site: input.site,
       code: input.code ?? '',
       description: input.description ?? '',
-      fileName: input.file.name,
+      fileName: fileToUpload.name,
       fileUrl,
       filePath,
       uploadedBy: input.uploadedBy,

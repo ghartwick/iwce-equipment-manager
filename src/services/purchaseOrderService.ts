@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { db, storage } from '../firebase';
+import { convertAttachmentToLetterPdf } from '../utils/attachmentConverter';
 
 export interface POLineItem {
   id: string;
@@ -61,11 +62,12 @@ class PurchaseOrderService {
     let attachmentPath: string | undefined;
 
     if (input.attachmentFile) {
-      const path = `purchase-orders/PO-${poNumber}/${Date.now()}_${input.attachmentFile.name}`;
+      const attachmentFile = await convertAttachmentToLetterPdf(input.attachmentFile);
+      const path = `purchase-orders/PO-${poNumber}/${Date.now()}_${attachmentFile.name}`;
       const storageRef = ref(storage, path);
-      await uploadBytes(storageRef, input.attachmentFile);
+      await uploadBytes(storageRef, attachmentFile);
       attachmentUrl = await getDownloadURL(storageRef);
-      attachmentName = input.attachmentFile.name;
+      attachmentName = attachmentFile.name;
       attachmentPath = path;
     }
 

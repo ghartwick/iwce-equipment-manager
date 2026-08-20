@@ -1,6 +1,7 @@
 import { addDoc, collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { db, storage } from '../firebase';
+import { convertAttachmentToLetterPdf } from '../utils/attachmentConverter';
 
 export interface MaintenanceAttachmentInput {
   maintenanceReportId: string;
@@ -26,17 +27,18 @@ class MaintenanceAttachmentService {
   private readonly collectionName = 'maintenanceAttachments';
 
   async uploadAttachment(input: MaintenanceAttachmentInput): Promise<string> {
-    const filePath = `maintenance-attachments/${input.maintenanceReportId}/${Date.now()}_${input.file.name}`;
+    const fileToUpload = await convertAttachmentToLetterPdf(input.file);
+    const filePath = `maintenance-attachments/${input.maintenanceReportId}/${Date.now()}_${fileToUpload.name}`;
     const storageRef = ref(storage, filePath);
 
-    await uploadBytes(storageRef, input.file);
+    await uploadBytes(storageRef, fileToUpload);
     const fileUrl = await getDownloadURL(storageRef);
 
     const docRef = await addDoc(collection(db, this.collectionName), {
       maintenanceReportId: input.maintenanceReportId,
       equipmentId: input.equipmentId,
       equipmentName: input.equipmentName,
-      fileName: input.file.name,
+      fileName: fileToUpload.name,
       fileUrl,
       filePath,
       uploadedBy: input.uploadedBy,

@@ -866,6 +866,12 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       return;
     }
 
+    const missingNotesIndex = workEntries.findIndex(entry => !entry.notes.trim());
+    if (missingNotesIndex !== -1) {
+      showAlert(`Please fill out the Notes field for Entry ${missingNotesIndex + 1} before saving`);
+      return;
+    }
+
     // Hours matching validation removed for save/update
     const [inHours, inMinutes] = clockIn.split(':').map(Number);
     const [outHours, outMinutes] = clockOut.split(':').map(Number);
@@ -990,6 +996,12 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
     if (job === 'Other' && !customSite.trim()) {
       showAlert('Please specify the site name');
+      return;
+    }
+
+    const missingNotesIndex = workEntries.findIndex(entry => !entry.notes.trim());
+    if (missingNotesIndex !== -1) {
+      showAlert(`Please fill out the Notes field for Entry ${missingNotesIndex + 1} before submitting`);
       return;
     }
 

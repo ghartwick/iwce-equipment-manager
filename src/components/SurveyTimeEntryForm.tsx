@@ -204,6 +204,9 @@ export function SurveyTimeEntryForm({
       if (!workEntries[i].roleName) { setError(`Select a role for Entry ${i + 1}`); return false; }
       if (!workEntries[i].hours || parseFloat(workEntries[i].hours) <= 0) { setError(`Enter hours for Entry ${i + 1}`); return false; }
     }
+    for (let i = 0; i < workEntries.length; i++) {
+      if (!workEntries[i].notes.trim()) { setError(`Fill out the Notes field for Entry ${i + 1}`); return false; }
+    }
     setError(null);
     return true;
   };

@@ -55,7 +55,9 @@ export function NotificationRuleForm({
   const [eventType, setEventType] = useState<NotificationEventType>(
     existingRule?.eventType ?? 'daily_shop_analysis'
   );
-  const [channels, setChannels] = useState<NotificationChannel[]>(existingRule?.channels ?? ['push']);
+  const [channels, setChannels] = useState<NotificationChannel[]>(
+    existingRule?.channels ?? ['inapp', 'push']
+  );
   const [scopeType, setScopeType] = useState<NotificationScopeType>(existingRule?.scopeType ?? 'all');
   const [siteNames, setSiteNames] = useState<string[]>(existingRule?.siteNames ?? []);
   const [subjectUserIds, setSubjectUserIds] = useState<string[]>(existingRule?.subjectUserIds ?? []);
@@ -209,7 +211,22 @@ export function NotificationRuleForm({
         <div>
           <label className={labelClass}>Deliver by</label>
           <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300">
+            <label
+              className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300"
+              title="Shown as a pop-up inside the app, including anything missed while it was closed"
+            >
+              <input
+                type="checkbox"
+                checked={channels.includes('inapp')}
+                onChange={() => toggleChannel('inapp')}
+                className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+              />
+              In-app pop-up
+            </label>
+            <label
+              className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300"
+              title="Delivered by the device even when the app is closed"
+            >
               <input
                 type="checkbox"
                 checked={channels.includes('push')}

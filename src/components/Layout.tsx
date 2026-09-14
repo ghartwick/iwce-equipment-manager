@@ -3,12 +3,15 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { Plus, Bell, BellRing, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car, DollarSign } from 'lucide-react';
+import { NotificationProvider } from '../context/NotificationContext';
+import NotificationBell from './NotificationBell';
+import NotificationPopup from './NotificationPopup';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-function Layout({ children }: LayoutProps) {
+function LayoutShell({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
@@ -99,6 +102,9 @@ function Layout({ children }: LayoutProps) {
                 <Bell className="h-5 w-5" />
               </button>
 
+              {/* Mobile In-App Notifications */}
+              {user && <NotificationBell className="lg:hidden" />}
+
               {/* Hamburger Menu - Mobile Only */}
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -138,6 +144,8 @@ function Layout({ children }: LayoutProps) {
               >
                 <Bell className="h-5 w-5" />
               </button>
+
+              {user && <NotificationBell />}
 
               {/* User Menu */}
               {user && (
@@ -457,9 +465,20 @@ function Layout({ children }: LayoutProps) {
       {/* Main Content */}
       {children}
 
+      {/* Unread in-app notifications, shown on open and as they arrive */}
+      <NotificationPopup />
+
       {/* AI Assistant - temporarily hidden */}
       {/* <AgentChat /> */}
     </div>
+  );
+}
+
+function Layout({ children }: LayoutProps) {
+  return (
+    <NotificationProvider>
+      <LayoutShell>{children}</LayoutShell>
+    </NotificationProvider>
   );
 }
 

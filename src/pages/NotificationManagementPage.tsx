@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, Edit2, Plus, Smartphone, Trash2 } from 'lucide-react';
+import { ArrowLeft, Bell, BellRing, Edit2, Plus, Smartphone, Trash2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { AppUser, userManagementService } from '../services/userManagementService';
 import { Site, siteManagementService } from '../services/siteManagementService';
@@ -17,6 +17,7 @@ import {
   isPushConfigured,
   pushNotificationService
 } from '../services/pushNotificationService';
+import { inAppNotificationService } from '../services/inAppNotificationService';
 import { NotificationRuleForm } from '../components/NotificationRuleForm';
 
 const inputClass =
@@ -87,18 +88,6 @@ export default function NotificationManagementPage() {
     pushNotificationService.getPermissionState().then(setPushPermission);
   }, []);
 
-  // FCM does not display notifications while the tab is focused, so surface
-  // them here instead of silently dropping them.
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    pushNotificationService
-      .listenInForeground((title, body) => setSuccess(`${title}: ${body}`))
-      .then(fn => {
-        unsubscribe = fn;
-      });
-    return () => unsubscribe?.();
-  }, []);
-
   const loadRules = async (ownerUserId: string) => {
     try {
       setRules(await notificationRuleService.getRulesForUser(ownerUserId));
@@ -147,6 +136,25 @@ export default function NotificationManagementPage() {
       await pushNotificationService.sendTestNotification();
     } catch (err: any) {
       setError(err?.message || 'Failed to show test notification');
+    }
+  };
+
+  const handleTestInApp = async () => {
+    if (!owner) return;
+    try {
+      await inAppNotificationService.create({
+        userId: owner.id,
+        title: 'Test in-app notification',
+        body: 'In-app notifications are working. This is what a pop-up looks like.',
+        eventType: 'test'
+      });
+      setSuccess(
+        owner.id === user?.id
+          ? 'Test queued. The pop-up appears right away, or next time you open the app.'
+          : `Test queued for ${owner.name}. They will see it next time they open the app.`
+      );
+    } catch (err: any) {
+      setError(err?.message || 'Failed to queue in-app notification');
     }
   };
 
@@ -275,6 +283,28 @@ export default function NotificationManagementPage() {
                       </option>
                     ))}
                 </select>
+              </div>
+            )}
+
+            {/* In-app notifications */}
+            {owner && (
+              <div className="mb-6 p-4 border border-yellow-300 dark:border-yellow-800 rounded-lg">
+                <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+                  <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                    <BellRing className="h-4 w-4" /> In-app pop-ups
+                  </h3>
+                  <button
+                    onClick={handleTestInApp}
+                    className="px-3 py-1.5 text-sm text-yellow-700 dark:text-yellow-400 border border-yellow-600 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+                  >
+                    Send Test
+                  </button>
+                </div>
+                <p className="text-sm text-yellow-600 dark:text-yellow-500">
+                  Always on, nothing to enable. Notifications appear as a pop-up while the app is
+                  open, and anything that arrives beforehand is shown the next time it is opened.
+                  Unread items stay on the bell in the header.
+                </p>
               </div>
             )}
 

@@ -11,7 +11,12 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
-export type NotificationChannel = 'email' | 'push';
+/**
+ * - `inapp`: shown inside the app as a pop-up/banner next time the user opens it
+ * - `push`:  OS-level push notification, delivered even when the app is closed
+ * - `email`: currently paused, see EMAIL_DELIVERY_ENABLED
+ */
+export type NotificationChannel = 'inapp' | 'email' | 'push';
 
 /**
  * Email delivery is intentionally paused: no mail provider is wired up yet.
@@ -137,7 +142,15 @@ export function describeRule(rule: NotificationRule, userNameById: Record<string
     cadence = `daily at ${rule.timeOfDay}`;
   }
 
-  const channels = rule.channels.length ? rule.channels.join(' + ') : 'no channels';
+  const channelLabels: Record<NotificationChannel, string> = {
+    inapp: 'in-app',
+    push: 'push',
+    email: 'email'
+  };
+
+  const channels = rule.channels.length
+    ? rule.channels.map(c => channelLabels[c] ?? c).join(' + ')
+    : 'no channels';
 
   return `${event.label} for ${scope}, ${cadence}, via ${channels}`;
 }

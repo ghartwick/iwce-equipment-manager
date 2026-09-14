@@ -14,6 +14,10 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
+// Exported so the FCM service worker can be registered with the same config
+// (service workers cannot read Vite env vars).
+export { firebaseConfig };
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 

@@ -23,6 +23,7 @@ const ExpenseManagementPage = React.lazy(() => import('./pages/ExpenseManagement
 const SurveyTimecardEditPage = React.lazy(() => import('./pages/SurveyTimecardEditPage'));
 const SurveyTimecardPage = React.lazy(() => import('./pages/SurveyTimecardPage'));
 const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
+const NotificationManagementPage = React.lazy(() => import('./pages/NotificationManagementPage'));
 
 // Loading fallback for lazy-loaded pages
 const PageLoader = () => (
@@ -158,6 +159,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <UserManagementPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/manage/notifications" element={
+          isAuthenticated ? (
+            <Layout>
+              <NotificationManagementPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

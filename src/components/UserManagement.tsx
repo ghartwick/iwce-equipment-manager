@@ -35,6 +35,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
     username: string;
     password: string;
     name: string;
+    email: string;
     role: FormDataRole;
     isActive: boolean;
     isSurveyor: boolean;
@@ -42,6 +43,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
     username: '',
     password: '',
     name: '',
+    email: '',
     role: 'field',
     isActive: true,
     isSurveyor: false
@@ -78,6 +80,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
           updateData = {
             username: formData.username,
             name: formData.name,
+            email: formData.email.trim(),
             role: formData.role,
             isActive: formData.isActive,
             isSurveyor: formData.isSurveyor
@@ -94,7 +97,8 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
             return;
           }
           updateData = {
-            password: formData.password
+            password: formData.password,
+            email: formData.email.trim()
           };
         }
         
@@ -116,6 +120,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
         username: '',
         password: '',
         name: '',
+        email: '',
         role: 'field',
         isActive: true,
         isSurveyor: false
@@ -135,6 +140,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
       username: user.username,
       password: '', // Don't pre-fill password for security
       name: user.name,
+      email: user.email ?? '',
       role: user.role, // AppUser already has converted role
       isActive: user.isActive,
       isSurveyor: user.isSurveyor ?? false
@@ -276,6 +282,16 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                       required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="Used for notification emails"
+                      className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     />
                   </div>
                   <div>
@@ -521,6 +537,16 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                         </div>
                       </>
                     ) : null}
+                    <div>
+                      <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="Used for notification emails"
+                        className="w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">
                         {currentUser?.role === 'admin' ? 'New Password (leave blank to keep current)' : 'Password'}

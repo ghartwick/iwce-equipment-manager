@@ -7,6 +7,7 @@ export interface AppUser {
   password: string; // In production, this should be hashed
   role: 'admin' | 'supervisor' | 'field';
   name: string;
+  email?: string; // Delivery address for notification rules
   createdAt: string;
   updatedAt: string;
   createdBy?: string; // Admin who created this user

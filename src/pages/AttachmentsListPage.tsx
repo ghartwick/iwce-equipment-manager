@@ -136,6 +136,9 @@ export default function AttachmentsListPage() {
   const isImage = (fileName: string) =>
     /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(fileName);
 
+  const isPdf = (fileName: string) =>
+    /\.pdf$/i.test(fileName);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-yellow-100 dark:bg-black flex items-center justify-center">
@@ -248,7 +251,7 @@ export default function AttachmentsListPage() {
                         />
                         <div
                           className="flex-shrink-0 w-14 h-14 flex items-center justify-center bg-yellow-200 dark:bg-yellow-900/30 rounded-lg border border-yellow-400 dark:border-yellow-700 cursor-pointer"
-                          onMouseEnter={() => isImage(attachment.fileName) && setHoveredAttachment(attachment)}
+                          onMouseEnter={() => (isImage(attachment.fileName) || isPdf(attachment.fileName)) && setHoveredAttachment(attachment)}
                           onMouseLeave={() => setHoveredAttachment(null)}
                         >
                           {isImage(attachment.fileName) ? (
@@ -305,14 +308,22 @@ export default function AttachmentsListPage() {
           </div>
         )}
 
-        {hoveredAttachment && isImage(hoveredAttachment.fileName) && (
+        {hoveredAttachment && (isImage(hoveredAttachment.fileName) || isPdf(hoveredAttachment.fileName)) && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-none">
-            <div className="relative inline-block" style={{ transform: 'scale(0.75)', transformOrigin: 'center' }}>
-              <img
+            {isImage(hoveredAttachment.fileName) ? (
+              <div className="relative inline-block" style={{ transform: 'scale(0.75)', transformOrigin: 'center' }}>
+                <img
+                  src={hoveredAttachment.fileUrl}
+                  alt={hoveredAttachment.fileName}
+                />
+              </div>
+            ) : (
+              <iframe
                 src={hoveredAttachment.fileUrl}
-                alt={hoveredAttachment.fileName}
+                title={hoveredAttachment.fileName}
+                className="w-[80vw] h-[80vh] max-w-4xl bg-white rounded-lg shadow-2xl"
               />
-            </div>
+            )}
           </div>
         )}
       </div>

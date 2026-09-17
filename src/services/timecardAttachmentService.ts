@@ -60,23 +60,30 @@ class TimecardAttachmentService {
     );
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map(docSnap => {
-      const data = docSnap.data();
-      const rawDate = data.date?.toDate ? data.date.toDate() : new Date(data.date);
-      const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
-      return {
-        id: docSnap.id,
-        date: rawDate,
-        site: data.site,
-        code: data.code ?? '',
-        description: data.description ?? '',
-        fileName: data.fileName,
-        fileUrl: data.fileUrl,
-        filePath: data.filePath,
-        uploadedBy: data.uploadedBy,
-        createdAt
-      };
-    });
+    return snapshot.docs.map(docSnap => this.mapDocToAttachment(docSnap));
+  }
+
+  async getAllAttachments(): Promise<TimecardAttachment[]> {
+    const snapshot = await getDocs(collection(db, this.collectionName));
+    return snapshot.docs.map(docSnap => this.mapDocToAttachment(docSnap));
+  }
+
+  private mapDocToAttachment(docSnap: any): TimecardAttachment {
+    const data = docSnap.data();
+    const rawDate = data.date?.toDate ? data.date.toDate() : new Date(data.date);
+    const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+    return {
+      id: docSnap.id,
+      date: rawDate,
+      site: data.site,
+      code: data.code ?? '',
+      description: data.description ?? '',
+      fileName: data.fileName,
+      fileUrl: data.fileUrl,
+      filePath: data.filePath,
+      uploadedBy: data.uploadedBy,
+      createdAt
+    };
   }
 
   private formatDateKey(date: Date): string {

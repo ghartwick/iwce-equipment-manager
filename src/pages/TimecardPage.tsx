@@ -1276,7 +1276,17 @@ export default function TimecardPage() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center justify-between p-4 border-b border-yellow-600 bg-yellow-600 rounded-t-xl">
-                      <h2 className="text-lg font-bold text-black">Attachments</h2>
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-lg font-bold text-black">Attachments</h2>
+                        {isAdmin && (
+                          <button
+                            onClick={() => navigate('/timecard/attachments')}
+                            className="text-xs px-2 py-1 bg-black text-yellow-400 rounded hover:bg-gray-900 font-medium transition-colors"
+                          >
+                            See all Attachments
+                          </button>
+                        )}
+                      </div>
                       <button onClick={() => setShowAttachments(false)} className="p-1.5 rounded-lg hover:bg-yellow-700 text-black transition-colors">
                         <X className="h-5 w-5" />
                       </button>

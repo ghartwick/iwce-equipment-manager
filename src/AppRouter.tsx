@@ -22,6 +22,7 @@ const UserManagementPage = React.lazy(() => import('./pages/UserManagementPage')
 const ExpenseManagementPage = React.lazy(() => import('./pages/ExpenseManagementPage'));
 const SurveyTimecardEditPage = React.lazy(() => import('./pages/SurveyTimecardEditPage'));
 const SurveyTimecardPage = React.lazy(() => import('./pages/SurveyTimecardPage'));
+const AttachmentsListPage = React.lazy(() => import('./pages/AttachmentsListPage'));
 const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
 const NotificationManagementPage = React.lazy(() => import('./pages/NotificationManagementPage'));
 
@@ -75,6 +76,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <TimecardPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/timecard/attachments" element={
+          isAuthenticated ? (
+            <Layout>
+              <AttachmentsListPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

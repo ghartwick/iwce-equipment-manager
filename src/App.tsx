@@ -11,7 +11,7 @@ import { SearchBar } from './components/SearchBar';
 import { FilterPanel } from './components/FilterPanel';
 import { LoginPage } from './components/LoginPage';
 import { Equipment } from './types';
-import { equipmentHistoryService } from './services/equipmentHistoryService';
+import { equipmentHistoryFirebaseService } from './services/equipmentHistoryFirebaseService';
 
 function App() {
   const navigate = useNavigate();
@@ -102,7 +102,7 @@ function App() {
     return nameA.localeCompare(nameB);
   });
 
-  const handleAddProduct = (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleAddProduct = async (productData: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (user) {
       // Create new equipment object
       const newEquipment: Equipment = {
@@ -111,15 +111,15 @@ function App() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      
-      // Track the creation in history
-      equipmentHistoryService.trackEquipmentChange(
+
+      // Track the creation in history (Firestore, not local storage)
+      await equipmentHistoryFirebaseService.trackEquipmentChange(
         'created',
         newEquipment,
         { username: user.username, role: user.role }
       );
-      
-      addProduct(productData);
+
+      await addProduct(productData);
       setShowAddForm(false);
     }
   };

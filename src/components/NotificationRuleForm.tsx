@@ -145,6 +145,8 @@ export function NotificationRuleForm({
         frequency,
         timeOfDay: frequency === 'immediate' ? '' : timeOfDay,
         dayOfWeek: frequency === 'weekly' ? dayOfWeek : 1,
+        // The scheduler runs in UTC, so it needs this to resolve timeOfDay.
+        utcOffsetMinutes: new Date().getTimezoneOffset(),
         isActive,
         createdBy
       });

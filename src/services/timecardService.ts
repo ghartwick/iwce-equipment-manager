@@ -2,6 +2,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, query, 
 import { db } from '../firebase';
 import { UserManagementService } from './userManagementService';
 import { fleetManagementService } from './fleetManagementService';
+import { notificationDispatchService } from './notificationDispatchService';
 
 export interface EquipmentEntry {
   id: string;
@@ -333,6 +334,33 @@ class TimecardService {
 
     // Update fleet equipment employee if equipment is selected
     await this.updateFleetEquipmentEmployee(entry, userId || entry.userId);
+
+    await this.notifyTimecardSubmitted(entry, userId);
+  }
+
+  /**
+   * Fans the submission out to anyone subscribed to timecard submissions.
+   * Best-effort: a notification failure must not undo a submitted timecard.
+   */
+  private async notifyTimecardSubmitted(entry: TimeEntry, actorUserId?: string): Promise<void> {
+    try {
+      const users = await this.userManagementService.getAllUsers();
+      const owner = users.find(u => u.id === entry.userId);
+      const ownerName = owner?.name || 'A user';
+      const dateLabel = entry.date instanceof Date ? entry.date.toLocaleDateString() : '';
+
+      await notificationDispatchService.emit({
+        eventType: 'timecard_submitted',
+        title: `${ownerName} submitted a timecard`,
+        body: [entry.job, dateLabel].filter(Boolean).join(' — '),
+        url: entry.id ? `/timecard/edit/${entry.id}` : '/timecard',
+        siteName: entry.job,
+        subjectUserId: entry.userId,
+        actorUserId: actorUserId || entry.userId
+      });
+    } catch (err) {
+      console.error('Failed to notify timecard submission:', err);
+    }
   }
 
   // Update fleet equipment employee based on timecard equipment selection

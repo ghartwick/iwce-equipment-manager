@@ -17,6 +17,7 @@ import { shopHistoryFirebaseService } from '../services/shopHistoryFirebaseServi
 import { repairListService, RepairListCheckedItem } from '../services/repairListService';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { equipmentServiceLogService } from '../services/equipmentServiceLogService';
+import { notificationDispatchService } from '../services/notificationDispatchService';
 import { computeUnitSchedule, readingsFromMaintenanceReports } from '../services/serviceScheduleMigration';
 import { ResolveRepairModal, ResolveRepairTarget } from './ResolveRepairModal';
 import { useAuth } from '../hooks/useAuth';
@@ -312,6 +313,19 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
         } catch (alertErr) {
           console.error('Failed to save repair alert:', alertErr);
         }
+      }
+
+      // Only a genuinely new repair flag is worth notifying about; notes alone
+      // and repairs already pending on this unit are not.
+      if (hasNewRepairs) {
+        await notificationDispatchService.emit({
+          eventType: 'repair_needed',
+          title: `${product.name || 'A unit'} flagged for repair`,
+          body: `Repairs needed: ${newRepairItems.join(', ')}`,
+          url: '/shop',
+          siteName: product.site || '',
+          actorUserId: user.id
+        });
       }
 
       // Log each newly flagged repair (and any note) to the unit's service log so

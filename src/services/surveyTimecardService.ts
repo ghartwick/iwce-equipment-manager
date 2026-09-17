@@ -1,6 +1,7 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserManagementService } from './userManagementService';
+import { notificationDispatchService } from './notificationDispatchService';
 
 export interface SurveyExpenseLine {
   expenseId: string;
@@ -259,6 +260,33 @@ class SurveyTimecardService {
       submittedAt: new Date(),
       submittedBy: userId || entry.userId,
     });
+
+    await this.notifySubmitted(entry, userId);
+  }
+
+  /**
+   * Fans the submission out to anyone subscribed to timecard submissions.
+   * Best-effort: a notification failure must not undo a submitted timecard.
+   */
+  private async notifySubmitted(entry: SurveyTimeEntry, actorUserId?: string): Promise<void> {
+    try {
+      const users = await this.userManagementService.getAllUsers();
+      const owner = users.find(u => u.id === entry.userId);
+      const ownerName = owner?.name || 'A user';
+      const dateLabel = entry.date instanceof Date ? entry.date.toLocaleDateString() : '';
+
+      await notificationDispatchService.emit({
+        eventType: 'timecard_submitted',
+        title: `${ownerName} submitted a survey timecard`,
+        body: [entry.clientName, entry.site, dateLabel].filter(Boolean).join(' — '),
+        url: entry.id ? `/survey-timecard/edit/${entry.id}` : '/survey-timecard',
+        siteName: entry.site,
+        subjectUserId: entry.userId,
+        actorUserId: actorUserId || entry.userId
+      });
+    } catch (err) {
+      console.error('Failed to notify survey timecard submission:', err);
+    }
   }
 
   // Permission helpers (mirror timecardService semantics)

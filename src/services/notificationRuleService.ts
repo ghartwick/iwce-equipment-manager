@@ -110,13 +110,29 @@ export interface NotificationRule {
   timeOfDay: string;
   /** 0 = Sunday. Only used for weekly rules. */
   dayOfWeek: number;
+  /**
+   * `Date.getTimezoneOffset()` of whoever saved the rule, so the scheduler
+   * (which runs in UTC) can work out when `timeOfDay` falls due.
+   */
+  utcOffsetMinutes: number;
   isActive: boolean;
+  /** ISO timestamp of the last digest sent for this rule. Set by the scheduler. */
+  lastDigestAt: string;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
 }
 
-export type NotificationRuleInput = Omit<NotificationRule, 'id' | 'createdAt' | 'updatedAt'>;
+/**
+ * Default offset for rules saved before the field existed: UTC-7, the timezone
+ * the company operates in.
+ */
+export const DEFAULT_UTC_OFFSET_MINUTES = 420;
+
+export type NotificationRuleInput = Omit<
+  NotificationRule,
+  'id' | 'createdAt' | 'updatedAt' | 'lastDigestAt'
+>;
 
 export function describeRule(rule: NotificationRule, userNameById: Record<string, string>): string {
   const event = getEventDefinition(rule.eventType);
@@ -172,7 +188,9 @@ class NotificationRuleService {
       frequency: data.frequency ?? 'daily',
       timeOfDay: data.timeOfDay ?? '07:00',
       dayOfWeek: data.dayOfWeek ?? 1,
+      utcOffsetMinutes: data.utcOffsetMinutes ?? DEFAULT_UTC_OFFSET_MINUTES,
       isActive: data.isActive ?? true,
+      lastDigestAt: data.lastDigestAt ?? '',
       createdAt: data.createdAt ?? '',
       updatedAt: data.updatedAt ?? '',
       createdBy: data.createdBy ?? ''
@@ -197,6 +215,7 @@ class NotificationRuleService {
     const now = new Date().toISOString();
     const docRef = await addDoc(collection(db, this.collectionName), {
       ...input,
+      lastDigestAt: '',
       createdAt: now,
       updatedAt: now
     });

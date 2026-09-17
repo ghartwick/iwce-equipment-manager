@@ -2,6 +2,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp, getD
 import { db } from '../firebase';
 import { equipmentHistoryFirebaseService } from './equipmentHistoryFirebaseService';
 import { alertsFirebaseService } from './alertsFirebaseService';
+import { notificationDispatchService } from './notificationDispatchService';
 import { Equipment } from '../types';
 
 export class EquipmentManagementService {
@@ -186,6 +187,21 @@ export class EquipmentManagementService {
           } catch (error) {
             console.error('Error adding alert for heavy equipment:', error);
           }
+        }
+
+        // A site change is a move between sites, which users can subscribe to.
+        // Notify against the destination so site-scoped rules fire for whoever
+        // is now responsible for the unit.
+        if (updates.site !== undefined && updates.site !== oldEquipment.site) {
+          const from = oldEquipment.site || 'unassigned';
+          const to = updates.site || 'unassigned';
+          await notificationDispatchService.emit({
+            eventType: 'equipment_moved',
+            title: `${oldEquipment.name || 'A unit'} moved to ${to}`,
+            body: `Moved from ${from} by ${user.username || 'someone'}.`,
+            url: '/inventory',
+            siteName: updates.site || oldEquipment.site
+          });
         }
       }
     } catch (error) {

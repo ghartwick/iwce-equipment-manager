@@ -49,9 +49,7 @@ export default function NotificationManagementPage() {
   const [enrolling, setEnrolling] = useState(false);
 
   // Manual broadcast composer (admin only)
-  const [sendTitle, setSendTitle] = useState('');
   const [sendBody, setSendBody] = useState('');
-  const [sendUrl, setSendUrl] = useState('');
   const [audience, setAudience] = useState<'all' | 'roles' | 'users'>('all');
   const [audienceRoles, setAudienceRoles] = useState<string[]>([]);
   const [audienceUserIds, setAudienceUserIds] = useState<string[]>([]);
@@ -218,8 +216,8 @@ export default function NotificationManagementPage() {
     setSendSummary(null);
 
     const recipients = resolveAudience();
-    if (!sendTitle.trim()) {
-      setError('Enter a title for the notification');
+    if (!sendBody.trim()) {
+      setError('Enter a message for the notification');
       return;
     }
     if (recipients.length === 0) {
@@ -236,9 +234,8 @@ export default function NotificationManagementPage() {
       const res = await sendManualNotification({
         senderUserId: user.id,
         userIds: recipients.map(r => r.id),
-        title: sendTitle.trim(),
+        title: `Message from ${user.name}`,
         body: sendBody.trim(),
-        url: sendUrl.trim(),
         channels: sendChannels
       });
 
@@ -264,9 +261,7 @@ export default function NotificationManagementPage() {
       if (failed) parts.push(`${failed} recipient(s) failed`);
 
       setSendSummary(parts.join(' \u00b7 '));
-      setSendTitle('');
       setSendBody('');
-      setSendUrl('');
     } catch (err: any) {
       setError(err?.message || 'Failed to send notification');
     } finally {
@@ -374,28 +369,6 @@ export default function NotificationManagementPage() {
                 </h3>
 
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className={labelClass}>Title</label>
-                      <input
-                        type="text"
-                        value={sendTitle}
-                        onChange={e => setSendTitle(e.target.value)}
-                        placeholder="e.g. Safety meeting tomorrow at 7am"
-                        className={inputClass}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Link (optional)</label>
-                      <input
-                        type="text"
-                        value={sendUrl}
-                        onChange={e => setSendUrl(e.target.value)}
-                        placeholder="e.g. /timecard"
-                        className={inputClass}
-                      />
-                    </div>
-                  </div>
                   <div>
                     <label className={labelClass}>Message</label>
                     <textarea

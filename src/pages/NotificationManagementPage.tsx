@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, BellRing, Edit2, Plus, Send, Smartphone, Trash2 } from 'lucide-react';
+import { ArrowLeft, Bell, BellRing, Edit2, History, Plus, Send, Smartphone, Trash2, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { AppUser, userManagementService } from '../services/userManagementService';
 import { Site, siteManagementService } from '../services/siteManagementService';
@@ -23,6 +23,10 @@ import {
   sendManualNotification
 } from '../services/notificationDispatchService';
 import { NotificationRuleForm } from '../components/NotificationRuleForm';
+import {
+  NotificationHistoryEntry,
+  notificationHistoryService
+} from '../services/notificationHistoryService';
 
 const inputClass =
   'w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500';
@@ -56,6 +60,11 @@ export default function NotificationManagementPage() {
   const [sendChannels, setSendChannels] = useState<ManualNotificationChannel[]>(['inapp']);
   const [sending, setSending] = useState(false);
   const [sendSummary, setSendSummary] = useState<string | null>(null);
+
+  // Notification history
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyEntries, setHistoryEntries] = useState<NotificationHistoryEntry[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const owner = useMemo(
     () => users.find(u => u.id === selectedUserId) ?? null,
@@ -269,6 +278,20 @@ export default function NotificationManagementPage() {
     }
   };
 
+  const handleOpenHistory = async () => {
+    setShowHistory(true);
+    setLoadingHistory(true);
+    try {
+      // Admins see every send; other users see what was sent to them.
+      const entries = await notificationHistoryService.getHistory(
+        isAdmin ? undefined : user?.id
+      );
+      setHistoryEntries(entries);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const handleSaveRule = async (input: NotificationRuleInput) => {
     if (editingRule) {
       await notificationRuleService.updateRule(editingRule.id, input);
@@ -331,18 +354,27 @@ export default function NotificationManagementPage() {
                 Manage Notifications
               </h2>
             </div>
-            {isAdmin && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  setEditingRule(null);
-                  setShowForm(true);
-                }}
-                className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
+                onClick={handleOpenHistory}
+                className="flex items-center space-x-2 px-4 py-2 border border-yellow-600 text-yellow-100 dark:text-yellow-300 rounded-lg hover:bg-yellow-600 hover:text-black transition-colors"
               >
-                <Plus className="h-4 w-4" />
-                <span>Add Notification</span>
+                <History className="h-4 w-4" />
+                <span>History</span>
               </button>
-            )}
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setEditingRule(null);
+                    setShowForm(true);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Notification</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="p-6">
@@ -756,6 +788,100 @@ export default function NotificationManagementPage() {
           </div>
         </div>
       </div>
+
+      {/* Notification history modal */}
+      {showHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
+          <div className="w-full max-w-2xl max-h-[80vh] flex flex-col bg-yellow-50 dark:bg-gray-900 border border-yellow-600 rounded-lg shadow-xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-yellow-600">
+              <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                <History className="h-5 w-5" /> Notification History
+              </h3>
+              <button
+                onClick={() => setShowHistory(false)}
+                className="p-1 text-yellow-700 dark:text-yellow-400 hover:text-yellow-500"
+                title="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-4 space-y-2">
+              {loadingHistory ? (
+                <p className="text-sm text-yellow-600 dark:text-yellow-500">Loading history...</p>
+              ) : historyEntries.length === 0 ? (
+                <p className="text-sm text-yellow-600 dark:text-yellow-500">
+                  No notifications have been sent yet.
+                </p>
+              ) : (
+                historyEntries.map(entry => (
+                  <div
+                    key={entry.id}
+                    className="p-3 border border-yellow-300 dark:border-yellow-800 rounded-lg"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 dark:text-yellow-100">
+                          {entry.title}
+                        </p>
+                        {entry.body && (
+                          <p className="text-sm text-yellow-700 dark:text-yellow-400 mt-0.5">
+                            {entry.body}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs text-yellow-600 dark:text-yellow-500 whitespace-nowrap flex-shrink-0">
+                        {new Date(entry.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-yellow-600 dark:text-yellow-500">
+                      <span>
+                        To:{' '}
+                        <span className="text-yellow-700 dark:text-yellow-300">
+                          {userNameById[entry.userId] ?? 'Unknown user'}
+                        </span>
+                      </span>
+                      {entry.senderUserId && (
+                        <span>
+                          From:{' '}
+                          <span className="text-yellow-700 dark:text-yellow-300">
+                            {userNameById[entry.senderUserId] ?? 'Unknown user'}
+                          </span>
+                        </span>
+                      )}
+                      <span className="flex gap-1">
+                        {entry.channels.map(c => (
+                          <span
+                            key={c}
+                            className="px-1.5 py-0.5 bg-yellow-200 dark:bg-yellow-900 dark:bg-opacity-40 rounded text-yellow-800 dark:text-yellow-300"
+                          >
+                            {c}
+                          </span>
+                        ))}
+                      </span>
+                      {entry.channels.includes('push') && (
+                        <span>
+                          push: {entry.pushSent} sent
+                          {entry.pushFailed > 0 && `, ${entry.pushFailed} failed`}
+                          {entry.reason === 'no enrolled devices' && ' (no devices)'}
+                        </span>
+                      )}
+                      {entry.channels.includes('email') && (
+                        <span>
+                          email:{' '}
+                          {entry.emailSent
+                            ? 'sent'
+                            : entry.emailReason || 'not sent'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

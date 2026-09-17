@@ -34,6 +34,8 @@ export interface DeliveryRequest {
   /** Recorded on the in-app document for traceability. */
   eventType?: string;
   ruleId?: string;
+  /** Admin who triggered a manual send, recorded in the history log. */
+  senderUserId?: string;
 }
 
 export interface DeliveryResult {
@@ -80,6 +82,38 @@ async function sendEmail(to: string, title: string, body: string, url: string): 
 }
 
 export async function deliverNotification(request: DeliveryRequest): Promise<DeliveryResult> {
+  const result = await deliver(request);
+
+  // Chronicle every delivery attempt for the history view. A logging failure
+  // must never break the notification itself.
+  try {
+    await getDb()
+      .collection('notificationHistory')
+      .add({
+        userId: request.userId,
+        title: request.title,
+        body: request.body ?? '',
+        url: request.url ?? '',
+        channels: request.channels ?? ['inapp', 'push'],
+        eventType: request.eventType ?? 'system',
+        ruleId: request.ruleId ?? '',
+        senderUserId: request.senderUserId ?? '',
+        inAppId: result.inAppId,
+        pushSent: result.sent,
+        pushFailed: result.failed,
+        emailSent: result.emailSent ?? null,
+        emailReason: result.emailReason ?? '',
+        reason: result.reason ?? '',
+        createdAt: new Date().toISOString()
+      });
+  } catch (err) {
+    console.error('Failed to record notification history:', err);
+  }
+
+  return result;
+}
+
+async function deliver(request: DeliveryRequest): Promise<DeliveryResult> {
   const { userId, title } = request;
   const body = request.body ?? '';
   const url = request.url ?? '';

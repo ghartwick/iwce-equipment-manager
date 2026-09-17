@@ -78,7 +78,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           body: typeof body === 'string' ? body : '',
           url: typeof url === 'string' ? url : '',
           channels: validChannels,
-          eventType: 'manual'
+          eventType: 'manual',
+          senderUserId
         });
         results.push({ userId, ok: true, ...result });
       } catch (err) {

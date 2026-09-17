@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Check, MoreVertical, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, MoreVertical, X, FileText } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
 import { InlineTimecardEdit } from '../components/InlineTimecardEdit';
@@ -1406,6 +1406,7 @@ export default function TimecardPage() {
                         {attachmentsForDate.map((attachment) => {
                           const uploader = users.find(u => u.id === attachment.uploadedBy);
                           const isImage = attachment.fileName.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+                          const isPdf = /\.pdf$/i.test(attachment.fileName);
                           const isSelected = selectedAttachmentIds.has(attachment.id!);
                           return (
                             <div
@@ -1431,17 +1432,21 @@ export default function TimecardPage() {
                                     title="Select for PDF download"
                                   />
                                 )}
-                                {isImage && (
+                                {(isImage || isPdf) && (
                                   <div
-                                    className="flex-shrink-0 w-20 h-20 border border-yellow-400 dark:border-yellow-700 rounded overflow-hidden cursor-pointer hover:border-yellow-600 dark:hover:border-yellow-500 transition-colors"
+                                    className="flex-shrink-0 w-20 h-20 border border-yellow-400 dark:border-yellow-700 rounded overflow-hidden cursor-pointer hover:border-yellow-600 dark:hover:border-yellow-500 transition-colors flex items-center justify-center bg-yellow-200 dark:bg-yellow-900/30"
                                     onMouseEnter={() => setHoveredAttachment(attachment)}
                                     onMouseLeave={() => setHoveredAttachment(null)}
                                   >
-                                    <img
-                                      src={attachment.fileUrl}
-                                      alt={attachment.fileName}
-                                      className="w-full h-full object-cover"
-                                    />
+                                    {isImage ? (
+                                      <img
+                                        src={attachment.fileUrl}
+                                        alt={attachment.fileName}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <FileText className="h-8 w-8 text-yellow-700 dark:text-yellow-400" />
+                                    )}
                                   </div>
                                 )}
                                 <div className="flex-1 min-w-0">
@@ -1483,12 +1488,20 @@ export default function TimecardPage() {
                         <div
                           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-none"
                         >
-                          <div className="relative inline-block" style={{ transform: 'scale(0.75)', transformOrigin: 'center' }}>
-                            <img
+                          {/\.pdf$/i.test(hoveredAttachment.fileName) ? (
+                            <iframe
                               src={hoveredAttachment.fileUrl}
-                              alt={hoveredAttachment.fileName}
+                              title={hoveredAttachment.fileName}
+                              className="w-[80vw] h-[80vh] max-w-4xl bg-white rounded-lg shadow-2xl"
                             />
-                          </div>
+                          ) : (
+                            <div className="relative inline-block" style={{ transform: 'scale(0.75)', transformOrigin: 'center' }}>
+                              <img
+                                src={hoveredAttachment.fileUrl}
+                                alt={hoveredAttachment.fileName}
+                              />
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

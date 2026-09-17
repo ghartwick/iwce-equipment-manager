@@ -331,16 +331,18 @@ export default function NotificationManagementPage() {
                 Manage Notifications
               </h2>
             </div>
-            <button
-              onClick={() => {
-                setEditingRule(null);
-                setShowForm(true);
-              }}
-              className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Notification</span>
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setEditingRule(null);
+                  setShowForm(true);
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Notification</span>
+              </button>
+            )}
           </div>
 
           <div className="p-6">
@@ -725,23 +727,27 @@ export default function NotificationManagementPage() {
                       >
                         {rule.isActive ? 'Pause' : 'Resume'}
                       </button>
-                      <button
-                        onClick={() => {
-                          setEditingRule(rule);
-                          setShowForm(true);
-                        }}
-                        className="p-1 text-yellow-600 hover:text-yellow-500"
-                        title="Edit notification"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteRule(rule)}
-                        className="p-1 text-red-600 hover:text-red-500"
-                        title="Delete notification"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingRule(rule);
+                              setShowForm(true);
+                            }}
+                            className="p-1 text-yellow-600 hover:text-yellow-500"
+                            title="Edit notification"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRule(rule)}
+                            className="p-1 text-red-600 hover:text-red-500"
+                            title="Delete notification"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}

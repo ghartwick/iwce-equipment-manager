@@ -1,5 +1,5 @@
 import { addDoc, collection, deleteDoc, doc, getDocs, query, Timestamp, where } from 'firebase/firestore';
-import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { deleteObject, getBlob, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { convertAttachmentToLetterPdf } from '../utils/attachmentConverter';
 
@@ -101,6 +101,11 @@ class TimecardAttachmentService {
     // Delete the metadata from Firestore
     const docRef = doc(db, this.collectionName, attachmentId);
     await deleteDoc(docRef);
+  }
+
+  async getAttachmentBlob(attachment: TimecardAttachment): Promise<Blob> {
+    const storageRef = ref(storage, attachment.filePath);
+    return getBlob(storageRef);
   }
 }
 

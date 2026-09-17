@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Trash2, FileText, Image as ImageIcon, Calendar, User, CheckSquare, Square } from 'lucide-react';
+import JSZip from 'jszip';
 import { useAuth } from '../hooks/useAuth';
 import { timecardAttachmentService, TimecardAttachment } from '../services/timecardAttachmentService';
 import { UserManagementService, AppUser } from '../services/userManagementService';
@@ -96,19 +97,20 @@ export default function AttachmentsListPage() {
     if (!selected.length) return;
     setDownloading(true);
     try {
+      const zip = new JSZip();
       for (const attachment of selected) {
-        const response = await fetch(attachment.fileUrl);
-        if (!response.ok) throw new Error(`Failed to download ${attachment.fileName}`);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = attachment.fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        const blob = await timecardAttachmentService.getAttachmentBlob(attachment);
+        zip.file(attachment.fileName, blob);
       }
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = window.URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `attachments-${format(new Date(), 'yyyy-MM-dd-HHmm')}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       alert('Bulk download failed: ' + (error as Error).message);
     } finally {

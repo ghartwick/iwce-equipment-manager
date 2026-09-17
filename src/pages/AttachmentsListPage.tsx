@@ -21,6 +21,7 @@ export default function AttachmentsListPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [hoveredAttachment, setHoveredAttachment] = useState<TimecardAttachment | null>(null);
 
   const isAdmin = user?.role === 'admin';
 
@@ -245,7 +246,11 @@ export default function AttachmentsListPage() {
                           onChange={() => attachment.id && toggleSelection(attachment.id)}
                           className="mt-1 h-4 w-4 rounded border-yellow-400 text-blue-600 focus:ring-blue-500 cursor-pointer"
                         />
-                        <div className="flex-shrink-0 w-14 h-14 flex items-center justify-center bg-yellow-200 dark:bg-yellow-900/30 rounded-lg border border-yellow-400 dark:border-yellow-700">
+                        <div
+                          className="flex-shrink-0 w-14 h-14 flex items-center justify-center bg-yellow-200 dark:bg-yellow-900/30 rounded-lg border border-yellow-400 dark:border-yellow-700 cursor-pointer"
+                          onMouseEnter={() => isImage(attachment.fileName) && setHoveredAttachment(attachment)}
+                          onMouseLeave={() => setHoveredAttachment(null)}
+                        >
                           {isImage(attachment.fileName) ? (
                             <img
                               src={attachment.fileUrl}
@@ -297,6 +302,17 @@ export default function AttachmentsListPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {hoveredAttachment && isImage(hoveredAttachment.fileName) && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 pointer-events-none">
+            <div className="relative inline-block" style={{ transform: 'scale(0.75)', transformOrigin: 'center' }}>
+              <img
+                src={hoveredAttachment.fileUrl}
+                alt={hoveredAttachment.fileName}
+              />
+            </div>
           </div>
         )}
       </div>

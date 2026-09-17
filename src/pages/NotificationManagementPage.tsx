@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, BellRing, Edit2, Plus, Smartphone, Trash2 } from 'lucide-react';
+import { ArrowLeft, Bell, BellRing, Edit2, Plus, Send, Smartphone, Trash2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { AppUser, userManagementService } from '../services/userManagementService';
 import { Site, siteManagementService } from '../services/siteManagementService';
@@ -18,6 +18,10 @@ import {
   pushNotificationService
 } from '../services/pushNotificationService';
 import { inAppNotificationService } from '../services/inAppNotificationService';
+import {
+  ManualNotificationChannel,
+  sendManualNotification
+} from '../services/notificationDispatchService';
 import { NotificationRuleForm } from '../components/NotificationRuleForm';
 
 const inputClass =
@@ -43,6 +47,17 @@ export default function NotificationManagementPage() {
   const [devices, setDevices] = useState<PushDevice[]>([]);
   const [pushPermission, setPushPermission] = useState<PushPermission>('default');
   const [enrolling, setEnrolling] = useState(false);
+
+  // Manual broadcast composer (admin only)
+  const [sendTitle, setSendTitle] = useState('');
+  const [sendBody, setSendBody] = useState('');
+  const [sendUrl, setSendUrl] = useState('');
+  const [audience, setAudience] = useState<'all' | 'roles' | 'users'>('all');
+  const [audienceRoles, setAudienceRoles] = useState<string[]>([]);
+  const [audienceUserIds, setAudienceUserIds] = useState<string[]>([]);
+  const [sendChannels, setSendChannels] = useState<ManualNotificationChannel[]>(['inapp']);
+  const [sending, setSending] = useState(false);
+  const [sendSummary, setSendSummary] = useState<string | null>(null);
 
   const owner = useMemo(
     () => users.find(u => u.id === selectedUserId) ?? null,
@@ -173,6 +188,92 @@ export default function NotificationManagementPage() {
     }
   };
 
+  const resolveAudience = (): AppUser[] => {
+    if (audience === 'all') return users;
+    if (audience === 'roles') return users.filter(u => audienceRoles.includes(u.role));
+    return users.filter(u => audienceUserIds.includes(u.id));
+  };
+
+  const toggleSendChannel = (channel: ManualNotificationChannel) => {
+    setSendChannels(prev =>
+      prev.includes(channel) ? prev.filter(c => c !== channel) : [...prev, channel]
+    );
+  };
+
+  const toggleAudienceRole = (role: string) => {
+    setAudienceRoles(prev =>
+      prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
+    );
+  };
+
+  const toggleAudienceUser = (userId: string) => {
+    setAudienceUserIds(prev =>
+      prev.includes(userId) ? prev.filter(u => u !== userId) : [...prev, userId]
+    );
+  };
+
+  const handleSendManual = async () => {
+    if (!user) return;
+    setError(null);
+    setSendSummary(null);
+
+    const recipients = resolveAudience();
+    if (!sendTitle.trim()) {
+      setError('Enter a title for the notification');
+      return;
+    }
+    if (recipients.length === 0) {
+      setError('No recipients match the selected audience');
+      return;
+    }
+    if (sendChannels.length === 0) {
+      setError('Select at least one delivery channel');
+      return;
+    }
+
+    setSending(true);
+    try {
+      const res = await sendManualNotification({
+        senderUserId: user.id,
+        userIds: recipients.map(r => r.id),
+        title: sendTitle.trim(),
+        body: sendBody.trim(),
+        url: sendUrl.trim(),
+        channels: sendChannels
+      });
+
+      const pushSent = res.results.reduce((n, r) => n + (r.sent ?? 0), 0);
+      const emailSent = res.results.filter(r => r.emailSent).length;
+      const emailMissing = res.results.filter(
+        r => r.emailReason === 'no email address on file'
+      ).length;
+      const emailFailed = res.results.filter(
+        r => r.emailReason && r.emailReason !== 'no email address on file'
+      ).length;
+      const failed = res.results.filter(r => !r.ok).length;
+
+      const parts = [`Delivered to ${res.delivered}/${res.recipients} user(s)`];
+      if (sendChannels.includes('push')) parts.push(`push: ${pushSent} device(s)`);
+      if (sendChannels.includes('email')) {
+        parts.push(
+          `email: ${emailSent} sent` +
+            (emailMissing ? `, ${emailMissing} missing address` : '') +
+            (emailFailed ? `, ${emailFailed} failed` : '')
+        );
+      }
+      if (failed) parts.push(`${failed} recipient(s) failed`);
+
+      setSendSummary(parts.join(' \u00b7 '));
+      setSendTitle('');
+      setSendBody('');
+      setSendUrl('');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send notification');
+    } finally {
+      setSending(false);
+    }
+  };
+
   const handleSaveRule = async (input: NotificationRuleInput) => {
     if (editingRule) {
       await notificationRuleService.updateRule(editingRule.id, input);
@@ -260,9 +361,173 @@ export default function NotificationManagementPage() {
             )}
 
             <div className="mb-6 p-3 bg-yellow-100/60 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-800 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
-              Push notifications are active. Email delivery is paused until a mail provider is
-              connected, so email cannot be selected as a channel yet.
+              In-app and push notifications are active. Email sends through Resend &mdash; set
+              <code> RESEND_API_KEY</code> and <code>EMAIL_FROM</code> in the Vercel env vars, and
+              make sure each recipient has a delivery email saved below.
             </div>
+
+            {/* Manual broadcast composer (admin only) */}
+            {isAdmin && (
+              <div className="mb-6 p-4 border border-yellow-300 dark:border-yellow-800 rounded-lg">
+                <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2 mb-3">
+                  <Send className="h-4 w-4" /> Send a notification
+                </h3>
+
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelClass}>Title</label>
+                      <input
+                        type="text"
+                        value={sendTitle}
+                        onChange={e => setSendTitle(e.target.value)}
+                        placeholder="e.g. Safety meeting tomorrow at 7am"
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Link (optional)</label>
+                      <input
+                        type="text"
+                        value={sendUrl}
+                        onChange={e => setSendUrl(e.target.value)}
+                        placeholder="e.g. /timecard"
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Message</label>
+                    <textarea
+                      value={sendBody}
+                      onChange={e => setSendBody(e.target.value)}
+                      rows={2}
+                      placeholder="Details shown in the notification body"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Send to</label>
+                    <div className="flex flex-wrap gap-4 mb-2">
+                      {(
+                        [
+                          ['all', 'All users'],
+                          ['roles', 'A group (by role)'],
+                          ['users', 'Specific users']
+                        ] as const
+                      ).map(([value, label]) => (
+                        <label
+                          key={value}
+                          className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300"
+                        >
+                          <input
+                            type="radio"
+                            name="audience"
+                            checked={audience === value}
+                            onChange={() => setAudience(value)}
+                            className="border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+
+                    {audience === 'roles' && (
+                      <div className="flex flex-wrap gap-4 border border-yellow-300 dark:border-yellow-800 rounded-lg p-2">
+                        {(['admin', 'supervisor', 'field'] as const).map(role => (
+                          <label
+                            key={role}
+                            className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300 capitalize"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={audienceRoles.includes(role)}
+                              onChange={() => toggleAudienceRole(role)}
+                              className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                            />
+                            {role} ({users.filter(u => u.role === role).length})
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {audience === 'users' && (
+                      <div className="max-h-40 overflow-y-auto border border-yellow-300 dark:border-yellow-800 rounded-lg p-2 space-y-1">
+                        {users
+                          .slice()
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map(u => (
+                            <label
+                              key={u.id}
+                              className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={audienceUserIds.includes(u.id)}
+                                onChange={() => toggleAudienceUser(u.id)}
+                                className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                              />
+                              {u.name} <span className="text-yellow-600 dark:text-yellow-500">({u.role})</span>
+                            </label>
+                          ))}
+                      </div>
+                    )}
+
+                    <p className="mt-1 text-xs text-yellow-600 dark:text-yellow-500">
+                      {resolveAudience().length} recipient(s) selected
+                      {sendChannels.includes('email') &&
+                        resolveAudience().filter(u => !u.email?.trim()).length > 0 &&
+                        ` \u2014 ${resolveAudience().filter(u => !u.email?.trim()).length} have no email on file`}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Deliver by</label>
+                    <div className="flex flex-wrap gap-4">
+                      {(
+                        [
+                          ['inapp', 'In-app pop-up'],
+                          ['push', 'Push notification'],
+                          ['email', 'Email']
+                        ] as const
+                      ).map(([value, label]) => (
+                        <label
+                          key={value}
+                          className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={sendChannels.includes(value)}
+                            onChange={() => toggleSendChannel(value)}
+                            className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {sendSummary && (
+                    <div className="p-3 bg-green-100 dark:bg-green-900 dark:bg-opacity-30 border border-green-600 rounded-lg text-sm text-green-700 dark:text-green-300">
+                      {sendSummary}
+                    </div>
+                  )}
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleSendManual}
+                      disabled={sending}
+                      className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50"
+                    >
+                      <Send className="h-4 w-4" />
+                      {sending ? 'Sending...' : 'Send Notification'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Admin user switcher */}
             {isAdmin && (

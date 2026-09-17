@@ -14,16 +14,17 @@ import { db } from '../firebase';
 /**
  * - `inapp`: shown inside the app as a pop-up/banner next time the user opens it
  * - `push`:  OS-level push notification, delivered even when the app is closed
- * - `email`: currently paused, see EMAIL_DELIVERY_ENABLED
+ * - `email`: sent through Resend; requires RESEND_API_KEY + EMAIL_FROM env vars
+ *   and an email address on the recipient's user profile
  */
 export type NotificationChannel = 'inapp' | 'email' | 'push';
 
 /**
- * Email delivery is intentionally paused: no mail provider is wired up yet.
- * Flip this to true once the sending backend exists and the email channel
- * becomes selectable again in the UI.
+ * Email delivery is wired up through Resend on the server. If the env vars are
+ * missing the send reports a per-recipient failure instead of breaking the
+ * other channels.
  */
-export const EMAIL_DELIVERY_ENABLED = false;
+export const EMAIL_DELIVERY_ENABLED = true;
 
 export type NotificationEventType =
   | 'daily_shop_analysis'

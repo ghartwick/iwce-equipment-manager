@@ -10,6 +10,11 @@ import { getAdminApp, getDb } from './firebaseAdmin.js';
  *   open and on next open if not.
  * - `push` sends to every device in `pushDevices` (keyed by FCM token, written
  *   by the browser in pushNotificationService).
+ * - `email` sends through Resend (https://resend.com) using the recipient's
+ *   `email` field on their `users` document. Requires RESEND_API_KEY and
+ *   EMAIL_FROM env vars. Email failures are recorded on the result rather
+ *   than thrown, so a missing provider cannot break the other channels or
+ *   abort a digest run.
  */
 
 const DEAD_TOKEN_CODES = [
@@ -18,7 +23,7 @@ const DEAD_TOKEN_CODES = [
   'messaging/invalid-argument'
 ];
 
-export type DeliveryChannel = 'inapp' | 'push';
+export type DeliveryChannel = 'inapp' | 'push' | 'email';
 
 export interface DeliveryRequest {
   userId: string;
@@ -36,7 +41,42 @@ export interface DeliveryResult {
   sent: number;
   failed: number;
   pruned: number;
+  /** True when the email channel was requested and the send succeeded. */
+  emailSent?: boolean;
+  /** Why email was not sent (no address, provider not configured, API error). */
+  emailReason?: string;
   reason?: string;
+}
+
+/**
+ * Sends one email through Resend's REST API. No SDK is needed, matching the
+ * provider adapters used elsewhere in this codebase.
+ */
+async function sendEmail(to: string, title: string, body: string, url: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  if (!apiKey || !from) {
+    throw new Error('Email is not configured. Set RESEND_API_KEY and EMAIL_FROM in Vercel env vars.');
+  }
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      subject: title,
+      text: url ? `${body}\n\n${url}` : body
+    })
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Email provider returned ${response.status}${detail ? `: ${detail}` : ''}`);
+  }
 }
 
 export async function deliverNotification(request: DeliveryRequest): Promise<DeliveryResult> {
@@ -61,6 +101,23 @@ export async function deliverNotification(request: DeliveryRequest): Promise<Del
       readAt: ''
     });
     result.inAppId = created.id;
+  }
+
+  if (channels.includes('email')) {
+    try {
+      const userSnap = await db.collection('users').doc(userId).get();
+      const email = (userSnap.data()?.email ?? '').trim();
+      if (!email) {
+        result.emailSent = false;
+        result.emailReason = 'no email address on file';
+      } else {
+        await sendEmail(email, title, body, url);
+        result.emailSent = true;
+      }
+    } catch (err) {
+      result.emailSent = false;
+      result.emailReason = (err as Error).message;
+    }
   }
 
   if (!channels.includes('push')) return result;

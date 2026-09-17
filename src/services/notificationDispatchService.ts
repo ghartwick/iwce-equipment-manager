@@ -87,6 +87,46 @@ async function sendPush(userId: string, event: NotificationEvent): Promise<void>
   }
 }
 
+export type ManualNotificationChannel = 'inapp' | 'push' | 'email';
+
+export interface ManualSendResult {
+  userId: string;
+  ok: boolean;
+  inAppId?: string | null;
+  sent?: number;
+  failed?: number;
+  emailSent?: boolean;
+  emailReason?: string;
+  reason?: string;
+  error?: string;
+}
+
+/**
+ * Sends an ad-hoc notification to a resolved list of users via the broadcast
+ * endpoint. Audience resolution (all / role / picked users) happens in the UI;
+ * this just ships the user id list.
+ */
+export async function sendManualNotification(input: {
+  senderUserId: string;
+  userIds: string[];
+  title: string;
+  body: string;
+  url?: string;
+  channels: ManualNotificationChannel[];
+}): Promise<{ recipients: number; delivered: number; results: ManualSendResult[] }> {
+  const response = await fetch('/api/notifications/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input)
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || `Send failed (${response.status})`);
+  }
+  return data;
+}
+
 class NotificationDispatchService {
   /** Appends the event to the queue the digest job reads. */
   private async queueEvent(event: NotificationEvent): Promise<void> {

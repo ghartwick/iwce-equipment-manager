@@ -34,7 +34,7 @@ export interface InAppNotification {
   /** Optional in-app route to open when the notification is clicked. */
   url: string;
   /** Which rule/event produced this, when it came from the rules engine. */
-  eventType: NotificationEventType | 'test' | 'system';
+  eventType: NotificationEventType | 'test' | 'system' | 'manual';
   /** Id of the rule that produced this, when applicable. */
   ruleId: string;
   isRead: boolean;

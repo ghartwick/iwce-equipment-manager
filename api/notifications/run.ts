@@ -5,10 +5,12 @@ import { DeliveryChannel, deliverNotification } from '../_lib/notificationDelive
 /**
  * Scheduled evaluation of daily and weekly notification rules.
  *
- * Runs hourly from Vercel Cron (see vercel.json). Immediate rules are not
- * handled here - the app delivers those the moment the event happens, in
- * notificationDispatchService. This job only exists for the digest cadences,
- * which have to fire whether or not anyone has the app open.
+ * Runs hourly, triggered by the GitHub Actions workflow in
+ * .github/workflows/notification-cron.yml (Vercel Hobby only allows daily
+ * crons). Immediate rules are not handled here - the app delivers those the
+ * moment the event happens, in notificationDispatchService. This job only
+ * exists for the digest cadences and scheduled service notifications, which
+ * have to fire whether or not anyone has the app open.
  *
  * For each active digest rule it:
  *   1. Works out whether the rule's local send time falls in this hour.

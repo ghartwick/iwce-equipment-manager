@@ -1,0 +1,22 @@
+name: Notification scheduler
+
+# Vercel Hobby only allows daily cron jobs and silently skips deployments that
+# declare anything more frequent, so the hourly trigger lives here instead.
+# It calls the same endpoint Vercel Cron would. Set CRON_SECRET as a repo
+# secret (Settings -> Secrets and variables -> Actions) and the same value as
+# an env var in Vercel so the endpoint stays protected.
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger notification run
+        run: |
+          curl -fsS \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://iwce-equipment-manager.vercel.app/api/notifications/run"

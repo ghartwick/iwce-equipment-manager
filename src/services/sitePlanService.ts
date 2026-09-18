@@ -4,7 +4,6 @@ import {
   deleteDoc,
   doc,
   getDocs,
-  orderBy,
   query,
   Timestamp,
   where
@@ -58,20 +57,21 @@ class SitePlanService {
     return docRef.id;
   }
 
+  // Sorted client-side: a where+orderBy combo would need a composite index
+  // that isn't declared anywhere in this project.
   async getPlansForSite(siteId: string): Promise<SitePlan[]> {
-    const q = query(
-      collection(db, this.collectionName),
-      where('siteId', '==', siteId),
-      orderBy('createdAt', 'desc')
-    );
+    const q = query(collection(db, this.collectionName), where('siteId', '==', siteId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => this.mapDoc(d.id, d.data()));
+    return snapshot.docs
+      .map(d => this.mapDoc(d.id, d.data()))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   async getAllPlans(): Promise<SitePlan[]> {
-    const q = query(collection(db, this.collectionName), orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => this.mapDoc(d.id, d.data()));
+    const snapshot = await getDocs(collection(db, this.collectionName));
+    return snapshot.docs
+      .map(d => this.mapDoc(d.id, d.data()))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   async deletePlan(plan: SitePlan): Promise<void> {

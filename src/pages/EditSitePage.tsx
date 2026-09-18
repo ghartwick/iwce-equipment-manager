@@ -70,7 +70,7 @@ export function EditSitePage() {
         siteManagementService.getSite(id),
         siteManagementService.getAllSites(),
         clientManagementService.getAllClients(),
-        sitePlanService.getPlansForSite(id),
+        sitePlanService.getPlansForSite(id).catch(() => [] as SitePlan[]),
       ]);
       setSite(siteData);
       setPlans(plansData);

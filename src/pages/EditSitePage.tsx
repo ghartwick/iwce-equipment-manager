@@ -5,7 +5,7 @@ import { clientManagementService, Client } from '../services/clientManagementSer
 import { sitePlanService, SitePlan } from '../services/sitePlanService';
 import { useAuth } from '../hooks/useAuth';
 import { parseExcelFile } from '../utils/excelImport';
-import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X, FileText, Download } from 'lucide-react';
 
 export function EditSitePage() {
   const { siteId } = useParams<{ siteId: string }>();
@@ -233,6 +233,14 @@ export function EditSitePage() {
     } finally {
       setUploadingPlan(false);
       if (planFileInputRef.current) planFileInputRef.current.value = '';
+    }
+  };
+
+  const handleDownloadPlan = async (plan: SitePlan) => {
+    try {
+      await sitePlanService.downloadPlan(plan);
+    } catch (err: any) {
+      setError(err?.message || `Failed to download "${plan.fileName}"`);
     }
   };
 
@@ -676,13 +684,22 @@ export function EditSitePage() {
                               </span>
                             </span>
                           </a>
-                          <button
-                            onClick={() => handleDeletePlan(plan)}
-                            className="text-red-400 hover:text-red-300 flex-shrink-0"
-                            title="Delete plan"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <span className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleDownloadPlan(plan)}
+                              className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+                              title="Download plan"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePlan(plan)}
+                              className="text-red-400 hover:text-red-300"
+                              title="Delete plan"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </span>
                         </div>
                       ))}
                     </div>

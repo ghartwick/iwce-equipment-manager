@@ -74,6 +74,22 @@ class SitePlanService {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
+  /** Downloads a plan with its original filename. The `download` attribute is
+   * ignored on cross-origin URLs, so we fetch the bytes and save via blob. */
+  async downloadPlan(plan: SitePlan): Promise<void> {
+    const res = await fetch(plan.fileUrl);
+    if (!res.ok) throw new Error('Download failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = plan.fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   async deletePlan(plan: SitePlan): Promise<void> {
     await deleteObject(ref(storage, plan.filePath));
     await deleteDoc(doc(db, this.collectionName, plan.id));

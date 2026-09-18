@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, FileText, Map as MapIcon, Upload } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Download, Eye, FileText, Map as MapIcon, Upload } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { SitePlan, sitePlanService } from '../services/sitePlanService';
 
@@ -25,6 +25,19 @@ export default function PlansPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openSiteId, setOpenSiteId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (plan: SitePlan) => {
+    setDownloadingId(plan.id);
+    setError(null);
+    try {
+      await sitePlanService.downloadPlan(plan);
+    } catch (err: any) {
+      setError(err?.message || `Failed to download "${plan.fileName}"`);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -134,29 +147,41 @@ export default function PlansPage() {
                       {isOpen && (
                         <ul className="divide-y divide-yellow-200 dark:divide-yellow-800 border-t border-yellow-200 dark:border-yellow-800">
                           {group.plans.map(plan => (
-                            <li key={plan.id}>
-                              <a
-                                href={plan.fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
-                              >
-                                <span className="flex items-center gap-3 min-w-0">
-                                  <FileText className="h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
-                                  <span className="min-w-0">
-                                    <span className="block text-sm font-medium text-gray-900 dark:text-yellow-100 truncate">
-                                      {plan.fileName}
-                                    </span>
-                                    <span className="block text-xs text-yellow-600 dark:text-yellow-500">
-                                      {plan.createdAt.toLocaleDateString()}
-                                      {plan.uploadedBy ? ` · uploaded by ${plan.uploadedBy}` : ''}
-                                    </span>
+                            <li
+                              key={plan.id}
+                              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
+                            >
+                              <span className="flex items-center gap-3 min-w-0">
+                                <FileText className="h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+                                <span className="min-w-0">
+                                  <span className="block text-sm font-medium text-gray-900 dark:text-yellow-100 truncate">
+                                    {plan.fileName}
+                                  </span>
+                                  <span className="block text-xs text-yellow-600 dark:text-yellow-500">
+                                    {plan.createdAt.toLocaleDateString()}
+                                    {plan.uploadedBy ? ` · uploaded by ${plan.uploadedBy}` : ''}
                                   </span>
                                 </span>
-                                <span className="text-xs text-yellow-600 dark:text-yellow-400 flex-shrink-0">
-                                  Open
-                                </span>
-                              </a>
+                              </span>
+                              <span className="flex items-center gap-2 flex-shrink-0">
+                                <a
+                                  href={plan.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900/40 transition-colors"
+                                >
+                                  <Eye className="h-3 w-3" /> View
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownload(plan)}
+                                  disabled={downloadingId === plan.id}
+                                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors disabled:opacity-50"
+                                >
+                                  <Download className="h-3 w-3" />
+                                  {downloadingId === plan.id ? 'Saving...' : 'Download'}
+                                </button>
+                              </span>
                             </li>
                           ))}
                         </ul>

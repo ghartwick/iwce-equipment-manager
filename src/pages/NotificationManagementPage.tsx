@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, BellRing, Edit2, History, Plus, Send, Smartphone, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Bell, BellRing, Clock, Edit2, History, Plus, Send, Smartphone, Trash2, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { AppUser, userManagementService } from '../services/userManagementService';
 import { Site, siteManagementService } from '../services/siteManagementService';
@@ -27,6 +27,13 @@ import {
   NotificationHistoryEntry,
   notificationHistoryService
 } from '../services/notificationHistoryService';
+import {
+  ScheduledNotification,
+  ScheduledNotificationInput,
+  describeSchedule,
+  scheduledNotificationService
+} from '../services/scheduledNotificationService';
+import { ServiceNotificationForm } from '../components/ServiceNotificationForm';
 
 const inputClass =
   'w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500';
@@ -66,6 +73,11 @@ export default function NotificationManagementPage() {
   const [historyEntries, setHistoryEntries] = useState<NotificationHistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // Scheduled service notifications (admin only)
+  const [schedules, setSchedules] = useState<ScheduledNotification[]>([]);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<ScheduledNotification | null>(null);
+
   const owner = useMemo(
     () => users.find(u => u.id === selectedUserId) ?? null,
     [users, selectedUserId]
@@ -86,6 +98,9 @@ export default function NotificationManagementPage() {
         setUsers(usersData.filter(u => u.isActive));
         setSites(sitesData.filter(s => s.isActive).sort((a, b) => a.name.localeCompare(b.name)));
         setSelectedUserId(user?.id ?? '');
+        if (user?.role === 'admin') {
+          setSchedules(await scheduledNotificationService.getAll());
+        }
       } catch (err: any) {
         setError(err?.message || 'Failed to load notification settings');
       } finally {
@@ -289,6 +304,41 @@ export default function NotificationManagementPage() {
       setHistoryEntries(entries);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const handleSaveSchedule = async (input: ScheduledNotificationInput) => {
+    if (editingSchedule) {
+      await scheduledNotificationService.update(editingSchedule.id, input);
+      setSuccess('Service notification updated');
+    } else {
+      await scheduledNotificationService.create(input);
+      setSuccess('Service notification created');
+    }
+    setShowScheduleForm(false);
+    setEditingSchedule(null);
+    setSchedules(await scheduledNotificationService.getAll());
+  };
+
+  const handleToggleSchedule = async (schedule: ScheduledNotification) => {
+    try {
+      await scheduledNotificationService.update(schedule.id, { isActive: !schedule.isActive });
+      setSchedules(prev =>
+        prev.map(s => (s.id === schedule.id ? { ...s, isActive: !s.isActive } : s))
+      );
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update service notification');
+    }
+  };
+
+  const handleDeleteSchedule = async (schedule: ScheduledNotification) => {
+    if (!window.confirm(`Delete service notification "${schedule.name}"?`)) return;
+    try {
+      await scheduledNotificationService.delete(schedule.id);
+      setSchedules(prev => prev.filter(s => s.id !== schedule.id));
+      setSuccess('Service notification deleted');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete service notification');
     }
   };
 
@@ -533,6 +583,112 @@ export default function NotificationManagementPage() {
                     </button>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Scheduled service notifications (admin only) */}
+            {isAdmin && (
+              <div className="mb-6 p-4 border border-yellow-300 dark:border-yellow-800 rounded-lg">
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                  <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                    <Clock className="h-4 w-4" /> Service notifications
+                  </h3>
+                  {!showScheduleForm && (
+                    <button
+                      onClick={() => {
+                        setEditingSchedule(null);
+                        setShowScheduleForm(true);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Service Notification
+                    </button>
+                  )}
+                </div>
+                <p className="text-sm text-yellow-600 dark:text-yellow-500 mb-3">
+                  Recurring reminders sent on a schedule &mdash; e.g. every Wednesday to everyone
+                  with a fleet truck assigned.
+                </p>
+
+                {showScheduleForm && (
+                  <ServiceNotificationForm
+                    users={users}
+                    existingSchedule={editingSchedule}
+                    createdBy={user?.username ?? ''}
+                    onCancel={() => {
+                      setShowScheduleForm(false);
+                      setEditingSchedule(null);
+                    }}
+                    onSave={handleSaveSchedule}
+                  />
+                )}
+
+                {schedules.length === 0 && !showScheduleForm ? (
+                  <p className="text-sm text-yellow-600 dark:text-yellow-500">
+                    No service notifications set up yet.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {schedules.map(schedule => (
+                      <div
+                        key={schedule.id}
+                        className="flex items-start justify-between gap-3 p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-gray-900 dark:text-yellow-100">
+                              {schedule.name}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 text-xs rounded-full ${
+                                schedule.isActive
+                                  ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-400'
+                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                              }`}
+                            >
+                              {schedule.isActive ? 'Active' : 'Paused'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-yellow-700 dark:text-yellow-500 mt-0.5">
+                            {describeSchedule(schedule, userNameById)}
+                          </p>
+                          {schedule.body && (
+                            <p className="text-xs text-yellow-600 dark:text-yellow-600 mt-0.5">
+                              {schedule.body}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => handleToggleSchedule(schedule)}
+                            className="px-2 py-1 text-xs text-yellow-700 dark:text-yellow-400 hover:text-yellow-500"
+                            title={schedule.isActive ? 'Pause notification' : 'Resume notification'}
+                          >
+                            {schedule.isActive ? 'Pause' : 'Resume'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingSchedule(schedule);
+                              setShowScheduleForm(true);
+                            }}
+                            className="p-1 text-yellow-600 hover:text-yellow-500"
+                            title="Edit service notification"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSchedule(schedule)}
+                            className="p-1 text-red-600 hover:text-red-500"
+                            title="Delete service notification"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

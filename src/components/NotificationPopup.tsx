@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { BellRing, X } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 import { InAppNotification } from '../services/inAppNotificationService';
 
@@ -45,7 +45,7 @@ export function NotificationPopup() {
       <div className="mt-10 w-full max-w-md bg-yellow-100 dark:bg-black border border-yellow-600 rounded-lg shadow-xl max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-yellow-300 dark:border-yellow-800">
           <div className="flex items-center gap-2">
-            <BellRing className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            <Bell className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
             <h2 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
               Notifications
               {unread.length > 0 && (

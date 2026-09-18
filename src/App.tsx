@@ -47,8 +47,8 @@ function App() {
       if (showAlerts) {
         // Check if the click is on the Bell button
         const clickedElement = event.target as Element;
-        const isBellButton = clickedElement.closest('button')?.querySelector('svg.lucide-bell') ||
-                           clickedElement.closest('svg.lucide-bell');
+        const isBellButton = clickedElement.closest('button')?.querySelector('svg.lucide-history') ||
+                           clickedElement.closest('svg.lucide-history');
         
         // If the click is not on the bell button and not inside the alerts panel, close it
         if (!isBellButton && !clickedElement.closest('.bg-yellow-200.dark\\:bg-black.border.border-yellow-600')) {

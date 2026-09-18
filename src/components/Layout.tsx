@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { Plus, Bell, BellRing, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car, DollarSign } from 'lucide-react';
+import { Plus, BellRing, History, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car, DollarSign } from 'lucide-react';
 import { NotificationProvider } from '../context/NotificationContext';
 import NotificationBell from './NotificationBell';
 import NotificationPopup from './NotificationPopup';
@@ -99,7 +99,7 @@ function LayoutShell({ children }: LayoutProps) {
                 onClick={handleToggleAlerts}
                 className="relative p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 lg:hidden"
               >
-                <Bell className="h-5 w-5" />
+                <History className="h-5 w-5" />
               </button>
 
               {/* Mobile In-App Notifications */}
@@ -142,7 +142,7 @@ function LayoutShell({ children }: LayoutProps) {
                 onClick={handleToggleAlerts}
                 className="relative p-2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors"
               >
-                <Bell className="h-5 w-5" />
+                <History className="h-5 w-5" />
               </button>
 
               {user && <NotificationBell />}

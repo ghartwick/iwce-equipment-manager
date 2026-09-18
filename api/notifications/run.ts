@@ -66,6 +66,35 @@ interface EventDoc {
   createdAt: string;
 }
 
+/** Admin-defined recurring reminder (scheduledNotifications collection). */
+interface ScheduleDoc {
+  id: string;
+  name: string;
+  body: string;
+  channels: DeliveryChannel[];
+  audienceType: 'all' | 'fleet' | 'users';
+  userIds: string[];
+  frequency: string;
+  timeOfDay: string;
+  dayOfWeek: number;
+  utcOffsetMinutes: number;
+  isActive: boolean;
+  lastSentAt: string;
+}
+
+/**
+ * fleetEquipment.employee values that are statuses, not people. Anything else
+ * is a user's display name.
+ */
+const NON_USER_EMPLOYEE_VALUES = new Set([
+  '',
+  'Office',
+  'Shop',
+  'Broken',
+  'Out For Repair',
+  'Missing'
+]);
+
 /**
  * Wall-clock time at the rule's location. `utcOffsetMinutes` comes from
  * `Date.getTimezoneOffset()`, which is minutes to add to local time to reach
@@ -112,6 +141,54 @@ function ruleMatchesEvent(rule: RuleDoc, event: EventDoc): boolean {
   return true;
 }
 
+/** Is this scheduled reminder due in the current hour? Mirrors isDue. */
+function isScheduleDue(schedule: ScheduleDoc, now: Date): boolean {
+  const [hourText] = (schedule.timeOfDay || '').split(':');
+  const dueHour = Number(hourText);
+  if (!Number.isInteger(dueHour)) return false;
+
+  const local = localParts(now, schedule.utcOffsetMinutes);
+  if (local.hour !== dueHour) return false;
+  if (schedule.frequency === 'weekly' && local.dayOfWeek !== schedule.dayOfWeek) return false;
+
+  if (schedule.lastSentAt) {
+    const elapsed = now.getTime() - new Date(schedule.lastSentAt).getTime();
+    if (elapsed < (MIN_GAP_MS[schedule.frequency] ?? DAY_MS)) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Resolves a schedule's audience to user ids.
+ * 'fleet' matches users whose display name is assigned on a fleetEquipment
+ * unit - the equipment stores names, not ids, so we join through users.
+ */
+async function resolveScheduleRecipients(
+  db: ReturnType<typeof getDb>,
+  schedule: ScheduleDoc
+): Promise<string[]> {
+  if (schedule.audienceType === 'users') {
+    return [...new Set(schedule.userIds ?? [])];
+  }
+
+  const usersSnapshot = await db.collection('users').where('isActive', '==', true).get();
+  const users = usersSnapshot.docs.map(d => ({ id: d.id, name: (d.data().name as string) ?? '' }));
+
+  if (schedule.audienceType === 'all') {
+    return users.map(u => u.id);
+  }
+
+  // 'fleet': names assigned to any fleet unit.
+  const fleetSnapshot = await db.collection('fleetEquipment').get();
+  const assignedNames = new Set(
+    fleetSnapshot.docs
+      .map(d => (d.data().employee as string) ?? '')
+      .filter(name => !NON_USER_EMPLOYEE_VALUES.has(name))
+  );
+  return users.filter(u => assignedNames.has(u.name)).map(u => u.id);
+}
+
 /** Start of the window this digest should cover. */
 function windowStart(rule: RuleDoc, now: Date): string {
   if (rule.lastDigestAt) return rule.lastDigestAt;
@@ -155,6 +232,58 @@ function summarize(rule: RuleDoc, events: EventDoc[]): { title: string; body: st
   return { title, body: lines.join('\n') };
 }
 
+/**
+ * Sends due scheduled service notifications. Unlike digest rules these are not
+ * event-driven: the message is fixed and goes to a resolved audience.
+ */
+async function runScheduledNotifications(
+  db: ReturnType<typeof getDb>,
+  now: Date
+): Promise<{ evaluated: number; due: number; sent: number }> {
+  const snapshot = await db
+    .collection('scheduledNotifications')
+    .where('isActive', '==', true)
+    .get();
+
+  const due = snapshot.docs
+    .map(d => ({ id: d.id, ...d.data() } as ScheduleDoc))
+    .filter(s => (s.channels ?? []).length > 0)
+    .filter(s => isScheduleDue(s, now));
+
+  let sent = 0;
+  for (const schedule of due) {
+    const recipients = await resolveScheduleRecipients(db, schedule);
+    for (const userId of recipients) {
+      try {
+        await deliverNotification({
+          userId,
+          title: schedule.name,
+          body: schedule.body ?? '',
+          channels: schedule.channels,
+          eventType: 'service_reminder',
+          ruleId: schedule.id
+        });
+        sent += 1;
+      } catch (err) {
+        console.error(`Scheduled notification ${schedule.id} failed for ${userId}:`, err);
+      }
+    }
+  }
+
+  if (due.length > 0) {
+    const stampedAt = now.toISOString();
+    const batch = db.batch();
+    for (const schedule of due) {
+      batch.update(db.collection('scheduledNotifications').doc(schedule.id), {
+        lastSentAt: stampedAt
+      });
+    }
+    await batch.commit();
+  }
+
+  return { evaluated: snapshot.size, due: due.length, sent };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Vercel Cron sends this header; a matching CRON_SECRET keeps the endpoint
   // from being triggered by anyone who finds the URL.
@@ -183,7 +312,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (dueRules.length === 0) {
       const pruned = await pruneOldEvents(db, now);
-      return res.status(200).json({ evaluated: rulesSnapshot.size, due: 0, sent: 0, pruned });
+      const scheduled = await runScheduledNotifications(db, now);
+      return res
+        .status(200)
+        .json({ evaluated: rulesSnapshot.size, due: 0, sent: 0, pruned, scheduled });
     }
 
     // One read of the event queue covers every due rule.
@@ -240,12 +372,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const pruned = await pruneOldEvents(db, now);
 
+    const scheduled = await runScheduledNotifications(db, now);
+
     return res.status(200).json({
       evaluated: rulesSnapshot.size,
       due: dueRules.length,
       sent,
       empty: skipped.length,
-      pruned
+      pruned,
+      scheduled
     });
   } catch (err) {
     console.error('Notification run failed:', err);

@@ -178,8 +178,8 @@ function InventoryPage() {
       if (showAlerts && alertsRef.current && !alertsRef.current.contains(event.target as Node)) {
         // Check if the click is on the Bell button
         const clickedElement = event.target as Element;
-        const isBellButton = clickedElement.closest('button')?.querySelector('svg.lucide-bell') ||
-                           clickedElement.closest('svg.lucide-bell');
+        const isBellButton = clickedElement.closest('button')?.querySelector('svg.lucide-history') ||
+                           clickedElement.closest('svg.lucide-history');
         
         if (!isBellButton) {
           setShowAlerts(false);

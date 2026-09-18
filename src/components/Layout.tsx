@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { Plus, BellRing, History, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car, DollarSign } from 'lucide-react';
+import { Plus, BellRing, History, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car, DollarSign, Map } from 'lucide-react';
 import { NotificationProvider } from '../context/NotificationContext';
 import NotificationBell from './NotificationBell';
 import NotificationPopup from './NotificationPopup';
@@ -23,6 +23,7 @@ function LayoutShell({ children }: LayoutProps) {
     { name: 'Inventory', href: '/inventory', icon: Package },
     { name: 'Timecard', href: '/timecard', icon: Clock },
     ...((user?.role === 'admin' || user?.role === 'supervisor') ? [{ name: 'Shop', href: '/shop', icon: FileText }] : []),
+    { name: 'Plans', href: '/plans', icon: Map },
   ];
 
   const isActive = (href: string) => location.pathname === href;

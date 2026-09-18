@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { siteManagementService, Site, SiteCode, SiteRole } from '../services/siteManagementService';
 import { clientManagementService, Client } from '../services/clientManagementService';
+import { sitePlanService, SitePlan } from '../services/sitePlanService';
+import { useAuth } from '../hooks/useAuth';
 import { parseExcelFile } from '../utils/excelImport';
-import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X, FileText } from 'lucide-react';
 
 export function EditSitePage() {
   const { siteId } = useParams<{ siteId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [site, setSite] = useState<Site | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +42,10 @@ export function EditSitePage() {
   const [clientAssignmentOpen, setClientAssignmentOpen] = useState(false);
   const [rolesOpen, setRolesOpen] = useState(false);
   const [linkedSitesOpen, setLinkedSitesOpen] = useState(false);
+  const [plans, setPlans] = useState<SitePlan[]>([]);
+  const [plansOpen, setPlansOpen] = useState(false);
+  const [uploadingPlan, setUploadingPlan] = useState(false);
+  const planFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (siteId) {
@@ -59,12 +66,14 @@ export function EditSitePage() {
 
   const loadSite = async (id: string) => {
     try {
-      const [siteData, allSitesData, clientsData] = await Promise.all([
+      const [siteData, allSitesData, clientsData, plansData] = await Promise.all([
         siteManagementService.getSite(id),
         siteManagementService.getAllSites(),
         clientManagementService.getAllClients(),
+        sitePlanService.getPlansForSite(id),
       ]);
       setSite(siteData);
+      setPlans(plansData);
       setAllSites(allSitesData.filter(s => s.id !== id));
       setClients(clientsData);
       setSelectedClientId(siteData.clientId || '');
@@ -207,6 +216,35 @@ export function EditSitePage() {
       : linkedSites.filter(n => n !== name);
     setLinkedSites(updated);
     persistPatch({ linkedSites: updated });
+  };
+
+  const handleUploadPlan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !site) return;
+
+    setUploadingPlan(true);
+    setError(null);
+    try {
+      await sitePlanService.uploadPlan(site.id, site.name, file, user?.username ?? '');
+      setPlans(await sitePlanService.getPlansForSite(site.id));
+      setSuccess(`Uploaded "${file.name}"`);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to upload plan');
+    } finally {
+      setUploadingPlan(false);
+      if (planFileInputRef.current) planFileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeletePlan = async (plan: SitePlan) => {
+    if (!window.confirm(`Delete plan "${plan.fileName}"?`)) return;
+    try {
+      await sitePlanService.deletePlan(plan);
+      setPlans(prev => prev.filter(p => p.id !== plan.id));
+      setSuccess('Plan deleted');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete plan');
+    }
   };
 
   const handleImportCodes = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -577,6 +615,80 @@ export function EditSitePage() {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* Plans */}
+            <div className="mb-4 border border-yellow-300 dark:border-yellow-800 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setPlansOpen(prev => !prev)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-900/10 text-left hover:bg-yellow-100 dark:hover:bg-yellow-900/20 transition-colors"
+              >
+                <h3 className="text-base font-medium text-yellow-700 dark:text-yellow-300">
+                  Plans{plans.length > 0 ? ` (${plans.length})` : ''}
+                </h3>
+                <ChevronDown className={`h-5 w-5 text-yellow-600 dark:text-yellow-400 transition-transform ${plansOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {plansOpen && (
+                <div className="px-4 py-4 border-t border-yellow-200 dark:border-yellow-800">
+                  <p className="text-sm text-yellow-600 dark:text-yellow-500 mb-3">
+                    Drawings and documents for this site. Visible to everyone on the Plans page.
+                  </p>
+
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.dwg,.dxf"
+                    ref={planFileInputRef}
+                    onChange={handleUploadPlan}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => planFileInputRef.current?.click()}
+                    disabled={uploadingPlan}
+                    className="flex items-center gap-1 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm disabled:opacity-50 mb-3"
+                  >
+                    <Upload className="h-3 w-3" />
+                    {uploadingPlan ? 'Uploading...' : 'Upload Plan'}
+                  </button>
+
+                  {plans.length > 0 ? (
+                    <div className="space-y-2">
+                      {plans.map(plan => (
+                        <div
+                          key={plan.id}
+                          className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
+                        >
+                          <a
+                            href={plan.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 min-w-0 text-gray-900 dark:text-yellow-100 hover:text-yellow-700 dark:hover:text-yellow-300"
+                          >
+                            <FileText className="h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+                            <span className="min-w-0">
+                              <span className="block font-medium truncate">{plan.fileName}</span>
+                              <span className="block text-xs text-yellow-600 dark:text-yellow-500">
+                                {plan.createdAt.toLocaleDateString()}
+                                {plan.uploadedBy ? ` · ${plan.uploadedBy}` : ''}
+                              </span>
+                            </span>
+                          </a>
+                          <button
+                            onClick={() => handleDeletePlan(plan)}
+                            className="text-red-400 hover:text-red-300 flex-shrink-0"
+                            title="Delete plan"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-yellow-600 dark:text-yellow-400">No plans uploaded for this site yet.</p>
+                  )}
                 </div>
               )}
             </div>

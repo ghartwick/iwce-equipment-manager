@@ -25,6 +25,7 @@ const SurveyTimecardPage = React.lazy(() => import('./pages/SurveyTimecardPage')
 const AttachmentsListPage = React.lazy(() => import('./pages/AttachmentsListPage'));
 const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
 const NotificationManagementPage = React.lazy(() => import('./pages/NotificationManagementPage'));
+const PlansPage = React.lazy(() => import('./pages/PlansPage'));
 
 // Loading fallback for lazy-loaded pages
 const PageLoader = () => (
@@ -195,6 +196,13 @@ function AppRouter() {
           isAuthenticated ? (
             <Layout>
               <ReportsPage />
+            </Layout>
+          ) : <Navigate to="/login" replace />
+        } />
+        <Route path="/plans" element={
+          isAuthenticated ? (
+            <Layout>
+              <PlansPage />
             </Layout>
           ) : <Navigate to="/login" replace />
         } />

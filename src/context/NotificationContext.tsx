@@ -14,6 +14,8 @@ import { pushNotificationService } from '../services/pushNotificationService';
  */
 
 interface NotificationContextValue {
+  /** Full notification history for the user, newest first (read + unread). */
+  history: InAppNotification[];
   unread: InAppNotification[];
   unreadCount: number;
   /** True until the first snapshot arrives, so the UI can avoid flashing. */
@@ -30,26 +32,28 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [unread, setUnread] = useState<InAppNotification[]>([]);
+  const [history, setHistory] = useState<InAppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   // Tracks whether we have already auto-opened for this sign-in, so the pop-up
   // appears once on open rather than every time a snapshot arrives.
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
 
+  const unread = history.filter(n => !n.isRead);
+
   useEffect(() => {
     if (!user?.id) {
-      setUnread([]);
+      setHistory([]);
       setIsLoading(false);
       setHasAutoOpened(false);
       return;
     }
 
     setIsLoading(true);
-    const unsubscribe = inAppNotificationService.subscribeToUnread(
+    const unsubscribe = inAppNotificationService.subscribeToAll(
       user.id,
       next => {
-        setUnread(next);
+        setHistory(next);
         setIsLoading(false);
       },
       () => setIsLoading(false)
@@ -94,20 +98,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [user?.id]);
 
   const dismiss = useCallback(async (id: string) => {
-    // Drop it locally right away so the pop-up feels responsive; the
+    // Update locally right away so the pop-up feels responsive; the
     // subscription will confirm.
-    setUnread(prev => prev.filter(n => n.id !== id));
+    setHistory(prev => prev.map(n => (n.id === id ? { ...n, isRead: true } : n)));
     await inAppNotificationService.markRead(id);
   }, []);
 
   const dismissAll = useCallback(async () => {
-    const ids = unread.map(n => n.id);
-    setUnread([]);
+    const ids = history.filter(n => !n.isRead).map(n => n.id);
+    setHistory(prev => prev.map(n => ({ ...n, isRead: true })));
     setIsPopupOpen(false);
     await inAppNotificationService.markAllRead(ids);
-  }, [unread]);
+  }, [history]);
 
   const value: NotificationContextValue = {
+    history,
     unread,
     unreadCount: unread.length,
     isLoading,

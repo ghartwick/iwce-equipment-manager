@@ -96,6 +96,30 @@ class InAppNotificationService {
     );
   }
 
+  /**
+   * Live subscription to a user's full notification history, read and unread,
+   * newest first. Powers the bell's notification center so dismissed items stay
+   * visible as history. Sorting is client-side so no composite index is needed.
+   */
+  subscribeToAll(
+    userId: string,
+    onChange: (notifications: InAppNotification[]) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    const q = query(collection(db, COLLECTION), where('userId', '==', userId));
+
+    return onSnapshot(
+      q,
+      snapshot => {
+        onChange(snapshot.docs.map(d => toNotification(d.id, d.data())).sort(byNewest));
+      },
+      error => {
+        console.error('In-app notification history subscription failed:', error);
+        onError?.(error);
+      }
+    );
+  }
+
   /** Full history for a user, read and unread. Used by the notifications page. */
   async getAllForUser(userId: string): Promise<InAppNotification[]> {
     const q = query(collection(db, COLLECTION), where('userId', '==', userId));

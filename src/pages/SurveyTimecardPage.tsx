@@ -236,13 +236,6 @@ export default function SurveyTimecardPage() {
             </button>
           </div>
 
-          {/* Field | Survey toggle (admins and surveyors) */}
-          {(isAdminOrSupervisor || user?.isSurveyor) && (
-            <div className="flex justify-center mb-4">
-              <TimecardModeToggle mode="survey" />
-            </div>
-          )}
-
           {/* Week day headers */}
           <div className="grid grid-cols-7 gap-2 mb-2">
             {weekDays.map(day => (
@@ -300,7 +293,18 @@ export default function SurveyTimecardPage() {
             <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
               {selectedDateLabel}
             </h3>
+            {/* Field | Survey toggle (admins and surveyors) */}
+            {(isAdminOrSupervisor || user?.isSurveyor) && (
+              <div className="flex-1 flex justify-center">
+                <TimecardModeToggle mode="survey" />
+              </div>
+            )}
             <div className="flex items-center gap-2">
+              {selectedDates.length > 0 && (
+                <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 whitespace-nowrap">
+                  {selectedEntries.reduce((sum, entry) => sum + getEntryTotalHours(entry), 0).toFixed(2)} hrs
+                </span>
+              )}
               {isAdminOrSupervisor && (
                 <button
                   onClick={() => setShowInvoiceModal(true)}
@@ -357,8 +361,11 @@ export default function SurveyTimecardPage() {
             ) : (
               <div className="space-y-3">
                 {(() => {
-                  const userDayTotals = selectedEntries.reduce<Record<string, number>>((totals, entry) => {
-                    totals[entry.userId] = (totals[entry.userId] || 0) + getEntryTotalHours(entry);
+                  // Total hours per user per site — a user with cards on
+                  // multiple sites should see each site's total, not the day total.
+                  const userSiteTotals = selectedEntries.reduce<Record<string, number>>((totals, entry) => {
+                    const key = `${entry.userId}|${entry.site || ''}`;
+                    totals[key] = (totals[key] || 0) + getEntryTotalHours(entry);
                     return totals;
                   }, {});
                   return selectedEntries.map((entry, index) => {
@@ -383,7 +390,7 @@ export default function SurveyTimecardPage() {
                                 <span className="text-gray-900 dark:text-yellow-100 font-medium">
                                   {userName(entry.userId)}
                                   <span className="ml-2 text-sm font-normal text-yellow-700 dark:text-yellow-500">
-                                    {userDayTotals[entry.userId]?.toFixed(2) ?? '0.00'} hrs
+                                    {userSiteTotals[`${entry.userId}|${entry.site || ''}`]?.toFixed(2) ?? '0.00'} hrs
                                   </span>
                                 </span>
                                 <div className="flex items-center gap-2">

@@ -850,6 +850,13 @@ export default function TimecardPage() {
           doc.text(`Clock In: ${clockIn}  |  Clock Out: ${clockOut}`, 14, yPosition);
           yPosition += 2;
 
+          // Submission timestamp
+          if (entry.status === 'submitted' && entry.submittedAt) {
+            const submittedAt = entry.submittedAt instanceof Date ? entry.submittedAt : new Date(entry.submittedAt);
+            doc.text(`Submitted: ${format(submittedAt, 'MMM d, yyyy h:mm a')}`, 14, yPosition);
+            yPosition += 2;
+          }
+
           // Work entries table
           const workEntries = entry.workEntries || [];
           if (workEntries.length > 0) {
@@ -1836,6 +1843,11 @@ export default function TimecardPage() {
                                                       <> + Travel {entry.travelHours}</>
                                                     )} = Total {((calcHours(entry.clockIn, entry.clockOut) ?? entry.hours) + (entry.travelHours ?? 0)).toFixed(2)}
                                                   </span>
+                                                  {entry.status === 'submitted' && entry.submittedAt && (
+                                                    <span className="text-xs text-green-700 dark:text-green-400 ml-2">
+                                                      Submitted {format(entry.submittedAt instanceof Date ? entry.submittedAt : (entry.submittedAt as any).toDate(), 'MMM d, yyyy h:mm a')}
+                                                    </span>
+                                                  )}
                                                   {entry.lastEditedBy && (
                                                     <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt instanceof Date ? entry.lastEditedAt : (entry.lastEditedAt as any).toDate(), 'MMM d, yyyy HH:mm') : ''}`}>
                                                       Edited by {entry.lastEditedBy}
@@ -1993,6 +2005,11 @@ export default function TimecardPage() {
                                                     <> + Travel {entry.travelHours}</>
                                                   )} = Total {((calcHours(entry.clockIn, entry.clockOut) ?? entry.hours) + (entry.travelHours ?? 0)).toFixed(2)}
                                                 </span>
+                                                {entry.status === 'submitted' && entry.submittedAt && (
+                                                  <span className="text-xs text-green-700 dark:text-green-400 ml-2">
+                                                    Submitted {format(entry.submittedAt instanceof Date ? entry.submittedAt : (entry.submittedAt as any).toDate(), 'MMM d, yyyy h:mm a')}
+                                                  </span>
+                                                )}
                                                 {entry.lastEditedBy && (
                                                   <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2" title={`Last edited by ${entry.lastEditedBy} on ${entry.lastEditedAt ? format(entry.lastEditedAt instanceof Date ? entry.lastEditedAt : (entry.lastEditedAt as any).toDate(), 'MMM d, yyyy HH:mm') : ''}`}>
                                                     Edited by {entry.lastEditedBy}

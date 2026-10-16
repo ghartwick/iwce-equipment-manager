@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { siteManagementService, Site, SiteCode, SiteRole } from '../services/siteManagementService';
 import { clientManagementService, Client } from '../services/clientManagementService';
 import { sitePlanService, SitePlan } from '../services/sitePlanService';
+import { surveyTimecardService } from '../services/surveyTimecardService';
 import { useAuth } from '../hooks/useAuth';
 import { parseExcelFile } from '../utils/excelImport';
-import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X, FileText, Download } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X, FileText, Download, Pencil, Check } from 'lucide-react';
 
 export function EditSitePage() {
   const { siteId } = useParams<{ siteId: string }>();
@@ -35,6 +36,17 @@ export function EditSitePage() {
   const [roles, setRoles] = useState<SiteRole[]>([]);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleCost, setNewRoleCost] = useState('');
+  const [editingRole, setEditingRole] = useState<string | null>(null);
+  const [editRoleName, setEditRoleName] = useState('');
+  const [editRoleCost, setEditRoleCost] = useState('');
+  const [pendingRoleChange, setPendingRoleChange] = useState<{
+    oldName: string;
+    oldCost: number;
+    newName: string;
+    newCost: number;
+    updatedRoles: SiteRole[];
+  } | null>(null);
+  const [applyingRoleChange, setApplyingRoleChange] = useState(false);
   const [importingCodes, setImportingCodes] = useState(false);
   const codeFileInputRef = useRef<HTMLInputElement>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -201,6 +213,64 @@ export function EditSitePage() {
     setNewRoleName('');
     setNewRoleCost('');
     persistPatch({ roles: updated });
+  };
+
+  const startEditRole = (role: SiteRole) => {
+    setEditingRole(role.name);
+    setEditRoleName(role.name);
+    setEditRoleCost(String(role.costPerHour));
+  };
+
+  const handleSaveRole = () => {
+    if (!editingRole) return;
+    const name = editRoleName.trim();
+    const cost = parseFloat(editRoleCost);
+    if (!name) { setError('Role name is required'); return; }
+    if (isNaN(cost) || cost < 0) { setError('Enter a valid cost per hour'); return; }
+    if (roles.some(r => r.name !== editingRole && r.name.toLowerCase() === name.toLowerCase())) {
+      setError('A role with that name already exists');
+      return;
+    }
+    setError(null);
+    const original = roles.find(r => r.name === editingRole);
+    if (!original) return;
+    if (original.name === name && original.costPerHour === cost) {
+      setEditingRole(null);
+      return;
+    }
+    const updated = roles
+      .map(r => (r.name === editingRole ? { ...r, name, costPerHour: cost } : r))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    // Ask whether the change should also flow to existing uninvoiced time
+    setPendingRoleChange({
+      oldName: original.name,
+      oldCost: original.costPerHour,
+      newName: name,
+      newCost: cost,
+      updatedRoles: updated,
+    });
+  };
+
+  const confirmRoleChange = async (applyToUninvoiced: boolean) => {
+    if (!pendingRoleChange || !site) return;
+    const { oldName, newName, newCost, updatedRoles } = pendingRoleChange;
+    setApplyingRoleChange(true);
+    try {
+      setRoles(updatedRoles);
+      setEditingRole(null);
+      await persistPatch({ roles: updatedRoles });
+      if (applyToUninvoiced) {
+        const count = await surveyTimecardService.applyRoleChangeToUninvoiced(site.name, oldName, newName, newCost);
+        setSuccess(`Task updated and applied to ${count} uninvoiced time card${count !== 1 ? 's' : ''}`);
+      } else {
+        setSuccess('Task updated for new time card entries only');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to apply task change to uninvoiced time');
+    } finally {
+      setApplyingRoleChange(false);
+      setPendingRoleChange(null);
+    }
   };
 
   const handleRemoveRole = (roleName: string) => {
@@ -484,19 +554,76 @@ export function EditSitePage() {
                       {roles.map((role) => (
                         <div
                           key={role.name}
-                          className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
+                          className="flex items-center justify-between gap-2 p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
                         >
-                          <div>
-                            <span className="text-gray-900 dark:text-yellow-100 font-medium">{role.name}</span>
-                            <span className="text-yellow-700 dark:text-yellow-500 text-sm ml-2">${role.costPerHour.toFixed(2)}/hr</span>
-                          </div>
-                          <button
-                            onClick={() => handleRemoveRole(role.name)}
-                            className="text-red-400 hover:text-red-300"
-                            title="Remove role"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {editingRole === role.name ? (
+                            <>
+                              <div className="flex flex-1 flex-col sm:flex-row gap-2">
+                                <input
+                                  type="text"
+                                  value={editRoleName}
+                                  onChange={(e) => setEditRoleName(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveRole(); } if (e.key === 'Escape') setEditingRole(null); }}
+                                  placeholder="Role name"
+                                  autoFocus
+                                  className="flex-1 px-3 py-1.5 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                />
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={editRoleCost}
+                                  onChange={(e) => setEditRoleCost(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSaveRole(); } if (e.key === 'Escape') setEditingRole(null); }}
+                                  placeholder="Cost / hour"
+                                  className="w-full sm:w-32 px-3 py-1.5 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={handleSaveRole}
+                                  className="text-green-600 hover:text-green-500"
+                                  title="Save"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingRole(null)}
+                                  className="text-yellow-600 hover:text-yellow-500"
+                                  title="Cancel"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div>
+                                <span className="text-gray-900 dark:text-yellow-100 font-medium">{role.name}</span>
+                                <span className="text-yellow-700 dark:text-yellow-500 text-sm ml-2">${role.costPerHour.toFixed(2)}/hr</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => startEditRole(role)}
+                                  className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500"
+                                  title="Edit role"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRole(role.name)}
+                                  className="text-red-400 hover:text-red-300"
+                                  title="Remove role"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -811,6 +938,48 @@ export function EditSitePage() {
           </div>
         </div>
       </div>
+
+      {pendingRoleChange && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md bg-yellow-100 dark:bg-zinc-950 border border-yellow-600 rounded-xl shadow-2xl p-5">
+            <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300 mb-2">Apply task change?</h3>
+            <div className="text-sm text-gray-900 dark:text-yellow-100 mb-1">
+              {pendingRoleChange.oldName} (${pendingRoleChange.oldCost.toFixed(2)}/hr)
+              {' → '}
+              {pendingRoleChange.newName} (${pendingRoleChange.newCost.toFixed(2)}/hr)
+            </div>
+            <p className="text-sm text-yellow-700 dark:text-yellow-500 mb-4">
+              Should this change also update existing uninvoiced time cards at this site, or only apply to new time card entries? Invoiced time is never changed.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => confirmRoleChange(true)}
+                disabled={applyingRoleChange}
+                className="w-full px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 disabled:opacity-50 text-sm font-medium transition-colors"
+              >
+                {applyingRoleChange ? 'Applying...' : 'Apply to uninvoiced time'}
+              </button>
+              <button
+                type="button"
+                onClick={() => confirmRoleChange(false)}
+                disabled={applyingRoleChange}
+                className="w-full px-4 py-2 bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-100 border border-yellow-600 rounded-lg hover:bg-yellow-300 dark:hover:bg-yellow-900/60 disabled:opacity-50 text-sm font-medium transition-colors"
+              >
+                New time card entries only
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingRoleChange(null)}
+                disabled={applyingRoleChange}
+                className="w-full px-4 py-2 text-yellow-700 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-200 disabled:opacity-50 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

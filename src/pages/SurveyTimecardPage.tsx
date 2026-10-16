@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Check, FileText } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSurveyTimecard } from '../hooks/useSurveyTimecard';
@@ -23,6 +23,7 @@ import {
 
 export default function SurveyTimecardPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const {
     entries,
@@ -47,6 +48,14 @@ export default function SurveyTimecardPage() {
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
 
   const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'supervisor';
+
+  // Returning from editing a card in the invoice preview: reopen the modal
+  useEffect(() => {
+    if (searchParams.get('invoice') === '1' && isAdminOrSupervisor) {
+      setShowInvoiceModal(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, isAdminOrSupervisor, setSearchParams]);
 
   useEffect(() => {
     const loadUsers = async () => {

@@ -21,12 +21,19 @@ function LayoutShell({ children }: LayoutProps) {
 
   const navigation = [
     { name: 'Inventory', href: '/inventory', icon: Package },
-    { name: 'Timecard', href: '/timecard', icon: Clock },
+    // Surveyors land on the survey timecard by default; the in-page toggle still reaches Field
+    { name: 'Timecard', href: user?.isSurveyor ? '/survey-timecard' : '/timecard', icon: Clock },
     ...((user?.role === 'admin' || user?.role === 'supervisor') ? [{ name: 'Shop', href: '/shop', icon: FileText }] : []),
     { name: 'Plans', href: '/plans', icon: Map },
   ];
 
-  const isActive = (href: string) => location.pathname === href;
+  const isActive = (href: string) => {
+    // The Timecard item covers both field and survey timecard routes
+    if (href === '/timecard' || href === '/survey-timecard') {
+      return location.pathname.startsWith('/timecard') || location.pathname.startsWith('/survey-timecard');
+    }
+    return location.pathname === href;
+  };
 
   const getRoleDisplay = (role: string) => {
     switch (role) {

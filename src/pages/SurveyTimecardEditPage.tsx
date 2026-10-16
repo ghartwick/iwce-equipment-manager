@@ -16,6 +16,8 @@ export default function SurveyTimecardEditPage() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
   const isSubmittingRef = useRef(false);
+  // Opened from the invoice preview: return there instead of the time card list
+  const exitPath = searchParams.get('returnTo') === 'invoice' ? '/survey-timecard?invoice=1' : '/timecard?type=survey';
   const [userManagementService] = useState(() => new UserManagementService());
 
   useEffect(() => {
@@ -93,7 +95,7 @@ export default function SurveyTimecardEditPage() {
           await surveyTimecardService.updateEntry(entry.id!, { ...data, ...preservedFields }, editedBy);
         }
       }
-      navigate('/timecard?type=survey');
+      navigate(exitPath);
     } catch (err) {
       throw err;
     } finally {
@@ -101,7 +103,7 @@ export default function SurveyTimecardEditPage() {
     }
   };
 
-  const handleCancel = () => navigate('/timecard?type=survey');
+  const handleCancel = () => navigate(exitPath);
 
   if (loading) {
     return (

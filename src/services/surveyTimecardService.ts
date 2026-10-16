@@ -222,6 +222,40 @@ class SurveyTimecardService {
     return null;
   }
 
+  // Push a site task (role) rename/rate change onto every uninvoiced entry at
+  // that site that uses the task. Invoiced entries are left untouched.
+  // Returns the number of entries updated.
+  async applyRoleChangeToUninvoiced(
+    siteName: string,
+    oldRoleName: string,
+    newRoleName: string,
+    newCostPerHour: number
+  ): Promise<number> {
+    const q = query(collection(db, this.collection), where('site', '==', siteName));
+    const snapshot = await getDocs(q);
+    const updates: Promise<void>[] = [];
+    snapshot.docs.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.invoiceId) return;
+      const patch: Record<string, any> = {};
+      if (data.roleName === oldRoleName) {
+        patch.roleName = newRoleName;
+        patch.roleCostPerHour = newCostPerHour;
+      }
+      const workEntries = data.workEntries || [];
+      if (workEntries.some((we: any) => we.roleName === oldRoleName)) {
+        patch.workEntries = workEntries.map((we: any) =>
+          we.roleName === oldRoleName ? { ...we, roleName: newRoleName, roleCostPerHour: newCostPerHour } : we
+        );
+      }
+      if (Object.keys(patch).length === 0) return;
+      patch.updatedAt = Timestamp.fromDate(new Date());
+      updates.push(updateDoc(doc(db, this.collection, docSnap.id), patch));
+    });
+    await Promise.all(updates);
+    return updates.length;
+  }
+
   // Stamp a set of entries as invoiced (called when an invoice is generated).
   async markEntriesInvoiced(entryIds: string[], invoiceId: string, invoiceNumber: string): Promise<void> {
     const invoicedAt = Timestamp.fromDate(new Date());

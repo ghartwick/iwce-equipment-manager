@@ -1,4 +1,4 @@
-import { collection, addDoc, getDoc, getDocs, deleteDoc, doc, query, where, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDoc, getDocs, deleteDoc, doc, query, where, setDoc, Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { db } from '../firebase';
 import { SurveyTimeEntry } from './surveyTimecardService';
@@ -101,6 +101,7 @@ export interface Invoice {
 
 class InvoiceService {
   private readonly collectionName = 'invoices';
+  private readonly settingsDoc = doc(db, 'appSettings', 'invoicing');
 
   private mapDoc(id: string, data: any): Invoice {
     const toDate = (v: any): Date =>
@@ -150,14 +151,29 @@ class InvoiceService {
     return this.mapDoc(snapshot.id, snapshot.data());
   }
 
+  // Admin-configured number that invoice numbering starts at (default 1).
+  async getStartNumber(): Promise<number> {
+    const snapshot = await getDoc(this.settingsDoc);
+    const value = snapshot.exists() ? Number(snapshot.data().startNumber) : NaN;
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
+  }
+
+  async setStartNumber(startNumber: number): Promise<void> {
+    await setDoc(this.settingsDoc, { startNumber: Math.floor(startNumber) }, { merge: true });
+  }
+
   // Determine the next sequential invoice number (plain integer, e.g. 1, 2, 3).
+  // Never goes below the configured start number.
   async getNextInvoiceNumber(): Promise<{ seq: number; invoiceNumber: string }> {
-    const snapshot = await getDocs(collection(db, this.collectionName));
+    const [snapshot, startNumber] = await Promise.all([
+      getDocs(collection(db, this.collectionName)),
+      this.getStartNumber(),
+    ]);
     const maxSeq = snapshot.docs.reduce((max, d) => {
       const seq = typeof d.data().seq === 'number' ? d.data().seq : parseInt(d.data().seq) || 0;
       return Math.max(max, seq);
     }, 0);
-    const seq = maxSeq + 1;
+    const seq = Math.max(maxSeq + 1, startNumber);
     return { seq, invoiceNumber: String(seq) };
   }
 

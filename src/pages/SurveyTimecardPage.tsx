@@ -504,7 +504,7 @@ export default function SurveyTimecardPage() {
           open={showInvoiceModal}
           onClose={() => setShowInvoiceModal(false)}
           visibleEntries={invoiceVisibleEntries}
-          user={{ id: user.id, username: user.username, name: user.name || user.username }}
+          user={{ id: user.id, username: user.username, name: user.name || user.username, role: user.role }}
           clientFilter={clientFilter}
           siteFilter={siteFilter}
           entryTotalCost={entryTotalCost}

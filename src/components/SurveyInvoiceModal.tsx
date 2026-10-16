@@ -11,6 +11,7 @@ interface ModalUser {
   id: string;
   username: string;
   name: string;
+  role?: string;
 }
 
 interface SurveyInvoiceModalProps {
@@ -80,6 +81,41 @@ export function SurveyInvoiceModal({
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [expandedInvoices, setExpandedInvoices] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const isAdmin = user.role === 'admin';
+  const [startNumberInput, setStartNumberInput] = useState('');
+  const [savedStartNumber, setSavedStartNumber] = useState<number | null>(null);
+  const [savingStartNumber, setSavingStartNumber] = useState(false);
+
+  useEffect(() => {
+    if (!open || !isAdmin) return;
+    invoiceService
+      .getStartNumber()
+      .then(n => {
+        setSavedStartNumber(n);
+        setStartNumberInput(String(n));
+      })
+      .catch(() => setError('Failed to load invoice numbering setting'));
+  }, [open, isAdmin]);
+
+  const handleSaveStartNumber = async () => {
+    const n = parseInt(startNumberInput, 10);
+    if (!Number.isFinite(n) || n < 1) {
+      setError('Invoice start number must be a whole number of 1 or more');
+      return;
+    }
+    setSavingStartNumber(true);
+    setError(null);
+    try {
+      await invoiceService.setStartNumber(n);
+      setSavedStartNumber(n);
+      setStartNumberInput(String(n));
+    } catch (err) {
+      console.error('Failed to save invoice start number', err);
+      setError('Failed to save invoice start number');
+    } finally {
+      setSavingStartNumber(false);
+    }
+  };
 
   const invoiceableEntries = useMemo(
     () =>
@@ -286,13 +322,37 @@ export function SurveyInvoiceModal({
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 px-5 pt-4">
+        <div className="flex flex-wrap items-center gap-2 px-5 pt-4">
           <button className={tabClass(tab === 'new')} onClick={() => setTab('new')}>
             New Invoice
           </button>
           <button className={tabClass(tab === 'history')} onClick={() => setTab('history')}>
             Past Invoices
           </button>
+          {isAdmin && (
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <label htmlFor="invoice-start-number" className="text-sm text-yellow-700 dark:text-yellow-400 whitespace-nowrap">
+                Invoice numbers start at
+              </label>
+              <input
+                id="invoice-start-number"
+                type="number"
+                min="1"
+                step="1"
+                value={startNumberInput}
+                onChange={(e) => setStartNumberInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveStartNumber(); }}
+                className="w-24 px-2 py-1.5 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+              <button
+                onClick={handleSaveStartNumber}
+                disabled={savingStartNumber || startNumberInput === String(savedStartNumber ?? '')}
+                className="px-3 py-1.5 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+              >
+                {savingStartNumber ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+              </button>
+            </div>
+          )}
         </div>
 
         {error && (

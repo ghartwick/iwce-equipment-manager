@@ -111,8 +111,13 @@ export function generateInvoicePdf(invoice: Invoice, options?: { autoSave?: bool
   doc.text('Amount Due', rightX - amountW - 6, y, { align: 'right' });
 
   if (options?.autoSave !== false) {
-    const safeClient = (invoice.clientName || 'invoice').replace(/[^\w-]+/g, '_');
-    doc.save(`INVOICE_${invoice.invoiceNumber}_${safeClient}.pdf`);
+    // Strip characters that are invalid in file names
+    const clean = (s: string) => s.replace(/[\\/:*?"<>|]+/g, '_').trim();
+    const fileName = [invoice.invoiceNumber, invoice.clientName, invoice.site]
+      .map(part => clean(part || ''))
+      .filter(Boolean)
+      .join('-');
+    doc.save(`${fileName || 'invoice'}.pdf`);
   }
   return doc;
 }

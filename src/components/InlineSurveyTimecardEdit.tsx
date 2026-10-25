@@ -398,7 +398,7 @@ export function InlineSurveyTimecardEdit({ entry, user, canEdit, onSave }: Inlin
                     />
                     <button
                       onClick={(e) => { e.stopPropagation(); removeExpense(idx, exIdx); }}
-                      className="p-1 text-red-500 hover:text-red-700"
+                      className="p-1 btn-delete rounded"
                       title="Remove expense"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -420,7 +420,7 @@ export function InlineSurveyTimecardEdit({ entry, user, canEdit, onSave }: Inlin
               <div className="flex justify-end">
                 <button
                   onClick={(e) => { e.stopPropagation(); removeWorkEntry(idx); }}
-                  className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 btn-delete rounded text-xs"
                 >
                   <Trash2 className="w-3 h-3" /> Remove role
                 </button>

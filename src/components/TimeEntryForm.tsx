@@ -113,7 +113,7 @@ const WorkEntrySection = ({
                   removeEntry(entry.id);
                 }}
                 disabled={isLocked}
-                className="text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 disabled:opacity-50"
+                className="px-2 py-0.5 btn-delete rounded"
               >
                 Remove
               </button>
@@ -1421,7 +1421,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 <button
                   type="button"
                   onClick={handleSubmitSubmit}
-                  className="flex-1 p-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-50 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-opacity-70 transition-colors"
+                  className="flex-1 p-2 btn-approve rounded-lg"
                 >
                   Submit
                 </button>
@@ -1432,7 +1432,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                 <button
                   type="button"
                   onClick={handleSubmitSubmit}
-                  className="flex-1 p-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-50 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-opacity-70 transition-colors"
+                  className="flex-1 p-2 btn-approve rounded-lg"
                 >
                   Submit
                 </button>

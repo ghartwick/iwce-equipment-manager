@@ -419,7 +419,7 @@ export default function SurveyTimecardPage() {
                                   {editable && isDraft && (
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleSubmit(entry.id, entry.submittedBy || entry.userId); }}
-                                      className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs font-medium"
+                                      className="px-2 py-1 btn-approve rounded text-xs font-medium"
                                     >
                                       Submit
                                     </button>
@@ -427,7 +427,7 @@ export default function SurveyTimecardPage() {
                                   {editable && (
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleDelete(entry.id); }}
-                                      className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                      className="px-2 py-1 btn-delete rounded text-xs font-medium"
                                     >
                                       Delete
                                     </button>

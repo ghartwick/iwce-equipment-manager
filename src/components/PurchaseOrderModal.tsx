@@ -229,7 +229,7 @@ export function PurchaseOrderModal({ date, submittedBy, onClose, onSuccess }: Pr
                     type="button"
                     onClick={() => removeItem(item.id)}
                     disabled={items.length === 1}
-                    className="order-3 sm:order-4 flex-shrink-0 w-8 flex items-center justify-center p-1.5 rounded-md text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                    className="order-3 sm:order-4 flex-shrink-0 w-8 flex items-center justify-center p-1.5 btn-delete rounded-md disabled:opacity-20"
                     title="Remove item"
                   >
                     <Trash2 className="h-4 w-4" />

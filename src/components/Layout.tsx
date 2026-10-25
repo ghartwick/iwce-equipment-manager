@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { Plus, BellRing, History, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car, DollarSign, Map } from 'lucide-react';
+import { Plus, BellRing, History, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car, DollarSign, Map, Sparkles } from 'lucide-react';
 import { NotificationProvider } from '../context/NotificationContext';
 import NotificationBell from './NotificationBell';
 import NotificationPopup from './NotificationPopup';
@@ -13,7 +13,7 @@ interface LayoutProps {
 
 function LayoutShell({ children }: LayoutProps) {
   const { user, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, toggleTheme, darkRefresh, toggleDarkRefresh } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -300,6 +300,24 @@ function LayoutShell({ children }: LayoutProps) {
                           <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
                         </button>
 
+                        {isDark && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleDarkRefresh();
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
+                          >
+                            <span className="flex items-center space-x-2">
+                              <Sparkles className="h-4 w-4" />
+                              <span>New dark look (preview)</span>
+                            </span>
+                            <span className={`text-xs font-semibold ${darkRefresh ? 'text-green-500' : 'text-yellow-600'}`}>
+                              {darkRefresh ? 'On' : 'Off'}
+                            </span>
+                          </button>
+                        )}
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -443,6 +461,24 @@ function LayoutShell({ children }: LayoutProps) {
                   {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                   <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
                 </button>
+
+                {isDark && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleDarkRefresh();
+                    }}
+                    className="flex items-center justify-between w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
+                  >
+                    <span className="flex items-center space-x-3">
+                      <Sparkles className="h-5 w-5" />
+                      <span>New dark look (preview)</span>
+                    </span>
+                    <span className={`text-xs font-semibold ${darkRefresh ? 'text-green-500' : 'text-yellow-600'}`}>
+                      {darkRefresh ? 'On' : 'Off'}
+                    </span>
+                  </button>
+                )}
                 
                 {user && (
                   <button

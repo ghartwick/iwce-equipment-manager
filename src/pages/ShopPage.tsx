@@ -454,7 +454,7 @@ export function Service() {
                           const updated = customNotifications.filter((_, idx) => idx !== i);
                           handleSaveCustomNotifications(updated);
                         }}
-                        className="ml-2 text-red-500 hover:text-red-700 text-xs font-medium whitespace-nowrap"
+                        className="ml-2 px-2 py-0.5 btn-delete rounded text-xs font-medium whitespace-nowrap"
                       >
                         Remove
                       </button>
@@ -546,7 +546,7 @@ export function Service() {
                   <button
                     type="button"
                     onClick={() => removeEquipmentDataNote(index)}
-                    className="p-1 text-red-500 hover:text-red-700 text-xs"
+                    className="p-1 btn-delete rounded text-xs"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -620,7 +620,7 @@ export function Service() {
                           {(user?.role === 'admin' || user?.role === 'supervisor') && (
                             <button
                               onClick={() => report.id && handleDeleteShopReport(report.id)}
-                              className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                              className="p-1 btn-delete rounded"
                               title="Delete Report"
                             >
                               <X className="h-4 w-4" />

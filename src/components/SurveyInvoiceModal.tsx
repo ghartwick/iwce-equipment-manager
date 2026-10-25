@@ -672,7 +672,7 @@ export function SurveyInvoiceModal({
                                       onClick={() => handleUndoInvoice(inv)}
                                       disabled={deletingId === inv.id}
                                       title="Undo this invoice and return its time cards to the New Invoice tab"
-                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm font-medium transition-colors"
+                                      className="flex items-center gap-1.5 px-3 py-1.5 btn-delete rounded-lg text-sm font-medium"
                                     >
                                       {deletingId === inv.id ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />

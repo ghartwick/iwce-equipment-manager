@@ -191,7 +191,7 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
                     <button
                       type="button"
                       onClick={() => removeFile(index)}
-                      className="ml-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                      className="ml-2 p-1 btn-delete rounded"
                       disabled={isSubmitting}
                     >
                       <X className="h-4 w-4" />
@@ -215,7 +215,7 @@ export function MaintenanceForm({ equipmentName, onClose, onSubmit, categoryMain
               type="submit"
               disabled={isSubmitting || readingBlocked}
               title={readingBlocked ? 'Correct the hours/km reading before submitting' : undefined}
-              className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-3 btn-approve rounded-md text-sm font-medium"
             >
               Submit Report
             </button>

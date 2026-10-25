@@ -8,6 +8,9 @@ import { useAuth } from '../hooks/useAuth';
 import { parseExcelFile } from '../utils/excelImport';
 import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X, FileText, Download, Pencil, Check } from 'lucide-react';
 
+const compareCodes = (a: SiteCode, b: SiteCode) =>
+  a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+
 export function EditSitePage() {
   const { siteId } = useParams<{ siteId: string }>();
   const navigate = useNavigate();
@@ -33,6 +36,10 @@ export function EditSitePage() {
   const [newCode, setNewCode] = useState('');
   const [newCodeDescription, setNewCodeDescription] = useState('');
   const [showAddCode, setShowAddCode] = useState(false);
+  const [codesOpen, setCodesOpen] = useState(false);
+  const [editingCode, setEditingCode] = useState<string | null>(null);
+  const [editCodeName, setEditCodeName] = useState('');
+  const [editCodeDescription, setEditCodeDescription] = useState('');
   const [roles, setRoles] = useState<SiteRole[]>([]);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleCost, setNewRoleCost] = useState('');
@@ -178,17 +185,40 @@ export function EditSitePage() {
     const sorted = [...codes, { 
       name: newCode.trim(), 
       description: newCodeDescription.trim() 
-    }].sort((a, b) => {
-      const numA = parseFloat(a.name);
-      const numB = parseFloat(b.name);
-      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-      return a.name.localeCompare(b.name);
-    });
+    }].sort(compareCodes);
     setCodes(sorted);
     setNewCode('');
     setNewCodeDescription('');
     setShowAddCode(false);
     persistPatch({ codes: sorted });
+  };
+
+  const startEditCode = (code: SiteCode) => {
+    setEditingCode(code.name);
+    setEditCodeName(code.name);
+    setEditCodeDescription(code.description || '');
+  };
+
+  const cancelEditCode = () => {
+    setEditingCode(null);
+    setEditCodeName('');
+    setEditCodeDescription('');
+  };
+
+  const handleSaveCode = () => {
+    if (!editingCode) return;
+    const name = editCodeName.trim();
+    if (!name) { setError('Code name is required'); return; }
+    if (name !== editingCode && codes.some(c => c.name === name)) {
+      setError('A code with this name already exists');
+      return;
+    }
+    const updated = codes
+      .map(c => (c.name === editingCode ? { name, description: editCodeDescription.trim() } : c))
+      .sort(compareCodes);
+    setCodes(updated);
+    cancelEditCode();
+    persistPatch({ codes: updated });
   };
 
   const handleRemoveCode = (codeName: string) => {
@@ -341,12 +371,7 @@ export function EditSitePage() {
       if (newCodes.length === 0) {
         setError('No new codes to import (all codes already exist)');
       } else {
-        const sorted = [...codes, ...newCodes].sort((a, b) => {
-          const numA = parseFloat(a.name);
-          const numB = parseFloat(b.name);
-          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-          return a.name.localeCompare(b.name);
-        });
+        const sorted = [...codes, ...newCodes].sort(compareCodes);
         setCodes(sorted);
         await persistPatch({ codes: sorted });
         setSuccess(`Imported ${newCodes.length} code${newCodes.length !== 1 ? 's' : ''}`);
@@ -403,7 +428,7 @@ export function EditSitePage() {
             <div className="flex space-x-2">
               <button
                 onClick={handleDeleteSite}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-600 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 btn-delete rounded-lg"
               >
                 <Trash2 className="h-4 w-4" />
                 <span>Delete Site</span>
@@ -616,7 +641,7 @@ export function EditSitePage() {
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveRole(role.name)}
-                                  className="text-red-400 hover:text-red-300"
+                                  className="p-1 btn-delete rounded"
                                   title="Remove role"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -821,7 +846,7 @@ export function EditSitePage() {
                             </button>
                             <button
                               onClick={() => handleDeletePlan(plan)}
-                              className="text-red-400 hover:text-red-300"
+                              className="p-1 btn-delete rounded"
                               title="Delete plan"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -838,9 +863,20 @@ export function EditSitePage() {
             </div>
 
             {/* Site Codes */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300">Site Codes</h3>
+            <div className="mb-4 border border-yellow-300 dark:border-yellow-800 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setCodesOpen(prev => !prev)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-900/10 text-left hover:bg-yellow-100 dark:hover:bg-yellow-900/20 transition-colors"
+              >
+                <h3 className="text-base font-medium text-yellow-700 dark:text-yellow-300">
+                  Site Codes{codes.length > 0 ? ` (${codes.length})` : ''}
+                </h3>
+                <ChevronDown className={`h-5 w-5 text-yellow-600 dark:text-yellow-400 transition-transform ${codesOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {codesOpen && (
+              <div className="px-4 py-4 border-t border-yellow-200 dark:border-yellow-800">
+              <div className="flex items-center justify-end mb-4">
                 <div className="flex space-x-2">
                   <input
                     type="file"
@@ -909,30 +945,75 @@ export function EditSitePage() {
 
               {/* Codes List */}
               {codes.length > 0 ? (
-                <div className="space-y-2">
-                  {codes.map((code) => (
+                <div className="divide-y divide-yellow-200 dark:divide-yellow-800 border border-yellow-300 dark:border-yellow-800 rounded-lg">
+                  {[...codes].sort(compareCodes).map((code) => (
                     <div
                       key={code.name}
-                      className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
+                      className="flex items-center justify-between gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20"
                     >
-                      <div>
-                        <span className="text-gray-900 dark:text-yellow-100 font-medium">{code.name}</span>
-                        {code.description && (
-                          <span className="text-yellow-700 dark:text-yellow-600 text-sm ml-2">— {code.description}</span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleRemoveCode(code.name)}
-                        className="text-red-400 hover:text-red-300"
-                        title="Remove code"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {editingCode === code.name ? (
+                        <>
+                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              value={editCodeName}
+                              onChange={(e) => setEditCodeName(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveCode(); if (e.key === 'Escape') cancelEditCode(); }}
+                              placeholder="Code name"
+                              className="px-2 py-1 bg-yellow-200 dark:bg-black border border-yellow-600 rounded text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                              autoFocus
+                            />
+                            <input
+                              type="text"
+                              value={editCodeDescription}
+                              onChange={(e) => setEditCodeDescription(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveCode(); if (e.key === 'Escape') cancelEditCode(); }}
+                              placeholder="Description (optional)"
+                              className="px-2 py-1 bg-yellow-200 dark:bg-black border border-yellow-600 rounded text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button onClick={handleSaveCode} className="p-1 btn-approve rounded" title="Save code">
+                              <Check className="h-4 w-4" />
+                            </button>
+                            <button onClick={cancelEditCode} className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300" title="Cancel">
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="min-w-0">
+                            <span className="text-gray-900 dark:text-yellow-100 font-medium">{code.name}</span>
+                            {code.description && (
+                              <span className="text-yellow-700 dark:text-yellow-600 text-sm ml-2">— {code.description}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => startEditCode(code)}
+                              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500"
+                              title="Edit code"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleRemoveCode(code.name)}
+                              className="p-1 btn-delete rounded"
+                              title="Remove code"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
               ) : (
                 <p className="text-yellow-600 dark:text-yellow-400">No codes assigned to this site yet.</p>
+              )}
+              </div>
               )}
             </div>
           </div>

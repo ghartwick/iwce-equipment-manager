@@ -275,7 +275,7 @@ export function ServiceIntervalManager({
                         type="button"
                         onClick={() => handleDelete(row)}
                         disabled={saving}
-                        className="inline-flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400 hover:text-red-500 disabled:opacity-50"
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 btn-delete rounded text-[11px]"
                       >
                         <Trash2 className="h-3 w-3" />Delete from category
                       </button>
@@ -290,7 +290,7 @@ export function ServiceIntervalManager({
                       type="button"
                       onClick={() => handleDelete(row)}
                       disabled={saving}
-                      className="inline-flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400 hover:text-red-500 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 btn-delete rounded text-[11px]"
                     >
                       <Trash2 className="h-3 w-3" />Remove
                     </button>

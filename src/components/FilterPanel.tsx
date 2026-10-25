@@ -620,7 +620,7 @@ export function FilterPanel({
                             onDeleteCategory(category.id);
                           }
                         }}
-                        className="p-1 text-red-500 hover:text-red-300"
+                        className="p-1 btn-delete rounded"
                         title="Delete category"
                       >
                         <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />

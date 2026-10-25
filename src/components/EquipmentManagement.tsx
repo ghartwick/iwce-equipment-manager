@@ -468,7 +468,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                         setError('Failed to delete all items.');
                       }
                     }}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    className="px-4 py-2 btn-delete rounded-lg"
                   >
                     Delete All Data
                   </button>
@@ -801,7 +801,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                   {!showEditQRDelete && currentUser?.role === 'admin' && (
                                     <button
                                       onClick={() => handleDelete(item)}
-                                      className="p-1 text-red-600 hover:text-red-500"
+                                      className="p-1 btn-delete rounded"
                                       title="Delete"
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -925,7 +925,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                             <button
                                               type="button"
                                               onClick={() => { if (editingItem) handleDelete(editingItem); }}
-                                              className="px-4 py-2 bg-yellow-700 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                                              className="px-4 py-2 btn-delete rounded-lg text-sm"
                                             >
                                               Delete
                                             </button>
@@ -1024,7 +1024,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                       {!showEditQRDelete && currentUser?.role === 'admin' && (
                                         <button
                                           onClick={() => handleDelete(variant)}
-                                          className="p-1 text-red-600 hover:text-red-500"
+                                          className="p-1 btn-delete rounded"
                                           title="Delete"
                                         >
                                           <Trash2 className="h-4 w-4" />
@@ -1130,7 +1130,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                                 <button
                                                   type="button"
                                                   onClick={() => { if (editingItem) handleDelete(editingItem); }}
-                                                  className="px-4 py-2 bg-yellow-700 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                                                  className="px-4 py-2 btn-delete rounded-lg text-sm"
                                                 >
                                                   Delete
                                                 </button>
@@ -1204,7 +1204,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                 <div className="flex space-x-1">
                                   <button onClick={() => handleEdit(item)} className="p-1 text-yellow-600 hover:text-yellow-500" title="Edit"><Edit2 className="h-4 w-4" /></button>
                                   {!showEditQRDelete && currentUser?.role === 'admin' && (
-                                    <button onClick={() => handleDelete(item)} className="p-1 text-red-600 hover:text-red-500" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                                    <button onClick={() => handleDelete(item)} className="p-1 btn-delete rounded" title="Delete"><Trash2 className="h-4 w-4" /></button>
                                   )}
                                 </div>
                               </td>
@@ -1263,7 +1263,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                           <button
                                             type="button"
                                             onClick={() => { if (editingItem) handleDelete(editingItem); }}
-                                            className="px-4 py-2 bg-yellow-700 text-black rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                                            className="px-4 py-2 btn-delete rounded-lg text-sm"
                                           >
                                             Delete
                                           </button>

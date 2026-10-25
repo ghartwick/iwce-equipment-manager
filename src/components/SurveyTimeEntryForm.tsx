@@ -346,7 +346,7 @@ export function SurveyTimeEntryForm({
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); removeWorkEntry(we.id); }}
-                      className="text-red-500 hover:text-red-400 text-xl font-bold leading-none px-1"
+                      className="btn-delete rounded text-xl font-bold leading-none px-1.5"
                     >
                       ×
                     </button>
@@ -421,7 +421,7 @@ export function SurveyTimeEntryForm({
                                   <td className="px-3 py-2 text-right text-gray-900 dark:text-yellow-100">${(line.dollarValue * line.quantity).toFixed(2)}</td>
                                   {!disabled && (
                                     <td className="px-3 py-2 text-right">
-                                      <button type="button" onClick={() => updateWorkEntry(we.id, { expenses: we.expenses.filter(l => l.expenseId !== line.expenseId) })} className="text-red-600 hover:text-red-500">
+                                      <button type="button" onClick={() => updateWorkEntry(we.id, { expenses: we.expenses.filter(l => l.expenseId !== line.expenseId) })} className="p-1 btn-delete rounded">
                                         <Trash2 className="h-4 w-4" />
                                       </button>
                                     </td>
@@ -478,7 +478,7 @@ export function SurveyTimeEntryForm({
                   {entry ? 'Update Survey Time Card' : 'Save Survey Time Card'}
                 </button>
                 {(!entry || entry.status === 'draft') && (
-                  <button type="button" onClick={() => handleSave('submitted')} disabled={saving} className="flex-1 p-2 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-50 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-opacity-70 transition-colors">
+                  <button type="button" onClick={() => handleSave('submitted')} disabled={saving} className="flex-1 p-2 btn-approve rounded-lg">
                     Submit
                   </button>
                 )}

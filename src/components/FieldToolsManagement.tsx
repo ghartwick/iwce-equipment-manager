@@ -482,7 +482,7 @@ export function FieldToolsManagement({ currentUser, asPage = false }: FieldTools
                           {currentUser?.role === 'admin' && (
                             <button
                               onClick={() => handleDeleteTool(tool)}
-                              className="p-1 text-red-600 hover:text-red-500"
+                              className="p-1 btn-delete rounded"
                               title="Delete"
                             >
                               <Trash2 className="h-4 w-4" />

@@ -679,7 +679,7 @@ export default function NotificationManagementPage() {
                           </button>
                           <button
                             onClick={() => handleDeleteSchedule(schedule)}
-                            className="p-1 text-red-600 hover:text-red-500"
+                            className="p-1 btn-delete rounded"
                             title="Delete service notification"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -809,7 +809,7 @@ export default function NotificationManagementPage() {
                         </span>
                         <button
                           onClick={() => handleRemoveDevice(device)}
-                          className="p-1 text-red-600 hover:text-red-500"
+                          className="p-1 btn-delete rounded"
                           title="Remove device"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -929,7 +929,7 @@ export default function NotificationManagementPage() {
                           </button>
                           <button
                             onClick={() => handleDeleteRule(rule)}
-                            className="p-1 text-red-600 hover:text-red-500"
+                            className="p-1 btn-delete rounded"
                             title="Delete notification"
                           >
                             <Trash2 className="h-4 w-4" />

@@ -237,7 +237,7 @@ export default function ExpenseManagementPage() {
                                 <button onClick={() => openEditForm(expense)} className="p-1 text-yellow-600 hover:text-yellow-500" title="Edit expense">
                                   <Edit2 className="h-4 w-4" />
                                 </button>
-                                <button onClick={() => handleDelete(expense)} className="p-1 text-red-600 hover:text-red-500" title="Delete expense">
+                                <button onClick={() => handleDelete(expense)} className="p-1 btn-delete rounded" title="Delete expense">
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                               </div>

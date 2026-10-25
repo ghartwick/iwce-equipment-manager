@@ -27,6 +27,9 @@ interface SiteFormState {
 const emptyClientForm: ClientFormState = { name: '', description: '', isActive: true, allowFieldUsers: false, allowSupervisorUsers: false, showSitesInInventory: false };
 const emptySiteForm: SiteFormState = { name: '', description: '', isActive: true, flagRed: false };
 
+const compareSiteNames = (a: Site, b: Site) =>
+  a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+
 export function ClientManagement({ currentUser }: ClientManagementProps) {
   const navigate = useNavigate();
   const isAdmin = currentUser?.role === 'admin';
@@ -49,6 +52,7 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
 
   // Assigning existing unassigned sites
   const [assignTargets, setAssignTargets] = useState<Record<string, string>>({});
+  const [showUnassigned, setShowUnassigned] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -70,8 +74,8 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
     }
   };
 
-  const sitesForClient = (clientId: string) => sites.filter(s => s.clientId === clientId);
-  const unassignedSites = sites.filter(s => !s.clientId);
+  const sitesForClient = (clientId: string) => sites.filter(s => s.clientId === clientId).sort(compareSiteNames);
+  const unassignedSites = sites.filter(s => !s.clientId).sort(compareSiteNames);
 
   // ----- Client form handlers -----
   const openAddClient = () => {
@@ -314,7 +318,7 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                       cancelClientForm();
                     }
                   }}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  className="px-4 py-2 btn-delete rounded-lg"
                 >
                   Delete Client
                 </button>
@@ -418,7 +422,7 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                               </tr>
                             </thead>
                             <tbody>
-                              {[...clientSites].sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0)).map(site => (
+                              {clientSites.map(site => (
                                 <tr key={site.id} className={`border-b border-yellow-100 dark:border-yellow-900 ${!site.isActive ? 'opacity-50' : ''}`}>
                                   <td className={`py-1.5 pr-2 ${!site.isActive ? 'text-gray-400 dark:text-gray-600 italic' : 'text-gray-900 dark:text-yellow-100'}`}>
                                     {site.name}
@@ -450,14 +454,28 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
 
       {/* Unassigned sites */}
       {isAdmin && unassignedSites.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-medium text-orange-700 dark:text-orange-400 mb-2">Unassigned Sites ({unassignedSites.length})</h3>
+        <div className="mt-6 border border-orange-300 dark:border-orange-800 rounded-lg overflow-hidden">
+          <button
+            onClick={() => setShowUnassigned(prev => !prev)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-orange-50 dark:bg-orange-900 dark:bg-opacity-10 text-left"
+          >
+            <span className="flex items-center gap-2">
+              {showUnassigned ? <ChevronDown className="h-4 w-4 text-orange-600" /> : <ChevronRight className="h-4 w-4 text-orange-600" />}
+              <MapPin className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              <span className="font-medium text-orange-700 dark:text-orange-400">Unassigned Sites</span>
+            </span>
+            <span className="text-xs text-orange-700 dark:text-orange-400">{unassignedSites.length} site(s)</span>
+          </button>
+          {showUnassigned && (
+          <div className="px-4 py-3 border-t border-orange-200 dark:border-orange-800 bg-yellow-100/50 dark:bg-black">
           <p className="text-xs text-yellow-600 dark:text-yellow-500 mb-2">These sites are not yet attached to a client. Assign each to a client to organize them.</p>
-          <div className="space-y-2">
+          <div className="divide-y divide-orange-200 dark:divide-orange-900">
             {unassignedSites.map(site => (
-              <div key={site.id} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 border border-orange-300 dark:border-orange-800 rounded-lg bg-orange-50 dark:bg-orange-900 dark:bg-opacity-10">
-                <div className="flex-1 text-gray-900 dark:text-yellow-100">
+              <div key={site.id} className="flex flex-col sm:flex-row sm:items-center gap-2 py-2">
+                <div className={`flex-1 text-sm ${site.isActive ? 'text-gray-900 dark:text-yellow-100' : 'text-gray-400 dark:text-gray-600 italic'}`}>
                   {site.name}
+                  {site.flagRed && <span className="ml-2 text-xs text-red-600 dark:text-red-400">(flagged)</span>}
+                  {!site.isActive && <span className="ml-2 text-xs">(inactive)</span>}
                   <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-500">{(site.codes || []).length} code(s)</span>
                 </div>
                 <select
@@ -473,6 +491,8 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
               </div>
             ))}
           </div>
+          </div>
+          )}
         </div>
       )}
     </div>

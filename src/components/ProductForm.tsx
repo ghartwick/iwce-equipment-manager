@@ -908,7 +908,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
                     <button
                       type="button"
                       onClick={() => handleDeleteNote(index)}
-                      className="p-1 text-red-500 hover:text-red-700 text-xs"
+                      className="p-1 btn-delete rounded text-xs"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -1037,7 +1037,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
                               <button
                                 type="button"
                                 onClick={() => handleDeletePhoto(photo)}
-                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-medium flex-shrink-0"
+                                className="px-2 py-0.5 btn-delete rounded text-xs font-medium flex-shrink-0"
                               >
                                 Delete
                               </button>
@@ -1142,7 +1142,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
                           <button
                             type="button"
                             onClick={() => handleDismissMaintenanceNote(report.id!, report.maintenance.notes?.trim() || '')}
-                            className="flex-shrink-0 p-0.5 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            className="flex-shrink-0 p-0.5 btn-delete rounded"
                             title="Remove from Repair List"
                           >
                             <X className="h-3 w-3" />
@@ -1196,7 +1196,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
                                 e.stopPropagation();
                                 handleDeleteMaintenanceReport(report.id);
                               }}
-                              className="p-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                              className="p-1 btn-delete rounded"
                               title="Delete Report"
                             >
                               <X className="h-4 w-4" />
@@ -1324,7 +1324,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
                 onDelete();
               }
             }}
-            className="px-4 py-3 border border-red-600 rounded-md text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900 text-sm font-medium"
+            className="px-4 py-3 btn-delete rounded-md text-sm font-medium"
           >
             Delete
           </button>

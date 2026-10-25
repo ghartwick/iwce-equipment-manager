@@ -319,7 +319,7 @@ export function CodeManagement({ currentUser }: CodeManagementProps) {
                         </button>
                         <button
                           onClick={() => handleDelete(code)}
-                          className="p-2 text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
+                          className="p-2 btn-delete rounded"
                           title="Delete code"
                         >
                           <Trash2 className="h-4 w-4" />

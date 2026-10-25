@@ -199,7 +199,7 @@ export default function AttachmentsListPage() {
               <button
                 onClick={handleDeleteSelected}
                 disabled={deleting}
-                className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 disabled:opacity-50 font-medium transition-colors"
+                className="flex items-center px-4 py-2 btn-delete rounded-lg font-medium"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 {deleting ? 'Deleting...' : `Delete ${selectedIds.size}`}

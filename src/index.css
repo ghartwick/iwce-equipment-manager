@@ -62,3 +62,99 @@
       radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.02) 0%, transparent 50%);
   }
 }
+
+/* ===== ACTION BUTTON COLORS =====
+   One color per action, used app-wide. Sizing/padding stays on each button.
+*/
+@layer components {
+  .btn-delete {
+    @apply bg-red-100 text-red-700 border border-red-300 hover:bg-red-200
+      dark:bg-red-900/30 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/50
+      transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-approve {
+    @apply bg-green-100 text-green-700 border border-green-300 hover:bg-green-200
+      dark:bg-green-900/30 dark:text-green-300 dark:border-green-800 dark:hover:bg-green-900/50
+      transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+}
+
+/* ===== REFRESHED DARK THEME (opt-in preview) =====
+   Active only when <html> has both .dark and .dark-refresh (toggled from the
+   user menu). Charcoal layered surfaces, warm amber accents, subtle borders.
+   Pop-up windows (.fixed.inset-0 overlays) keep the classic dark colors.
+*/
+html.dark.dark-refresh {
+  --yellow-50:  250 247 240;
+  --yellow-100: 241 236 225;   /* primary text: warm off-white */
+  --yellow-200: 230 220 200;
+  --yellow-300: 245 200 110;   /* headings */
+  --yellow-400: 236 183 80;    /* accent text / icons */
+  --yellow-500: 224 166 58;    /* hover / focus ring */
+  --yellow-600: 200 146 48;    /* primary buttons */
+  --yellow-700: 72 62 44;      /* subtle borders */
+  --yellow-800: 52 46 36;      /* dividers */
+  --yellow-900: 110 82 30;     /* warm tints (used at low opacity) */
+  --yellow-950: 66 50 20;
+}
+
+/* Pop-up windows: restore the classic dark palette */
+html.dark.dark-refresh .fixed.inset-0 {
+  --yellow-50:  254 252 232;
+  --yellow-100: 254 249 195;
+  --yellow-200: 254 240 138;
+  --yellow-300: 253 224 71;
+  --yellow-400: 250 204 21;
+  --yellow-500: 234 179 8;
+  --yellow-600: 202 138 4;
+  --yellow-700: 161 98 7;
+  --yellow-800: 133 77 14;
+  --yellow-900: 113 63 18;
+  --yellow-950: 66 32 6;
+}
+
+html.dark.dark-refresh body {
+  background-color: #0d0f12;
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(224, 166, 58, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 90% 100%, rgba(224, 166, 58, 0.04) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Page wrappers let the body background show through */
+html.dark.dark-refresh .min-h-screen.dark\:bg-black:not(.fixed.inset-0 *) {
+  background-color: transparent;
+}
+
+/* Layered surfaces (outside pop-ups) */
+html.dark.dark-refresh .dark\:bg-black:not(.min-h-screen):not(.fixed.inset-0 *) {
+  background-color: rgb(21 24 29 / var(--tw-bg-opacity, 1));
+}
+html.dark.dark-refresh .dark\:bg-gray-900:not(.fixed.inset-0 *) {
+  background-color: rgb(27 31 38 / var(--tw-bg-opacity, 1));
+}
+html.dark.dark-refresh .dark\:bg-gray-800:not(.fixed.inset-0 *),
+html.dark.dark-refresh .dark\:hover\:bg-gray-800:hover:not(.fixed.inset-0 *) {
+  background-color: rgb(35 40 49 / var(--tw-bg-opacity, 1));
+}
+html.dark.dark-refresh .dark\:bg-gray-700:not(.fixed.inset-0 *),
+html.dark.dark-refresh .dark\:hover\:bg-gray-700:hover:not(.fixed.inset-0 *) {
+  background-color: rgb(44 50 60 / var(--tw-bg-opacity, 1));
+}
+
+/* Form fields sit slightly below the card surface */
+html.dark.dark-refresh :is(input, select, textarea).dark\:bg-black:not(.fixed.inset-0 *) {
+  background-color: rgb(15 18 21);
+  border-color: rgb(255 255 255 / 0.14);
+}
+
+/* Hairline card borders instead of bright gold outlines */
+html.dark.dark-refresh .border-yellow-600:not(button):not(.fixed.inset-0 *) {
+  border-color: rgb(255 255 255 / 0.09);
+}
+
+/* Soft depth on cards */
+html.dark.dark-refresh .rounded-lg.dark\:bg-black:not(.min-h-screen):not(.fixed.inset-0 *),
+html.dark.dark-refresh .rounded-xl.dark\:bg-black:not(.min-h-screen):not(.fixed.inset-0 *) {
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px rgb(0 0 0 / 0.35);
+}

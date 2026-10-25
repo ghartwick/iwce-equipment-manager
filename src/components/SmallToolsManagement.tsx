@@ -315,7 +315,7 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
                         </button>
                         <button
                           onClick={() => handleDelete(tool)}
-                          className="p-2 text-red-500 dark:text-red-400 hover:text-red-400 dark:hover:text-red-300 transition-colors"
+                          className="p-2 btn-delete rounded"
                           title="Delete small tool"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -455,7 +455,7 @@ export function SmallToolsManagement({ currentUser, asPage = false }: SmallTools
                               {currentUser?.role === 'admin' && (
                                 <button
                                   onClick={() => handleDelete(tool)}
-                                  className="p-1 text-red-600 hover:text-red-500"
+                                  className="p-1 btn-delete rounded"
                                   title="Delete"
                                 >
                                   <Trash2 className="h-4 w-4" />

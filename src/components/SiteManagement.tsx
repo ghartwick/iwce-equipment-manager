@@ -308,7 +308,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
                             </button>
                             <button
                               onClick={() => handleDelete(site)}
-                              className="p-1 text-red-600 hover:text-red-500"
+                              className="p-1 btn-delete rounded"
                               title="Delete site"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -379,7 +379,7 @@ export function SiteManagement({ currentUser, asPage = false }: SiteManagementPr
                                 </button>
                                 <button
                                   onClick={() => handleDelete(site)}
-                                  className="p-1 text-red-600 hover:text-red-500"
+                                  className="p-1 btn-delete rounded"
                                   title="Delete site"
                                 >
                                   <Trash2 className="h-4 w-4" />

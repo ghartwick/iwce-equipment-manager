@@ -645,7 +645,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
                               <button onClick={() => {
                                 const updated = workEntry.smallTools.filter((_: any, i: number) => i !== tIdx);
                                 updateWorkEntry(idx, 'smallTools', updated);
-                              }} className="text-red-500 hover:text-red-700">&times;</button>
+                              }} className="px-1 btn-delete rounded leading-none">&times;</button>
                             </span>
                           ))}
                           <select

@@ -1384,7 +1384,7 @@ export default function TimecardPage() {
                       type="button"
                       onClick={handleAttachmentSubmit}
                       disabled={attachmentSubmitting || selectedDates.length !== 1}
-                      className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap disabled:opacity-50"
+                      className="px-3 py-1.5 text-sm btn-approve rounded-lg font-medium whitespace-nowrap"
                       title={selectedDates.length === 1 ? 'Upload attachment' : 'Select a single date to attach'}
                     >
                       {attachmentSubmitting ? 'Uploading...' : 'Submit Attachment'}
@@ -1485,7 +1485,7 @@ export default function TimecardPage() {
                                 </div>
                                 <button
                                   onClick={() => handleDeleteAttachment(attachment)}
-                                  className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-medium"
+                                  className="px-2 py-0.5 btn-delete rounded text-xs font-medium"
                                 >
                                   Delete
                                 </button>
@@ -1838,7 +1838,7 @@ export default function TimecardPage() {
                                                           e.stopPropagation();
                                                           if (entry.id) handleDeleteEntry(entry.id);
                                                         }}
-                                                        className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                                        className="px-2 py-1 btn-delete rounded text-xs font-medium"
                                                       >
                                                         Delete
                                                       </button>
@@ -2005,7 +2005,7 @@ export default function TimecardPage() {
                                                         e.stopPropagation();
                                                         if (entry.id) handleDeleteEntry(entry.id);
                                                       }}
-                                                      className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                                      className="px-2 py-1 btn-delete rounded text-xs font-medium"
                                                     >
                                                       Delete
                                                     </button>

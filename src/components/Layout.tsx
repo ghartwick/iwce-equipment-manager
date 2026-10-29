@@ -187,6 +187,7 @@ function LayoutShell({ children }: LayoutProps) {
                       </div>
 
                       <div className="p-2">
+                        <p className="px-3 pt-1 pb-1 text-xs font-semibold uppercase tracking-wide text-yellow-600 dark:text-yellow-500">Manage</p>
                         {/* Admin-only Management Items */}
                         {user.role === 'admin' && (
                           <>
@@ -199,7 +200,7 @@ function LayoutShell({ children }: LayoutProps) {
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <MapPin className="h-4 w-4" />
-                              <span>Manage Sites</span>
+                              <span>Sites</span>
                             </button>
                             <button
                               onClick={(e) => {
@@ -210,7 +211,7 @@ function LayoutShell({ children }: LayoutProps) {
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <Car className="h-4 w-4" />
-                              <span>Manage Fleet</span>
+                              <span>Fleet</span>
                             </button>
                             <button
                               onClick={(e) => {
@@ -221,7 +222,7 @@ function LayoutShell({ children }: LayoutProps) {
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <Truck className="h-4 w-4" />
-                              <span>Manage Heavy Equipment</span>
+                              <span>Heavy Equipment</span>
                             </button>
                             <button
                               onClick={(e) => {
@@ -232,7 +233,7 @@ function LayoutShell({ children }: LayoutProps) {
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <Plus className="h-4 w-4" />
-                              <span>Manage Field Tools</span>
+                              <span>Field Tools</span>
                             </button>
                             <button
                               onClick={(e) => {
@@ -243,7 +244,7 @@ function LayoutShell({ children }: LayoutProps) {
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <Wrench className="h-4 w-4" />
-                              <span>Manage Small Tools</span>
+                              <span>Small Tools</span>
                             </button>
                             <button
                               onClick={(e) => {
@@ -254,7 +255,7 @@ function LayoutShell({ children }: LayoutProps) {
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
                               <DollarSign className="h-4 w-4" />
-                              <span>Manage Expenses</span>
+                              <span>Expenses</span>
                             </button>
                           </>
                         )}
@@ -270,7 +271,7 @@ function LayoutShell({ children }: LayoutProps) {
                             className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                           >
                             <Users className="h-4 w-4" />
-                            <span>User Management</span>
+                            <span>Users</span>
                           </button>
                         )}
 
@@ -284,8 +285,10 @@ function LayoutShell({ children }: LayoutProps) {
                           className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                         >
                           <BellRing className="h-4 w-4" />
-                          <span>Manage Notifications</span>
+                          <span>Notifications</span>
                         </button>
+
+                        <div className="my-1 border-t border-yellow-300 dark:border-yellow-800" />
 
                         {/* Theme Toggle */}
                         <button
@@ -338,7 +341,7 @@ function LayoutShell({ children }: LayoutProps) {
 
           {/* Mobile Menu */}
           {showMobileMenu && (
-            <div className="lg:hidden border-t border-yellow-200 dark:border-yellow-800">
+            <div className="lg:hidden border-t border-yellow-200 dark:border-yellow-800 bg-yellow-200 dark:bg-black">
               <div className="px-4 py-4 space-y-3">
                 {/* Mobile User Identification Section - Moved to top */}
                 {user && (

@@ -46,6 +46,9 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
     site: '',
     category: '',
     serialNumber: '',
+    year: '',
+    make: '',
+    model: '',
     equipmentType: 'field' as 'heavy' | 'field',
     repair: false,
     repairDescription: '',
@@ -103,6 +106,8 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   const categories = categoriesProp && categoriesProp.length > 0 ? categoriesProp : fetchedCategories;
 
   const isEditing = !!product;
+  const productCategory = categories.find(c => c.id === product?.category || c.name === product?.category);
+  const requiresMaintenance = productCategory?.notificationType !== 'none';
   const isChangeLocation = isEditing && !allowFullEdit && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field');
   const isFieldUser = (user?.role ?? userRole) === 'field';
 
@@ -169,6 +174,9 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
         site: product.site || '',
         category: product.category || '',
         serialNumber: product.serialNumber || '',
+        year: product.year || '',
+        make: product.make || '',
+        model: product.model || '',
         equipmentType: product.equipmentType || 'field',
         repair: product.repair || false,
         repairDescription: product.repairDescription || '',
@@ -800,6 +808,26 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
             </div>
           )}
 
+          {(!isEditing || (allowFullEdit && product?.equipmentType === 'field')) && (
+            <>
+              {(['serialNumber', 'year', 'make', 'model'] as const).map((field) => {
+                const label = field === 'serialNumber' ? 'Serial Number' : field.charAt(0).toUpperCase() + field.slice(1);
+                return (
+                  <div key={field}>
+                    <input
+                      type="text"
+                      value={formData[field]}
+                      onChange={(e) => handleInputChange(field, e.target.value)}
+                      title={label}
+                      className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-xs sm:text-sm"
+                      placeholder={label}
+                    />
+                  </div>
+                );
+              })}
+            </>
+          )}
+
           {!isEditing && (
             <div>
               <select
@@ -1067,7 +1095,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
           )}
 
           {/* Maintenance Section - Only for heavy equipment when editing */}
-          {isEditing && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && (
+          {isEditing && requiresMaintenance && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && (
             <div className="md:col-span-2 mt-4 pt-4 border-t border-yellow-400 dark:border-yellow-600">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">Inspections</h3>
@@ -1344,7 +1372,7 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
         >
           {isEditing ? 'Update' : 'Add Equipment'}
         </button>
-        {isEditing && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && userRole === 'admin' && (
+        {isEditing && requiresMaintenance && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && userRole === 'admin' && (
           <button
             type="button"
             onClick={() => window.location.href = `/inventory/equipment/${product.id}/service`}

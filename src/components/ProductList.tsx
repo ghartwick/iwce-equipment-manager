@@ -209,13 +209,11 @@ export function ProductList({
                     {categoryProducts.map((product) => {
                       const serviceStatus = getServiceStatus(product.id);
                       const isRepairStatus = product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')));
-                      const siteFlaggedRed = sites?.find(s => s.name === product.site)?.flagRed;
 
                       const getRowBg = () => {
                         if (serviceStatus?.status === 'due') return selectedEquipmentId === product.id ? 'bg-red-200 dark:bg-red-900' : 'bg-red-100 dark:bg-red-950';
                         if (serviceStatus?.status === 'schedule') return selectedEquipmentId === product.id ? 'bg-yellow-300 dark:bg-yellow-800' : 'bg-yellow-200 dark:bg-yellow-900';
                         if (isRepairStatus) return selectedEquipmentId === product.id ? 'bg-red-200 dark:bg-red-900' : 'bg-red-100 dark:bg-red-950';
-                        if (siteFlaggedRed) return selectedEquipmentId === product.id ? 'bg-red-200 dark:bg-red-900' : 'bg-red-100 dark:bg-red-950';
                         return selectedEquipmentId === product.id ? 'bg-yellow-200 dark:bg-yellow-900' : 'bg-yellow-200 dark:bg-black';
                       };
 
@@ -401,12 +399,10 @@ export function ProductList({
                     
                     {/* Products */}
                     {products.map((product) => {
-                      const siteFlaggedRed = sites?.find(s => s.name === product.site)?.flagRed;
                       const isRepairStatus = product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')));
 
                       const getRowBg = () => {
                         if (isRepairStatus) return selectedEquipmentId === product.id ? 'bg-red-200 dark:bg-red-900' : 'bg-red-100 dark:bg-red-950';
-                        if (siteFlaggedRed) return selectedEquipmentId === product.id ? 'bg-red-200 dark:bg-red-900' : 'bg-red-100 dark:bg-red-950';
                         return selectedEquipmentId === product.id ? 'bg-yellow-200 dark:bg-yellow-900' : 'bg-yellow-200 dark:bg-black';
                       };
 
@@ -421,7 +417,7 @@ export function ProductList({
                         >
                           <td className="w-[70%] px-2 py-4">
                             <div className="max-w-xs">
-                              <div className={`text-xs sm:text-sm font-medium ${(isRepairStatus || siteFlaggedRed) ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
+                              <div className={`text-xs sm:text-sm font-medium ${isRepairStatus ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
                                 {product.name}
                                 {product.description && (
                                   <span className="text-gray-600 dark:text-gray-400 ml-2">- {product.description}</span>

@@ -5,6 +5,7 @@ import { clientManagementService, Client } from '../services/clientManagementSer
 import { sitePlanService, SitePlan } from '../services/sitePlanService';
 import { surveyTimecardService } from '../services/surveyTimecardService';
 import { useAuth } from '../hooks/useAuth';
+import { SiteSelectDropdown } from '../components/SiteSelectDropdown';
 import { parseExcelFile } from '../utils/excelImport';
 import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X, FileText, Download, Pencil, Check } from 'lucide-react';
 
@@ -29,9 +30,6 @@ export function EditSitePage() {
   
   const [linkedSites, setLinkedSites] = useState<string[]>([]);
   const [allSites, setAllSites] = useState<Site[]>([]);
-  const [linkedDropdownOpen, setLinkedDropdownOpen] = useState(false);
-  const [linkedSearch, setLinkedSearch] = useState('');
-  const linkedDropdownRef = useRef<HTMLDivElement>(null);
   const [codes, setCodes] = useState<SiteCode[]>([]);
   const [newCode, setNewCode] = useState('');
   const [newCodeDescription, setNewCodeDescription] = useState('');
@@ -71,17 +69,6 @@ export function EditSitePage() {
       loadSite(siteId);
     }
   }, [siteId]);
-
-  useEffect(() => {
-    if (!linkedDropdownOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (linkedDropdownRef.current && !linkedDropdownRef.current.contains(e.target as Node)) {
-        setLinkedDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [linkedDropdownOpen]);
 
   const loadSite = async (id: string) => {
     try {
@@ -660,11 +647,11 @@ export function EditSitePage() {
             </div>
 
             {/* Linked Sites */}
-            <div className="mb-4 border border-yellow-300 dark:border-yellow-800 rounded-lg overflow-hidden">
+            <div className="mb-4 border border-yellow-300 dark:border-yellow-800 rounded-lg">
               <button
                 type="button"
                 onClick={() => setLinkedSitesOpen(prev => !prev)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-900/10 text-left hover:bg-yellow-100 dark:hover:bg-yellow-900/20 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 rounded-t-lg bg-yellow-50 dark:bg-yellow-900/10 text-left hover:bg-yellow-100 dark:hover:bg-yellow-900/20 transition-colors"
               >
                 <h3 className="text-base font-medium text-yellow-700 dark:text-yellow-300">Co-located Sites</h3>
                 <ChevronDown className={`h-5 w-5 text-yellow-600 dark:text-yellow-400 transition-transform ${linkedSitesOpen ? 'rotate-180' : ''}`} />
@@ -675,20 +662,13 @@ export function EditSitePage() {
                     Equipment from selected sites will automatically appear when workers select <strong>{formData.name || 'this site'}</strong> on their timecard.
                   </p>
 
-                  <div className="relative" ref={linkedDropdownRef}>
-                    {/* Trigger */}
-                    <button
-                      type="button"
-                      onClick={() => { setLinkedDropdownOpen(prev => !prev); setLinkedSearch(''); }}
-                      className="w-full flex items-center justify-between px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                    >
-                      <span className="text-sm text-gray-900 dark:text-yellow-100 truncate">
-                        {linkedSites.length === 0
-                          ? 'None selected'
-                          : linkedSites.join(', ')}
-                      </span>
-                      <ChevronDown className={`h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 ml-2 transition-transform ${linkedDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
+                  <div>
+                    <SiteSelectDropdown
+                      value=""
+                      onChange={(name) => { if (name) handleToggleLinkedSite(name, true); }}
+                      sites={allSites.filter(s => s.isActive && !linkedSites.includes(s.name))}
+                      placeholder="Select Site"
+                    />
 
                     {/* Selected tags */}
                     {linkedSites.length > 0 && (
@@ -711,69 +691,6 @@ export function EditSitePage() {
                       </div>
                     )}
 
-                    {/* Dropdown panel */}
-                    {linkedDropdownOpen && (
-                      <div className="absolute z-50 mt-1 w-full bg-yellow-50 dark:bg-gray-900 border border-yellow-400 dark:border-yellow-700 rounded-lg shadow-lg overflow-hidden">
-                        {/* Search */}
-                        <div className="p-2 border-b border-yellow-300 dark:border-yellow-700">
-                          <input
-                            type="text"
-                            autoFocus
-                            value={linkedSearch}
-                            onChange={e => setLinkedSearch(e.target.value)}
-                            placeholder="Filter sites…"
-                            className="w-full px-2 py-1.5 text-sm bg-yellow-200 dark:bg-black border border-yellow-400 dark:border-yellow-700 rounded focus:outline-none focus:ring-1 focus:ring-yellow-500 text-gray-900 dark:text-yellow-100"
-                          />
-                        </div>
-                        {/* Options */}
-                        <div className="max-h-52 overflow-y-auto">
-                          {allSites
-                            .filter(s => s.isActive && s.name.toLowerCase().includes(linkedSearch.toLowerCase()))
-                            .length === 0 ? (
-                              <p className="px-3 py-2 text-sm text-yellow-600 dark:text-yellow-500">No sites match.</p>
-                            ) : (
-                              allSites
-                                .filter(s => s.isActive && (linkedSites.includes(s.name) || s.name.toLowerCase().includes(linkedSearch.toLowerCase())))
-                                .map(s => {
-                                  const checked = linkedSites.includes(s.name);
-                                  return (
-                                    <label
-                                      key={s.id}
-                                      className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
-                                        checked
-                                          ? 'bg-yellow-100 dark:bg-yellow-900/40'
-                                          : 'hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
-                                      }`}
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        checked={checked}
-                                        onChange={e => handleToggleLinkedSite(s.name, e.target.checked)}
-                                        className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
-                                      />
-                                      <div>
-                                        <span className="text-sm font-medium text-gray-900 dark:text-yellow-100">{s.name}</span>
-                                        {s.description && (
-                                          <p className="text-xs text-yellow-600 dark:text-yellow-500">{s.description}</p>
-                                        )}
-                                      </div>
-                                    </label>
-                                  );
-                                })
-                            )}
-                        </div>
-                        {/* Close */}
-                        <div className="p-2 border-t border-yellow-300 dark:border-yellow-700">
-                          <button
-                            type="button"
-                            onClick={() => setLinkedDropdownOpen(false)}
-                            className="w-full py-1 text-xs text-yellow-700 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-200 font-medium"
-                          >
-                            Done
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}

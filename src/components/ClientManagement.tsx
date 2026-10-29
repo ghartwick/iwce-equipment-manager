@@ -21,11 +21,10 @@ interface SiteFormState {
   name: string;
   description: string;
   isActive: boolean;
-  flagRed: boolean;
 }
 
 const emptyClientForm: ClientFormState = { name: '', description: '', isActive: true, allowFieldUsers: false, allowSupervisorUsers: false, showSitesInInventory: false };
-const emptySiteForm: SiteFormState = { name: '', description: '', isActive: true, flagRed: false };
+const emptySiteForm: SiteFormState = { name: '', description: '', isActive: true };
 
 const compareSiteNames = (a: Site, b: Site) =>
   a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
@@ -191,7 +190,6 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
         name: siteForm.name.trim(),
         description: siteForm.description.trim(),
         isActive: siteForm.isActive,
-        flagRed: siteForm.flagRed,
         clientId,
         createdBy: currentUser?.username,
       } as Omit<Site, 'id' | 'createdAt' | 'updatedAt'>);
@@ -398,9 +396,6 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                             <label className="flex items-center gap-1 text-sm text-yellow-700 dark:text-yellow-300">
                               <input type="checkbox" checked={siteForm.isActive} onChange={(e) => setSiteForm({ ...siteForm, isActive: e.target.checked })} className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500" /> Active
                             </label>
-                            <label className="flex items-center gap-1 text-sm text-red-700 dark:text-red-300">
-                              <input type="checkbox" checked={siteForm.flagRed} onChange={(e) => setSiteForm({ ...siteForm, flagRed: e.target.checked })} className="rounded border-red-600 text-red-500 focus:ring-red-500" /> Flag Red
-                            </label>
                           </div>
                           <div className="flex gap-2">
                             <button type="submit" className="px-3 py-1.5 text-sm bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors">Add Site</button>
@@ -417,28 +412,37 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                             <thead>
                               <tr className="text-left text-yellow-700 dark:text-yellow-400 border-b border-yellow-200 dark:border-yellow-800">
                                 <th className="py-1 pr-2">Site</th>
-                                <th className="py-1 px-2 text-center">Codes</th>
-                                {isAdmin && <th className="py-1 pl-2 text-right">Actions</th>}
+                                {isAdmin && <th className="py-1 pl-2 text-right"></th>}
                               </tr>
                             </thead>
                             <tbody>
-                              {clientSites.map(site => (
-                                <tr key={site.id} className={`border-b border-yellow-100 dark:border-yellow-900 ${!site.isActive ? 'opacity-50' : ''}`}>
-                                  <td className={`py-1.5 pr-2 ${!site.isActive ? 'text-gray-400 dark:text-gray-600 italic' : 'text-gray-900 dark:text-yellow-100'}`}>
+                              {[...clientSites.filter(s => s.isActive), null, ...clientSites.filter(s => !s.isActive)].map((site) => {
+                                if (site === null) {
+                                  return clientSites.some(s => !s.isActive) ? (
+                                    <tr key="inactive-header" className="border-b border-yellow-200 dark:border-yellow-800">
+                                      <th colSpan={isAdmin ? 2 : 1} className="pt-3 pb-1 text-left text-xs uppercase tracking-wide text-yellow-700 dark:text-yellow-400">Inactive</th>
+                                    </tr>
+                                  ) : null;
+                                }
+                                return (
+                                <tr
+                                  key={site.id}
+                                  onClick={isAdmin ? () => navigate(`/admin/sites/edit/${site.id}`) : undefined}
+                                  className={`border-b border-yellow-100 dark:border-yellow-900 ${isAdmin ? 'cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-20' : ''}`}
+                                >
+                                  <td className="py-1.5 pr-2 text-gray-900 dark:text-yellow-100">
                                     {site.name}
-                                    {site.flagRed && <span className="ml-2 text-xs text-red-600 dark:text-red-400">(flagged)</span>}
-                                    {!site.isActive && <span className="ml-2 text-xs">(inactive)</span>}
                                   </td>
-                                  <td className="py-1.5 px-2 text-center text-yellow-700 dark:text-yellow-400">{(site.codes || []).length}</td>
                                   {isAdmin && (
                                     <td className="py-1.5 pl-2">
                                       <div className="flex justify-end gap-1">
-                                        <button onClick={() => navigate(`/admin/sites/edit/${site.id}`)} className="p-1 text-yellow-600 hover:text-yellow-500" title="Edit site / codes"><Edit2 className="h-4 w-4" /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); navigate(`/admin/sites/edit/${site.id}`); }} className="p-1 text-yellow-600 hover:text-yellow-500" title="Edit site / codes"><Edit2 className="h-4 w-4" /></button>
                                       </div>
                                     </td>
                                   )}
                                 </tr>
-                              ))}
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -474,7 +478,6 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
               <div key={site.id} className="flex flex-col sm:flex-row sm:items-center gap-2 py-2">
                 <div className={`flex-1 text-sm ${site.isActive ? 'text-gray-900 dark:text-yellow-100' : 'text-gray-400 dark:text-gray-600 italic'}`}>
                   {site.name}
-                  {site.flagRed && <span className="ml-2 text-xs text-red-600 dark:text-red-400">(flagged)</span>}
                   {!site.isActive && <span className="ml-2 text-xs">(inactive)</span>}
                   <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-500">{(site.codes || []).length} code(s)</span>
                 </div>

@@ -27,7 +27,6 @@ export interface Site {
   linkedSites?: string[];
   clientId?: string;
   isActive: boolean;
-  flagRed?: boolean;
   createdAt: Date;
   updatedAt: Date;
   createdBy?: string;
@@ -64,7 +63,6 @@ export class SiteManagementService {
           linkedSites: data.linkedSites || [],
           clientId: data.clientId || '',
           isActive: data.isActive ?? true,
-          flagRed: data.flagRed ?? false,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
           createdBy: data.createdBy
@@ -107,7 +105,6 @@ export class SiteManagementService {
         linkedSites: data.linkedSites || [],
         clientId: data.clientId || '',
         isActive: data.isActive ?? true,
-        flagRed: data.flagRed ?? false,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
         createdBy: data.createdBy

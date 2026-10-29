@@ -225,6 +225,15 @@ export function FilterPanel({
     setCustomItemInput('');
   };
 
+  const handleDeleteCategory = () => {
+    if (!editingCategoryId) return;
+    const category = categories.find(cat => cat.id === editingCategoryId);
+    if (window.confirm(`Are you sure you want to delete the category "${category?.name ?? newCategoryName}"?`)) {
+      onDeleteCategory(editingCategoryId);
+      handleCancelEdit();
+    }
+  };
+
   return (
     <>
     {/* Add Category Modal */}
@@ -516,19 +525,28 @@ export function FilterPanel({
               </button>
             </div>
           </div>
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-between space-x-2">
             <button
-              onClick={handleCancelEdit}
-              className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+              onClick={handleDeleteCategory}
+              className="flex items-center space-x-1 px-3 py-1.5 btn-delete text-sm rounded font-medium"
             >
-              Cancel
+              <Trash2 className="h-3 w-3" />
+              <span>Delete</span>
             </button>
-            <button
-              onClick={handleUpdateCategory}
-              className="px-3 py-1.5 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600 font-medium"
-            >
-              Update
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleCancelEdit}
+                className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateCategory}
+                className="px-3 py-1.5 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600 font-medium"
+              >
+                Update
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -612,18 +630,6 @@ export function FilterPanel({
                         title="Edit category"
                       >
                         <Edit2 className="h-2 w-2 sm:h-3 sm:w-3" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (window.confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
-                            onDeleteCategory(category.id);
-                          }
-                        }}
-                        className="p-1 btn-delete rounded"
-                        title="Delete category"
-                      >
-                        <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
                       </button>
                     </div>
                   )}

@@ -20,6 +20,7 @@ import { equipmentServiceLogService } from '../services/equipmentServiceLogServi
 import { notificationDispatchService } from '../services/notificationDispatchService';
 import { computeUnitSchedule, readingsFromMaintenanceReports } from '../services/serviceScheduleMigration';
 import { ResolveRepairModal, ResolveRepairTarget } from './ResolveRepairModal';
+import { ServiceSection } from './ServiceSection';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProductFormProps {
@@ -1390,17 +1391,14 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
             </button>
           </>
         )}
-        {isEditing && requiresMaintenance && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && userRole === 'admin' && (
-          <button
-            type="button"
-            onClick={() => window.location.href = `/inventory/equipment/${product.id}/service`}
-            className="px-4 py-3 bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 rounded-md hover:bg-yellow-400 dark:hover:bg-yellow-700 text-sm font-medium transition-colors"
-          >
-            Service
-          </button>
-        )}
         </div>
       </form>
+
+      {/* Service - admin only, directly below the inspections. Kept outside the
+          form because it has its own forms and buttons. */}
+      {isEditing && product && requiresMaintenance && (product.equipmentType === 'heavy' || product.equipmentType === 'field') && (user?.role ?? userRole) === 'admin' && (
+        <ServiceSection equipmentId={product.id} />
+      )}
       
       {/* Equipment Log - Shows when log button is clicked */}
       {showLog && isEditing && (

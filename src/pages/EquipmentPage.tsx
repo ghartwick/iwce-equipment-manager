@@ -132,13 +132,7 @@ export default function EquipmentPage() {
         await updateProduct(equipment.id, { ...productData, updatedAt: new Date().toISOString() });
       }
       
-      // Check if only notes were updated (no other fields changed)
-      const notesOnly = Object.keys(productData).length === 1 && 'notes' in productData;
-      
-      // Only navigate back if it's not a notes-only update
-      if (!notesOnly) {
-        navigate('/inventory');
-      }
+      setEquipment(prev => (prev ? { ...prev, ...productData, updatedAt: new Date().toISOString() } : prev));
     } catch (error) {
       console.error('Update failed:', error);
       throw error;

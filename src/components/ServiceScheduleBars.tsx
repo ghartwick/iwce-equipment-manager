@@ -13,6 +13,8 @@ interface ServiceScheduleBarsProps {
   // How many of the most urgent intervals to expand up front.
   initiallyExpanded?: number;
   compact?: boolean;
+  // 'row' shows every interval side by side with no collapsing (desktop lists).
+  layout?: 'stack' | 'row';
 }
 
 // Colour is driven purely by status, never by position along the bar. The old
@@ -78,11 +80,66 @@ export function ServiceScheduleBars({
   states,
   initiallyExpanded = 2,
   compact = false,
+  layout = 'stack',
 }: ServiceScheduleBarsProps) {
   const [showAll, setShowAll] = useState(false);
   const sorted = useMemo(() => sortByUrgency(states), [states]);
 
   if (sorted.length === 0) return null;
+
+  if (layout === 'row') {
+    return (
+      <div className="flex items-start gap-3 w-full">
+        {sorted.map(state => {
+          const style = STATUS_STYLE[state.status];
+          const showNotifyMarker =
+            state.status !== 'no-baseline' && state.notifyPct > 0 && state.notifyPct < 100;
+
+          return (
+            <div key={state.intervalId} className="flex-1 min-w-0">
+              <div className="text-xs font-medium text-gray-900 dark:text-yellow-100 truncate" title={state.name}>
+                {state.name}
+              </div>
+              <div className={`text-[11px] whitespace-nowrap truncate ${style.text}`}>
+                {state.status === 'overdue' && (
+                  <span className="mr-1 px-1 py-0.5 rounded bg-red-700 text-white text-[10px] font-bold align-middle">
+                    OVERDUE
+                  </span>
+                )}
+                {formatRemaining(state)}
+              </div>
+
+              {state.status === 'no-baseline' ? (
+                <p className="flex items-start gap-1 mt-1 text-[10px] text-gray-500 dark:text-gray-400 leading-snug">
+                  <HelpCircle className="h-3 w-3 mt-px shrink-0" />
+                  <span>No baseline</span>
+                </p>
+              ) : (
+                <>
+                  <div className="relative h-2.5 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mt-1">
+                    <div
+                      className={`absolute top-0 bottom-0 left-0 transition-all duration-500 ${style.fill}`}
+                      style={{ width: `${state.progressPct}%` }}
+                    />
+                    {showNotifyMarker && (
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-gray-900 dark:bg-white opacity-60"
+                        style={{ left: `${state.notifyPct}%` }}
+                        title={`Warning at ${formatPosition(state.notifyAt, state.unit)}`}
+                      />
+                    )}
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                    Due: {formatPosition(state.dueAt, state.unit)}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   const expanded = showAll ? sorted : sorted.slice(0, initiallyExpanded);
   const hidden = sorted.length - expanded.length;

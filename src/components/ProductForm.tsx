@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Clock, QrCode, Download, Plus, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { X, ArrowLeft, Clock, QrCode, Download, Plus, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { Equipment, Category, EquipmentMaintenance, EquipmentNote } from '../types';
 import { EquipmentLog } from './EquipmentLog';
@@ -729,9 +729,21 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
   return (
     <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-lg p-3 sm:p-4">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
-          {formTitle}
-        </h2>
+        <div className="flex items-center space-x-2 min-w-0">
+          {isChangeLocation && (
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+              title="Back to inventory"
+            >
+              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
+          )}
+          <h2 className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400">
+            {formTitle}
+          </h2>
+        </div>
         <div className="flex items-center space-x-2">
           {isEditing && (
             <>
@@ -762,12 +774,14 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
               </button>
             </>
           )}
-          <button
-            onClick={handleCancel}
-            className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
-          >
-            <X className="h-4 w-4 sm:h-5 sm:w-5" />
-          </button>
+          {!isChangeLocation && (
+            <button
+              onClick={handleCancel}
+              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+            >
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -1357,21 +1371,25 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
             Delete
           </button>
         )}
-        <button
-          type="button"
-          onClick={handleCancel}
-          disabled={isSubmitting}
-          className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {allowFullEdit ? 'Cancel' : 'Close'}
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isEditing ? 'Update' : 'Add Equipment'}
-        </button>
+        {!isChangeLocation && (
+          <>
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isSubmitting}
+              className="px-4 py-3 border border-yellow-600 rounded-md text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {allowFullEdit ? 'Cancel' : 'Close'}
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-3 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isEditing ? 'Update' : 'Add Equipment'}
+            </button>
+          </>
+        )}
         {isEditing && requiresMaintenance && (product?.equipmentType === 'heavy' || product?.equipmentType === 'field') && userRole === 'admin' && (
           <button
             type="button"

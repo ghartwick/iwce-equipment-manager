@@ -397,6 +397,41 @@ describe('computeUnitSchedule', () => {
     expect(computeUnitSchedule({} as any, null, [], [])).toEqual([]);
   });
 
+  it('credits legacy single-service cards to the unit\'s only configured interval', () => {
+    const equipment = {
+      serviceIntervals: [{ ...minor, id: 'si_abc', name: '8000', interval: 8000, unit: 'km', notifyLead: 500 }],
+    } as any;
+    const states = computeUnitSchedule(
+      equipment,
+      null,
+      [
+        { servicedAt: 111632, intervalIds: [LEGACY_SINGLE_ID], createdAt: '2026-09-01', lastServicedDate: '2026-09-01' },
+        { servicedAt: 101285, createdAt: '2026-06-10', lastServicedDate: '2026-06-10' },
+      ],
+      [{ maintenance: { hours: 112000 }, createdAt: '2026-09-15' }]
+    );
+    expect(states).toHaveLength(1);
+    expect(states[0].status).toBe('ok');
+    expect(states[0].lastDoneAt).toBe(111632);
+    expect(states[0].dueAt).toBe(119632);
+  });
+
+  it('does not guess when several intervals are configured', () => {
+    const equipment = {
+      serviceIntervals: [
+        { ...minor, id: 'a', name: 'A' },
+        { ...minor, id: 'b', name: 'B', interval: 1000 },
+      ],
+    } as any;
+    const states = computeUnitSchedule(
+      equipment,
+      null,
+      [{ servicedAt: 500, createdAt: '2026-01-10' }],
+      []
+    );
+    expect(states.every(s => s.status === 'no-baseline')).toBe(true);
+  });
+
   it('excludes voided readings end to end', () => {
     const equipment = { serviceInterval: 500, serviceNotification: 450 } as any;
     const states = computeUnitSchedule(

@@ -155,7 +155,7 @@ export function EditSitePage() {
       await siteManagementService.updateSite(site.id, updates);
       setSite(prev => (prev ? { ...prev, ...updates } : prev));
       setError(null);
-      setSuccess('Changes saved');
+      setSuccess(null);
     } catch (err: any) {
       setError(err?.message || 'Failed to save changes');
     }

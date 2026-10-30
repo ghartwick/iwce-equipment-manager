@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Package, Download, Upload, Pencil } from 'lucide-react';
+import { Package, Download, Upload } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { exportToExcel, importFromExcel } from '../utils/exportToExcel';
 import { Site } from '../services/siteManagementService';
@@ -23,6 +23,7 @@ interface ProductListProps {
   onInlineUpdate?: (productId: string, updates: Partial<Equipment>) => Promise<void>;
   fleetProducts?: Equipment[];
   serviceNotifications?: ServiceNotificationItem[];
+  hideHeader?: boolean;
 }
 
 export function ProductList({
@@ -31,7 +32,6 @@ export function ProductList({
   onEdit,
   selectedEquipmentId,
   onAddProduct,
-  onCancelEdit,
   userRole,
   showCategoryHeadings = false,
   refreshData,
@@ -41,6 +41,7 @@ export function ProductList({
   onInlineUpdate,
   fleetProducts = [],
   serviceNotifications = [],
+  hideHeader = false,
 }: ProductListProps) {
   // A unit now has one notification per interval, so rows summarise with the worst one.
   const urgentByEquipment = React.useMemo(
@@ -141,6 +142,7 @@ export function ProductList({
     <>
     <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow overflow-hidden">
       {/* Header with export button */}
+      {!hideHeader && (
       <div className="bg-yellow-200 dark:bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
         <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300">Equipment Inventory</h2>
         {userRole === 'admin' && (
@@ -171,6 +173,7 @@ export function ProductList({
           </div>
         )}
       </div>
+      )}
       
       <div className="overflow-x-auto">
         <table className="w-full max-w-[100vw]">
@@ -211,8 +214,6 @@ export function ProductList({
                       const isRepairStatus = product.employee === 'Out For Repair' || product.employee === 'Broken' || product.employee === 'Missing' || (product.equipmentType === 'heavy' && (product.site?.includes('Out For Repair') || product.site?.includes('Other') || product.site?.includes('Missing')));
 
                       const getRowBg = () => {
-                        if (serviceStatus?.status === 'due') return selectedEquipmentId === product.id ? 'bg-red-200 dark:bg-red-900' : 'bg-red-100 dark:bg-red-950';
-                        if (serviceStatus?.status === 'schedule') return selectedEquipmentId === product.id ? 'bg-yellow-300 dark:bg-yellow-800' : 'bg-yellow-200 dark:bg-yellow-900';
                         if (isRepairStatus) return selectedEquipmentId === product.id ? 'bg-red-200 dark:bg-red-900' : 'bg-red-100 dark:bg-red-950';
                         return selectedEquipmentId === product.id ? 'bg-yellow-200 dark:bg-yellow-900' : 'bg-yellow-200 dark:bg-black';
                       };
@@ -226,7 +227,7 @@ export function ProductList({
                             transition-all duration-200 cursor-pointer hover:opacity-80
                           `}
                         >
-                          <td className="w-[70%] px-2 py-4">
+                          <td className="w-1/2 px-2 py-4">
                             <div className="max-w-xs">
                               <div className={`text-xs sm:text-sm font-medium ${isRepairStatus ? "text-red-600 dark:text-red-400" : serviceStatus?.status === 'due' ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
                                 {product.name}
@@ -341,7 +342,7 @@ export function ProductList({
                               </div>
                             </div>
                           </td>
-                          <td className="w-[30%] px-1 py-4">
+                          <td className="w-1/2 px-1 py-4">
                             <div className="flex items-center justify-end gap-3 pr-1">
                               {(() => {
                                 const states = getServiceItems(product.id)
@@ -349,25 +350,11 @@ export function ProductList({
                                   .filter((s): s is NonNullable<typeof s> => !!s);
                                 if (states.length === 0) return null;
                                 return (
-                                  <div className="w-48" onClick={(e) => e.stopPropagation()}>
-                                    <ServiceScheduleBars states={states} compact initiallyExpanded={1} />
+                                  <div className="w-full" onClick={(e) => e.stopPropagation()}>
+                                    <ServiceScheduleBars states={states} compact layout="row" />
                                   </div>
                                 );
                               })()}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (selectedEquipmentId === product.id) {
-                                    onCancelEdit?.();
-                                  } else if (onEdit) {
-                                    onEdit?.(product);
-                                  }
-                                }}
-                                className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
-                                title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
-                              >
-                                <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -415,7 +402,7 @@ export function ProductList({
                             transition-all duration-200 cursor-pointer hover:opacity-80
                           `}
                         >
-                          <td className="w-[70%] px-2 py-4">
+                          <td className="w-1/2 px-2 py-4">
                             <div className="max-w-xs">
                               <div className={`text-xs sm:text-sm font-medium ${isRepairStatus ? "text-red-600 dark:text-red-400" : "text-gray-900 dark:text-yellow-100"} break-words`}>
                                 {product.name}
@@ -525,7 +512,7 @@ export function ProductList({
                               </div>
                             </div>
                           </td>
-                          <td className="w-[30%] px-1 py-4">
+                          <td className="w-1/2 px-1 py-4">
                             <div className="flex items-center justify-end gap-3 pr-1">
                               {(() => {
                                 const states = getServiceItems(product.id)
@@ -533,25 +520,11 @@ export function ProductList({
                                   .filter((s): s is NonNullable<typeof s> => !!s);
                                 if (states.length === 0) return null;
                                 return (
-                                  <div className="w-48" onClick={(e) => e.stopPropagation()}>
-                                    <ServiceScheduleBars states={states} compact initiallyExpanded={1} />
+                                  <div className="w-full" onClick={(e) => e.stopPropagation()}>
+                                    <ServiceScheduleBars states={states} compact layout="row" />
                                   </div>
                                 );
                               })()}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (selectedEquipmentId === product.id) {
-                                    onCancelEdit?.();
-                                  } else if (onEdit) {
-                                    onEdit?.(product);
-                                  }
-                                }}
-                                className="inline-flex items-center justify-center p-4 sm:p-1 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 hover:scale-105 active:scale-95"
-                                title={selectedEquipmentId === product.id ? "Close" : "Change Location"}
-                              >
-                                <Pencil className="h-6 w-6 sm:h-3 sm:w-3" />
-                              </button>
                             </div>
                           </td>
                         </tr>

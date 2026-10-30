@@ -168,7 +168,19 @@ export function computeUnitSchedule(
 ): ServiceDueState[] {
   const defs = effectiveIntervalsForUnit(equipment, category);
   if (defs.length === 0) return [];
-  const completions = completionsFromShopReports(shopReports);
+  let completions = completionsFromShopReports(shopReports);
   const readings = readingsFromMaintenanceReports(maintenanceReports);
+
+  // Cards logged before intervals were configured are filed under the legacy
+  // single-service id. When the unit now has exactly one real interval there is
+  // no ambiguity about what those cards completed, so credit them to it instead
+  // of leaving the interval stuck on "no baseline".
+  if (defs.length === 1 && defs[0].id !== LEGACY_SINGLE_ID) {
+    const soleId = defs[0].id;
+    completions = completions.map(c =>
+      c.intervalId === LEGACY_SINGLE_ID ? { ...c, intervalId: soleId } : c
+    );
+  }
+
   return defs.map(def => computeDueState(def, completions, readings, now));
 }

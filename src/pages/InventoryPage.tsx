@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Upload, Download } from 'lucide-react';
 import { useInventory } from '../hooks/useInventory';
 import { useAuth } from '../hooks/useAuth';
 import { ProductList } from '../components/ProductList';
@@ -14,6 +15,7 @@ import { siteManagementService, Site } from '../services/siteManagementService';
 import { userManagementService, AppUser } from '../services/userManagementService';
 import { fleetManagementService } from '../services/fleetManagementService';
 import { serviceNotificationService, ServiceNotificationItem } from '../services/serviceNotificationService';
+import { exportToExcel, importFromExcel } from '../utils/exportToExcel';
 
 function InventoryPage() {
   const navigate = useNavigate();
@@ -66,6 +68,40 @@ function InventoryPage() {
     await refreshData();
     await loadFleetData();
     await loadServiceNotifications();
+  };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const importedEquipment = await importFromExcel(file, categories);
+
+      for (let i = 0; i < importedEquipment.length; i++) {
+        try {
+          await addProduct(importedEquipment[i] as Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>);
+        } catch (error) {
+          console.error(`Failed to create equipment item ${i + 1}:`, error);
+        }
+      }
+
+      await handleRefreshData();
+      // Small delay to ensure Firebase sync is complete, then refresh again
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await handleRefreshData();
+
+      setSelectedCategory('all');
+      alert(`Successfully imported ${importedEquipment.length} equipment items!`);
+    } catch (error) {
+      console.error('Import failed:', error);
+      alert('Failed to import Excel file. Please check the file format and try again.');
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const hasRestored = useRef(false);
@@ -318,6 +354,37 @@ function InventoryPage() {
 
         {/* Desktop Equipment Table - Original Design */}
         <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
+            {/* Header with export button */}
+            <div className="bg-yellow-200 dark:bg-yellow-900 px-6 py-4 flex justify-between items-center border-b-2 border-yellow-700">
+              <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-300">Equipment Inventory</h2>
+              {user?.role === 'admin' && (
+                <div className="flex items-center space-x-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleImport}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center space-x-1 px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-500 transition-colors sm:flex sm:items-center sm:space-x-2 sm:px-4 sm:py-2 sm:text-sm"
+                  >
+                    <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline sm:text-sm sm:font-medium">Import Excel</span>
+                    <span className="sm:hidden">Import</span>
+                  </button>
+                  <button
+                    onClick={() => exportToExcel(filteredProducts, 'equipment-inventory', categories)}
+                    className="flex items-center space-x-1 px-2 py-1 text-xs bg-yellow-500 text-black rounded hover:bg-yellow-400 transition-colors sm:flex sm:items-center sm:space-x-2 sm:px-4 sm:py-2 sm:text-sm"
+                  >
+                    <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline sm:text-sm sm:font-medium">Export to Excel</span>
+                    <span className="sm:hidden">Export</span>
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="p-6">
               {/* Search Field - Above */}
               <div className="mb-4">
@@ -349,6 +416,7 @@ function InventoryPage() {
                 categories={categories}
                 onEdit={handleEditClick}
                 userRole={user?.role || 'field'}
+                hideHeader
                 showCategoryHeadings={true}
                 refreshData={handleRefreshData}
                 onImportComplete={() => setSelectedCategory('all')}

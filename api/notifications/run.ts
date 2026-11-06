@@ -33,13 +33,13 @@ const EVENT_RETENTION_MS = 30 * DAY_MS;
 const DIGEST_FREQUENCIES = ['daily', 'weekly'];
 
 /**
- * Minimum gap before a rule may fire again. Comfortably under one period, so a
- * slightly early or late cron tick still fires, but a duplicate tick does not.
+ * How long after its scheduled time a notification may still be sent. GitHub
+ * Actions cron ticks are routinely delayed by tens of minutes and sometimes
+ * dropped, so requiring the tick to land inside the exact scheduled hour makes
+ * notifications silently never fire. Anything not sent within this window is
+ * skipped rather than delivered at a surprising time.
  */
-const MIN_GAP_MS: Record<string, number> = {
-  daily: 20 * 60 * 60 * 1000,
-  weekly: 6 * DAY_MS
-};
+const CATCH_UP_MS = 3 * 60 * 60 * 1000;
 
 interface RuleDoc {
   id: string;
@@ -98,36 +98,67 @@ const NON_USER_EMPLOYEE_VALUES = new Set([
 ]);
 
 /**
- * Wall-clock time at the rule's location. `utcOffsetMinutes` comes from
- * `Date.getTimezoneOffset()`, which is minutes to add to local time to reach
- * UTC, hence the subtraction. Reading the shifted instant with UTC getters then
- * yields local calendar fields.
+ * Most recent moment at or before `now` that the schedule should have fired.
+ * `utcOffsetMinutes` comes from `Date.getTimezoneOffset()`, which is minutes to
+ * add to local time to reach UTC, hence the subtraction. Working in that shifted
+ * space with UTC getters yields local calendar fields.
  */
-function localParts(now: Date, utcOffsetMinutes: number) {
-  const shifted = new Date(now.getTime() - utcOffsetMinutes * 60 * 1000);
-  return {
-    hour: shifted.getUTCHours(),
-    dayOfWeek: shifted.getUTCDay()
-  };
-}
+function lastOccurrence(
+  timeOfDay: string,
+  frequency: string,
+  dayOfWeek: number,
+  utcOffsetMinutes: number,
+  now: Date
+): Date | null {
+  const [hourText, minuteText = '0'] = (timeOfDay || '').split(':');
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
 
-/** Is this rule due in the current hour? */
-function isDue(rule: RuleDoc, now: Date): boolean {
-  const [hourText] = (rule.timeOfDay || '').split(':');
-  const dueHour = Number(hourText);
-  if (!Number.isInteger(dueHour)) return false;
+  const offsetMs = utcOffsetMinutes * 60 * 1000;
+  const shiftedNow = now.getTime() - offsetMs;
+  const d = new Date(shiftedNow);
+  let candidate = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hour, minute);
+  if (candidate > shiftedNow) candidate -= DAY_MS;
 
-  const local = localParts(now, rule.utcOffsetMinutes);
-  if (local.hour !== dueHour) return false;
-  if (rule.frequency === 'weekly' && local.dayOfWeek !== rule.dayOfWeek) return false;
-
-  // Guard against a second delivery within the same period.
-  if (rule.lastDigestAt) {
-    const elapsed = now.getTime() - new Date(rule.lastDigestAt).getTime();
-    if (elapsed < (MIN_GAP_MS[rule.frequency] ?? DAY_MS)) return false;
+  if (frequency === 'weekly') {
+    const dow = new Date(candidate).getUTCDay();
+    candidate -= ((dow - dayOfWeek + 7) % 7) * DAY_MS;
   }
 
+  return new Date(candidate + offsetMs);
+}
+
+/**
+ * Is this schedule owed a send? True when its latest occurrence is within the
+ * catch-up window and nothing has been sent since. `lastSentAt` is the
+ * double-send guard: once stamped at or after the occurrence it stays false.
+ */
+function isOccurrenceDue(
+  timeOfDay: string,
+  frequency: string,
+  dayOfWeek: number,
+  utcOffsetMinutes: number,
+  lastSentAt: string,
+  now: Date
+): boolean {
+  const occurrence = lastOccurrence(timeOfDay, frequency, dayOfWeek, utcOffsetMinutes, now);
+  if (!occurrence) return false;
+  if (now.getTime() - occurrence.getTime() > CATCH_UP_MS) return false;
+  if (lastSentAt && new Date(lastSentAt).getTime() >= occurrence.getTime()) return false;
   return true;
+}
+
+/** Is this rule due? */
+function isDue(rule: RuleDoc, now: Date): boolean {
+  return isOccurrenceDue(
+    rule.timeOfDay,
+    rule.frequency,
+    rule.dayOfWeek,
+    rule.utcOffsetMinutes,
+    rule.lastDigestAt,
+    now
+  );
 }
 
 /** Does this event fall inside the rule's scope? Mirrors the client logic. */
@@ -143,22 +174,16 @@ function ruleMatchesEvent(rule: RuleDoc, event: EventDoc): boolean {
   return true;
 }
 
-/** Is this scheduled reminder due in the current hour? Mirrors isDue. */
+/** Is this scheduled reminder due? Mirrors isDue. */
 function isScheduleDue(schedule: ScheduleDoc, now: Date): boolean {
-  const [hourText] = (schedule.timeOfDay || '').split(':');
-  const dueHour = Number(hourText);
-  if (!Number.isInteger(dueHour)) return false;
-
-  const local = localParts(now, schedule.utcOffsetMinutes);
-  if (local.hour !== dueHour) return false;
-  if (schedule.frequency === 'weekly' && local.dayOfWeek !== schedule.dayOfWeek) return false;
-
-  if (schedule.lastSentAt) {
-    const elapsed = now.getTime() - new Date(schedule.lastSentAt).getTime();
-    if (elapsed < (MIN_GAP_MS[schedule.frequency] ?? DAY_MS)) return false;
-  }
-
-  return true;
+  return isOccurrenceDue(
+    schedule.timeOfDay,
+    schedule.frequency,
+    schedule.dayOfWeek,
+    schedule.utcOffsetMinutes,
+    schedule.lastSentAt,
+    now
+  );
 }
 
 /**

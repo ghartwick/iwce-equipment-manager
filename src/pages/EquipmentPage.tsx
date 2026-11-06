@@ -12,6 +12,7 @@ import { fleetManagementService } from '../services/fleetManagementService';
 import { maintenanceHistoryFirebaseService } from '../services/maintenanceHistoryFirebaseService';
 import { shopHistoryFirebaseService } from '../services/shopHistoryFirebaseService';
 import { getCategories } from '../services/firebaseService';
+import { serviceNotificationService, ServiceNotificationItem } from '../services/serviceNotificationService';
 
 export default function EquipmentPage() {
   const { equipmentId } = useParams<{ equipmentId: string }>();
@@ -24,6 +25,7 @@ export default function EquipmentPage() {
   const [showAlerts, setShowAlerts] = useState(false);
   const [alertDaysAgo, setAlertDaysAgo] = useState(7);
   const [scheduleStates, setScheduleStates] = useState<ServiceDueState[]>([]);
+  const [serviceNotifications, setServiceNotifications] = useState<ServiceNotificationItem[]>([]);
 
   const manageRoute = useMemo(() => {
     const id = equipment?.id;
@@ -103,6 +105,7 @@ export default function EquipmentPage() {
       if (!showAlerts) {
         setAlertDaysAgo(7);
         await loadAlerts(7);
+        serviceNotificationService.getServiceStatuses().then(setServiceNotifications).catch(console.error);
       }
       setShowAlerts(!showAlerts);
     };
@@ -174,6 +177,7 @@ export default function EquipmentPage() {
               products={products}
               onLoadMore={handleLoadMoreAlerts}
               hasMore={alerts.length >= 50}
+              serviceNotifications={serviceNotifications}
             />
           </div>
         )}

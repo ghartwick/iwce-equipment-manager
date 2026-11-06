@@ -6,6 +6,7 @@ import { getCategories } from './firebaseService';
 import { computeUnitSchedule } from './serviceScheduleMigration';
 import { ServiceDueState, dateFromDayNumber } from './serviceScheduleService';
 import { Equipment, ServiceUnit } from '../types';
+import { notificationDispatchService } from './notificationDispatchService';
 
 export type ServiceStatus = 'ok' | 'schedule' | 'due';
 
@@ -25,6 +26,7 @@ export interface ServiceNotificationItem {
   remaining: number | null;
   progressPct: number;
   isCustom?: boolean;
+  siteName?: string;
   // Full engine output, so list views can render bars without recomputing.
   state?: ServiceDueState;
 }
@@ -93,7 +95,27 @@ function groupByEquipment<T extends { equipmentId: string }>(rows: T[]): Map<str
   return map;
 }
 
+// Keys already handed to the queue this session, to skip repeat Firestore reads.
+const queuedThisSession = new Set<string>();
+
 class ServiceNotificationService {
+  // The digest job can only report service_due events that exist, so surface
+  // each due/overdue interval once per due cycle (keyed on the due point).
+  private queueDueEvents(items: ServiceNotificationItem[]): void {
+    for (const item of actionableNotifications(items)) {
+      const key = `service_due_${item.equipmentId}_${item.intervalId}_${item.status}_${item.dueAt ?? 'x'}`;
+      if (queuedThisSession.has(key)) continue;
+      queuedThisSession.add(key);
+      void notificationDispatchService.queueOnce(key, {
+        eventType: 'service_due',
+        title: `${item.equipmentName}: ${item.message}`,
+        body: item.status === 'due' ? 'Service is overdue.' : 'Service is coming due.',
+        url: `/inventory/equipment/${item.equipmentId}`,
+        siteName: item.siteName
+      });
+    }
+  }
+
   async getServiceStatuses(): Promise<ServiceNotificationItem[]> {
     try {
       const [heavyEquipment, fleetEquipment, categories] = await Promise.all([
@@ -133,6 +155,7 @@ class ServiceNotificationService {
       for (const equipment of heavyEquipment) addFor(equipment, false);
       for (const equipment of fleetEquipment) addFor(equipment, true);
 
+      this.queueDueEvents(notifications);
       return notifications;
     } catch (error) {
       console.error('Error calculating service notifications:', error);
@@ -167,6 +190,7 @@ class ServiceNotificationService {
       dueAt: state.dueAt,
       remaining: state.remaining,
       progressPct: state.progressPct,
+      siteName: equipment.site,
       state,
     };
   }
@@ -209,6 +233,7 @@ class ServiceNotificationService {
         remaining: cn.threshold - currentHours,
         progressPct: 100,
         isCustom: true,
+        siteName: equipment.site,
       }));
   }
 }

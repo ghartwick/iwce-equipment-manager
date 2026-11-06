@@ -1,4 +1,4 @@
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { inAppNotificationService } from './inAppNotificationService';
 import {
@@ -140,6 +140,31 @@ class NotificationDispatchService {
       actorUserId: event.actorUserId ?? '',
       createdAt: new Date().toISOString()
     });
+  }
+
+  /**
+   * Queues an event for the digest job at most once per `key`. For conditions
+   * that are re-detected on every page load (e.g. a unit being overdue), where
+   * a plain emit would enqueue a duplicate each time. Queue only: it is not
+   * delivered immediately, so it suits daily/weekly rules.
+   */
+  async queueOnce(key: string, event: NotificationEvent): Promise<void> {
+    try {
+      const ref = doc(db, EVENTS_COLLECTION, key.replace(/[\/\s]+/g, '_'));
+      if ((await getDoc(ref)).exists()) return;
+      await setDoc(ref, {
+        eventType: event.eventType,
+        title: event.title,
+        body: event.body,
+        url: event.url ?? '',
+        siteName: event.siteName ?? '',
+        subjectUserId: event.subjectUserId ?? '',
+        actorUserId: event.actorUserId ?? '',
+        createdAt: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('Failed to queue notification event:', err);
+    }
   }
 
   private async deliver(rule: NotificationRule, event: NotificationEvent): Promise<void> {

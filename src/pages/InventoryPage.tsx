@@ -9,6 +9,7 @@ import { ProductForm } from '../components/ProductForm';
 import { AlertPanel } from '../components/AlertPanel';
 import { SearchBar } from '../components/SearchBar';
 import { FilterPanel } from '../components/FilterPanel';
+import { CategoryEditModal } from '../components/CategoryEditModal';
 import { Equipment } from '../types';
 import { equipmentHistoryFirebaseService } from '../services/equipmentHistoryFirebaseService';
 import { siteManagementService, Site } from '../services/siteManagementService';
@@ -36,6 +37,8 @@ function InventoryPage() {
   const { user } = useAuth();
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const editingCategory = categories.find(c => c.id === editingCategoryId) ?? null;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAlerts, setShowAlerts] = useState(false);
@@ -45,6 +48,15 @@ function InventoryPage() {
   const [appUsers, setAppUsers] = useState<AppUser[]>([]);
   const [fleetProducts, setFleetProducts] = useState<Equipment[]>([]);
   const [serviceNotifications, setServiceNotifications] = useState<ServiceNotificationItem[]>([]);
+
+  // Categories with no units have no heading in the list, so surface them for
+  // admins or they could not be edited at all.
+  const usedCategoryKeys = new Set([...products, ...fleetProducts].map(p => p.category));
+  const emptyCategories = user?.role === 'admin' && !searchTerm
+    ? categories.filter(c =>
+        !usedCategoryKeys.has(c.id) && !usedCategoryKeys.has(c.name) &&
+        (selectedCategory === 'all' || selectedCategory === c.id))
+    : [];
 
   const loadFleetData = async () => {
     try {
@@ -402,8 +414,6 @@ function InventoryPage() {
                   onCategoryChange={setSelectedCategory}
                   fleetProducts={fleetProducts}
                   onAddCategory={addCategory}
-                  onDeleteCategory={deleteCategory}
-                  onEditCategory={editCategory}
                   userRole={user?.role}
                   products={products}
                 />
@@ -425,10 +435,22 @@ function InventoryPage() {
                 onInlineUpdate={handleInlineUpdate}
                 fleetProducts={fleetProducts}
                 serviceNotifications={serviceNotifications}
+                onEditCategory={setEditingCategoryId}
+                emptyCategories={emptyCategories}
               />
             </div>
           </div>
       </div>
+
+      {editingCategory && user?.role === 'admin' && (
+        <CategoryEditModal
+          key={editingCategory.id}
+          category={editingCategory}
+          onSave={editCategory}
+          onDelete={deleteCategory}
+          onClose={() => setEditingCategoryId(null)}
+        />
+      )}
 
       {/* Mobile Layout */}
       <div className="lg:hidden max-w-5xl mx-auto py-4">
@@ -478,8 +500,6 @@ function InventoryPage() {
                     onCategoryChange={setSelectedCategory}
                     fleetProducts={fleetProducts}
                     onAddCategory={addCategory}
-                    onDeleteCategory={deleteCategory}
-                    onEditCategory={editCategory}
                     userRole={user?.role}
                     products={products}
                   />

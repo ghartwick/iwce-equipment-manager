@@ -114,7 +114,7 @@ export function useInventory(refreshKey?: number) {
         year: (equipment as any).year || '',
         make: (equipment as any).make || '',
         model: (equipment as any).model || '',
-        category: equipment.category || 'Heavy Equipment',
+        category: equipment.category || '',
         employee: equipment.employee || '',
         site: equipment.site || '',
         repair: equipment.repair || false,

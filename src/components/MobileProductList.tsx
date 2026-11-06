@@ -38,10 +38,21 @@ export function MobileProductList({
     );
   }
 
-  // Sort categories numerically first, then alphabetically
+  // Same grouping as the category selector: Heavy, Field, Fleet, then anything
+  // else. Legacy categories without a managementGroup fall back to unit type.
+  const groupRank = (category: Category) => {
+    const items = products.filter(p => p.category === category.id || p.category === category.name);
+    const group = category.managementGroup
+      ?? (items.some(p => p.equipmentType === 'heavy') ? 'heavy' : items.length > 0 ? 'field' : null);
+    return group === 'heavy' ? 0 : group === 'field' ? 1 : group === 'fleet' ? 2 : 3;
+  };
+
+  // Group first, then numerically, then alphabetically
   const sortedCategories = [...(categories.length > 0 ? categories : [
     { id: 'uncategorized', name: 'Uncategorized', description: 'Items without category', color: '#6B7280' }
   ])].sort((a, b) => {
+    const rankDiff = groupRank(a) - groupRank(b);
+    if (rankDiff !== 0) return rankDiff;
     const numA = parseFloat(a.name);
     const numB = parseFloat(b.name);
     if (!isNaN(numA) && !isNaN(numB)) return numA - numB;

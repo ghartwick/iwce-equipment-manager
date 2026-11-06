@@ -1,34 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { Filter, Plus, Trash2, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Filter, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { Category, Equipment } from '../types';
-
-const ALL_MAINTENANCE_ITEMS = [
-  { key: 'greased', label: 'Greased' },
-  { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
-  { key: 'tiresTracks', label: 'Tires/Tracks' },
-  { key: 'bucket', label: 'Bucket' },
-  { key: 'cuttingEdgeTeeth', label: 'Cutting Edge/Teeth' },
-  { key: 'hoses', label: 'Hoses' },
-  { key: 'batteryCableBeltHosesFilterGuards', label: 'Battery Cable, Belt, Hoses, Filter, Guards' },
-  { key: 'backupAlarm', label: 'Backup Alarm' },
-  { key: 'fireExtinguisher', label: 'Fire Extinguisher' },
-  { key: 'gauges', label: 'Gauges' },
-  { key: 'horn', label: 'Horn' },
-  { key: 'spillKit', label: 'Spill Kit' },
-  { key: 'glass', label: 'Glass (all sides)' },
-  { key: 'mirror', label: 'Mirror' },
-  { key: 'rollOverProtection', label: 'Roll Over Protection' },
-  { key: 'seatBeltSeat', label: 'Seat Belt/Seat' },
-  { key: 'allFluidsLevel', label: 'All Fluids Level' },
-];
+import { ALL_MAINTENANCE_ITEMS } from './CategoryEditModal';
 
 interface FilterPanelProps {
   categories: Category[];
   selectedCategory: string;
   onCategoryChange: (categoryId: string) => void;
   onAddCategory: (category: Omit<Category, 'id'>) => void;
-  onDeleteCategory: (categoryId: string) => void;
-  onEditCategory: (categoryId: string, category: Omit<Category, 'id'>) => void;
   userRole?: 'admin' | 'supervisor' | 'field';
   products?: Equipment[];
   fleetProducts?: Equipment[];
@@ -39,8 +18,6 @@ export function FilterPanel({
   selectedCategory, 
   onCategoryChange, 
   onAddCategory,
-  onDeleteCategory,
-  onEditCategory,
   userRole,
   products = [],
   fleetProducts = []
@@ -81,7 +58,6 @@ export function FilterPanel({
     }, 100);
   };
   const [showAddCategory, setShowAddCategory] = useState(false);
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryGroup, setNewCategoryGroup] = useState<'heavy' | 'field' | 'fleet' | ''>('');
   const [newNotificationType, setNewNotificationType] = useState<'fleet' | 'heavy' | 'none'>('none');
@@ -178,59 +154,6 @@ export function FilterPanel({
       setCustomItemInput('');
       setAddStep(1);
       setShowAddCategory(false);
-    }
-  };
-
-  const handleEditCategory = (categoryId: string) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (category) {
-      setNewCategoryName(category.name);
-      setNewCategoryGroup(category.managementGroup || '');
-      setNewNotificationType(category.notificationType || 'none');
-      setNewAllocationDefault(category.allocationDefault || '');
-      setSelectedMaintenanceItems(category.maintenanceItems || []);
-      setEditingCategoryId(categoryId);
-      setShowAddCategory(false);
-    }
-  };
-
-  const handleUpdateCategory = () => {
-    if (newCategoryName.trim() && editingCategoryId) {
-      onEditCategory(editingCategoryId, {
-        name: newCategoryName.trim(),
-        description: '',
-        color: '#FFB700',
-        ...(newCategoryGroup ? { managementGroup: newCategoryGroup } : {}),
-        notificationType: newNotificationType,
-        maintenanceItems: selectedMaintenanceItems,
-        ...(newAllocationDefault ? { allocationDefault: newAllocationDefault } : {}),
-      });
-      setNewCategoryName('');
-      setNewCategoryGroup('');
-      setNewNotificationType('none');
-      setNewAllocationDefault('');
-      setSelectedMaintenanceItems([]);
-      setCustomItemInput('');
-      setEditingCategoryId(null);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingCategoryId(null);
-    setNewCategoryName('');
-    setNewCategoryGroup('');
-    setNewNotificationType('none');
-    setNewAllocationDefault('');
-    setSelectedMaintenanceItems([]);
-    setCustomItemInput('');
-  };
-
-  const handleDeleteCategory = () => {
-    if (!editingCategoryId) return;
-    const category = categories.find(cat => cat.id === editingCategoryId);
-    if (window.confirm(`Are you sure you want to delete the category "${category?.name ?? newCategoryName}"?`)) {
-      onDeleteCategory(editingCategoryId);
-      handleCancelEdit();
     }
   };
 
@@ -401,157 +324,6 @@ export function FilterPanel({
       </div>
     )}
 
-    {/* Edit Category Modal */}
-    {editingCategoryId && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="bg-yellow-100 dark:bg-gray-900 border border-yellow-500 dark:border-yellow-700 rounded-lg shadow-2xl p-6 w-[32rem] space-y-4 max-h-[90vh] overflow-y-auto">
-          <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">Edit Category</h3>
-          <input
-            type="text"
-            placeholder="Category name"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleUpdateCategory(); if (e.key === 'Escape') handleCancelEdit(); }}
-            autoFocus
-            className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
-          />
-          <select
-            value={newCategoryGroup}
-            onChange={(e) => setNewCategoryGroup(e.target.value as 'heavy' | 'field' | 'fleet' | '')}
-            className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
-          >
-            <option value="">— No Management Group —</option>
-            <option value="heavy">Heavy Equipment</option>
-            <option value="field">Field Tools</option>
-            <option value="fleet">Fleet</option>
-          </select>
-          <div>
-            <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1.5">Maintenance Notification Type</p>
-            <div className="flex flex-col space-y-1 mb-3">
-              {(['none', 'fleet', 'heavy'] as const).map((type) => (
-                <label key={type} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="edit-notif-type"
-                    value={type}
-                    checked={newNotificationType === type}
-                    onChange={() => setNewNotificationType(type)}
-                    className="text-yellow-600 focus:ring-yellow-500"
-                  />
-                  <span className="text-xs text-gray-900 dark:text-yellow-100">
-                    {type === 'none' ? 'None' : type === 'fleet' ? 'Fleet Maintenance' : 'Heavy Equipment'}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1.5">Allocation</p>
-            <select
-              value={newAllocationDefault}
-              onChange={(e) => setNewAllocationDefault(e.target.value as 'site' | 'employee' | '')}
-              className="w-full px-3 py-2 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none text-sm"
-            >
-              <option value="">— No Default —</option>
-              <option value="site">Allocated to Site</option>
-              <option value="employee">Allocated to Employee</option>
-            </select>
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300">Maintenance Items</p>
-              <button
-                type="button"
-                onClick={() => {
-                  const allKeys = ALL_MAINTENANCE_ITEMS.map(i => i.key);
-                  const allSelected = allKeys.every(k => selectedMaintenanceItems.includes(k));
-                  if (allSelected) {
-                    setSelectedMaintenanceItems(prev => prev.filter(k => k.startsWith('custom:')));
-                  } else {
-                    setSelectedMaintenanceItems(prev => [...new Set([...prev, ...allKeys])]);
-                  }
-                }}
-                className="px-2 py-1 text-xs bg-yellow-200 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 border border-yellow-500 rounded hover:bg-yellow-300 dark:hover:bg-yellow-800 font-medium"
-              >
-                {ALL_MAINTENANCE_ITEMS.every(i => selectedMaintenanceItems.includes(i.key)) ? 'Deselect All' : 'Select All'}
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pr-1 pb-3">
-              {ALL_MAINTENANCE_ITEMS.map(({ key, label }) => (
-                <label key={key} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedMaintenanceItems.includes(key)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedMaintenanceItems(prev => [...prev, key]);
-                      } else {
-                        setSelectedMaintenanceItems(prev => prev.filter(k => k !== key));
-                      }
-                    }}
-                    className="rounded border-yellow-600 text-yellow-600 focus:ring-yellow-500"
-                  />
-                  <span className="text-xs text-gray-900 dark:text-yellow-100">{label}</span>
-                </label>
-              ))}
-              {selectedMaintenanceItems.filter(k => k.startsWith('custom:')).map(k => (
-                <label key={k} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked
-                    onChange={() => setSelectedMaintenanceItems(prev => prev.filter(i => i !== k))}
-                    className="rounded border-yellow-600 text-yellow-600 focus:ring-yellow-500"
-                  />
-                  <span className="text-xs text-gray-900 dark:text-yellow-100">{k.slice(7)}</span>
-                </label>
-              ))}
-            </div>
-            <div className="flex space-x-2 pt-1">
-              <input
-                type="text"
-                value={customItemInput}
-                onChange={(e) => setCustomItemInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomItem(); }}
-                placeholder="New item name..."
-                className="flex-1 px-2 py-1 border border-yellow-600 rounded text-xs bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 placeholder-yellow-500 dark:placeholder-yellow-600 focus:outline-none focus:ring-1 focus:ring-yellow-500"
-              />
-              <button
-                type="button"
-                onClick={handleAddCustomItem}
-                disabled={!customItemInput.trim()}
-                className="px-2 py-1 bg-yellow-500 text-black text-xs rounded hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                Add Item
-              </button>
-            </div>
-          </div>
-          <div className="flex justify-between space-x-2">
-            <button
-              onClick={handleDeleteCategory}
-              className="flex items-center space-x-1 px-3 py-1.5 btn-delete text-sm rounded font-medium"
-            >
-              <Trash2 className="h-3 w-3" />
-              <span>Delete</span>
-            </button>
-            <div className="flex space-x-2">
-              <button
-                onClick={handleCancelEdit}
-                className="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateCategory}
-                className="px-3 py-1.5 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600 font-medium"
-              >
-                Update
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
-
     <div ref={panelRef} className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow p-2 sm:p-4">
       <div 
         className="flex items-center justify-between mb-2 sm:mb-3 cursor-pointer"
@@ -622,17 +394,6 @@ export function FilterPanel({
                   <div className="flex items-center space-x-2 flex-1">
                     <span>{category.name}</span>
                   </div>
-                  {userRole === 'admin' && (
-                    <div className="hidden sm:flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleEditCategory(category.id); }}
-                        className="p-1 text-yellow-500 hover:text-yellow-300"
-                        title="Edit category"
-                      >
-                        <Edit2 className="h-2 w-2 sm:h-3 sm:w-3" />
-                      </button>
-                    </div>
-                  )}
                 </div>
               );
 

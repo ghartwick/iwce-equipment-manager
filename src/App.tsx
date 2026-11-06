@@ -70,8 +70,6 @@ function App() {
     loading: inventoryLoading,
     addProduct,
     addCategory,
-    editCategory,
-    deleteCategory,
     loadAlerts,
   } = useInventory(refreshKey);
 
@@ -229,8 +227,6 @@ function App() {
                     selectedCategory={selectedCategory}
                     onCategoryChange={setSelectedCategory}
                     onAddCategory={addCategory}
-                    onDeleteCategory={deleteCategory}
-                    onEditCategory={editCategory}
                     userRole={user?.role}
                   />
                 </div>
@@ -301,8 +297,6 @@ function App() {
                       selectedCategory={selectedCategory}
                       onCategoryChange={setSelectedCategory}
                       onAddCategory={addCategory}
-                      onDeleteCategory={deleteCategory}
-                      onEditCategory={editCategory}
                       userRole={user?.role}
                     />
                   </div>

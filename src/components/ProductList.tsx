@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Package, Download, Upload } from 'lucide-react';
+import { Package, Download, Upload, Pencil } from 'lucide-react';
 import { Equipment, Category } from '../types';
 import { exportToExcel, importFromExcel } from '../utils/exportToExcel';
 import { Site } from '../services/siteManagementService';
@@ -24,6 +24,8 @@ interface ProductListProps {
   fleetProducts?: Equipment[];
   serviceNotifications?: ServiceNotificationItem[];
   hideHeader?: boolean;
+  onEditCategory?: (categoryId: string) => void;
+  emptyCategories?: Category[];
 }
 
 export function ProductList({
@@ -42,6 +44,8 @@ export function ProductList({
   fleetProducts = [],
   serviceNotifications = [],
   hideHeader = false,
+  onEditCategory,
+  emptyCategories = [],
 }: ProductListProps) {
   // A unit now has one notification per interval, so rows summarise with the worst one.
   const urgentByEquipment = React.useMemo(
@@ -128,7 +132,7 @@ export function ProductList({
     }
   };
 
-  if (products.length === 0) {
+  if (products.length === 0 && !(showCategoryHeadings && emptyCategories.length > 0)) {
     return (
       <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow p-8 text-center">
         <Package className="h-12 w-12 text-yellow-600 dark:text-yellow-400 mx-auto mb-4" />
@@ -189,24 +193,62 @@ export function ProductList({
                   groups[category].push(product);
                   return groups;
                 }, {} as Record<string, Equipment[]>);
+                emptyCategories.forEach(cat => {
+                  if (!groupedProducts[cat.name]) groupedProducts[cat.name] = [];
+                });
 
-                const sortedGroups = Object.entries(groupedProducts).sort(([a], [b]) => {
+                // Same grouping as the category selector: Heavy, Field, Fleet, then
+                // anything else. Legacy categories without a managementGroup fall
+                // back to the type of the units in them.
+                const groupRank = (name: string, items: Equipment[]) => {
+                  const group = categories.find(cat => cat.name === name)?.managementGroup
+                    ?? (items.some(p => isFleet(p.id)) ? 'fleet'
+                      : items.some(p => p.equipmentType === 'heavy') ? 'heavy'
+                      : items.length > 0 && categories.some(cat => cat.name === name) ? 'field'
+                      : null);
+                  return group === 'heavy' ? 0 : group === 'field' ? 1 : group === 'fleet' ? 2 : 3;
+                };
+
+                const sortedGroups = Object.entries(groupedProducts).sort(([a, itemsA], [b, itemsB]) => {
+                  const rankDiff = groupRank(a, itemsA) - groupRank(b, itemsB);
+                  if (rankDiff !== 0) return rankDiff;
                   const numA = parseFloat(a);
                   const numB = parseFloat(b);
                   if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
                   return a.localeCompare(b);
                 });
 
-                return sortedGroups.map(([categoryName, categoryProducts]) => (
+                return sortedGroups.map(([categoryName, categoryProducts]) => {
+                  const headingCategory = categories.find(cat => cat.name === categoryName);
+                  return (
                   <React.Fragment key={categoryName}>
                     {/* Category Heading */}
                     <tr>
                       <td colSpan={2} className="px-4 py-2 bg-yellow-600 dark:bg-yellow-900 dark:bg-opacity-30 border-b border-yellow-700">
-                        <h3 className="text-sm font-semibold text-yellow-100 dark:text-yellow-300 uppercase tracking-wide">
-                          {categoryName}
-                        </h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-semibold text-yellow-100 dark:text-yellow-300 uppercase tracking-wide">
+                            {categoryName}
+                          </h3>
+                          {userRole === 'admin' && onEditCategory && headingCategory && (
+                            <button
+                              type="button"
+                              onClick={() => onEditCategory(headingCategory.id)}
+                              className="p-1 text-yellow-100 dark:text-yellow-300 hover:text-white dark:hover:text-yellow-100"
+                              title="Edit category"
+                            >
+                              <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
+                    {categoryProducts.length === 0 && (
+                      <tr>
+                        <td colSpan={2} className="px-4 py-2 text-xs text-yellow-700 dark:text-yellow-400">
+                          No units in this category.
+                        </td>
+                      </tr>
+                    )}
                     
                     {/* Products in this category */}
                     {categoryProducts.map((product) => {
@@ -363,7 +405,8 @@ export function ProductList({
                     );
                     })}
                   </React.Fragment>
-                ));
+                  );
+                });
               })()
             ) : (
               // Single category with heading

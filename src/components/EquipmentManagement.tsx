@@ -522,7 +522,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                     className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                   <select
-                    value={formData.category} title="Select Category"
+                    required value={formData.category} title="Select Category"
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   >
@@ -856,7 +856,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                           className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                         />
                                         <select
-                                          value={formData.category} title="Select Category"
+                                          required value={formData.category} title="Select Category"
                                           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                           className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                         >
@@ -1061,7 +1061,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                               className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                             />
                                             <select
-                                              value={formData.category} title="Select Category"
+                                              required value={formData.category} title="Select Category"
                                               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                               className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                                             >
@@ -1223,7 +1223,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
                                       <input type="text" placeholder="Year" title="Year" value={formData.year} onChange={(e) => setFormData({ ...formData, year: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
                                       <input type="text" placeholder="Make" title="Make" value={formData.make} onChange={(e) => setFormData({ ...formData, make: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
                                       <input type="text" placeholder="Model" title="Model" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
-                                      <select value={formData.category} title="Select Category" onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                                      <select required value={formData.category} title="Select Category" onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full px-3 py-2 bg-white dark:bg-black rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500">
                                         <option value="">Select Category</option>
                                         {categories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
                                       </select>

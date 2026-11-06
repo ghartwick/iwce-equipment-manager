@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Plus, Check, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, MoreVertical, FileText, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSurveyTimecard } from '../hooks/useSurveyTimecard';
 import { UserManagementService, AppUser } from '../services/userManagementService';
 import { TimecardModeToggle } from '../components/TimecardModeToggle';
 import { SurveyInvoiceModal } from '../components/SurveyInvoiceModal';
 import { InlineSurveyTimecardEdit } from '../components/InlineSurveyTimecardEdit';
+import { PurchaseOrderPanel } from '../components/PurchaseOrderPanel';
+import { purchaseOrderService, PurchaseOrder } from '../services/purchaseOrderService';
 import {
   format,
   startOfMonth,
@@ -45,6 +47,9 @@ export default function SurveyTimecardPage() {
   const [clientFilter, setClientFilter] = useState('');
   const [siteFilter, setSiteFilter] = useState('');
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showPOForm, setShowPOForm] = useState(false);
+  const [posForDate, setPosForDate] = useState<PurchaseOrder[]>([]);
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
 
   const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'supervisor';
@@ -166,6 +171,15 @@ export default function SurveyTimecardPage() {
     navigate(`/survey-timecard/edit/new?date=${selectedDateParam}`);
   };
 
+  const openPOForm = async () => {
+    setShowActionsMenu(false);
+    if (!selectedDateParam) return;
+    const date = selectedDates[0];
+    const pos = await purchaseOrderService.getPOsForDate(date);
+    setPosForDate(pos);
+    setShowPOForm(true);
+  };
+
   const handleEdit = (id?: string) => {
     if (id) navigate(`/survey-timecard/edit/${id}`);
   };
@@ -222,8 +236,8 @@ export default function SurveyTimecardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-4">
-      <div className="max-w-5xl mx-auto space-y-4">
+    <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
+      <div className="max-w-5xl mx-auto space-y-2">
         {/* Calendar card */}
         <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
           {/* Calendar Header */}
@@ -272,10 +286,8 @@ export default function SurveyTimecardPage() {
                   className={`relative p-2 text-sm rounded-lg border transition-all ${
                     isSelected
                       ? 'bg-green-200 dark:bg-green-900 dark:bg-opacity-50 border-green-500'
-                      : isTodayDate
-                        ? 'border-yellow-500 dark:border-yellow-400'
-                        : 'border-yellow-600 dark:border-yellow-800'
-                  } ${isCurrentMonth ? 'text-gray-800 dark:text-yellow-100' : 'text-yellow-600 dark:text-yellow-700'} ${!isCurrentMonth ? 'opacity-50' : ''} hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30`}
+                      : `${isTodayDate ? 'border-yellow-500 dark:border-yellow-400' : 'border-yellow-600 dark:border-yellow-800'} hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30`
+                  } ${isCurrentMonth ? 'text-gray-800 dark:text-yellow-100' : 'text-yellow-600 dark:text-yellow-700'} ${!isCurrentMonth ? 'opacity-50' : ''}`}
                 >
                   <div className="text-center relative">
                     {format(day, 'd')}
@@ -297,8 +309,8 @@ export default function SurveyTimecardPage() {
         </div>
 
         {/* Selected date panel */}
-        <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl overflow-hidden">
-          <div className="px-4 sm:px-6 py-4 border-b border-yellow-300 dark:border-yellow-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
             <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
               {selectedDateLabel}
             </h3>
@@ -308,36 +320,68 @@ export default function SurveyTimecardPage() {
                 <TimecardModeToggle mode="survey" />
               </div>
             )}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 justify-end w-full sm:w-auto">
               {selectedDates.length > 0 && (
                 <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 whitespace-nowrap">
                   {selectedEntries.reduce((sum, entry) => sum + getEntryTotalHours(entry), 0).toFixed(2)} hrs
                 </span>
               )}
-              {isAdminOrSupervisor && (
-                <button
-                  onClick={() => setShowInvoiceModal(true)}
-                  className="px-3 py-1.5 text-sm bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 font-medium transition-colors whitespace-nowrap flex items-center gap-1"
-                  title="Create or view invoices"
-                >
-                  <FileText className="h-4 w-4" /> Invoice
-                </button>
-              )}
               <button
                 onClick={handleAdd}
                 disabled={!selectedDateParam}
-                className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap disabled:opacity-50 flex items-center gap-1"
-                title={selectedDateParam ? 'Add Survey Time Card' : 'Select a date to add a survey time card'}
+                className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap disabled:opacity-50"
+                title={selectedDateParam ? 'Add Time Card' : 'Select a date to add a time card'}
               >
-                <Plus className="h-4 w-4" /> Add Survey Time Card
+                Add Time Card
               </button>
+              {/* Clear Selection */}
+              <button
+                onClick={() => { setSelectedDates([]); setLastSelectedDate(null); setClientFilter(''); setSiteFilter(''); }}
+                disabled={selectedDates.length === 0}
+                className="px-3 py-1.5 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 font-medium transition-colors whitespace-nowrap disabled:opacity-50"
+                title="Clear date selection"
+              >
+                Clear
+              </button>
+              {/* Actions overflow menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowActionsMenu(prev => !prev)}
+                  className="p-1.5 rounded-lg bg-yellow-300 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 hover:bg-yellow-400 dark:hover:bg-yellow-700 transition-colors"
+                  title="More actions"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+                {showActionsMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowActionsMenu(false)} />
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-900 border border-yellow-300 dark:border-yellow-700 rounded-lg shadow-lg z-50 py-1">
+                      <button
+                        onClick={openPOForm}
+                        disabled={!selectedDateParam}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40 disabled:opacity-50"
+                      >
+                        PO
+                      </button>
+                      {isAdminOrSupervisor && (
+                        <button
+                          onClick={() => { setShowInvoiceModal(true); setShowActionsMenu(false); }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-800 dark:text-yellow-100 hover:bg-yellow-50 dark:hover:bg-yellow-900/40 flex items-center gap-2"
+                        >
+                          <FileText className="h-4 w-4" /> Invoice
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="p-4 sm:p-6">
+          <>
             {/* Filters */}
             {isAdminOrSupervisor && selectedDates.length > 0 && (clientOptions.length > 0 || siteOptions.length > 0) && (
-              <div className="flex flex-col sm:flex-row gap-2 mb-4">
+              <div className="flex flex-col sm:flex-row gap-2 mb-6">
                 <select
                   value={clientFilter}
                   onChange={(e) => setClientFilter(e.target.value)}
@@ -364,7 +408,7 @@ export default function SurveyTimecardPage() {
             {loading ? (
               <div className="text-yellow-600 dark:text-yellow-400">Loading...</div>
             ) : selectedDates.length === 0 ? (
-              <div className="text-center py-8 text-yellow-600 dark:text-yellow-500">Select a date on the calendar to view survey time cards.</div>
+              <p className="text-yellow-700 dark:text-yellow-600">Select a date on the calendar to view survey time cards.</p>
             ) : selectedEntries.length === 0 ? (
               <div className="text-center py-8 text-yellow-600 dark:text-yellow-500">No survey time cards for this date.</div>
             ) : (
@@ -495,9 +539,41 @@ export default function SurveyTimecardPage() {
                 })()}
               </div>
             )}
-          </div>
+          </>
         </div>
       </div>
+
+      {showPOForm && selectedDates.length === 1 && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          onClick={() => setShowPOForm(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto border border-yellow-600"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-yellow-600 bg-yellow-600 rounded-t-xl">
+              <h2 className="text-lg font-bold text-black">Purchase Orders</h2>
+              <button onClick={() => setShowPOForm(false)} className="p-1.5 rounded-lg hover:bg-yellow-700 text-black transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-5">
+              <PurchaseOrderPanel
+                date={selectedDates[0]}
+                submittedBy={user?.name ?? user?.username ?? 'Unknown'}
+                submittedById={user?.id}
+                posForDate={posForDate}
+                onClose={() => setShowPOForm(false)}
+                onPOCreated={async () => {
+                  const pos = await purchaseOrderService.getPOsForDate(selectedDates[0]);
+                  setPosForDate(pos);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {user && (
         <SurveyInvoiceModal

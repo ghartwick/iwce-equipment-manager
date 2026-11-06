@@ -304,9 +304,6 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
             </div>
 
             <div className="flex space-x-2">
-              <button type="submit" className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors">
-                {editingClient ? 'Update Client' : 'Add Client'}
-              </button>
               {editingClient && (
                 <button
                   type="button"
@@ -322,6 +319,9 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                 </button>
               )}
               <button type="button" onClick={cancelClientForm} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors">
+                {editingClient ? 'Update Client' : 'Add Client'}
+              </button>
             </div>
           </form>
         </div>
@@ -340,30 +340,17 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
               return (
                 <div key={client.id} className="border border-yellow-300 dark:border-yellow-800 rounded-lg overflow-hidden">
                   {/* Client header */}
-                  <div className="flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10">
-                    <button onClick={() => toggleExpand(client.id)} className="flex items-center gap-2 text-left flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-10">
+                    <button onClick={() => toggleExpand(client.id)} className="flex items-center gap-2 text-left flex-1 min-w-0">
                       {isOpen ? <ChevronDown className="h-4 w-4 text-yellow-600" /> : <ChevronRight className="h-4 w-4 text-yellow-600" />}
                       <Building2 className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-yellow-100">{client.name}</div>
-                        {client.description && <div className="text-xs text-yellow-700 dark:text-yellow-600">{client.description}</div>}
+                      <div className="min-w-0">
+                        <div className="font-medium text-gray-900 dark:text-yellow-100 truncate">{client.name}</div>
+                        {client.description && <div className="text-xs text-yellow-700 dark:text-yellow-600 truncate">{client.description}</div>}
                       </div>
                     </button>
-                    <div className="flex items-center gap-3">
-                      {client.allowFieldUsers && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 text-blue-700 dark:text-blue-400 font-medium">
-                          Field
-                        </span>
-                      )}
-                      {client.allowSupervisorUsers && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs rounded-full bg-purple-100 dark:bg-purple-900 dark:bg-opacity-30 text-purple-700 dark:text-purple-400 font-medium">
-                          Supervisor
-                        </span>
-                      )}
+                    <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
                       <span className="text-xs text-yellow-700 dark:text-yellow-400">{clientSites.length} site(s)</span>
-                      <span className={`px-2 py-1 text-xs rounded-full ${client.isActive ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-400' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
-                        {client.isActive ? 'Active' : 'Inactive'}
-                      </span>
                       {isAdmin && (
                         <>
                           <button onClick={() => openEditClient(client)} className="p-1 text-yellow-600 hover:text-yellow-500" title="Edit client"><Edit2 className="h-4 w-4" /></button>

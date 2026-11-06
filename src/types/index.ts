@@ -41,6 +41,7 @@ export interface Equipment {
   serviceNotification?: number;
   locationNotes?: string;
   notes?: EquipmentNote[];
+  serviceNotes?: EquipmentNote[];
   isActive: boolean;
   showInInventory: boolean;
   showInTimecard: boolean;

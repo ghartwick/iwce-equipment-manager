@@ -1128,10 +1128,10 @@ export function ProductForm({ product, onSubmit, onCancel, onDelete, onManage, u
                   <button
                     type="button"
                     onClick={() => setShowMaintenanceForm(true)}
-                    className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
+                    className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap"
                     title="Add Inspection Report"
                   >
-                    <Plus className="h-5 w-5" />
+                    + Inspection
                   </button>
                 </div>
               </div>

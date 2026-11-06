@@ -31,7 +31,7 @@ export class CodeManagementService {
           updatedAt: data.updatedAt?.toDate() || new Date(),
           createdBy: data.createdBy
         };
-      }).sort((a, b) => a.name.localeCompare(b.name));
+      }).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     } catch (error) {
       console.error('Error getting codes:', error);
       throw new Error('Failed to load codes');

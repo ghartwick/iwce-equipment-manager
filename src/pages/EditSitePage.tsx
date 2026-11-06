@@ -7,7 +7,7 @@ import { surveyTimecardService } from '../services/surveyTimecardService';
 import { useAuth } from '../hooks/useAuth';
 import { SiteSelectDropdown } from '../components/SiteSelectDropdown';
 import { parseExcelFile } from '../utils/excelImport';
-import { ArrowLeft, Plus, Trash2, Upload, Save, ChevronDown, X, FileText, Download, Pencil, Check } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, ChevronDown, X, FileText, Download, Pencil, Check } from 'lucide-react';
 
 const compareCodes = (a: SiteCode, b: SiteCode) =>
   a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
@@ -411,22 +411,6 @@ export function EditSitePage() {
               <div className="flex items-center space-x-2">
                 <h2 className="text-xl font-semibold text-yellow-100 dark:text-yellow-300">Edit Site</h2>
               </div>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={handleDeleteSite}
-                className="flex items-center space-x-2 px-4 py-2 btn-delete rounded-lg"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Delete Site</span>
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
-              >
-                <Save className="h-4 w-4" />
-                <span>Save Changes</span>
-              </button>
             </div>
           </div>
 
@@ -866,7 +850,8 @@ export function EditSitePage() {
                   {[...codes].sort(compareCodes).map((code) => (
                     <div
                       key={code.name}
-                      className="flex items-center justify-between gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20"
+                      onClick={editingCode === code.name ? undefined : () => startEditCode(code)}
+                      className={`flex items-center justify-between gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 ${editingCode === code.name ? '' : 'cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition-colors'}`}
                     >
                       {editingCode === code.name ? (
                         <>
@@ -890,11 +875,14 @@ export function EditSitePage() {
                             />
                           </div>
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            <button onClick={handleSaveCode} className="p-1 btn-approve rounded" title="Save code">
-                              <Check className="h-4 w-4" />
-                            </button>
                             <button onClick={cancelEditCode} className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300" title="Cancel">
                               <X className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => editingCode && handleRemoveCode(editingCode)} className="p-1 btn-delete rounded" title="Delete code">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                            <button onClick={handleSaveCode} className="p-1 btn-approve rounded" title="Save code">
+                              <Check className="h-4 w-4" />
                             </button>
                           </div>
                         </>
@@ -908,18 +896,11 @@ export function EditSitePage() {
                           </div>
                           <div className="flex items-center gap-1 flex-shrink-0">
                             <button
-                              onClick={() => startEditCode(code)}
-                              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500"
+                              onClick={(e) => { e.stopPropagation(); startEditCode(code); }}
+                              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 sm:hidden"
                               title="Edit code"
                             >
                               <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleRemoveCode(code.name)}
-                              className="p-1 btn-delete rounded"
-                              title="Remove code"
-                            >
-                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </>
@@ -932,6 +913,22 @@ export function EditSitePage() {
               )}
               </div>
               )}
+            </div>
+
+            {/* Bottom actions */}
+            <div className="flex justify-end space-x-2 pt-4 border-t border-yellow-300 dark:border-yellow-800">
+              <button
+                onClick={handleDeleteSite}
+                className="px-4 py-2 btn-delete rounded-lg"
+              >
+                Delete Site
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
         </div>

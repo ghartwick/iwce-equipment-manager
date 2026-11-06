@@ -46,6 +46,7 @@ export class EquipmentManagementService {
           repair: data.repair ?? false,
           repairDescription: data.repairDescription || '',
           notes: data.notes || [],
+          serviceNotes: data.serviceNotes || [],
           isActive: data.isActive ?? true,
           showInInventory: data.showInInventory ?? true,
           showInTimecard: data.showInTimecard ?? true,

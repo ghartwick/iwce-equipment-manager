@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Wrench, MoreVertical, CheckSquare, Square, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { FileText, Wrench, MoreVertical, Pencil, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { repairListService, RepairListCheckedItem } from '../services/repairListService';
 import { ResolveRepairModal, ResolveRepairTarget } from '../components/ResolveRepairModal';
@@ -54,6 +54,7 @@ export default function ReportsPage() {
   const [expandedReport, setExpandedReport] = useState<string | null>(null);
   const [expandedShopReport, setExpandedShopReport] = useState<string | null>(null);
   const [maintenanceListCollapsed, setMaintenanceListCollapsed] = useState(false);
+  const [repairsListCollapsed, setRepairsListCollapsed] = useState(false);
   const [shopListCollapsed, setShopListCollapsed] = useState(false);
   const [repairAlerts, setRepairAlerts] = useState<StockAlert[]>([]);
   const [showRepairAlerts, setShowRepairAlerts] = useState(false);
@@ -73,6 +74,7 @@ export default function ReportsPage() {
   const [repairListItems, setRepairListItems] = useState<RepairListItem[]>([]);
   const [checkedRepairItems, setCheckedRepairItems] = useState<Record<string, RepairListCheckedItem>>({});
   const [repairListLoading, setRepairListLoading] = useState(false);
+  const [showResolvedRepairs, setShowResolvedRepairs] = useState(false);
   const [resolveTarget, setResolveTarget] = useState<ResolveRepairTarget | null>(null);
 
   useEffect(() => {
@@ -569,7 +571,13 @@ export default function ReportsPage() {
       const maintCounts: Record<string, number> = {};
       const shopCounts: Record<string, number> = {};
       const repairNoteCounts: Record<string, number> = {};
-      const unitsWithNotesOrRepairs: Record<string, Set<string>> = {};
+
+      const repairFieldKeys = [
+        'stepsHandRails', 'tiresTracks', 'bucket', 'cuttingEdgeTeeth', 'hoses',
+        'batteryCableBeltHosesFilterGuards', 'backupAlarm', 'fireExtinguisher',
+        'gauges', 'horn', 'spillKit', 'glass', 'mirror', 'rollOverProtection',
+        'seatBeltSeat', 'allFluidsLevel',
+      ];
 
       maintenance.forEach(report => {
         // Use stored site from report, fall back to current equipment site
@@ -588,19 +596,14 @@ export default function ReportsPage() {
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
         maintCounts[reportDate] = (maintCounts[reportDate] || 0) + 1;
 
-        // Check if unit has notes or repairs (matches the indicator shown on report cards below;
-        // serviceNotificationTriggered is intentionally excluded since it has no corresponding
-        // visual marker in the report list and would otherwise inflate this count).
-        const hasNotes = report.maintenance.notes && report.maintenance.notes.trim().length > 0;
-        const hasRepairs = Object.values(report.maintenance).some(
-          val => val === 'Repair'
-        );
-
-        if (hasNotes || hasRepairs) {
-          if (!unitsWithNotesOrRepairs[reportDate]) {
-            unitsWithNotesOrRepairs[reportDate] = new Set();
-          }
-          unitsWithNotesOrRepairs[reportDate].add(report.equipmentId);
+        // Count each repair flag and each note as an individual item so a unit
+        // with multiple repairs contributes multiple to the bubble count.
+        const m = report.maintenance;
+        const repairCount = repairFieldKeys.filter(key => (m as any)[key] === 'Repair').length;
+        const noteCount = m.notes && m.notes.trim().length > 0 ? 1 : 0;
+        const itemCount = repairCount + noteCount;
+        if (itemCount > 0) {
+          repairNoteCounts[reportDate] = (repairNoteCounts[reportDate] || 0) + itemCount;
         }
       });
 
@@ -620,11 +623,6 @@ export default function ReportsPage() {
 
         const reportDate = format(new Date(report.createdAt), 'yyyy-MM-dd');
         shopCounts[reportDate] = (shopCounts[reportDate] || 0) + 1;
-      });
-
-      // Calculate repair/note counts from the Sets
-      Object.keys(unitsWithNotesOrRepairs).forEach(date => {
-        repairNoteCounts[date] = unitsWithNotesOrRepairs[date].size;
       });
 
       setMaintenanceCounts(maintCounts);
@@ -696,6 +694,108 @@ export default function ReportsPage() {
     return users.filter(u => userSet.has(u.username)).sort((a, b) => a.name.localeCompare(b.name));
   };
 
+  const renderMaintenanceCard = (report: MaintenanceReport) => {
+    const m = report.maintenance;
+    const allRepairFields = [
+      { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
+      { key: 'tiresTracks', label: 'Tires/Tracks' },
+      { key: 'bucket', label: 'Bucket' },
+      { key: 'cuttingEdgeTeeth', label: 'Cutting Edge/Teeth' },
+      { key: 'hoses', label: 'Hoses' },
+      { key: 'batteryCableBeltHosesFilterGuards', label: 'Battery Cable, Belt, Hoses, Filter, Guards' },
+      { key: 'backupAlarm', label: 'Backup Alarm' },
+      { key: 'fireExtinguisher', label: 'Fire Extinguisher' },
+      { key: 'gauges', label: 'Gauges' },
+      { key: 'horn', label: 'Horn' },
+      { key: 'spillKit', label: 'Spill Kit' },
+      { key: 'glass', label: 'Glass (all sides)' },
+      { key: 'mirror', label: 'Mirror' },
+      { key: 'rollOverProtection', label: 'Roll Over Protection' },
+      { key: 'seatBeltSeat', label: 'Seat Belt/Seat' },
+      { key: 'allFluidsLevel', label: 'All Fluids Level' },
+    ];
+    const repairItems = allRepairFields.filter(f => (m as any)[f.key] === 'Repair').map(f => f.label);
+    const noteText = m.notes?.trim() || '';
+    const isExpanded = expandedReport === report.id;
+    const eq = equipmentData[report.equipmentId];
+    const allocation = report.site || eq?.site || eq?.employee || '';
+
+    return (
+      <div key={report.id} className="border-b border-yellow-200 dark:border-yellow-800 last:border-b-0">
+        {/* Compressed header — always visible */}
+        <button
+          type="button"
+          onClick={() => setExpandedReport(isExpanded ? null : report.id)}
+          className="w-full px-1 py-2 flex items-start justify-between text-left"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); navigate(`/inventory/equipment/${report.equipmentId}`); }}
+                className="text-sm font-medium text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-100"
+              >{report.equipmentName}</button>
+              <span className="text-xs text-yellow-600 dark:text-yellow-400">{new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              <span className="text-xs text-yellow-600 dark:text-yellow-400">by {report.createdBy}</span>
+              {allocation && <span className="text-xs text-blue-600 dark:text-blue-400">{allocation}</span>}
+            </div>
+            {(m.hours != null || (m.lastServiceHours != null && m.serviceInterval != null)) && (
+              <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 flex gap-3">
+                {m.hours != null && <span><strong>Hours/KM:</strong> {m.hours.toLocaleString()}</span>}
+                {m.lastServiceHours != null && m.serviceInterval != null && (
+                  <span><strong>Next Service:</strong> {(m.lastServiceHours + m.serviceInterval).toLocaleString()}</span>
+                )}
+              </div>
+            )}
+            {repairItems.length > 0 && (
+              <div className="text-xs text-red-700 dark:text-red-300 mt-0.5"><strong>Repairs:</strong> {repairItems.join(', ')}</div>
+            )}
+            {noteText && (
+              <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5"><strong>Note:</strong> {noteText}</div>
+            )}
+          </div>
+          {isExpanded ? <ChevronUp className="h-4 w-4 shrink-0 mt-0.5 text-yellow-600 dark:text-yellow-400" /> : <ChevronDown className="h-4 w-4 shrink-0 mt-0.5 text-yellow-600 dark:text-yellow-400" />}
+        </button>
+        {/* Expanded — full card */}
+        {isExpanded && (
+          <div className="px-1 pb-2 pt-0">
+            <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
+              <div><strong>Hours/KM:</strong> {m.hours || 'N/A'}</div>
+              <div><strong>Time:</strong> {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+              {m.lastServicedDate && <div><strong>Last Serviced:</strong> {m.lastServicedDate}</div>}
+              {m.lastServiceHours != null && <div><strong>Last Service Hours:</strong> {m.lastServiceHours}</div>}
+              {allRepairFields.map(f => {
+                const val = (m as any)[f.key];
+                if (!val || val === 'NA') return null;
+                return <div key={f.key} className={val === 'Repair' ? 'text-red-700 dark:text-red-300' : ''}><strong>{f.label}:</strong> {val}</div>;
+              })}
+            </div>
+            {noteText && (
+              <div className="mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-800 text-xs text-gray-700 dark:text-gray-300">
+                <strong>Notes:</strong> {noteText}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const reportHasRepairsOrNotes = (report: MaintenanceReport): boolean => {
+    const m = report.maintenance;
+    const hasRepairs = repairFields.some(f => (m as any)[f.key] === 'Repair');
+    return hasRepairs || !!m.notes?.trim();
+  };
+
+  // Number of individual repair flags plus notes on a report, so the section
+  // header counts repairs rather than units/reports.
+  const reportRepairNoteItemCount = (report: MaintenanceReport): number => {
+    const m = report.maintenance;
+    const repairCount = repairFields.filter(f => (m as any)[f.key] === 'Repair').length;
+    const noteCount = m.notes && m.notes.trim().length > 0 ? 1 : 0;
+    return repairCount + noteCount;
+  };
+
   return (
     <div className="min-h-screen bg-yellow-100 dark:bg-black text-gray-900 dark:text-yellow-100 px-2 sm:px-4 py-4 -mx-2 sm:-mx-4 lg:mx-0 lg:p-2">
       <div className="max-w-5xl mx-auto">
@@ -714,7 +814,7 @@ export default function ReportsPage() {
           {/* Calendar */}
           <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <button
                 onClick={handlePreviousMonth}
                 className="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
@@ -746,7 +846,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Calendar Days */}
-            <div className="grid grid-cols-7 gap-2 mb-6">
+            <div className="grid grid-cols-7 gap-2">
               {days.map((day, index) => {
                 const isCurrentMonth = isSameMonth(day, currentMonth);
                 const isSelected = selectedDates.some(d => isSameDay(day, d));
@@ -794,7 +894,7 @@ export default function ReportsPage() {
 
           {/* Reports section — always visible, menu button matches timesheet style */}
           <div className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl dark:shadow-yellow-900/20 dark:shadow-2xl p-2">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">
                   {selectedDates.length > 0 ? `Shop Reports for ${selectedDateLabel}` : 'Shop Reports'}
                 </h3>
@@ -876,7 +976,7 @@ export default function ReportsPage() {
                 </div>
               </div>
               {selectedDates.length === 0 && (
-                <p className="text-sm text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view reports.</p>
+                <p className="text-yellow-700 dark:text-yellow-600">Click on a date in the calendar to view reports.</p>
               )}
           {selectedDates.length > 0 && (
             <div>
@@ -1011,113 +1111,57 @@ export default function ReportsPage() {
                 </div>
               ) : (
                 <>
-                  {/* Maintenance Reports */}
-                  {maintenanceReports.length > 0 && (siteFilter || userFilter) && (
-                    <div className="mb-6">
-                      <button
-                        type="button"
-                        onClick={() => setMaintenanceListCollapsed(v => !v)}
-                        className="w-full flex items-center justify-between mb-3 text-left"
-                      >
-                        <h4 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
-                          <Wrench className="h-4 w-4" />
-                          Inspection Reports ({maintenanceReports.length})
-                        </h4>
-                        {maintenanceListCollapsed ? <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /> : <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
-                      </button>
-                      {!maintenanceListCollapsed && (
-                      <div className="space-y-2">
-                        {maintenanceReports.map(report => {
-                          const m = report.maintenance;
-                          const allRepairFields = [
-                            { key: 'stepsHandRails', label: 'Steps/Hand Rails' },
-                            { key: 'tiresTracks', label: 'Tires/Tracks' },
-                            { key: 'bucket', label: 'Bucket' },
-                            { key: 'cuttingEdgeTeeth', label: 'Cutting Edge/Teeth' },
-                            { key: 'hoses', label: 'Hoses' },
-                            { key: 'batteryCableBeltHosesFilterGuards', label: 'Battery Cable, Belt, Hoses, Filter, Guards' },
-                            { key: 'backupAlarm', label: 'Backup Alarm' },
-                            { key: 'fireExtinguisher', label: 'Fire Extinguisher' },
-                            { key: 'gauges', label: 'Gauges' },
-                            { key: 'horn', label: 'Horn' },
-                            { key: 'spillKit', label: 'Spill Kit' },
-                            { key: 'glass', label: 'Glass (all sides)' },
-                            { key: 'mirror', label: 'Mirror' },
-                            { key: 'rollOverProtection', label: 'Roll Over Protection' },
-                            { key: 'seatBeltSeat', label: 'Seat Belt/Seat' },
-                            { key: 'allFluidsLevel', label: 'All Fluids Level' },
-                          ];
-                          const repairItems = allRepairFields.filter(f => (m as any)[f.key] === 'Repair').map(f => f.label);
-                          const noteText = m.notes?.trim() || '';
-                          const hasRepairOrNotes = repairItems.length > 0 || !!noteText;
-                          const isExpanded = expandedReport === report.id;
-                          const eq = equipmentData[report.equipmentId];
-                          const allocation = report.site || eq?.site || eq?.employee || '';
-
-                          return (
-                          <div key={report.id} className={`rounded-lg border ${hasRepairOrNotes ? 'bg-red-50 dark:bg-red-900/20 border-red-400 dark:border-red-700' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'}`}>
-                            {/* Compressed header — always visible */}
+                  {/* Maintenance Reports — inspections with no repairs or notes */}
+                  {(() => {
+                    const cleanReports = maintenanceReports.filter(r => !reportHasRepairsOrNotes(r));
+                    const flaggedReports = maintenanceReports.filter(r => reportHasRepairsOrNotes(r));
+                    return (
+                      <>
+                        {cleanReports.length > 0 && (siteFilter || userFilter) && (
+                          <div className="mb-6">
                             <button
                               type="button"
-                              onClick={() => setExpandedReport(isExpanded ? null : report.id)}
-                              className="w-full px-3 py-2 flex items-start justify-between text-left"
+                              onClick={() => setMaintenanceListCollapsed(v => !v)}
+                              className="w-full flex items-center justify-between mb-3 pb-2 border-b border-yellow-300 dark:border-yellow-700 text-left"
                             >
-                              <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); navigate(`/inventory/equipment/${report.equipmentId}`); }}
-                                    className="text-sm font-medium text-yellow-700 dark:text-yellow-300 underline hover:text-yellow-500 dark:hover:text-yellow-100"
-                                  >{report.equipmentName}</button>
-                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">{new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                  <span className="text-xs text-yellow-600 dark:text-yellow-400">by {report.createdBy}</span>
-                                  {allocation && <span className="text-xs text-blue-600 dark:text-blue-400">{allocation}</span>}
-                                </div>
-                                {(m.hours != null || (m.lastServiceHours != null && m.serviceInterval != null)) && (
-                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 flex gap-3">
-                                    {m.hours != null && <span><strong>Hours/KM:</strong> {m.hours.toLocaleString()}</span>}
-                                    {m.lastServiceHours != null && m.serviceInterval != null && (
-                                      <span><strong>Next Service:</strong> {(m.lastServiceHours + m.serviceInterval).toLocaleString()}</span>
-                                    )}
-                                  </div>
-                                )}
-                                {repairItems.length > 0 && (
-                                  <div className="text-xs text-red-700 dark:text-red-300 mt-0.5"><strong>Repairs:</strong> {repairItems.join(', ')}</div>
-                                )}
-                                {noteText && (
-                                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-0.5"><strong>Note:</strong> {noteText}</div>
-                                )}
-                              </div>
-                              {isExpanded ? <ChevronUp className="h-4 w-4 shrink-0 mt-0.5 text-yellow-600 dark:text-yellow-400" /> : <ChevronDown className="h-4 w-4 shrink-0 mt-0.5 text-yellow-600 dark:text-yellow-400" />}
+                              <h4 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                                <Wrench className="h-4 w-4" />
+                                Inspection Reports ({cleanReports.length})
+                              </h4>
+                              {maintenanceListCollapsed ? <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /> : <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
                             </button>
-                            {/* Expanded — full card */}
-                            {isExpanded && (
-                              <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
-                                <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
-                                  <div><strong>Hours/KM:</strong> {m.hours || 'N/A'}</div>
-                                  <div><strong>Time:</strong> {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                  {m.lastServicedDate && <div><strong>Last Serviced:</strong> {m.lastServicedDate}</div>}
-                                  {m.lastServiceHours != null && <div><strong>Last Service Hours:</strong> {m.lastServiceHours}</div>}
-                                  {allRepairFields.map(f => {
-                                    const val = (m as any)[f.key];
-                                    if (!val || val === 'NA') return null;
-                                    return <div key={f.key} className={val === 'Repair' ? 'text-red-700 dark:text-red-300' : ''}><strong>{f.label}:</strong> {val}</div>;
-                                  })}
-                                </div>
-                                {noteText && (
-                                  <div className="mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-800 text-xs text-gray-700 dark:text-gray-300">
-                                    <strong>Notes:</strong> {noteText}
-                                  </div>
-                                )}
+                            {!maintenanceListCollapsed && (
+                              <div>
+                                {cleanReports.map(renderMaintenanceCard)}
                               </div>
                             )}
                           </div>
-                          );
-                        })}
-                      </div>
-                      )}
-                    </div>
-                  )}
+                        )}
+
+                        {/* Inspections with repairs or notes */}
+                        {flaggedReports.length > 0 && (siteFilter || userFilter) && (
+                          <div className="mb-6 pt-4 border-t border-yellow-300 dark:border-yellow-700">
+                            <button
+                              type="button"
+                              onClick={() => setRepairsListCollapsed(v => !v)}
+                              className="w-full flex items-center justify-between mb-3 pb-2 border-b border-red-300 dark:border-red-800 text-left"
+                            >
+                              <h4 className="text-base font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
+                                <Wrench className="h-4 w-4" />
+                                Repairs &amp; Notes ({flaggedReports.reduce((sum, r) => sum + reportRepairNoteItemCount(r), 0)})
+                              </h4>
+                              {repairsListCollapsed ? <ChevronDown className="h-4 w-4 text-red-600 dark:text-red-400" /> : <ChevronUp className="h-4 w-4 text-red-600 dark:text-red-400" />}
+                            </button>
+                            {!repairsListCollapsed && (
+                              <div>
+                                {flaggedReports.map(renderMaintenanceCard)}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* Shop Reports */}
                   {shopReports.length > 0 && (siteFilter || userFilter) && (
@@ -1125,7 +1169,7 @@ export default function ReportsPage() {
                       <button
                         type="button"
                         onClick={() => setShopListCollapsed(v => !v)}
-                        className="w-full flex items-center justify-between mb-3 text-left"
+                        className="w-full flex items-center justify-between mb-3 pb-2 border-b border-yellow-300 dark:border-yellow-700 text-left"
                       >
                         <h4 className="text-base font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
                           <FileText className="h-4 w-4" />
@@ -1134,23 +1178,23 @@ export default function ReportsPage() {
                         {shopListCollapsed ? <ChevronDown className="h-4 w-4 text-yellow-600 dark:text-yellow-400" /> : <ChevronUp className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
                       </button>
                       {!shopListCollapsed && (
-                      <div className="space-y-2">
+                      <div>
                         {shopReports.map(report => {
                           const isExpanded = expandedShopReport === report.id;
                           return (
-                          <div key={report.id} className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                          <div key={report.id} className="border-b border-yellow-200 dark:border-yellow-800 last:border-b-0">
                             {/* Compressed header */}
                             <button
                               type="button"
                               onClick={() => setExpandedShopReport(isExpanded ? null : (report.id ?? null))}
-                              className="w-full px-3 py-2 flex items-start justify-between text-left"
+                              className="w-full px-1 py-2 flex items-start justify-between text-left"
                             >
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                   <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); navigate(`/inventory/equipment/${report.equipmentId}`); }}
-                                    className="text-sm font-medium text-yellow-700 dark:text-yellow-300 underline hover:text-yellow-500 dark:hover:text-yellow-100"
+                                    className="text-sm font-medium text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-100"
                                   >{report.equipmentName}</button>
                                   <span className="text-xs text-yellow-600 dark:text-yellow-400">{new Date(report.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                   <span className="text-xs text-yellow-600 dark:text-yellow-400">by {report.createdBy}</span>
@@ -1175,7 +1219,7 @@ export default function ReportsPage() {
                             </button>
                             {/* Expanded full card */}
                             {isExpanded && (
-                              <div className="px-3 pb-3 pt-0 border-t border-yellow-200 dark:border-yellow-800">
+                              <div className="px-1 pb-2 pt-0">
                                 <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-700 dark:text-gray-300">
                                   <div><strong>Serviced Date:</strong> {report.lastServicedDate || 'N/A'}</div>
                                   <div><strong>Serviced At:</strong> {report.servicedAt?.toLocaleString() ?? report.lastServiceHours ?? 'N/A'}</div>
@@ -1240,70 +1284,71 @@ export default function ReportsPage() {
                 const renderItem = (item: RepairListItem, isChecked: boolean) => (
                   <div
                     key={item.id}
-                    className={`flex items-start gap-3 px-3 py-2 rounded-lg border ${
-                      isChecked
-                        ? 'bg-gray-100 dark:bg-gray-800/40 border-gray-300 dark:border-gray-700 opacity-50'
-                        : item.type === 'repair'
-                          ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
-                          : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'
-                    }`}
+                    onClick={() => handleToggleRepairItem(item)}
+                    className={`flex items-start gap-3 py-2.5 cursor-pointer rounded-md px-1 -mx-1 transition-colors hover:bg-yellow-100 dark:hover:bg-yellow-900/30 ${isChecked ? 'opacity-50' : ''}`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => handleToggleRepairItem(item)}
-                      className="mt-0.5 flex-shrink-0 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500"
-                    >
-                      {isChecked ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-                    </button>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                         <button
                           type="button"
-                          onClick={() => navigate(`/inventory/equipment/${item.equipmentId}`)}
-                          className={`text-sm font-medium bg-transparent border-0 p-0 m-0 cursor-pointer text-left ${
+                          onClick={(e) => { e.stopPropagation(); navigate(`/inventory/equipment/${item.equipmentId}`); }}
+                          className={`text-sm font-medium bg-transparent border-0 p-0 m-0 cursor-pointer text-left truncate ${
                             isChecked
-                              ? 'line-through text-gray-400 dark:text-gray-500'
-                              : 'text-gray-800 dark:text-yellow-100 hover:text-yellow-600 dark:hover:text-yellow-400'
+                              ? 'line-through text-gray-500 dark:text-gray-500'
+                              : 'text-yellow-700 dark:text-yellow-300 hover:text-yellow-500 dark:hover:text-yellow-100'
                           }`}
                         >
                           {item.equipmentName}
                         </button>
-                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                          item.type === 'repair' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-                        }`}>
-                          {item.type === 'repair' ? 'Repair' : 'Note'}
-                        </span>
-                        {item.itemIds.length > 1 && (
-                          <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                            flagged {item.itemIds.length}×
-                          </span>
-                        )}
+                        <span className="text-xs text-yellow-600 dark:text-yellow-400">{new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        <span className="text-xs text-yellow-600 dark:text-yellow-400">by {item.createdBy}</span>
+                        {item.site && <span className="text-xs text-blue-600 dark:text-blue-400">{item.site}</span>}
                       </div>
-                      <div className={`text-xs mt-0.5 ${isChecked ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <div className={`text-sm mt-0.5 ${isChecked ? 'text-gray-500 line-through' : 'text-gray-700 dark:text-gray-300'}`}>
+                        {item.type === 'note' && <span className="font-medium">Note: </span>}
                         {item.field}
-                      </div>
-                      <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                        {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {item.createdBy}
+                        {item.itemIds.length > 1 && (
+                          <span className="ml-1.5 text-xs text-gray-500 dark:text-gray-400">×{item.itemIds.length}</span>
+                        )}
                         {isChecked && checkedRepairItems[item.id] && (
-                          <span className="ml-2 italic">resolved by {checkedRepairItems[item.id].checkedBy}</span>
+                          <span className="ml-2 text-xs italic text-gray-500 dark:text-gray-500">resolved by {checkedRepairItems[item.id].checkedBy}</span>
                         )}
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleToggleRepairItem(item); }}
+                      className="mt-0.5 flex-shrink-0 p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 sm:hidden"
+                      title={isChecked ? 'Mark as unresolved' : 'Resolve'}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
                   </div>
                 );
                 return (
-                  <div className="space-y-2">
+                  <div>
                     {unchecked.length === 0 && (
-                      <p className="text-xs text-green-600 dark:text-green-400 italic">All items resolved!</p>
+                      <p className="text-sm text-green-600 dark:text-green-400 italic">All items resolved!</p>
                     )}
-                    {unchecked.map(item => renderItem(item, false))}
+                    <div className="divide-y divide-yellow-300 dark:divide-yellow-900">
+                      {unchecked.map(item => renderItem(item, false))}
+                    </div>
                     {checked.length > 0 && (
-                      <>
-                        <div className="pt-2 border-t border-yellow-300 dark:border-yellow-800">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Resolved ({checked.length})</p>
-                          {checked.map(item => renderItem(item, true))}
-                        </div>
-                      </>
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => setShowResolvedRepairs(v => !v)}
+                          className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                        >
+                          {showResolvedRepairs ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                          Resolved ({checked.length})
+                        </button>
+                        {showResolvedRepairs && (
+                          <div className="divide-y divide-yellow-300 dark:divide-yellow-900 mt-1">
+                            {checked.map(item => renderItem(item, true))}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 );

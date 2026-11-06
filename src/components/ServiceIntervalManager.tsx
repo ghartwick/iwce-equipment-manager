@@ -415,7 +415,7 @@ export function ServiceIntervalManager({
           type="button"
           onClick={() => setDraft(emptyDraft(canEditCategory ? 'category' : 'unit'))}
           disabled={saving}
-          className="w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 border border-dashed border-yellow-600 rounded-md text-xs text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-yellow-600 text-black rounded hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap disabled:opacity-50"
         >
           <Plus className="h-3 w-3" />
           Add Service Interval

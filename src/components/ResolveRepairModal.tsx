@@ -79,35 +79,35 @@ export function ResolveRepairModal({ target, user, onCancel, onConfirm }: Resolv
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" onClick={onCancel}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50" onClick={onCancel}>
       <div
-        className="bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-yellow-600"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between p-4 border-b border-yellow-400 dark:border-yellow-700">
+        <div className="flex items-center justify-between p-4 border-b border-yellow-600 bg-yellow-600 rounded-t-xl">
           <div>
-            <h2 className="text-base font-semibold text-yellow-700 dark:text-yellow-300">Create Service Card</h2>
-            <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-0.5">
+            <h2 className="text-lg font-bold text-black">Create Service Card</h2>
+            <p className="text-xs text-black/70 mt-0.5">
               {target.equipmentName} — {target.label}
             </p>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="text-yellow-700 dark:text-yellow-300 hover:text-red-600 dark:hover:text-red-400"
+            className="p-1.5 rounded-lg hover:bg-yellow-700 text-black transition-colors"
             aria-label="Cancel"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-3">
-          <p className="text-xs text-yellow-700 dark:text-yellow-400">
+        <form onSubmit={handleSubmit} className="p-5 space-y-3">
+          <p className="text-xs text-gray-600 dark:text-gray-400">
             Clearing this item records a service card so the unit keeps a full repair history.
           </p>
 
           <div>
-            <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               What was done? <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -116,28 +116,28 @@ export function ResolveRepairModal({ target, user, onCancel, onConfirm }: Resolv
               rows={4}
               autoFocus
               placeholder="Describe the repair performed, parts used, etc."
-              className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
+              className="w-full px-3 py-2 border border-yellow-600 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Repair Date</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Repair Date</label>
               <input
                 type="date"
                 value={servicedDate}
                 onChange={e => setServicedDate(e.target.value)}
-                className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="w-full px-3 py-2 border border-yellow-600 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
                 style={{ colorScheme: 'dark' }}
               />
             </div>
             <div>
-              <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1">Hours/KM (optional)</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Hours/KM (optional)</label>
               <input
                 type="number"
                 value={servicedAt}
                 onChange={e => setServicedAt(e.target.value)}
-                className="w-full px-2 py-1.5 border border-yellow-600 rounded-md bg-yellow-200 dark:bg-black text-gray-900 dark:text-yellow-100 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full px-3 py-2 border border-yellow-600 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-yellow-100 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
           </div>
@@ -147,14 +147,14 @@ export function ResolveRepairModal({ target, user, onCancel, onConfirm }: Resolv
               type="button"
               onClick={onCancel}
               disabled={submitting}
-              className="px-4 py-2 border border-yellow-600 rounded-md text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 text-sm font-medium disabled:opacity-50"
+              className="px-4 py-2 border border-yellow-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-gray-800 text-sm font-medium disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-yellow-600 text-black rounded-md hover:bg-yellow-500 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Saving...' : 'Save & Clear Item'}
             </button>

@@ -401,7 +401,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                                   {role === 'admin' && <Shield className="h-5 w-5 text-red-400" />}
                                   {role === 'supervisor' && <Users className="h-5 w-5 text-purple-400" />}
                                   {role === 'field' && <Wrench className="h-5 w-5 text-blue-400" />}
-                                  <span className="capitalize">{role}s ({roleUsers.length})</span>
+                                  <span>{role === 'admin' ? 'Admin' : role === 'supervisor' ? 'Supervisor' : 'Field'} ({roleUsers.length})</span>
                                   {(currentUser?.role === 'supervisor' || currentUser?.role === 'field') && (
                                     <span className="text-xs text-yellow-600 dark:text-yellow-500 ml-2">(Your Profile Only)</span>
                                   )}
@@ -591,12 +591,6 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                     </div>
                   )}
                   <div className="flex space-x-3">
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
-                    >
-                      Update User
-                    </button>
                     {currentUser?.role === 'admin' && editingUser?.id !== currentUser?.id && (
                       <button
                         type="button"
@@ -621,6 +615,12 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                       className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
                     >
                       Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
+                    >
+                      Update User
                     </button>
                   </div>
                 </form>

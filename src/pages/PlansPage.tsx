@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronDown, Download, Eye, FileText, Map as MapIcon, Upload } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Download, Eye, FileText, Map as MapIcon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { SitePlan, sitePlanService } from '../services/sitePlanService';
 
@@ -83,15 +83,6 @@ export default function PlansPage() {
                 <MapIcon className="h-5 w-5" /> Plans
               </h2>
             </div>
-            {isAdmin && (
-              <button
-                onClick={() => navigate('/manage/sites')}
-                className="flex items-center space-x-2 px-4 py-2 border border-yellow-600 text-yellow-100 dark:text-yellow-300 rounded-lg hover:bg-yellow-600 hover:text-black transition-colors"
-              >
-                <Upload className="h-4 w-4" />
-                <span>Upload via Manage Sites</span>
-              </button>
-            )}
           </div>
 
           <div className="p-6">
@@ -133,9 +124,6 @@ export default function PlansPage() {
                           {group.siteName}
                         </span>
                         <span className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-400 dark:bg-yellow-700 text-yellow-900 dark:text-yellow-100">
-                            {group.plans.length} {group.plans.length === 1 ? 'plan' : 'plans'}
-                          </span>
                           <ChevronDown
                             className={`h-5 w-5 text-yellow-600 dark:text-yellow-400 transition-transform ${
                               isOpen ? 'rotate-180' : ''
@@ -149,7 +137,7 @@ export default function PlansPage() {
                           {group.plans.map(plan => (
                             <li
                               key={plan.id}
-                              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
+                              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
                             >
                               <span className="flex items-center gap-3 min-w-0">
                                 <FileText className="h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
@@ -163,7 +151,7 @@ export default function PlansPage() {
                                   </span>
                                 </span>
                               </span>
-                              <span className="flex items-center gap-2 flex-shrink-0">
+                              <span className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
                                 <a
                                   href={plan.fileUrl}
                                   target="_blank"

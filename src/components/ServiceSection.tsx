@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, X, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { shopHistoryFirebaseService, ShopReport } from '../services/shopHistoryFirebaseService';
 import { shopAttachmentService } from '../services/shopAttachmentService';
 import { AddService } from '../components/ShopForm';
@@ -130,7 +130,7 @@ export function ServiceSection({ equipmentId }: { equipmentId: string }) {
         timestamp: new Date(),
         user: user?.name || user?.username || 'Unknown',
         userRole: user?.role || 'user',
-        changes: [{ field: 'notes', oldValue: removedNote.text, newValue: '' }],
+        changes: [{ field: 'serviceNotes', oldValue: removedNote.text, newValue: '' }],
       });
     }
   };
@@ -152,7 +152,7 @@ export function ServiceSection({ equipmentId }: { equipmentId: string }) {
         timestamp: new Date(),
         user: user?.name || user?.username || 'Unknown',
         userRole: user?.role || 'user',
-        changes: [{ field: 'notes', oldValue: oldNote.text, newValue: text }],
+        changes: [{ field: 'serviceNotes', oldValue: oldNote.text, newValue: text }],
       });
     }
   };
@@ -163,9 +163,9 @@ export function ServiceSection({ equipmentId }: { equipmentId: string }) {
       const allEquipment = await equipmentManagementService.getAllEquipment();
       const inEquipmentCollection = allEquipment.some(eq => eq.id === equipmentId);
       if (inEquipmentCollection) {
-        await equipmentManagementService.updateEquipment(equipmentId, { notes });
+        await equipmentManagementService.updateEquipment(equipmentId, { serviceNotes: notes });
       } else {
-        await fleetManagementService.updateEquipment(equipmentId, { notes }, undefined, true);
+        await fleetManagementService.updateEquipment(equipmentId, { serviceNotes: notes }, undefined, true);
       }
     } catch (error) {
       console.error('Error saving notes:', error);
@@ -209,7 +209,7 @@ export function ServiceSection({ equipmentId }: { equipmentId: string }) {
             setUnitName(equipment.name || '');
             setEquipmentSite(equipment.site || '');
             setCustomNotifications(equipment.customNotifications || []);
-            setEquipmentDataNotes(equipment.notes || []);
+            setEquipmentDataNotes(equipment.serviceNotes || []);
             setUnitIntervals(equipment.serviceIntervals || []);
             setIntervalOverrides(equipment.intervalOverrides || {});
             // Load category to determine notification type
@@ -390,11 +390,10 @@ export function ServiceSection({ equipmentId }: { equipmentId: string }) {
             <button
               type="button"
               onClick={() => setShowHistory(true)}
-              className="p-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300"
+              className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap"
               title="Maintenance, service & repair history"
-              aria-label="Maintenance, service and repair history"
             >
-              <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
+              Service History
             </button>
           </div>
 
@@ -488,7 +487,7 @@ export function ServiceSection({ equipmentId }: { equipmentId: string }) {
                 <button
                   type="button"
                   onClick={() => setShowAddCustom(true)}
-                  className="w-full px-2 py-1.5 border border-dashed border-yellow-600 rounded-md text-xs text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-yellow-600 text-black rounded hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap"
                 >
                   + Set Custom Notification
                 </button>
@@ -498,7 +497,7 @@ export function ServiceSection({ equipmentId }: { equipmentId: string }) {
 
           {/* Equipment Data Notes */}
           <div className="mb-4">
-            <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1.5">Notes</label>
+            <label className="block text-xs text-yellow-700 dark:text-yellow-300 mb-1.5">Service Notes</label>
             <div className="space-y-1.5 mb-2">
               {equipmentDataNotes.map((note, index) => (
                 <div key={index} className="flex items-start justify-between gap-2">
@@ -567,10 +566,10 @@ export function ServiceSection({ equipmentId }: { equipmentId: string }) {
                 {(user?.role === 'admin' || user?.role === 'supervisor') && (
                   <button
                     onClick={() => setShowShopForm(true)}
-                    className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 p-1"
+                    className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 font-medium transition-colors whitespace-nowrap"
                     title="Add Shop Report"
                   >
-                    <Plus className="h-5 w-5" />
+                    + Service
                   </button>
                 )}
               </div>

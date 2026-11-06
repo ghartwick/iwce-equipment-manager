@@ -40,8 +40,28 @@ export function useAuth() {
           const maxAge = session.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
           if (sessionAge < maxAge) {
             // Verify user still exists and is active
-            const currentUser = await userManagementService.getUserByUsername(user.username);
+            let currentUser;
+            try {
+              currentUser = await userManagementService.getUserByUsername(user.username);
+            } catch (lookupError) {
+              // No connection or a transient failure: this says nothing about the
+              // account, so keep the remembered user signed in.
+              console.warn('Could not verify session, continuing with saved user:', lookupError);
+              setAuthState({
+                user,
+                isAuthenticated: true,
+                isLoading: false,
+                error: null,
+              });
+              return;
+            }
             if (currentUser && currentUser.isActive) {
+              if (session.rememberMe) {
+                localStorage.setItem(
+                  'iwce_session',
+                  JSON.stringify({ ...session, createdAt: Date.now() })
+                );
+              }
               setAuthState({
                 user: { ...user, isSurveyor: currentUser.isSurveyor ?? false },
                 isAuthenticated: true,

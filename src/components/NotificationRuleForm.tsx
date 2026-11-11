@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { X } from 'lucide-react';
+import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import { AppUser } from '../services/userManagementService';
 import { Site } from '../services/siteManagementService';
 import {
@@ -38,6 +38,11 @@ interface NotificationRuleFormProps {
   users: AppUser[];
   existingRule: NotificationRule | null;
   createdBy: string;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
+  savedList?: React.ReactNode;
+  onToggleActive?: () => void;
+  onDelete?: () => void;
   onCancel: () => void;
   onSave: (input: NotificationRuleInput) => Promise<void>;
 }
@@ -48,6 +53,11 @@ export function NotificationRuleForm({
   users,
   existingRule,
   createdBy,
+  collapsed,
+  onToggleCollapsed,
+  savedList,
+  onToggleActive,
+  onDelete,
   onCancel,
   onSave
 }: NotificationRuleFormProps) {
@@ -158,21 +168,31 @@ export function NotificationRuleForm({
   };
 
   return (
-    <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300">
-          {existingRule ? 'Edit Notification' : 'New Notification'}
-        </h3>
+    <div className="mb-6 p-4 border border-yellow-300 dark:border-yellow-800 rounded-lg">
+      <div className={`flex items-center justify-between ${collapsed ? '' : 'mb-4'}`}>
         <button
           type="button"
-          onClick={onCancel}
-          className="p-1 text-yellow-600 hover:text-yellow-500"
-          title="Close"
+          onClick={onToggleCollapsed}
+          aria-expanded={!collapsed}
+          className="flex items-center gap-2 text-lg font-medium text-yellow-700 dark:text-yellow-300"
         >
-          <X className="h-4 w-4" />
+          {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          {existingRule ? 'Edit Notification' : 'Send Notifications'}
         </button>
+        {existingRule && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="p-1 text-yellow-600 hover:text-yellow-500"
+            title="Cancel editing"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
+      {!collapsed && (
+      <>
       {error && (
         <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 dark:bg-opacity-30 border border-red-600 rounded-lg text-red-600 dark:text-red-300">
           {error}
@@ -394,8 +414,29 @@ export function NotificationRuleForm({
           >
             Cancel
           </button>
+          {existingRule && onToggleActive && (
+            <button
+              type="button"
+              onClick={onToggleActive}
+              className="px-4 py-2 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+            >
+              {existingRule.isActive ? 'Pause' : 'Resume'}
+            </button>
+          )}
+          {existingRule && onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="ml-auto px-4 py-2 btn-delete rounded-lg"
+            >
+              Delete
+            </button>
+          )}
         </div>
       </form>
+      {savedList && <div className="mt-6">{savedList}</div>}
+      </>
+      )}
     </div>
   );
 }

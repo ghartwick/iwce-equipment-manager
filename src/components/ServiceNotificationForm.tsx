@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AppUser } from '../services/userManagementService';
+import { Category } from '../types';
 import { NotificationChannel } from '../services/notificationRuleService';
 import {
   ScheduledNotification,
@@ -31,24 +32,32 @@ const DAY_OPTIONS = [
 interface ServiceNotificationFormProps {
   users: AppUser[];
   existingSchedule: ScheduledNotification | null;
+  groups: Category[];
   createdBy: string;
   onCancel: () => void;
   onSave: (input: ScheduledNotificationInput) => Promise<void>;
+  onToggleActive?: () => void;
+  onDelete?: () => void;
 }
 
 export function ServiceNotificationForm({
   users,
   existingSchedule,
+  groups,
   createdBy,
   onCancel,
-  onSave
+  onSave,
+  onToggleActive,
+  onDelete
 }: ServiceNotificationFormProps) {
   const [name, setName] = useState(existingSchedule?.name ?? '');
   const [body, setBody] = useState(existingSchedule?.body ?? '');
   const [audienceType, setAudienceType] = useState<ServiceNotificationAudience>(
-    existingSchedule?.audienceType ?? 'fleet'
+    existingSchedule?.audienceType ?? 'all'
   );
   const [userIds, setUserIds] = useState<string[]>(existingSchedule?.userIds ?? []);
+  const [roles, setRoles] = useState<string[]>(existingSchedule?.roles ?? []);
+  const [categoryId, setCategoryId] = useState(existingSchedule?.categoryId ?? '');
   const [channels, setChannels] = useState<NotificationChannel[]>(
     existingSchedule?.channels ?? ['inapp']
   );
@@ -72,6 +81,10 @@ export function ServiceNotificationForm({
     );
   };
 
+  const toggleRole = (role: string) => {
+    setRoles(prev => (prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]));
+  };
+
   const handleSubmit = async () => {
     setError(null);
     if (!name.trim()) {
@@ -84,6 +97,14 @@ export function ServiceNotificationForm({
     }
     if (audienceType === 'users' && userIds.length === 0) {
       setError('Pick at least one user');
+      return;
+    }
+    if (audienceType === 'role' && roles.length === 0) {
+      setError('Pick at least one role');
+      return;
+    }
+    if (audienceType === 'group' && !categoryId) {
+      setError('Pick a group');
       return;
     }
     if (channels.length === 0) {
@@ -99,6 +120,8 @@ export function ServiceNotificationForm({
         channels,
         audienceType,
         userIds: audienceType === 'users' ? userIds : [],
+        roles: audienceType === 'role' ? roles : [],
+        categoryId: audienceType === 'group' ? categoryId : '',
         frequency,
         timeOfDay,
         dayOfWeek: frequency === 'weekly' ? dayOfWeek : 1,
@@ -115,8 +138,8 @@ export function ServiceNotificationForm({
 
   return (
     <div className="mb-6 p-4 border border-yellow-600 rounded-lg bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-20">
-      <h4 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 mb-3">
-        {existingSchedule ? 'Edit service notification' : 'New service notification'}
+      <h4 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-3">
+        {existingSchedule ? 'Edit Reminder' : 'New Reminder'}
       </h4>
 
       {error && (
@@ -154,8 +177,8 @@ export function ServiceNotificationForm({
             {(
               [
                 ['all', 'All users'],
-                ['fleet', 'Users with a fleet truck'],
-                ['users', 'Specific users']
+                ['users', 'Specific users'],
+                ['role', 'Role']
               ] as const
             ).map(([value, label]) => (
               <label
@@ -172,13 +195,62 @@ export function ServiceNotificationForm({
                 {label}
               </label>
             ))}
+            <select
+              value={audienceType === 'group' ? categoryId : ''}
+              onChange={e => {
+                if (e.target.value) {
+                  setAudienceType('group');
+                  setCategoryId(e.target.value);
+                }
+              }}
+              aria-label="Group"
+              className="px-2 py-1 text-sm bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            >
+              <option value="">Group...</option>
+              {groups.map(g => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {audienceType === 'group' && (
+            <p className="text-xs text-yellow-600 dark:text-yellow-500">
+              Resolved when the reminder sends: anyone whose name is assigned to a unit in
+              this group at that moment.
+            </p>
+          )}
 
           {audienceType === 'fleet' && (
             <p className="text-xs text-yellow-600 dark:text-yellow-500">
-              Resolved when the notification sends: anyone whose name is assigned to a unit
-              in Fleet at that moment.
+              Currently sends to anyone assigned a Fleet unit. Pick an option above to change it.
             </p>
+          )}
+
+          {audienceType === 'role' && (
+            <div className="flex flex-wrap gap-4">
+              {(
+                [
+                  ['admin', 'Admin'],
+                  ['supervisor', 'Supervisor'],
+                  ['field', 'Field']
+                ] as const
+              ).map(([value, label]) => (
+                <label
+                  key={value}
+                  className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300"
+                >
+                  <input
+                    type="checkbox"
+                    checked={roles.includes(value)}
+                    onChange={() => toggleRole(value)}
+                    className="rounded border-yellow-600 text-yellow-500 focus:ring-yellow-500"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
           )}
 
           {audienceType === 'users' && (
@@ -293,7 +365,7 @@ export function ServiceNotificationForm({
             disabled={saving}
             className="px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50"
           >
-            {saving ? 'Saving...' : existingSchedule ? 'Save Changes' : 'Create Notification'}
+            {saving ? 'Saving...' : existingSchedule ? 'Save Changes' : 'Create Reminder'}
           </button>
           <button
             type="button"
@@ -302,6 +374,24 @@ export function ServiceNotificationForm({
           >
             Cancel
           </button>
+          {existingSchedule && onToggleActive && (
+            <button
+              type="button"
+              onClick={onToggleActive}
+              className="px-4 py-2 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+            >
+              {existingSchedule.isActive ? 'Pause' : 'Resume'}
+            </button>
+          )}
+          {existingSchedule && onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="ml-auto px-4 py-2 btn-delete rounded-lg"
+            >
+              Delete
+            </button>
+          )}
         </div>
       </div>
     </div>

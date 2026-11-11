@@ -12,7 +12,8 @@ export interface AppUser {
   updatedAt: string;
   createdBy?: string; // Admin who created this user
   isActive: boolean;
-  isSurveyor?: boolean; // When true, Add Time Card routes to the Surveyor timecard
+  isSurveyor?: boolean; // Survey time card access; Timecard nav lands on the Survey timecard
+  fieldTimecard?: boolean; // Field time card access; undefined means true
 }
 
 export class UserManagementService {

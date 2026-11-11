@@ -54,6 +54,12 @@ export default function SurveyTimecardPage() {
 
   const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'supervisor';
 
+  useEffect(() => {
+    if (user && user.role !== 'admin' && user.role !== 'supervisor' && !user.isSurveyor) {
+      navigate('/timecard', { replace: true });
+    }
+  }, [user, navigate]);
+
   // Returning from editing a card in the invoice preview: reopen the modal
   useEffect(() => {
     if (searchParams.get('invoice') === '1' && isAdminOrSupervisor) {
@@ -315,7 +321,7 @@ export default function SurveyTimecardPage() {
               {selectedDateLabel}
             </h3>
             {/* Field | Survey toggle (admins and surveyors) */}
-            {(isAdminOrSupervisor || user?.isSurveyor) && (
+            {(isAdminOrSupervisor || (user?.isSurveyor && user?.fieldTimecard !== false)) && (
               <div className="flex-1 flex justify-center">
                 <TimecardModeToggle mode="survey" />
               </div>

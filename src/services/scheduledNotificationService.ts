@@ -20,7 +20,7 @@ import { NotificationChannel } from './notificationRuleService';
  * this service is just the CRUD side for the management UI.
  */
 
-export type ServiceNotificationAudience = 'all' | 'fleet' | 'users';
+export type ServiceNotificationAudience = 'all' | 'users' | 'role' | 'group' | 'fleet';
 export type ServiceNotificationFrequency = 'daily' | 'weekly';
 
 export interface ScheduledNotification {
@@ -32,12 +32,18 @@ export interface ScheduledNotification {
   channels: NotificationChannel[];
   /**
    * 'all'   - every active user
-   * 'fleet' - users whose name is assigned on a fleetEquipment unit
    * 'users' - the picked userIds below
+   * 'role'  - active users with one of the picked roles
+   * 'group' - users whose name is assigned on a unit in the picked inventory category
+   * 'fleet' - legacy: users whose name is assigned on any fleetEquipment unit
    */
   audienceType: ServiceNotificationAudience;
   /** Recipient user ids when audienceType is 'users'. */
   userIds: string[];
+  /** Roles ('admin' | 'supervisor' | 'field') when audienceType is 'role'. */
+  roles: string[];
+  /** Inventory category id when audienceType is 'group'. */
+  categoryId: string;
   frequency: ServiceNotificationFrequency;
   /** 'HH:mm' local send time. */
   timeOfDay: string;
@@ -73,11 +79,16 @@ const DAY_NAMES = [
 
 export function describeSchedule(
   schedule: ScheduledNotification,
-  userNameById: Record<string, string>
+  userNameById: Record<string, string>,
+  categoryNameById: Record<string, string> = {}
 ): string {
   let audience: string;
   if (schedule.audienceType === 'fleet') {
     audience = 'users with a fleet truck';
+  } else if (schedule.audienceType === 'group') {
+    audience = `users assigned units in ${categoryNameById[schedule.categoryId] ?? 'unknown group'}`;
+  } else if (schedule.audienceType === 'role') {
+    audience = schedule.roles.length ? `role: ${schedule.roles.join(', ')}` : 'no roles selected';
   } else if (schedule.audienceType === 'users') {
     audience = schedule.userIds.length
       ? schedule.userIds.map(id => userNameById[id] ?? 'Unknown user').join(', ')
@@ -114,6 +125,8 @@ class ScheduledNotificationService {
       channels: data.channels ?? [],
       audienceType: data.audienceType ?? 'all',
       userIds: data.userIds ?? [],
+      roles: data.roles ?? [],
+      categoryId: data.categoryId ?? '',
       frequency: data.frequency ?? 'weekly',
       timeOfDay: data.timeOfDay ?? '07:00',
       dayOfWeek: data.dayOfWeek ?? 1,

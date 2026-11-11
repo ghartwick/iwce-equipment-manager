@@ -39,6 +39,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
     role: FormDataRole;
     isActive: boolean;
     isSurveyor: boolean;
+    fieldTimecard: boolean;
   }>({
     username: '',
     password: '',
@@ -46,7 +47,8 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
     email: '',
     role: 'field',
     isActive: true,
-    isSurveyor: false
+    isSurveyor: false,
+    fieldTimecard: true
   });
 
   useEffect(() => {
@@ -70,6 +72,11 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
     setError(null);
     setSuccess(null);
 
+    if (!formData.fieldTimecard && !formData.isSurveyor) {
+      setError('Select at least one time card (Field or Survey)');
+      return;
+    }
+
     try {
       if (editingUser) {
         // Update user - different behavior based on current user role
@@ -83,7 +90,8 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
             email: formData.email.trim(),
             role: formData.role,
             isActive: formData.isActive,
-            isSurveyor: formData.isSurveyor
+            isSurveyor: formData.isSurveyor,
+            fieldTimecard: formData.fieldTimecard
           };
           
           // Only include password if it's not empty (user wants to change password)
@@ -123,7 +131,8 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
         email: '',
         role: 'field',
         isActive: true,
-        isSurveyor: false
+        isSurveyor: false,
+        fieldTimecard: true
       });
 
       // Reload users
@@ -143,10 +152,39 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
       email: user.email ?? '',
       role: user.role, // AppUser already has converted role
       isActive: user.isActive,
-      isSurveyor: user.isSurveyor ?? false
+      isSurveyor: user.isSurveyor ?? false,
+      fieldTimecard: user.fieldTimecard ?? true
     });
     setShowAddForm(false);
   };
+
+  const renderTimecardAccess = (idPrefix: string) => (
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Time Cards</label>
+      <div className="flex flex-wrap items-center gap-4 px-3 py-2 border border-yellow-600 rounded-lg">
+        <label htmlFor={`${idPrefix}FieldTimecard`} className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300">
+          <input
+            type="checkbox"
+            id={`${idPrefix}FieldTimecard`}
+            checked={formData.fieldTimecard}
+            onChange={(e) => setFormData({ ...formData, fieldTimecard: e.target.checked })}
+            className="w-4 h-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
+          />
+          Field
+        </label>
+        <label htmlFor={`${idPrefix}SurveyTimecard`} className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300">
+          <input
+            type="checkbox"
+            id={`${idPrefix}SurveyTimecard`}
+            checked={formData.isSurveyor}
+            onChange={(e) => setFormData({ ...formData, isSurveyor: e.target.checked })}
+            className="w-4 h-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
+          />
+          Survey
+        </label>
+      </div>
+    </div>
+  );
 
   const handleDelete = async (user: AppUser) => {
     if (user.id === currentUser?.id) {
@@ -306,6 +344,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                       <option value="admin">Administrator</option>
                     </select>
                   </div>
+                  {renderTimecardAccess('add')}
                 </div>
                 <div className="flex items-center space-x-2">
                   <input
@@ -316,14 +355,6 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                     className="w-4 h-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
                   />
                   <label htmlFor="isActive" className="text-sm text-yellow-700 dark:text-yellow-300">Active User</label>
-                  <input
-                    type="checkbox"
-                    id="isSurveyor"
-                    checked={formData.isSurveyor}
-                    onChange={(e) => setFormData({ ...formData, isSurveyor: e.target.checked })}
-                    className="w-4 h-4 ml-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
-                  />
-                  <label htmlFor="isSurveyor" className="text-sm text-yellow-700 dark:text-yellow-300">Surveyor</label>
                 </div>
                 <div className="flex space-x-3">
                   <button
@@ -535,6 +566,7 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                             <option value="admin">Administrator</option>
                           </select>
                         </div>
+                        {renderTimecardAccess('edit')}
                       </>
                     ) : null}
                     <div>
@@ -580,14 +612,6 @@ export function UserManagement({ currentUser, asPage = false }: UserManagementPr
                         className="w-4 h-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
                       />
                       <label htmlFor="editIsActive" className="text-sm text-yellow-700 dark:text-yellow-300">Active User</label>
-                      <input
-                        type="checkbox"
-                        id="editIsSurveyor"
-                        checked={formData.isSurveyor}
-                        onChange={(e) => setFormData({ ...formData, isSurveyor: e.target.checked })}
-                        className="w-4 h-4 ml-4 text-yellow-500 bg-white dark:bg-black border-yellow-600 rounded focus:ring-yellow-500"
-                      />
-                      <label htmlFor="editIsSurveyor" className="text-sm text-yellow-700 dark:text-yellow-300">Surveyor</label>
                     </div>
                   )}
                   <div className="flex space-x-3">

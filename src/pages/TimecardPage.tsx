@@ -34,6 +34,14 @@ let _savedTimecardState: { selectedDates: string[]; currentMonth: string; siteFi
 export default function TimecardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user && user.role !== 'admin' && user.role !== 'supervisor' && user.fieldTimecard === false && user.isSurveyor) {
+      navigate('/survey-timecard', { replace: true });
+    } else if (user && user.role !== 'admin' && user.role !== 'supervisor' && user.fieldTimecard === false && !user.isSurveyor) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
   const { 
     loading, 
     getEntriesForDate,
@@ -1230,7 +1238,7 @@ export default function TimecardPage() {
                     : `Entries for ${selectedDateLabel}`}
                 </h3>
                 {/* Field | Survey toggle (admins and surveyors) */}
-                {(user?.role === 'admin' || user?.isSurveyor) && (
+                {(user?.role === 'admin' || user?.role === 'supervisor' || (user?.isSurveyor && user?.fieldTimecard !== false)) && (
                   <div className="flex-1 flex justify-center">
                     <TimecardModeToggle mode="field" />
                   </div>
@@ -2093,7 +2101,7 @@ export default function TimecardPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
                 <h3 className="text-lg font-semibold text-yellow-700 dark:text-yellow-300">Select a Date</h3>
                 {/* Field | Survey toggle (admins and surveyors) */}
-                {(user?.role === 'admin' || user?.isSurveyor) && (
+                {(user?.role === 'admin' || user?.role === 'supervisor' || (user?.isSurveyor && user?.fieldTimecard !== false)) && (
                   <div className="flex-1 flex justify-center">
                     <TimecardModeToggle mode="field" />
                   </div>

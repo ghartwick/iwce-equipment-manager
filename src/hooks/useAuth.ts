@@ -7,6 +7,7 @@ interface User {
   role: 'admin' | 'supervisor' | 'field';
   name: string;
   isSurveyor?: boolean;
+  fieldTimecard?: boolean;
 }
 
 interface AuthState {
@@ -63,7 +64,11 @@ export function useAuth() {
                 );
               }
               setAuthState({
-                user: { ...user, isSurveyor: currentUser.isSurveyor ?? false },
+                user: {
+                  ...user,
+                  isSurveyor: currentUser.isSurveyor ?? false,
+                  fieldTimecard: currentUser.fieldTimecard ?? true
+                },
                 isAuthenticated: true,
                 isLoading: false,
                 error: null,
@@ -155,6 +160,7 @@ export function useAuth() {
           role: userRecord.role === 'technician' ? 'field' : userRecord.role,
           name: userRecord.name,
           isSurveyor: userRecord.isSurveyor ?? false,
+          fieldTimecard: userRecord.fieldTimecard ?? true,
         };
 
         localStorage.setItem('iwce_user', JSON.stringify(user));

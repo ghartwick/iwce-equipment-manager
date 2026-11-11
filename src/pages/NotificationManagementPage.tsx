@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, BellRing, Clock, Edit2, History, Plus, Send, Smartphone, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, Edit2, History, Plus, Send, Smartphone, Trash2, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { AppUser, userManagementService } from '../services/userManagementService';
 import { Site, siteManagementService } from '../services/siteManagementService';
@@ -17,7 +17,6 @@ import {
   isPushConfigured,
   pushNotificationService
 } from '../services/pushNotificationService';
-import { inAppNotificationService } from '../services/inAppNotificationService';
 import {
   ManualNotificationChannel,
   sendManualNotification
@@ -34,6 +33,8 @@ import {
   scheduledNotificationService
 } from '../services/scheduledNotificationService';
 import { ServiceNotificationForm } from '../components/ServiceNotificationForm';
+import { getCategories } from '../services/firebaseService';
+import { Category } from '../types';
 
 const inputClass =
   'w-full px-3 py-2 bg-yellow-200 dark:bg-black border border-yellow-600 rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500';
@@ -51,7 +52,10 @@ export default function NotificationManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  const [sectionsOpen, setSectionsOpen] = useState({ message: false, reminders: false, send: false });
+  const toggleSection = (key: 'message' | 'reminders' | 'send') =>
+    setSectionsOpen(prev => ({ ...prev, [key]: !prev[key] }));
   const [editingRule, setEditingRule] = useState<NotificationRule | null>(null);
   const [emailDraft, setEmailDraft] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
@@ -77,10 +81,16 @@ export default function NotificationManagementPage() {
   const [schedules, setSchedules] = useState<ScheduledNotification[]>([]);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<ScheduledNotification | null>(null);
+  const [groups, setGroups] = useState<Category[]>([]);
 
   const owner = useMemo(
     () => users.find(u => u.id === selectedUserId) ?? null,
     [users, selectedUserId]
+  );
+
+  const groupNameById = useMemo(
+    () => Object.fromEntries(groups.map(g => [g.id, g.name])),
+    [groups]
   );
 
   const userNameById = useMemo(
@@ -100,6 +110,12 @@ export default function NotificationManagementPage() {
         setSelectedUserId(user?.id ?? '');
         if (user?.role === 'admin') {
           setSchedules(await scheduledNotificationService.getAll());
+          const categories = await getCategories();
+          setGroups(
+            categories
+              .filter(c => c.allocationDefault === 'employee')
+              .sort((a, b) => a.name.localeCompare(b.name))
+          );
         }
       } catch (err: any) {
         setError(err?.message || 'Failed to load notification settings');
@@ -113,7 +129,6 @@ export default function NotificationManagementPage() {
   useEffect(() => {
     if (!selectedUserId) return;
     setEmailDraft(users.find(u => u.id === selectedUserId)?.email ?? '');
-    setShowForm(false);
     setEditingRule(null);
     loadRules(selectedUserId);
     loadDevices(selectedUserId);
@@ -173,25 +188,6 @@ export default function NotificationManagementPage() {
       await pushNotificationService.sendTestNotification();
     } catch (err: any) {
       setError(err?.message || 'Failed to show test notification');
-    }
-  };
-
-  const handleTestInApp = async () => {
-    if (!owner) return;
-    try {
-      await inAppNotificationService.create({
-        userId: owner.id,
-        title: 'Test in-app notification',
-        body: 'In-app notifications are working. This is what a pop-up looks like.',
-        eventType: 'test'
-      });
-      setSuccess(
-        owner.id === user?.id
-          ? 'Test queued. The pop-up appears right away, or next time you open the app.'
-          : `Test queued for ${owner.name}. They will see it next time they open the app.`
-      );
-    } catch (err: any) {
-      setError(err?.message || 'Failed to queue in-app notification');
     }
   };
 
@@ -350,7 +346,7 @@ export default function NotificationManagementPage() {
       await notificationRuleService.createRule(input);
       setSuccess('Notification created');
     }
-    setShowForm(false);
+    setFormKey(k => k + 1);
     setEditingRule(null);
     await loadRules(input.ownerUserId);
   };
@@ -363,6 +359,70 @@ export default function NotificationManagementPage() {
       setError(err?.message || 'Failed to update notification');
     }
   };
+
+  const rulesList =
+    rules.length === 0 ? (
+      <div className="text-center py-6 text-yellow-600 dark:text-yellow-400">
+        No notifications set up yet.
+      </div>
+    ) : (
+      <div className="space-y-2">
+        {rules.map(rule => (
+          <div
+            key={rule.id}
+            onClick={() => {
+              if (isAdmin && window.matchMedia('(min-width: 768px)').matches) {
+                setEditingRule(rule);
+                setSectionsOpen(prev => ({ ...prev, send: true }));
+              }
+            }}
+            className={`flex items-start justify-between gap-3 p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg transition-colors ${
+              isAdmin ? 'md:cursor-pointer md:hover:bg-yellow-100 dark:md:hover:bg-yellow-900/30' : ''
+            }`}
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium text-gray-900 dark:text-yellow-100">{rule.name}</span>
+                <span
+                  className={`px-2 py-0.5 text-xs rounded-full ${
+                    rule.isActive
+                      ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-400'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                  }`}
+                >
+                  {rule.isActive ? 'Active' : 'Paused'}
+                </span>
+              </div>
+              <p className="text-sm text-yellow-700 dark:text-yellow-500 mt-0.5">
+                {describeRule(rule, userNameById)}
+              </p>
+            </div>
+            {isAdmin ? (
+              <div className="flex items-center gap-1 flex-shrink-0 md:hidden">
+                <button
+                  onClick={() => {
+                    setEditingRule(rule);
+                    setSectionsOpen(prev => ({ ...prev, send: true }));
+                  }}
+                  className="p-1 text-yellow-600 hover:text-yellow-500"
+                  title="Edit notification"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => handleToggleActive(rule)}
+                className="px-2 py-1 text-xs text-yellow-700 dark:text-yellow-400 hover:text-yellow-500 flex-shrink-0"
+                title={rule.isActive ? 'Pause notification' : 'Resume notification'}
+              >
+                {rule.isActive ? 'Pause' : 'Resume'}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    );
 
   const handleDeleteRule = async (rule: NotificationRule) => {
     if (!window.confirm(`Delete notification "${rule.name}"?`)) return;
@@ -404,27 +464,6 @@ export default function NotificationManagementPage() {
                 Manage Notifications
               </h2>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleOpenHistory}
-                className="flex items-center space-x-2 px-4 py-2 border border-yellow-600 text-yellow-100 dark:text-yellow-300 rounded-lg hover:bg-yellow-600 hover:text-black transition-colors"
-              >
-                <History className="h-4 w-4" />
-                <span>History</span>
-              </button>
-              {isAdmin && (
-                <button
-                  onClick={() => {
-                    setEditingRule(null);
-                    setShowForm(true);
-                  }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add Notification</span>
-                </button>
-              )}
-            </div>
           </div>
 
           <div className="p-6">
@@ -439,19 +478,40 @@ export default function NotificationManagementPage() {
               </div>
             )}
 
-            <div className="mb-6 p-3 bg-yellow-100/60 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-800 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
-              In-app and push notifications are active. Email sends through Resend &mdash; set
-              <code> RESEND_API_KEY</code> and <code>EMAIL_FROM</code> in the Vercel env vars, and
-              make sure each recipient has a delivery email saved below.
-            </div>
+            {isAdmin && (
+              <div className="mb-6 p-3 bg-yellow-100/60 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-800 rounded-lg text-sm text-yellow-700 dark:text-yellow-400">
+                In-app and push notifications are active. Email sends through Resend &mdash; set
+                <code> RESEND_API_KEY</code> and <code>EMAIL_FROM</code> in the Vercel env vars, and
+                make sure each recipient has a delivery email saved below.
+              </div>
+            )}
 
             {/* Manual broadcast composer (admin only) */}
             {isAdmin && (
               <div className="mb-6 p-4 border border-yellow-300 dark:border-yellow-800 rounded-lg">
-                <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2 mb-3">
-                  <Send className="h-4 w-4" /> Send a notification
-                </h3>
+                <div className={`flex items-center justify-between gap-3 flex-wrap ${sectionsOpen.message ? 'mb-3' : ''}`}>
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('message')}
+                    aria-expanded={sectionsOpen.message}
+                    className="flex items-center gap-2 text-lg font-medium text-yellow-700 dark:text-yellow-300"
+                  >
+                    {sectionsOpen.message ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                    Send a Message
+                  </button>
+                  {sectionsOpen.message && (
+                    <button
+                      type="button"
+                      onClick={handleOpenHistory}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-600 hover:text-black transition-colors"
+                    >
+                      <History className="h-4 w-4" />
+                      History
+                    </button>
+                  )}
+                </div>
 
+                {sectionsOpen.message && (
                 <div className="space-y-3">
                   <div>
                     <label className={labelClass}>Message</label>
@@ -583,17 +643,24 @@ export default function NotificationManagementPage() {
                     </button>
                   </div>
                 </div>
+                )}
               </div>
             )}
 
             {/* Scheduled service notifications (admin only) */}
             {isAdmin && (
               <div className="mb-6 p-4 border border-yellow-300 dark:border-yellow-800 rounded-lg">
-                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-                  <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
-                    <Clock className="h-4 w-4" /> Service notifications
-                  </h3>
-                  {!showScheduleForm && (
+                <div className={`flex items-center justify-between gap-3 flex-wrap ${sectionsOpen.reminders ? 'mb-3' : ''}`}>
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('reminders')}
+                    aria-expanded={sectionsOpen.reminders}
+                    className="flex items-center gap-2 text-lg font-medium text-yellow-700 dark:text-yellow-300"
+                  >
+                    {sectionsOpen.reminders ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                    Set Reminders
+                  </button>
+                  {sectionsOpen.reminders && !showScheduleForm && (
                     <button
                       onClick={() => {
                         setEditingSchedule(null);
@@ -602,10 +669,12 @@ export default function NotificationManagementPage() {
                       className="flex items-center gap-1 px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors"
                     >
                       <Plus className="h-4 w-4" />
-                      Add Service Notification
+                      Add Reminder
                     </button>
                   )}
                 </div>
+                {sectionsOpen.reminders && (
+                <>
                 <p className="text-sm text-yellow-600 dark:text-yellow-500 mb-3">
                   Recurring reminders sent on a schedule &mdash; e.g. every Wednesday to everyone
                   with a fleet truck assigned.
@@ -613,9 +682,32 @@ export default function NotificationManagementPage() {
 
                 {showScheduleForm && (
                   <ServiceNotificationForm
+                    key={editingSchedule?.id ?? 'new'}
                     users={users}
-                    existingSchedule={editingSchedule}
+                    groups={groups}
+                    existingSchedule={
+                      editingSchedule
+                        ? schedules.find(s => s.id === editingSchedule.id) ?? editingSchedule
+                        : null
+                    }
                     createdBy={user?.username ?? ''}
+                    onToggleActive={
+                      editingSchedule
+                        ? () =>
+                            handleToggleSchedule(
+                              schedules.find(s => s.id === editingSchedule.id) ?? editingSchedule
+                            )
+                        : undefined
+                    }
+                    onDelete={
+                      editingSchedule
+                        ? async () => {
+                            await handleDeleteSchedule(editingSchedule);
+                            setShowScheduleForm(false);
+                            setEditingSchedule(null);
+                          }
+                        : undefined
+                    }
                     onCancel={() => {
                       setShowScheduleForm(false);
                       setEditingSchedule(null);
@@ -633,7 +725,13 @@ export default function NotificationManagementPage() {
                     {schedules.map(schedule => (
                       <div
                         key={schedule.id}
-                        className="flex items-start justify-between gap-3 p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
+                        onClick={() => {
+                          if (window.matchMedia('(min-width: 768px)').matches) {
+                            setEditingSchedule(schedule);
+                            setShowScheduleForm(true);
+                          }
+                        }}
+                        className="flex items-start justify-between gap-3 p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg md:cursor-pointer md:hover:bg-yellow-100 dark:md:hover:bg-yellow-900/30 transition-colors"
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -651,7 +749,7 @@ export default function NotificationManagementPage() {
                             </span>
                           </div>
                           <p className="text-sm text-yellow-700 dark:text-yellow-500 mt-0.5">
-                            {describeSchedule(schedule, userNameById)}
+                            {describeSchedule(schedule, userNameById, groupNameById)}
                           </p>
                           {schedule.body && (
                             <p className="text-xs text-yellow-600 dark:text-yellow-600 mt-0.5">
@@ -659,37 +757,57 @@ export default function NotificationManagementPage() {
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <button
-                            onClick={() => handleToggleSchedule(schedule)}
-                            className="px-2 py-1 text-xs text-yellow-700 dark:text-yellow-400 hover:text-yellow-500"
-                            title={schedule.isActive ? 'Pause notification' : 'Resume notification'}
-                          >
-                            {schedule.isActive ? 'Pause' : 'Resume'}
-                          </button>
+                        <div className="flex items-center gap-1 flex-shrink-0 md:hidden">
                           <button
                             onClick={() => {
                               setEditingSchedule(schedule);
                               setShowScheduleForm(true);
                             }}
                             className="p-1 text-yellow-600 hover:text-yellow-500"
-                            title="Edit service notification"
+                            title="Edit reminder"
                           >
                             <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSchedule(schedule)}
-                            className="p-1 btn-delete rounded"
-                            title="Delete service notification"
-                          >
-                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
+                </>
+                )}
               </div>
+            )}
+
+            {/* Rule form */}
+            {isAdmin && owner && (
+              <NotificationRuleForm
+                key={editingRule?.id ?? `new-${owner.id}-${formKey}`}
+                owner={owner}
+                savedList={rulesList}
+                onToggleActive={editingRule ? () => handleToggleActive(editingRule) : undefined}
+                onDelete={
+                  editingRule
+                    ? async () => {
+                        await handleDeleteRule(editingRule);
+                        setFormKey(k => k + 1);
+                        setEditingRule(null);
+                      }
+                    : undefined
+                }
+                sites={sites}
+                users={users}
+                existingRule={
+                  editingRule ? rules.find(r => r.id === editingRule.id) ?? editingRule : null
+                }
+                createdBy={user?.username ?? ''}
+                collapsed={!sectionsOpen.send}
+                onToggleCollapsed={() => toggleSection('send')}
+                onCancel={() => {
+                  setFormKey(k => k + 1);
+                  setEditingRule(null);
+                }}
+                onSave={handleSaveRule}
+              />
             )}
 
             {/* Admin user switcher */}
@@ -711,28 +829,6 @@ export default function NotificationManagementPage() {
                       </option>
                     ))}
                 </select>
-              </div>
-            )}
-
-            {/* In-app notifications */}
-            {owner && (
-              <div className="mb-6 p-4 border border-yellow-300 dark:border-yellow-800 rounded-lg">
-                <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
-                  <h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
-                    <BellRing className="h-4 w-4" /> In-app pop-ups
-                  </h3>
-                  <button
-                    onClick={handleTestInApp}
-                    className="px-3 py-1.5 text-sm text-yellow-700 dark:text-yellow-400 border border-yellow-600 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
-                  >
-                    Send Test
-                  </button>
-                </div>
-                <p className="text-sm text-yellow-600 dark:text-yellow-500">
-                  Always on, nothing to enable. Notifications appear as a pop-up while the app is
-                  open, and anything that arrives beforehand is shown the next time it is opened.
-                  Unread items stay on the bell in the header.
-                </p>
               </div>
             )}
 
@@ -856,91 +952,6 @@ export default function NotificationManagementPage() {
               </div>
             )}
 
-            {/* Rule form */}
-            {showForm && owner && (
-              <NotificationRuleForm
-                owner={owner}
-                sites={sites}
-                users={users}
-                existingRule={editingRule}
-                createdBy={user?.username ?? ''}
-                onCancel={() => {
-                  setShowForm(false);
-                  setEditingRule(null);
-                }}
-                onSave={handleSaveRule}
-              />
-            )}
-
-            {/* Rules list */}
-            <h3 className="text-lg font-medium text-yellow-700 dark:text-yellow-300 mb-3">
-              Notifications
-            </h3>
-            {rules.length === 0 ? (
-              <div className="text-center py-8 text-yellow-600 dark:text-yellow-400">
-                <Bell className="h-8 w-8 mx-auto mb-2 opacity-60" />
-                No notifications set up yet.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {rules.map(rule => (
-                  <div
-                    key={rule.id}
-                    className="flex items-start justify-between gap-3 p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-300 dark:border-yellow-800 rounded-lg"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-gray-900 dark:text-yellow-100">
-                          {rule.name}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 text-xs rounded-full ${
-                            rule.isActive
-                              ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-30 text-green-700 dark:text-green-400'
-                              : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                          }`}
-                        >
-                          {rule.isActive ? 'Active' : 'Paused'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-500 mt-0.5">
-                        {describeRule(rule, userNameById)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => handleToggleActive(rule)}
-                        className="px-2 py-1 text-xs text-yellow-700 dark:text-yellow-400 hover:text-yellow-500"
-                        title={rule.isActive ? 'Pause notification' : 'Resume notification'}
-                      >
-                        {rule.isActive ? 'Pause' : 'Resume'}
-                      </button>
-                      {isAdmin && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setEditingRule(rule);
-                              setShowForm(true);
-                            }}
-                            className="p-1 text-yellow-600 hover:text-yellow-500"
-                            title="Edit notification"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRule(rule)}
-                            className="p-1 btn-delete rounded"
-                            title="Delete notification"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </div>

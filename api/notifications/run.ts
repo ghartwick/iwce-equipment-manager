@@ -74,8 +74,10 @@ interface ScheduleDoc {
   name: string;
   body: string;
   channels: DeliveryChannel[];
-  audienceType: 'all' | 'fleet' | 'users';
+  audienceType: 'all' | 'users' | 'role' | 'group' | 'fleet';
   userIds: string[];
+  roles?: string[];
+  categoryId?: string;
   frequency: string;
   timeOfDay: string;
   dayOfWeek: number;
@@ -200,16 +202,36 @@ async function resolveScheduleRecipients(
   }
 
   const usersSnapshot = await db.collection('users').where('isActive', '==', true).get();
-  const users = usersSnapshot.docs.map(d => ({ id: d.id, name: (d.data().name as string) ?? '' }));
+  const users = usersSnapshot.docs.map(d => {
+    const data = d.data();
+    const rawRole = (data.role as string) ?? '';
+    return {
+      id: d.id,
+      name: (data.name as string) ?? '',
+      role: rawRole === 'technician' ? 'field' : rawRole
+    };
+  });
 
   if (schedule.audienceType === 'all') {
     return users.map(u => u.id);
   }
 
-  // 'fleet': names assigned to any fleet unit.
-  const fleetSnapshot = await db.collection('fleetEquipment').get();
+  if (schedule.audienceType === 'role') {
+    const roles = new Set(schedule.roles ?? []);
+    return users.filter(u => roles.has(u.role)).map(u => u.id);
+  }
+
+  // 'group': names assigned to a unit of that category in any inventory
+  // collection. Legacy 'fleet': names assigned to any fleet unit.
+  const collections =
+    schedule.audienceType === 'group'
+      ? ['fleetEquipment', 'heavyEquipment', 'fieldTools']
+      : ['fleetEquipment'];
+  const snapshots = await Promise.all(collections.map(c => db.collection(c).get()));
   const assignedNames = new Set(
-    fleetSnapshot.docs
+    snapshots
+      .flatMap(s => s.docs)
+      .filter(d => schedule.audienceType !== 'group' || d.data().category === schedule.categoryId)
       .map(d => (d.data().employee as string) ?? '')
       .filter(name => !NON_USER_EMPLOYEE_VALUES.has(name))
   );

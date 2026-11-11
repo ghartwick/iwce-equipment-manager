@@ -399,7 +399,6 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                             <thead>
                               <tr className="text-left text-yellow-700 dark:text-yellow-400 border-b border-yellow-200 dark:border-yellow-800">
                                 <th className="py-1 pr-2">Site</th>
-                                {isAdmin && <th className="py-1 pl-2 text-right"></th>}
                               </tr>
                             </thead>
                             <tbody>
@@ -407,7 +406,7 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                                 if (site === null) {
                                   return clientSites.some(s => !s.isActive) ? (
                                     <tr key="inactive-header" className="border-b border-yellow-200 dark:border-yellow-800">
-                                      <th colSpan={isAdmin ? 2 : 1} className="pt-3 pb-1 text-left text-xs uppercase tracking-wide text-yellow-700 dark:text-yellow-400">Inactive</th>
+                                      <th colSpan={1} className="pt-3 pb-1 text-left text-xs uppercase tracking-wide text-yellow-700 dark:text-yellow-400">Inactive</th>
                                     </tr>
                                   ) : null;
                                 }
@@ -420,13 +419,6 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                                   <td className="py-1.5 pr-2 text-gray-900 dark:text-yellow-100">
                                     {site.name}
                                   </td>
-                                  {isAdmin && (
-                                    <td className="py-1.5 pl-2">
-                                      <div className="flex justify-end gap-1">
-                                        <button onClick={(e) => { e.stopPropagation(); navigate(`/admin/sites/edit/${site.id}`); }} className="p-1 text-yellow-600 hover:text-yellow-500" title="Edit site / codes"><Edit2 className="h-4 w-4" /></button>
-                                      </div>
-                                    </td>
-                                  )}
                                 </tr>
                                 );
                               })}
@@ -477,7 +469,6 @@ export function ClientManagement({ currentUser }: ClientManagementProps) {
                   {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <button onClick={() => handleAssignSite(site)} className="px-3 py-1.5 text-sm bg-yellow-600 text-black rounded-lg hover:bg-yellow-500 transition-colors">Assign</button>
-                <button onClick={() => navigate(`/admin/sites/edit/${site.id}`)} className="p-1.5 text-yellow-600 hover:text-yellow-500" title="Edit site / codes"><Edit2 className="h-4 w-4" /></button>
               </div>
             ))}
           </div>

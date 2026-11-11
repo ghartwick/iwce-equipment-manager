@@ -284,6 +284,7 @@ export default function SurveyTimecardPage() {
                 ? getEntriesForDate(day).filter(e => canSeeEntry(e, user, supervisorUserIds))
                 : [];
               const submittedCount = dayEntries.filter(e => e.status === 'submitted').length;
+              const invoicedCount = dayEntries.filter(e => !!e.invoiceId).length;
               const draftCount = dayEntries.filter(e => !e.status || e.status === 'draft').length;
               return (
                 <button
@@ -305,6 +306,14 @@ export default function SurveyTimecardPage() {
                     {submittedCount > 0 && (
                       <div className="absolute -top-1 -right-1 bg-green-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
                         {submittedCount}
+                      </div>
+                    )}
+                    {invoicedCount > 0 && (
+                      <div
+                        className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold border border-yellow-200 dark:border-yellow-800"
+                        title={`${invoicedCount} invoiced`}
+                      >
+                        {invoicedCount}
                       </div>
                     )}
                   </div>

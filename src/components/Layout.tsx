@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { Plus, BellRing, History, User, LogOut, Menu, Package, Users, Clock, MapPin, Wrench, Truck, Sun, Moon, FileText, Car, DollarSign, Map, Sparkles } from 'lucide-react';
+import { History, Menu } from 'lucide-react';
 import { NotificationProvider } from '../context/NotificationContext';
 import NotificationBell from './NotificationBell';
 import NotificationPopup from './NotificationPopup';
@@ -20,11 +20,11 @@ function LayoutShell({ children }: LayoutProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const navigation = [
-    { name: 'Inventory', href: '/inventory', icon: Package },
+    { name: 'Inventory', href: '/inventory' },
     // Surveyors land on the survey timecard by default; the in-page toggle still reaches Field
-    { name: 'Timecard', href: user?.isSurveyor ? '/survey-timecard' : '/timecard', icon: Clock },
-    ...((user?.role === 'admin' || user?.role === 'supervisor') ? [{ name: 'Shop', href: '/shop', icon: FileText }] : []),
-    { name: 'Plans', href: '/plans', icon: Map },
+    { name: 'Timecard', href: user?.isSurveyor ? '/survey-timecard' : '/timecard' },
+    ...((user?.role === 'admin' || user?.role === 'supervisor') ? [{ name: 'Shop', href: '/shop' }] : []),
+    { name: 'Plans', href: '/plans' },
   ];
 
   const isActive = (href: string) => {
@@ -127,7 +127,6 @@ function LayoutShell({ children }: LayoutProps) {
               {/* Navigation Links */}
               <div className="flex items-center space-x-1 mr-4">
                 {navigation.map((item) => {
-                  const Icon = item.icon;
                   return (
                     <Link
                       key={item.name}
@@ -139,8 +138,7 @@ function LayoutShell({ children }: LayoutProps) {
                       }`}
                       title={item.name}
                     >
-                      <Icon className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">{item.name}</span>
+                      <span>{item.name}</span>
                     </Link>
                   );
                 })}
@@ -174,7 +172,7 @@ function LayoutShell({ children }: LayoutProps) {
                       <div className="p-4 border-b border-yellow-200 dark:border-yellow-800">
                         <div className="flex items-center space-x-3">
                           <div className="h-10 w-10 bg-yellow-600 rounded-full flex items-center justify-center">
-                            <User className="h-5 w-5 text-black" />
+                            <span className="text-black font-semibold">{user.name.charAt(0).toUpperCase()}</span>
                           </div>
                           <div>
                             <p className="text-gray-900 dark:text-yellow-100 font-medium">{user.name}</p>
@@ -199,7 +197,6 @@ function LayoutShell({ children }: LayoutProps) {
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
-                              <MapPin className="h-4 w-4" />
                               <span>Sites</span>
                             </button>
                             <button
@@ -210,7 +207,6 @@ function LayoutShell({ children }: LayoutProps) {
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
-                              <Car className="h-4 w-4" />
                               <span>Fleet</span>
                             </button>
                             <button
@@ -221,7 +217,6 @@ function LayoutShell({ children }: LayoutProps) {
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
-                              <Truck className="h-4 w-4" />
                               <span>Heavy Equipment</span>
                             </button>
                             <button
@@ -232,7 +227,6 @@ function LayoutShell({ children }: LayoutProps) {
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
-                              <Plus className="h-4 w-4" />
                               <span>Field Tools</span>
                             </button>
                             <button
@@ -243,7 +237,6 @@ function LayoutShell({ children }: LayoutProps) {
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
-                              <Wrench className="h-4 w-4" />
                               <span>Small Tools</span>
                             </button>
                             <button
@@ -254,7 +247,6 @@ function LayoutShell({ children }: LayoutProps) {
                               }}
                               className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                             >
-                              <DollarSign className="h-4 w-4" />
                               <span>Expenses</span>
                             </button>
                           </>
@@ -270,7 +262,6 @@ function LayoutShell({ children }: LayoutProps) {
                             }}
                             className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                           >
-                            <Users className="h-4 w-4" />
                             <span>Users</span>
                           </button>
                         )}
@@ -284,7 +275,6 @@ function LayoutShell({ children }: LayoutProps) {
                           }}
                           className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                         >
-                          <BellRing className="h-4 w-4" />
                           <span>Notifications</span>
                         </button>
 
@@ -299,7 +289,6 @@ function LayoutShell({ children }: LayoutProps) {
                           }}
                           className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                         >
-                          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                           <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
                         </button>
 
@@ -311,10 +300,7 @@ function LayoutShell({ children }: LayoutProps) {
                             }}
                             className="w-full flex items-center justify-between px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                           >
-                            <span className="flex items-center space-x-2">
-                              <Sparkles className="h-4 w-4" />
-                              <span>New dark look (preview)</span>
-                            </span>
+                            <span>New dark look (preview)</span>
                             <span className={`text-xs font-semibold ${darkRefresh ? 'text-green-500' : 'text-yellow-600'}`}>
                               {darkRefresh ? 'On' : 'Off'}
                             </span>
@@ -328,7 +314,6 @@ function LayoutShell({ children }: LayoutProps) {
                           }}
                           className="w-full flex items-center space-x-2 px-3 py-2 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-yellow-900 dark:hover:bg-opacity-30 rounded-lg transition-colors"
                         >
-                          <LogOut className="h-4 w-4" />
                           <span>Sign Out</span>
                         </button>
                       </div>
@@ -348,7 +333,7 @@ function LayoutShell({ children }: LayoutProps) {
                   <div className="p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-30 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="h-10 w-10 bg-yellow-600 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-black" />
+                        <span className="text-black font-semibold">{user.name.charAt(0).toUpperCase()}</span>
                       </div>
                       <div>
                         <p className="text-gray-900 dark:text-yellow-100 font-medium">{user.name}</p>
@@ -363,7 +348,6 @@ function LayoutShell({ children }: LayoutProps) {
                 
                 {/* Mobile Navigation */}
                 {navigation.map((item) => {
-                  const Icon = item.icon;
                   return (
                     <Link
                       key={item.name}
@@ -375,7 +359,6 @@ function LayoutShell({ children }: LayoutProps) {
                           : 'bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-100 dark:hover:bg-opacity-70'
                       }`}
                     >
-                      <Icon className="h-5 w-5" />
                       <span>{item.name}</span>
                     </Link>
                   );
@@ -388,42 +371,36 @@ function LayoutShell({ children }: LayoutProps) {
                       onClick={() => { setShowMobileMenu(false); navigate('/manage/sites'); }}
                       className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                     >
-                      <MapPin className="h-5 w-5" />
                       <span>Manage Sites</span>
                     </button>
                     <button
                       onClick={() => { setShowMobileMenu(false); navigate('/manage/fleet'); }}
                       className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                     >
-                      <Car className="h-5 w-5" />
                       <span>Manage Fleet</span>
                     </button>
                     <button
                       onClick={() => { setShowMobileMenu(false); navigate('/manage/heavy-equipment'); }}
                       className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                     >
-                      <Truck className="h-5 w-5" />
                       <span>Manage Heavy Equipment</span>
                     </button>
                     <button
                       onClick={() => { setShowMobileMenu(false); navigate('/manage/field-tools'); }}
                       className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                     >
-                      <Plus className="h-5 w-5" />
                       <span>Manage Field Tools</span>
                     </button>
                     <button
                       onClick={() => { setShowMobileMenu(false); navigate('/manage/small-tools'); }}
                       className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                     >
-                      <Wrench className="h-5 w-5" />
                       <span>Manage Small Tools</span>
                     </button>
                     <button
                       onClick={() => { setShowMobileMenu(false); navigate('/manage/expenses'); }}
                       className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                     >
-                      <DollarSign className="h-5 w-5" />
                       <span>Manage Expenses</span>
                     </button>
                   </>
@@ -435,7 +412,6 @@ function LayoutShell({ children }: LayoutProps) {
                     onClick={() => { setShowMobileMenu(false); navigate('/manage/users'); }}
                     className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                   >
-                    <Users className="h-5 w-5" />
                     <span>User Management</span>
                   </button>
                 )}
@@ -446,7 +422,6 @@ function LayoutShell({ children }: LayoutProps) {
                     onClick={() => { setShowMobileMenu(false); navigate('/manage/notifications'); }}
                     className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                   >
-                    <BellRing className="h-5 w-5" />
                     <span>Manage Notifications</span>
                   </button>
                 )}
@@ -461,7 +436,6 @@ function LayoutShell({ children }: LayoutProps) {
                   }}
                   className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                 >
-                  {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                   <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
                 </button>
 
@@ -473,10 +447,7 @@ function LayoutShell({ children }: LayoutProps) {
                     }}
                     className="flex items-center justify-between w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                   >
-                    <span className="flex items-center space-x-3">
-                      <Sparkles className="h-5 w-5" />
-                      <span>New dark look (preview)</span>
-                    </span>
+                    <span>New dark look (preview)</span>
                     <span className={`text-xs font-semibold ${darkRefresh ? 'text-green-500' : 'text-yellow-600'}`}>
                       {darkRefresh ? 'On' : 'Off'}
                     </span>
@@ -491,7 +462,6 @@ function LayoutShell({ children }: LayoutProps) {
                     }}
                     className="flex items-center space-x-3 w-full p-3 bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-50 border border-yellow-600 text-yellow-700 dark:text-yellow-300 rounded-lg hover:bg-yellow-100 dark:hover:bg-opacity-70 transition-colors"
                   >
-                    <LogOut className="h-5 w-5" />
                     <span>Logout</span>
                   </button>
                 )}

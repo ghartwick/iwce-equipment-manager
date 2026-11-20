@@ -98,15 +98,15 @@ export const useTimecard = () => {
   };
 
   // Submit time entry
-  const submitTimeEntry = async (id: string, userId?: string) => {
+  const submitTimeEntry = async (id: string, userId?: string, updates: Partial<TimeEntry> = {}) => {
     try {
-      await timecardService.submitTimeEntry(id, userId);
+      await timecardService.submitTimeEntry(id, userId, updates);
       
       // Update local state
       setTimeEntries(prev => 
         prev.map(entry => 
           entry.id === id 
-            ? { ...entry, status: 'submitted', isLocked: true, submittedAt: new Date(), updatedAt: new Date(), submittedBy: userId || entry.userId }
+            ? { ...entry, ...updates, userId: entry.userId, status: 'submitted', isLocked: true, submittedAt: new Date(), updatedAt: new Date(), submittedBy: entry.submittedBy || userId || entry.userId }
             : entry
         )
       );

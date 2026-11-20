@@ -323,14 +323,18 @@ class TimecardService {
   }
 
   // Submit time entry
-  async submitTimeEntry(id: string, userId?: string): Promise<void> {
-    const entry = await this.getTimeEntry(id);
-    await this.updateTimeEntry(id, {
+  async submitTimeEntry(id: string, userId?: string, updates: Partial<TimeEntry> = {}): Promise<void> {
+    const savedEntry = await this.getTimeEntry(id);
+    const submission: Partial<TimeEntry> = {
+      ...updates,
+      userId: savedEntry.userId,
       status: 'submitted',
       isLocked: true,
       submittedAt: new Date(),
-      submittedBy: userId || entry.userId,
-    });
+      submittedBy: savedEntry.submittedBy || userId || savedEntry.userId,
+    };
+    await this.updateTimeEntry(id, submission);
+    const entry = { ...savedEntry, ...submission };
 
     // Update fleet equipment employee if equipment is selected
     await this.updateFleetEquipmentEmployee(entry, userId || entry.userId);

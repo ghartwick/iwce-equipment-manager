@@ -90,7 +90,8 @@ export default function TimecardEditPage() {
         if (isSubmitting) {
           // For submit action, use submitTimeEntry to preserve original submitter
           const submitUserId = entry.submittedBy || entry.userId;
-          await submitTimeEntry(entry.id!, submitUserId);
+          const { isUpdate, ...dataToSubmit } = entryData;
+          await submitTimeEntry(entry.id!, submitUserId, dataToSubmit);
         } else {
           // For regular update
           const isEditingOthersCard = entry.userId !== user?.id;

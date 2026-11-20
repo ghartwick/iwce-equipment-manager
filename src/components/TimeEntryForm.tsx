@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { format } from 'date-fns';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { TimeEntry, User } from '../services/timecardService';
@@ -465,9 +465,20 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
   const [alert, setAlert] = useState<{ message: string; type: 'error' | 'warning' | 'info' } | null>(null);
   const [editableDate, setEditableDate] = useState<Date>(selectedDate);
   const [editingDate, setEditingDate] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [confirmingSubmit, setConfirmingSubmit] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const confirmationRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    if (confirmingSubmit) confirmationRef.current?.showModal();
+    else confirmationRef.current?.close();
+  }, [confirmingSubmit]);
 
   const showAlert = (message: string, type: 'error' | 'warning' | 'info' = 'error') => {
     setAlert({ message, type });
+    setSubmitError(type === 'error' ? message : null);
   };
 
   const isCrossClientUser = user.role === 'admin' || !!user.isSurveyor;
@@ -977,7 +988,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     onSubmit(finalData);
   };
 
-  const handleSubmitSubmit = async () => {
+  const handleSubmitSubmit = async (confirmed = false) => {
+    if (submittingRef.current) return;
+    setSubmitError(null);
+    setConfirmingSubmit(false);
     if (!clockIn || !clockOut) {
       showAlert('Please select both clock in and clock out times before submitting');
       return;
@@ -1027,12 +1041,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     }
 
     // Show confirmation dialog
-    const confirmSubmit = window.confirm(
-      'By submitting this form, I confirm that, to the best of my knowledge, all assigned work has been completed and that I departed the worksite without injury, illness, or incident at the time of departure.\n\n' +
-      'Once submitted the card is locked.'
-    );
-
-    if (!confirmSubmit) {
+    if (!confirmed) {
+      setConfirmingSubmit(true);
       return;
     }
 
@@ -1109,11 +1119,16 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
     if (truckNumber) finalData.truckNumber = truckNumber;
 
+    submittingRef.current = true;
+    setIsSubmitting(true);
     try {
       assignTruckToEmployee();
       await onSubmit(finalData);
     } catch (error) {
-      showAlert((error as Error).message);
+      showAlert(error instanceof Error ? error.message : 'Unable to submit time card. Please try again.');
+    } finally {
+      submittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
@@ -1398,6 +1413,10 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
           </button>
         </div>
 
+        {submitError && (
+          <p role="alert" className="text-sm text-red-700 dark:text-red-300">{submitError}</p>
+        )}
+
         {/* Action Buttons */}
         <div className="flex space-x-3">
           {showCancelButton && (
@@ -1413,17 +1432,19 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
             <>
               <button
                 type="submit"
-                className="flex-1 p-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors"
+                disabled={isSubmitting}
+                className="flex-1 p-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50"
               >
                 {entry ? 'Update Time Card' : 'Save Time Card'}
               </button>
               {(!entry || entry.status === 'draft') && (
                 <button
                   type="button"
-                  onClick={handleSubmitSubmit}
-                  className="flex-1 p-2 btn-approve rounded-lg"
+                  onClick={() => handleSubmitSubmit()}
+                  disabled={isSubmitting}
+                  className="flex-1 p-2 btn-approve rounded-lg disabled:opacity-50"
                 >
-                  Submit
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               )}
               
@@ -1431,10 +1452,11 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
               {selectedEntryId === 'new' && (
                 <button
                   type="button"
-                  onClick={handleSubmitSubmit}
-                  className="flex-1 p-2 btn-approve rounded-lg"
+                  onClick={() => handleSubmitSubmit()}
+                  disabled={isSubmitting}
+                  className="flex-1 p-2 btn-approve rounded-lg disabled:opacity-50"
                 >
-                  Submit
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               )}
             </>
@@ -1457,6 +1479,24 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
         )}
       </form>
       
+      <dialog
+        ref={confirmationRef}
+        aria-labelledby="timecard-confirm-title"
+        aria-describedby="timecard-confirm-description"
+        onCancel={() => setConfirmingSubmit(false)}
+        className="w-full max-w-md rounded-lg border border-yellow-600 bg-yellow-100 p-6 text-black shadow-xl backdrop:bg-black/60 dark:bg-gray-900 dark:text-white"
+      >
+        <h2 id="timecard-confirm-title" className="text-lg font-semibold mb-3">Submit time card?</h2>
+        <p id="timecard-confirm-description" className="text-sm">
+          By submitting this form, I confirm that, to the best of my knowledge, all assigned work has been completed and that I departed the worksite without injury, illness, or incident at the time of departure.
+        </p>
+        <p className="text-sm font-semibold mt-3">Once submitted the card is locked.</p>
+        <div className="flex gap-3 mt-5">
+          <button type="button" autoFocus onClick={() => setConfirmingSubmit(false)} className="flex-1 p-3 rounded-lg bg-gray-600 text-white">Cancel</button>
+          <button type="button" onClick={() => handleSubmitSubmit(true)} disabled={isSubmitting} className="flex-1 p-3 rounded-lg btn-approve disabled:opacity-50">Confirm Submit</button>
+        </div>
+      </dialog>
+
       {/* Alert Component */}
       {alert && (
         <Alert

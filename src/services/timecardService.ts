@@ -17,6 +17,7 @@ export interface TimeEntry {
   clockIn: Date;
   clockOut: Date;
   hours: number;
+  additionalTime?: { clockIn: string; clockOut: string }[];
   job?: string;
   workEntries?: WorkEntryData[];
   code?: string;

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { format } from 'date-fns';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { TimeEntry, User } from '../services/timecardService';
+import { calculateTimePeriods, TimePeriod } from '../services/timePeriods';
 import { Client, clientManagementService } from '../services/clientManagementService';
 import { Site, siteManagementService, normalizeSiteName } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
@@ -434,6 +435,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 }: TimeEntryFormProps) => {
   const [clockIn, setClockIn] = useState('');
   const [clockOut, setClockOut] = useState('');
+  const [additionalTime, setAdditionalTime] = useState<TimePeriod[]>([]);
+  const timeCalculation = calculateTimePeriods([{ clockIn, clockOut }, ...additionalTime]);
   const [job, setJob] = useState('');
   const [customSite, setCustomSite] = useState('');
   const [hours, setHours] = useState(0);
@@ -708,6 +711,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       
       setClockIn(format(clockInDate, 'HH:mm'));
       setClockOut(format(clockOutDate, 'HH:mm'));
+      setAdditionalTime(entry.additionalTime || []);
       setJob(entry.job || '');
       setHours(entry.hours);
       setTravelHours(entry.travelHours?.toString() || '');
@@ -778,6 +782,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       // Reset form for new entry
       setClockIn('');
       setClockOut('');
+      setAdditionalTime([]);
       setJob('');
       setClientId('');
       setHours(0);
@@ -799,23 +804,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
 
   useEffect(() => {
     // Calculate hours when clock in/out change
-    if (clockIn && clockOut) {
-      const [inHours, inMinutes] = clockIn.split(':').map(Number);
-      const [outHours, outMinutes] = clockOut.split(':').map(Number);
-      
-      const inTime = new Date();
-      inTime.setHours(inHours, inMinutes, 0, 0);
-      
-      const outTime = new Date();
-      outTime.setHours(outHours, outMinutes, 0, 0);
-      
-      if (outTime > inTime) {
-        const diff = outTime.getTime() - inTime.getTime();
-        const calculatedHours = diff / (1000 * 60 * 60);
-        setHours(Math.round(calculatedHours * 100) / 100);
-      }
-    }
-  }, [clockIn, clockOut]);
+    setHours(timeCalculation.hours);
+  }, [timeCalculation.hours]);
 
   // Set client and site from existing entry when reference data loads.
   // Validate against the full site list (sitesData), not the client-restricted
@@ -858,6 +848,11 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     
     if (!clockIn || !clockOut) {
       showAlert('Please select both clock in and clock out times');
+      return;
+    }
+
+    if (timeCalculation.error) {
+      showAlert(timeCalculation.error);
       return;
     }
 
@@ -933,7 +928,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       date: editableDate,
       clockIn: clockInDate,
       clockOut: clockOutDate,
-      hours,
+      additionalTime,
+      hours: timeCalculation.hours,
       travelHours: parseFloat(travelHours) || 0,
       job: job === 'Other' ? customSite.trim() : job,
       status: entry?.status || 'draft',
@@ -994,6 +990,11 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
     setConfirmingSubmit(false);
     if (!clockIn || !clockOut) {
       showAlert('Please select both clock in and clock out times before submitting');
+      return;
+    }
+
+    if (timeCalculation.error) {
+      showAlert(timeCalculation.error);
       return;
     }
 
@@ -1084,7 +1085,8 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
       date: editableDate,
       clockIn: clockInDate,
       clockOut: clockOutDate,
-      hours,
+      additionalTime,
+      hours: timeCalculation.hours,
       travelHours: parseFloat(travelHours) || 0,
       job: job === 'Other' ? customSite.trim() : job,
       status: 'submitted',
@@ -1255,7 +1257,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                     value={clockIn}
                     onChange={(e) => setClockIn(e.target.value)}
                     disabled={isLocked}
-                    className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                    className={`w-20 sm:w-28 h-9 box-border px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                       isLocked 
                         ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                         : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
@@ -1280,7 +1282,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                     value={clockOut}
                     onChange={(e) => setClockOut(e.target.value)}
                     disabled={isLocked}
-                    className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                    className={`w-20 sm:w-28 h-9 box-border px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                       isLocked 
                         ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                         : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
@@ -1308,7 +1310,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                     type="text"
                     value={hours}
                     readOnly
-                    className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-gray-900 dark:text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
+                    className={`w-20 sm:w-28 h-9 box-border px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg text-gray-900 dark:text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none transition-colors ${
                       isLocked 
                         ? 'bg-red-100 dark:bg-red-900 dark:bg-opacity-20 border-red-600 text-red-600 dark:text-red-300' 
                         : 'bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-20 border rounded-lg'
@@ -1340,7 +1342,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                       }
                     }}
                     disabled={isLocked}
-                    className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:outline-none transition-colors ${
+                    className={`w-20 sm:w-28 h-9 box-border px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 [-moz-appearance:_textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:outline-none transition-colors ${
                       isLocked 
                         ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300' 
                         : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
@@ -1353,7 +1355,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
             </div>
 
             {/* Truck# Section - Mobile: Single Column 3 */}
-            <div className="flex flex-col sm:flex-row flex-1 sm:flex-initial">
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-end flex-1 sm:flex-initial">
                 {/* Truck# */}
                 <div className="flex flex-col flex-shrink-0 min-w-0">
                   <label className="block text-xs font-medium text-yellow-700 dark:text-yellow-600 mb-0.5 whitespace-nowrap">
@@ -1363,7 +1365,7 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                     value={truckNumber}
                     onChange={(e) => setTruckNumber(e.target.value)}
                     disabled={isLocked}
-                    className={`w-20 sm:w-auto px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
+                    className={`w-20 sm:w-28 h-9 box-border px-1 sm:px-2 py-1.5 text-xs sm:text-sm bg-yellow-200 dark:bg-black border rounded-lg text-gray-900 dark:text-yellow-100 focus:outline-none disabled:cursor-not-allowed transition-colors ${
                       isLocked
                         ? 'border-red-600 bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-600 dark:text-red-300'
                         : 'border-yellow-400 dark:border-yellow-800 focus:border-yellow-500 dark:focus:border-yellow-400 disabled:opacity-50'
@@ -1375,7 +1377,44 @@ export const TimeEntryForm: React.FC<TimeEntryFormProps> = ({
                     ))}
                   </select>
                 </div>
+                {!isLocked && (
+                  <div className="pt-[18px] sm:pt-0">
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => setAdditionalTime(current => [...current, { clockIn: '', clockOut: '' }])}
+                      className="w-20 sm:w-28 h-9 box-border px-1 sm:px-2 py-1.5 text-xs sm:text-sm border border-yellow-600 bg-yellow-600 text-black rounded-lg disabled:opacity-50"
+                    >
+                      Add Time
+                    </button>
+                  </div>
+                )}
             </div>
+        </div>
+
+        <div className="space-y-3">
+          {additionalTime.map((period, index) => (
+            <fieldset key={index} className="flex flex-wrap items-end gap-3 border border-yellow-600 rounded-lg p-3">
+              <legend className="text-sm">Additional Time {index + 1}</legend>
+              {(['clockIn', 'clockOut'] as const).map(field => (
+                <label key={field} className="flex flex-col gap-1 text-sm">
+                  {field === 'clockIn' ? 'In' : 'Out'}
+                  <select
+                    value={period[field]}
+                    disabled={isLocked || isSubmitting}
+                    required
+                    onChange={e => setAdditionalTime(current => current.map((item, i) => i === index ? { ...item, [field]: e.target.value } : item))}
+                    className="w-20 sm:w-28 h-9 box-border px-1 sm:px-2 py-1.5 text-xs sm:text-sm rounded-lg border border-yellow-600 bg-yellow-200 dark:bg-black"
+                  >
+                    <option value="">Select time</option>
+                    {generateTimeOptions().map(time => <option key={time.value} value={time.value}>{time.label}</option>)}
+                  </select>
+                </label>
+              ))}
+              {!isLocked && <button type="button" disabled={isSubmitting} onClick={() => setAdditionalTime(current => current.filter((_, i) => i !== index))} className="p-2 btn-delete rounded-lg">Remove</button>}
+            </fieldset>
+          ))}
+          {additionalTime.length > 0 && timeCalculation.error && <p role="status" className="text-sm text-red-700 dark:text-red-300">{timeCalculation.error}</p>}
         </div>
 
         {/* Work Entries */}

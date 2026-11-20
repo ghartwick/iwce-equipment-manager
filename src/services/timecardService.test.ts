@@ -27,7 +27,8 @@ describe('submitTimeEntry', () => {
     const update = vi.spyOn(timecardService, 'updateTimeEntry').mockResolvedValue();
     const edits = {
       clockIn: new Date(2026, 10, 18, 15), clockOut: new Date(2026, 10, 18, 17),
-      hours: 2, travelHours: 0.5, job: 'Updated site',
+      hours: 3, travelHours: 0.5, job: 'Updated site',
+      additionalTime: [{ clockIn: '18:00', clockOut: '19:00' }],
       workEntries: [{ id: 'work', notes: 'Updated work', labourHours: 2 }]
     };
     await timecardService.submitTimeEntry('card', 'original-submitter', edits);

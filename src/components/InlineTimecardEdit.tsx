@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import { Save, X, Plus } from 'lucide-react';
 import { TimeEntry, WorkEntryData, EquipmentEntry } from '../services/timecardService';
+import { calculateTimePeriods, TimePeriod } from '../services/timePeriods';
 import { siteManagementService, Site, normalizeSiteName } from '../services/siteManagementService';
 import { codeManagementService } from '../services/codeManagementService';
 import { smallToolsManagementService } from '../services/smallToolsManagementService';
@@ -62,7 +63,7 @@ function EditableField({
   );
 }
 
-export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: InlineTimecardEditProps) {
+export function InlineTimecardEdit({ entry, user, canEdit, onSave }: InlineTimecardEditProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -71,6 +72,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
   const [dateStr, setDateStr] = useState('');
   const [clockIn, setClockIn] = useState('');
   const [clockOut, setClockOut] = useState('');
+  const [additionalTime, setAdditionalTime] = useState<TimePeriod[]>([]);
   const [job, setJob] = useState('');
   const [travelHours, setTravelHours] = useState('');
   const [workEntries, setWorkEntries] = useState<WorkEntryData[]>([]);
@@ -97,6 +99,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
     setDateStr(entryDateVal ? format(entryDateVal, 'yyyy-MM-dd') : '');
     setClockIn(inDate ? format(inDate, 'HH:mm') : '');
     setClockOut(outDate ? format(outDate, 'HH:mm') : '');
+    setAdditionalTime(entry.additionalTime || []);
     setJob(entry.job || '');
     setTravelHours(entry.travelHours?.toString() || '');
     setNotes(entry.notes || '');
@@ -218,7 +221,12 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
       const newClockOut = new Date(targetDate);
       newClockOut.setHours(outH, outM, 0, 0);
 
-      const workedHours = calcHours(newClockIn, newClockOut) ?? 0;
+      const timeCalculation = calculateTimePeriods([{ clockIn, clockOut }, ...additionalTime]);
+      if (timeCalculation.error) {
+        alert(timeCalculation.error);
+        return;
+      }
+      const workedHours = timeCalculation.hours;
 
       // Filter out empty equipment entries before saving
       const filteredWorkEntries = workEntries.map(we => ({
@@ -238,6 +246,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
         clockIn: newClockIn,
         clockOut: newClockOut,
         hours: workedHours,
+        additionalTime,
         job: job || undefined,
         travelHours: travelHours ? parseFloat(travelHours) : undefined,
         workEntries: filteredWorkEntries.length > 0 ? filteredWorkEntries : undefined,
@@ -266,6 +275,7 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
     setDateStr(cancelDateVal ? format(cancelDateVal, 'yyyy-MM-dd') : '');
     setClockIn(inDate ? format(inDate, 'HH:mm') : '');
     setClockOut(outDate ? format(outDate, 'HH:mm') : '');
+    setAdditionalTime(entry.additionalTime || []);
     setJob(entry.job || '');
     setTravelHours(entry.travelHours?.toString() || '');
     setNotes(entry.notes || '');
@@ -397,6 +407,25 @@ export function InlineTimecardEdit({ entry, user, canEdit, onSave, calcHours }: 
             </span>
           </EditableField>
         )}
+      </div>
+
+      <div className="space-y-2 text-xs">
+        {(isEditing ? additionalTime : entry.additionalTime || []).map((period, index) => (
+          <div key={index} className="flex flex-wrap items-center gap-2">
+            <span>Additional Time {index + 1}:</span>
+            {isEditing ? <>
+              {(['clockIn', 'clockOut'] as const).map(field => <label key={field}>
+                {field === 'clockIn' ? 'In ' : 'Out '}
+                <input type="time" value={period[field]} disabled={saving} onChange={e => {
+                  setAdditionalTime(current => current.map((item, i) => i === index ? { ...item, [field]: e.target.value } : item));
+                  markDirty();
+                }} className="p-2 rounded border border-yellow-600 bg-yellow-200 dark:bg-black" />
+              </label>)}
+              <button type="button" disabled={saving} onClick={() => { setAdditionalTime(current => current.filter((_, i) => i !== index)); markDirty(); }} className="p-2 btn-delete rounded">Remove</button>
+            </> : <span>{period.clockIn}–{period.clockOut}</span>}
+          </div>
+        ))}
+        {isEditing && <button type="button" disabled={saving} onClick={() => { setAdditionalTime(current => [...current, { clockIn: '', clockOut: '' }]); markDirty(); }} className="p-2 rounded bg-yellow-600 text-black">Add Time</button>}
       </div>
 
       {/* Site/Job - editable */}

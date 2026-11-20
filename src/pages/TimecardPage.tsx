@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Check, MoreVertical, X, FileText } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTimecard } from '../hooks/useTimecard';
+import { TimeEntry } from '../services/timecardService';
+import { TimePeriod } from '../services/timePeriods';
 import { InlineTimecardEdit } from '../components/InlineTimecardEdit';
 import { TimecardModeToggle } from '../components/TimecardModeToggle';
 import { UserManagementService, AppUser } from '../services/userManagementService';
@@ -706,8 +708,11 @@ export default function TimecardPage() {
     }
   };
 
+  const getEntryWorkedHours = (entry: TimeEntry): number =>
+    entry.additionalTime?.length ? entry.hours : (calcHours(entry.clockIn, entry.clockOut) ?? entry.hours ?? 0);
+
   const getEntryTotalHours = (entry: any): number => {
-    const worked = calcHours(entry.clockIn, entry.clockOut) ?? entry.hours ?? 0;
+    const worked = getEntryWorkedHours(entry) ?? 0;
     return worked + (entry.travelHours ?? 0);
   };
 
@@ -856,6 +861,10 @@ export default function TimecardPage() {
           const clockIn = entry.clockIn ? format(new Date(entry.clockIn), 'h:mm a') : 'N/A';
           const clockOut = entry.clockOut ? format(new Date(entry.clockOut), 'h:mm a') : 'N/A';
           doc.text(`Clock In: ${clockIn}  |  Clock Out: ${clockOut}`, 14, yPosition);
+          entry.additionalTime?.forEach((period: TimePeriod) => {
+            yPosition += 5;
+            doc.text(`Additional Time: ${period.clockIn} - ${period.clockOut}`, 14, yPosition);
+          });
           yPosition += 2;
 
           // Submission timestamp
@@ -1860,10 +1869,11 @@ export default function TimecardPage() {
                                                 )}
                                                 <div className="font-medium text-yellow-700 dark:text-yellow-600">
                                                   <span className="text-sm">
-                                                    Worked {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
+                                                    Worked {getEntryWorkedHours(entry)}
+                                                    {entry.additionalTime?.map((period: TimePeriod, index: number) => <span key={index} className="block text-xs">Additional: {period.clockIn}–{period.clockOut}</span>)}
                                                     {(entry.travelHours ?? 0) > 0 && (
                                                       <> + Travel {entry.travelHours}</>
-                                                    )} = Total {((calcHours(entry.clockIn, entry.clockOut) ?? entry.hours) + (entry.travelHours ?? 0)).toFixed(2)}
+                                                    )} = Total {((getEntryWorkedHours(entry)) + (entry.travelHours ?? 0)).toFixed(2)}
                                                   </span>
                                                   {entry.status === 'submitted' && entry.submittedAt && (
                                                     <span className="text-xs text-green-700 dark:text-green-400 ml-2">
@@ -2027,10 +2037,11 @@ export default function TimecardPage() {
                                               )}
                                               <div className="font-medium text-yellow-700 dark:text-yellow-600">
                                                 <span className="text-sm">
-                                                  Worked {calcHours(entry.clockIn, entry.clockOut) ?? entry.hours}
+                                                  Worked {getEntryWorkedHours(entry)}
+                                                    {entry.additionalTime?.map((period: TimePeriod, index: number) => <span key={index} className="block text-xs">Additional: {period.clockIn}–{period.clockOut}</span>)}
                                                   {(entry.travelHours ?? 0) > 0 && (
                                                     <> + Travel {entry.travelHours}</>
-                                                  )} = Total {((calcHours(entry.clockIn, entry.clockOut) ?? entry.hours) + (entry.travelHours ?? 0)).toFixed(2)}
+                                                  )} = Total {((getEntryWorkedHours(entry)) + (entry.travelHours ?? 0)).toFixed(2)}
                                                 </span>
                                                 {entry.status === 'submitted' && entry.submittedAt && (
                                                   <span className="text-xs text-green-700 dark:text-green-400 ml-2">

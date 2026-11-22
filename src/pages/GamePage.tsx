@@ -407,7 +407,11 @@ export default function GamePage() {
       loseLife();
     };
 
-    const steamColumn = (b: Block): Rect => ({ x: b.x + 12, y: b.y - TILE * 3, width: b.width - 24, height: TILE * 3 });
+    const steamColumn = (b: Block): Rect => {
+      const grow = Math.min(1, Math.max(0, ((b.timer ?? 0) % STEAM_CYCLE - STEAM_ON) / 8));
+      const height = TILE * 3 * grow;
+      return { x: b.x + 12, y: b.y - height, width: b.width - 24, height };
+    };
 
     const allSolids = () => [
       ...level.grounds,
@@ -518,11 +522,9 @@ export default function GamePage() {
         }
         return;
       }
-      const col = steamColumn(b);
-      const grow = Math.min(1, (ph - STEAM_ON) / 8);
-      const top = b.y - col.height * grow;
+      const top = steamColumn(b).y;
       for (let y = b.y - 6; y > top; y -= 10) {
-        const w = col.width / 2 + Math.sin(frame * 0.5 + y * 0.3) * 5 + (b.y - y) * 0.08;
+        const w = (b.width - 24) / 2 + Math.sin(frame * 0.5 + y * 0.3) * 5 + (b.y - y) * 0.08;
         ctx.fillStyle = 'rgba(243,244,246,0.85)';
         ctx.beginPath(); ctx.ellipse(cx, y, w, 9, 0, 0, Math.PI * 2); ctx.fill();
       }

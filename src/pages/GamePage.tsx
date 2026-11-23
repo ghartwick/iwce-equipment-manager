@@ -72,6 +72,8 @@ export default function GamePage() {
     let frame = 0;
     let animId: number;
     let invincible = 0;
+    let stage = 1;
+    let stageBanner = 0;
 
     const player = { x: 80, y: GROUND_Y - 40, width: 28, height: 36, vx: 0, vy: 0, grounded: false, facing: 1 };
 
@@ -255,6 +257,57 @@ export default function GamePage() {
       return { grounds, questions, bricks, pipes, floatCoins, enemies, powerupItems };
     };
 
+    const buildLevel2 = () => {
+      const pits: [number, number][] = [
+        [30, 33], [48, 51], [66, 69], [84, 88], [102, 105], [121, 124], [140, 144], [158, 161],
+        [176, 180], [195, 198], [214, 218], [232, 235], [250, 254], [268, 271], [280, 283],
+      ];
+      const grounds: Block[] = [];
+      for (let i = 0; i < WORLD_W / TILE; i++) {
+        if (pits.some(([a, b]) => i >= a && i <= b)) continue;
+        grounds.push({ x: i * TILE, y: GROUND_Y, width: TILE, height: TILE * 2, type: 'ground', hit: false, coins: 0 });
+      }
+      const block = (type: 'brick'|'question', t: number, row: number, coins = 0, powerup?: 'life'): Block =>
+        ({ x: t * TILE, y: GROUND_Y - row * TILE, width: TILE, height: TILE, type, hit: false, coins, powerup });
+      const questions: Block[] = ([
+        [6, 5, 2], [10, 5, 0, 'life'], [20, 5, 3], [20, 9, 2], [37, 5, 1], [55, 5, 3], [73, 5, 2],
+        [90, 5, 0, 'life'], [109, 5, 2], [109, 9, 3], [128, 5, 1], [146, 5, 3], [165, 5, 0, 'life'],
+        [183, 5, 2], [200, 5, 3], [211, 5, 1], [229, 5, 2], [229, 9, 3], [246, 5, 0, 'life'],
+        [265, 5, 2], [277, 5, 3],
+      ] as [number, number, number, 'life'?][]).map(([t, row, coins, pu]) => block('question', t, row, coins, pu));
+      const bricks: Block[] = ([
+        [7, 5], [8, 5], [19, 5], [21, 5], [35, 3], [36, 3], [43, 4], [44, 4], [45, 4],
+        [85, 3], [86, 3], [87, 3], [108, 5], [110, 5], [126, 4], [127, 4],
+        [141, 3], [142, 3], [143, 3], [164, 5], [166, 5], [177, 3], [178, 3], [179, 3],
+        [182, 5], [184, 5], [215, 3], [216, 3], [217, 3], [228, 5], [230, 5],
+        [251, 3], [252, 3], [253, 3], [264, 5], [266, 5], [276, 5], [278, 5],
+      ] as [number, number][]).map(([t, row]) => block('brick', t, row));
+      const pipes: Block[] = ([
+        [14, 2], [24, 3], [40, 3], [58, 4], [76, 2], [94, 3], [112, 4], [131, 3],
+        [150, 2], [168, 4], [186, 3], [205, 4], [224, 2], [242, 3], [260, 4],
+      ] as [number, number][]).map(([t, h]) =>
+        ({ x: t * TILE, y: GROUND_Y - h * TILE, width: TILE * 2, height: TILE * h, type: 'pipe', hit: false, coins: 0 }));
+      const floatCoins: Coin[] = ([
+        [20, 13], [31, 7], [32, 7], [49, 7], [50, 7], [67, 7], [68, 7], [86, 6], [103, 7], [104, 7],
+        [122, 7], [123, 7], [142, 6], [159, 7], [160, 7], [178, 6], [196, 7], [197, 7], [216, 6],
+        [233, 7], [234, 7], [252, 6], [269, 7], [270, 7], [281, 7], [282, 7],
+      ] as [number, number][]).map(([t, row]) =>
+        ({ x: t * TILE + 8, y: GROUND_Y - row * TILE, width: 14, height: 14, collected: false }));
+      const enemies: Enemy[] = [
+        19, 22, 36, 44, 45, 55, 62, 72, 80, 81, 91, 98, 108, 116, 117, 127, 135, 136, 147, 154,
+        164, 172, 173, 183, 191, 192, 202, 210, 221, 228, 229, 238, 246, 247, 257, 264, 275, 276, 287, 288,
+      ].map(t => ({
+        x: t * TILE, y: GROUND_Y - TILE, width: 28, height: 28,
+        vx: -(1.6 + Math.floor(t / 50) * 0.15), vy: 0, alive: true, squished: false, timer: 0,
+      }));
+      const powerupItems: Powerup[] = [];
+      return { grounds, questions, bricks, pipes, floatCoins, enemies, powerupItems };
+    };
+
+    const theme = () => stage === 2
+      ? { skyTop: '#1e1b4b', skyBottom: '#f97316', hill: '#365314', hillHi: '#4d7c0f', cloud: 'rgba(253,186,116,0.55)', groundTop: '#a8a29e', groundBody: '#57534e', groundLine: '#44403c' }
+      : { skyTop: '#60a5fa', skyBottom: '#60a5fa', hill: '#4ade80', hillHi: '#86efac', cloud: 'rgba(255,255,255,0.92)', groundTop: '#4ade80', groundBody: '#92400e', groundLine: '#78350f' };
+
     let level = buildLevel();
     let coinPops: { x: number; y: number; vy: number; vx: number; life: number; max: number; }[] = [];
 
@@ -320,7 +373,7 @@ export default function GamePage() {
     // ---- Draw helpers ----
     const drawCloud = (x: number, y: number, w: number, h: number) => {
       const sx = x - cameraX;
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.fillStyle = theme().cloud;
       ctx.beginPath();
       ctx.ellipse(sx + w*0.3, y - h*0.2, w*0.3, h*0.35, 0, 0, Math.PI*2);
       ctx.ellipse(sx + w*0.5, y - h*0.5, w*0.38, h*0.5, 0, 0, Math.PI*2);
@@ -331,11 +384,12 @@ export default function GamePage() {
     const drawGroundBlock = (b: Block) => {
       const sx = b.x - cameraX;
       if (sx + b.width < 0 || sx > CANVAS_W) return;
-      ctx.fillStyle = '#4ade80';
+      const th = theme();
+      ctx.fillStyle = th.groundTop;
       ctx.fillRect(sx, b.y, b.width, 6);
-      ctx.fillStyle = '#92400e';
+      ctx.fillStyle = th.groundBody;
       ctx.fillRect(sx, b.y + 6, b.width, b.height - 6);
-      ctx.strokeStyle = '#78350f';
+      ctx.strokeStyle = th.groundLine;
       ctx.lineWidth = 0.5;
       ctx.strokeRect(sx, b.y + 6, b.width, b.height - 6);
     };
@@ -622,7 +676,14 @@ export default function GamePage() {
       const di = dialogueIndexRef.current;
       const lf = dialogueLineFrameRef.current;
       const bf = briefingFrameRef.current;
-      const DIALOGUE = [
+      const DIALOGUE = stage === 2 ? [
+        { speaker: 'f' as const, name: 'GEOFF',
+          text: `Nice work, ${pName}. But the night shift crew just showed up — and they're faster.` },
+        { speaker: 'o' as const, name: pName,
+          text: `Bigger pits, quicker workers. I'll take the brick bridges across.` },
+        { speaker: 'f' as const, name: 'GEOFF',
+          text: `Reach the flag before sundown and the overtime's yours. Go!` },
+      ] : [
         { speaker: 'f' as const, name: 'GEOFF',
           text: `Site's overrun with workers, ${pName}. Get that excavator moving.` },
         { speaker: 'o' as const, name: pName,
@@ -775,7 +836,7 @@ export default function GamePage() {
       ctx.fillStyle = '#6b7280'; ctx.textAlign = 'center';
       ctx.fillText('PRE-MISSION', CANVAS_W / 2, 13);
       ctx.fillStyle = '#4ade80'; ctx.textAlign = 'right';
-      ctx.fillText('STAGE 1', CANVAS_W - 6, 13);
+      ctx.fillText(`STAGE ${stage}`, CANVAS_W - 6, 13);
 
       // ── TEXT BOX ──
       const tbY = portY + portH, tbH = CANVAS_H - tbY;
@@ -843,6 +904,8 @@ export default function GamePage() {
     const restart = () => {
       scoreVal = 0; lives = 3; coinCount = 0;
       setScore(0);
+      stage = 1;
+      stageBanner = 0;
       level = buildLevel();
       resetPlayer();
       invincible = 0;
@@ -1019,18 +1082,31 @@ export default function GamePage() {
       // Flag / win
       if (player.x + player.width >= flagX && player.x <= flagX + 10) {
         scoreVal += 1000; setScore(s => s + 1000);
+        if (stage === 1) {
+          stage = 2;
+          level = buildLevel2();
+          coinPops = [];
+          resetPlayer();
+          stageBanner = 150;
+          gsRef.current = 'briefing'; briefingFrameRef.current = 0; briefingTextDoneRef.current = false; dialogueIndexRef.current = 0; dialogueLineFrameRef.current = 0; setDisplayState('briefing');
+          return;
+        }
         gsRef.current = 'win'; setDisplayState('win');
       }
 
       // Draw
-      ctx.fillStyle = '#60a5fa';
+      const th = theme();
+      const sky = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+      sky.addColorStop(0, th.skyTop);
+      sky.addColorStop(1, th.skyBottom);
+      ctx.fillStyle = sky;
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
       for (const h of hills) {
         const hsx = h.x - cameraX;
         if (hsx + h.r * 2 < 0 || hsx - h.r > CANVAS_W) continue;
-        ctx.fillStyle = '#4ade80';
+        ctx.fillStyle = th.hill;
         ctx.beginPath(); ctx.arc(hsx, GROUND_Y, h.r, Math.PI, 0); ctx.fill();
-        ctx.fillStyle = '#86efac';
+        ctx.fillStyle = th.hillHi;
         ctx.beginPath(); ctx.arc(hsx - 18, GROUND_Y - h.r * 0.5, h.r * 0.28, Math.PI, 0); ctx.fill();
       }
       for (const cl of clouds) drawCloud(cl.x, cl.y, cl.w, cl.h);
@@ -1065,6 +1141,18 @@ export default function GamePage() {
       }
 
       drawHUD();
+
+      if (stageBanner > 0) {
+        stageBanner--;
+        ctx.globalAlpha = Math.min(1, stageBanner / 30);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, CANVAS_H / 2 - 30, CANVAS_W, 50);
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 22px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('STAGE 2: NIGHT SHIFT', CANVAS_W / 2, CANVAS_H / 2 + 2);
+        ctx.globalAlpha = 1;
+      }
     };
 
     animId = requestAnimationFrame(loop);

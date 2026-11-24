@@ -250,6 +250,7 @@ function InventoryPage() {
     };
     
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (product.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (product.employee?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          (product.site?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
                          getCategoryName(product.category || '').includes(searchTerm.toLowerCase()) ||

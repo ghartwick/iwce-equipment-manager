@@ -155,6 +155,7 @@ export function EquipmentManagement({ currentUser, asPage = false, title = 'Heav
 
   const filteredEquipment = equipment.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.site?.toLowerCase().includes(searchTerm.toLowerCase())
   );
